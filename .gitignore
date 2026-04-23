@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# claude-code local state
+.claude/settings.local.json
+.claude/lessons.local.md
+
+# packaged skill artefacts
+dist/
+*.skill
+
+# node (kept for user scratch repos in this workspace)
+node_modules/
+*.log
+*.tgz
+.eslintcache
