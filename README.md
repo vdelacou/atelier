@@ -59,16 +59,17 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 
 ### 1. Install the skill (one-time, per machine)
 
-Drop the skill into Claude Code's user-level skills directory:
+Use the [`skills`](https://www.npmjs.com/package/skills) CLI by Vercel Labs — it discovers `skills/atelier/SKILL.md` in this repo automatically:
 
 ```bash
-git clone --depth 1 https://github.com/vdelacou/atelier.git /tmp/atelier
-mkdir -p ~/.claude/skills
-cp -r /tmp/atelier/skills/atelier ~/.claude/skills/atelier
-rm -rf /tmp/atelier
+npx skills add vdelacou/atelier
 ```
 
-To track upstream changes instead, clone once and symlink:
+By default it installs into Claude Code's user skills directory (`~/.claude/skills/atelier`). Use `-g` for project-local install or `-a <agent>` to target another supported agent (`opencode`, `cursor`, etc.).
+
+#### Alternative: clone and symlink (track upstream)
+
+If you'd rather follow the repo via `git pull`:
 
 ```bash
 git clone https://github.com/vdelacou/atelier.git ~/code/atelier
@@ -76,7 +77,7 @@ mkdir -p ~/.claude/skills
 ln -s ~/code/atelier/skills/atelier ~/.claude/skills/atelier
 ```
 
-The skill becomes available automatically in Claude Code the next time the agent looks at your repo. Verify it's loaded by asking Claude `/skills` (or any equivalent in your client).
+The skill becomes available automatically the next time Claude Code starts. Verify it's loaded with `/skills` (or your client's equivalent).
 
 ### 2. Install the gate scripts (per Bun/TypeScript repo)
 
