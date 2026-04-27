@@ -74,7 +74,25 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
-These guidelines are working if: fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+### 5. README is part of done
+
+A change is not finished when the code compiles and the tests pass. It is finished when the next reader can install, run, and use the project without surprise. The README is the contract with that reader; if it lies, the change is broken even if the tests are green.
+
+**Audit `README.md` before declaring any task done — and again before ending the session.** Walk the user-visible surface area:
+
+- Install / setup steps and their commands
+- Scripts in `package.json` (every one the README mentions, every one the README implies should exist)
+- CLI flags, subcommands, and their argument shapes
+- Environment variables and config files (`.env.example`, `bunfig.toml`, etc.)
+- Top-level repository layout / architecture diagram
+- Public exports the README documents (functions, types, modules surfaced as the API)
+- Versioned facts (Bun version, Node version if any, framework versions where the README pins them)
+
+If anything you touched in this session changes any of those surfaces, update the README in the same commit (or stage it for the user to commit). If everything is current, say so in one sentence and move on. Skip the audit only when the change is clearly internal-only (private helpers, test-only refactors, formatting passes, dep bumps that do not change usage).
+
+The bar is "would a new contributor cloning this repo today get the same picture from the README that they would from reading the code?" If no, the README is stale.
+
+These guidelines are working if: fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, fewer "wait, the README says X but the code does Y" follow-ups, and clarifying questions come before implementation rather than after mistakes.
 
 ## Lessons (memory across sessions)
 
@@ -336,7 +354,7 @@ Then review:
 8. Every new IO port returns `Result<T, PortError>` and its `PortError` is a discriminated union. Every new use-case returns `Result<Summary, StepError>`. `try/catch` only in `infra/`, `main.ts`, or a pure-domain native-API fallback.
 9. New `src/infra/`, `src/composition/`, or `src/presenter/` files added in the same commit as a matching side-effect import in `scripts/coverage-preload.ts`.
 10. The commit is small: ≤10 files AND ≤300 lines (insertions + deletions). The pre-commit gate enforces this; aim well under during iteration.
-11. `README.md` re-read and updated if the change touches CLI flags, env vars, folder structure, scripts, or user-visible behaviour.
+11. `README.md` audited against the user-visible surface area (install steps, `package.json` scripts, CLI flags, env vars, top-level layout, public exports, pinned versions) and updated in the same commit if anything is now stale. See Behavioural Guideline #5. The audit runs **twice**: once before declaring the task done, and again before ending the session — the same READMEs that are correct at task-done can drift across multiple back-to-back tasks in one session.
 12. Would a new team member understand this in six months?
 
 The pre-commit hook runs **eight gates** in order: commit size → package.json (no `"latest"` / `"*"`) → gitleaks `protect --staged` → tests → strict lint → typecheck → coverage → mutation. See `references/workflow.md` for the full breakdown and the no-bypass rule.
@@ -374,6 +392,7 @@ The pre-commit hook runs **eight gates** in order: commit size → package.json 
 - A commit exceeding 10 files OR 300 lines (insertions + deletions) without a clear big-bang justification (initial scaffold, mass-rename, generated files). Split into smaller coherent slices. The pre-commit gate enforces this; do not normalise `--no-verify`.
 - A composition root or wiring file declared "untestable" and skipped. The two ergonomic switches make any composition file 100%-testable: parameterise every state-source (path, env var, clock) and inject every output sink (logger, sender). See `references/architecture.md` (Composition root testability).
 - A `"latest"` or `"*"` version string anywhere in `package.json`. Use `bun add <pkg>` so the version pins to `^X.Y.Z` at install time. To bump deliberately, run `bun update` and commit the lockfile change in the same commit. Enforced by `scripts/check-package-json.sh` (pre-commit gate 2).
+- Closing a session (or declaring a task done) with non-README files modified but the README un-audited. The README is part of the change set — re-read it, update what drifted, or state in one sentence that nothing user-visible changed. See Behavioural Guideline #5.
 
 ## Remember
 

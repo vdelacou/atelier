@@ -394,20 +394,47 @@ If the repo already uses Husky, drop the body of `assets/pre-commit` (from `set 
 
 ## README consistency
 
-After completing any change that touches user-visible behaviour, re-read `README.md` and update it to match. Previous breakages:
+The README is the contract with anyone who clones the repo. If it lies, the change is broken even if the tests are green. Audit it twice: once before declaring a task done, and once more before ending the session.
+
+### When to audit
+
+Run the audit whenever the working tree has uncommitted changes on a non-`README.md` file. Skip it only when the changes are clearly internal-only — private helpers, test-only refactors, formatting passes, dependency bumps that do not change usage.
+
+### What to walk
+
+The user-visible surface area is the set of facts the README documents about the project from the outside. For an atelier-shaped repo, that is roughly:
+
+| Surface | What changed in the session that would invalidate the README |
+|:---|:---|
+| Install / setup steps | Added a system dep (`gitleaks`, `bun`), changed the install command, moved a config file the install copies |
+| `package.json` scripts | Added/renamed/removed any of `test`, `lint`, `typecheck`, `coverage`, `mutate:*`, etc.; changed what one of them does |
+| CLI flags / subcommands | New flag, renamed flag, changed default, removed flag — both the flag itself and the example invocations in the README |
+| Env vars / config files | New `process.env.X` read in `src/composition/env.ts`; new entry in `.env.example`; new key in `bunfig.toml` |
+| Top-level layout / architecture diagram | New top-level folder, renamed folder, deleted folder — the README's tree diagram and any prose that names paths |
+| Public exports | A function/type/module the README documents as the API surface (not the same as "everything exported from `src/`") |
+| Pinned versions | The README mentions "Bun ≥ X" or "Next.js Y" and the actual `package.json` / `bunfig.toml` pin moved |
+
+If the audit finds drift, fix the README in the **same commit** as the code change — drifted READMEs across separate commits are how docs rot.
+
+### Past breakages this rule catches
 
 - CLI flags renamed but `--flow` examples stayed
 - Scripts added to `package.json` but not listed
 - Folders deleted (or renamed) but the architecture diagram still referenced them
 - Coverage and prompt sections missing entirely from a change set that introduced them
+- Install one-liner stayed pointing at a deprecated tool while the docs body listed the new one
 
-**Checklist before declaring any task done:**
+### Five-check task-done gate
 
 1. `bun test` — passes
 2. `bun run lint` — 0 errors AND 0 warnings (fast, ~2 s cached / ~7 s cold)
 3. `bun run typecheck` — clean
 4. `bun run coverage` — per-directory gates pass
-5. `README.md` — re-read, consistent with the change set
+5. `README.md` — audited against the surface table above; either updated, or one-sentence "nothing user-visible changed"
+
+### End-of-session re-audit
+
+A session usually contains several back-to-back tasks. Each one might pass its task-done audit, then the next one drifts the README again. So re-walk the surface table once more before stopping the session — even if every individual task said "nothing user-visible changed", the cumulative diff often does. State the result in one sentence: "README still current" or "README updated for X, Y, Z".
 
 ## Editor configuration that keeps formatting stable
 
