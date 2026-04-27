@@ -243,11 +243,12 @@ Applies to: any future "should this job go in the monorepo" question.
 ### Decision (personal-relevant)
 
 ```markdown
-## [decision] 2026-04-23 | I use Scoop for all Windows dev tool installs
+## [decision] 2026-04-23 | I install all dev CLIs through mise
 
-Corporate laptop has no admin rights. Scoop works without admin and keeps PATH clean.
-Never use winget or manual MSI installers; they either fail or need IT tickets.
-Applies to: any new tool I need locally (Bun, Node LTS, etc.).
+Need a single tool that pins per-project versions of Bun, Node, Python without
+sudo. asdf works but config is verbose; brew installs system-wide and drifts.
+Mise keeps every project's `.tool-versions` honest and stays out of PATH globals.
+Applies to: any new language runtime or CLI I need locally.
 ```
 
 ### Gotcha (team-relevant)
@@ -265,11 +266,13 @@ Affects: every test file in this repo.
 ### Gotcha (personal-relevant)
 
 ```markdown
-## [gotcha] 2026-04-23 | corporate proxy blocks github.com for git clone over HTTPS
+## [gotcha] 2026-04-23 | bun install fails behind a transparent HTTPS proxy without NODE_EXTRA_CA_CERTS
 
-Fresh laptop could not clone any repo. HTTPS is blocked; SSH is not. Set up SSH
-keys via the corporate cert, point git at `git@github.com:...` URLs, done.
-Affects: every new repo I clone on the corporate network.
+Fresh machine on a network with TLS interception. `bun install` died with
+"unable to verify the first certificate". Bun reads `NODE_EXTRA_CA_CERTS`
+the same way Node does — exporting it to the proxy's root CA bundle fixes
+both `bun install` and `bunx`.
+Affects: every shell session on this network; add to `~/.zshenv`.
 ```
 
 ## Superseding an old entry

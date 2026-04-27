@@ -142,7 +142,7 @@ export const percentDiscount = (percent: number): DiscountPolicy => {
 
 ### Key insight
 
-This is why you can swap `inMemoryUserRepo` for `postgresUserRepo` for `mockUserRepo`. All three honour the `UserRepo` contract, so callers cannot tell them apart.
+This is why you can swap `inMemoryUserRepo` for `postgresUserRepo` for a test-only fake. All implementations honour the `UserRepo` contract, so callers cannot tell them apart.
 
 ---
 
@@ -273,7 +273,7 @@ These principles scale beyond modules:
 |:---|:---|
 | SRP | Each bounded context has one responsibility. |
 | OCP | New features arrive as new modules, not edits to existing ones. |
-| LSP | Swappable implementations (real repo, mock repo, in-memory repo) behave identically within the contract. |
+| LSP | Swappable implementations (real repo, fake repo, in-memory repo) behave identically within the contract. |
 | ISP | Thin function-type contracts at module boundaries. No fat "everything" contracts. |
 | DIP | High-level policy modules know nothing about databases or frameworks. |
 

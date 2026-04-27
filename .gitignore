@@ -15,6 +15,9 @@
 dist/
 *.skill
 
+# skill-creator eval workspaces (results, logs, html reports)
+skills/*-workspace/
+
 # node (kept for user scratch repos in this workspace)
 node_modules/
 *.log

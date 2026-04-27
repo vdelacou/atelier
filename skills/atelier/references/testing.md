@@ -1,5 +1,17 @@
 # Testing Strategy
 
+## The school: Outside-in classicist
+
+The SUT of every unit test is a **primary port** — a use case, command handler, or application service at the hexagonal boundary. Inside the port, the full domain runs real: entities, value objects, domain services, aggregate roots. The only test doubles are **fakes** for secondary ports (repository, email sender, clock, token decoder, payment gateway, any adapter to the outside world).
+
+Benefits:
+
+- Refactoring the domain never breaks tests.
+- Tests describe business scenarios, so they read as living documentation.
+- The design pressure lands on the right boundary: when a test is hard to write, the port's contract is wrong, not the entity.
+
+See `references/tdd.md` for the full treatment and Ian Cooper's context.
+
 ## The testing pyramid
 
 ```
@@ -9,10 +21,10 @@
       /      \
      /--------\
     /          \    Integration tests (SOME)
-   /            \   multiple components, medium speed
+   /            \   real secondary-port adapters
   /--------------\
  /                \  Unit tests (MANY)
-/                  \ single function or module, fast, isolated
+/                  \ primary-port SUT, real domain, faked secondary ports
 --------------------
 ```
 
@@ -20,66 +32,66 @@
 
 ### Unit tests
 
-Test one function or one module in isolation.
-
-- Fast (milliseconds).
-- No external dependencies (use fakes or stubs).
-- Most of your tests should be unit tests.
+A unit is a **behaviour**, not a function. The SUT is a primary port; the domain runs real; secondary ports are fakes. Most tests in the codebase are unit tests.
 
 ```ts
 import { describe, expect, it } from 'bun:test';
-import { addItemToOrder, emptyOrder, orderTotal } from './order';
+import { placeOrder } from './place-order';
+import { createInMemoryOrderRepo } from './fakes/in-memory-order-repo';
+import { createInMemoryCustomerRepo } from './fakes/in-memory-customer-repo';
 import { money } from '../money/money';
-import { orderItem } from './order-item';
+import { customerId } from '../customers/customer-id';
 
-describe('order', () => {
-  it('when an empty order gets two items at 100 and 50, total is 150', () => {
-    const order = addItemToOrder(
-      addItemToOrder(emptyOrder(), orderItem({ price: money(100, 'EUR') })),
-      orderItem({ price: money(50, 'EUR') })
+describe('placeOrder', () => {
+  it('when a premium customer buys 100 EUR, the order total is 80 EUR', async () => {
+    const orders = createInMemoryOrderRepo();
+    const customer = customerId('c-1');
+    const customers = createInMemoryCustomerRepo({ [customer]: { tier: 'premium' } });
+
+    await placeOrder(
+      { customer, items: [{ sku: 'SKU-1', price: money(100, 'EUR') }] },
+      { orders, customers }
     );
-    expect(orderTotal(order).amount).toBe(150);
+
+    const [saved] = await orders.findByCustomer(customer);
+    expect(saved.total).toEqual(money(80, 'EUR'));
   });
 });
 ```
+
+Notice what is **real**: the `placeOrder` use case, every domain function it calls, the `Money` value object, the `Order` entity, the pricing rules. What is **faked**: `orders` and `customers` — the two secondary ports.
 
 ### Integration tests
 
-Test multiple components together.
-
-- Slower (may use real DB, real queue).
-- Test boundaries between components.
-- Fewer than unit tests.
+Test secondary-port adapters against the real outside world: a real database, a real HTTP API (in a sandbox), a real queue. These prove that the `postgres*Repo` fulfils the same contract as `createInMemory*Repo`. Fewer than unit tests; run in a separate CI stage.
 
 ```ts
-describe('orderService integration', () => {
-  let db: Database;
-  let service: OrderService;
+describe('postgresOrderRepo', () => {
+  let repo: OrderRepo;
 
   beforeAll(async () => {
-    db = await connectDatabase();
-    service = createOrderService(createPostgresOrderRepo(db));
+    repo = createPostgresOrderRepo(testDb);
   });
 
-  it('saves and retrieves an order', async () => {
-    const order = createOrder(orderId('ord-1'));
-    await service.save(order);
-    const retrieved = await service.findById(order.id);
-    expect(retrieved).toEqual(order);
+  it('saves an order and retrieves it by customer', async () => {
+    const customer = customerId('c-1');
+    const order = buildOrder({ customer, total: money(80, 'EUR') });
+    await repo.save(order);
+    const [found] = await repo.findByCustomer(customer);
+    expect(found).toEqual(order);
   });
 });
 ```
 
+Contract tests (below) let you run the same assertions against the in-memory fake and the Postgres adapter, so divergence between them is caught automatically.
+
 ### E2E / acceptance tests
 
-Test the entire system from the user's perspective.
-
-- Slowest, most brittle.
-- Critical paths only.
+Drive the real user interface against a deployed stack. Slowest, most brittle. Critical paths only.
 
 ```ts
 describe('checkout flow', () => {
-  it('user can complete purchase', async () => {
+  it('premium customer buys one item at 100 EUR and sees Order Confirmed', async () => {
     await page.goto('/products');
     await page.click('[data-testid="add-to-cart"]');
     await page.click('[data-testid="checkout"]');
@@ -95,19 +107,24 @@ describe('checkout flow', () => {
 
 ## Arrange-Act-Assert
 
-Structure EVERY test this way:
+Structure EVERY test this way. The ACT should call the primary port; the ASSERT should read state from a fake (or the returned result).
 
 ```ts
-it('applies 20% discount to premium users', () => {
-  // ARRANGE
-  const user = premiumUser(userId('u-1'));
-  const cart = addItemToCart(emptyCart(user), item({ price: money(100, 'EUR') }));
+it('when a premium customer buys a 100 EUR item, the order total is 80 EUR', async () => {
+  // ARRANGE - real domain, faked secondary ports
+  const orders = createInMemoryOrderRepo();
+  const customer = customerId('c-1');
+  const customers = createInMemoryCustomerRepo({ [customer]: { tier: 'premium' } });
 
-  // ACT
-  const total = cartTotal(cart);
+  // ACT - call the primary port
+  await placeOrder(
+    { customer, items: [{ sku: 'SKU-1', price: money(100, 'EUR') }] },
+    { orders, customers }
+  );
 
-  // ASSERT
-  expect(total.amount).toBe(80);
+  // ASSERT - read state from the fake
+  const [saved] = await orders.findByCustomer(customer);
+  expect(saved.total).toEqual(money(80, 'EUR'));
 });
 ```
 
@@ -122,42 +139,46 @@ When stuck:
 
 ## Test naming
 
-### Bad | abstract, technical
+Every test name is a **complete business scenario** in domain language. Not the name of a function, not "should work correctly", not "happy path". A reader who has never seen the code should understand the scenario from the title alone.
+
+### Bad | technical, function-oriented
 
 ```ts
 it('should work correctly', () => { /* ... */ });
 it('handles the edge case', () => { /* ... */ });
-it('sets the data property', () => { /* ... */ });
+it('getDiscount returns 20 when tier is premium', () => { /* ... */ });
+it('calculateTotal applies tax', () => { /* ... */ });
 ```
 
-### Good | concrete examples, domain language
+### Good | business scenarios
 
 ```ts
-it('calculates 20% discount for premium users', () => { /* ... */ });
-it('returns error when cart is empty', () => { /* ... */ });
-it('recognises "racecar" as a palindrome', () => { /* ... */ });
+it('when a premium customer buys a 100 EUR item, the order total is 80 EUR', () => { /* ... */ });
+it('when the cart is empty, checkout is rejected', () => { /* ... */ });
+it('when a VAT-registered EU customer orders, the invoice shows no VAT', () => { /* ... */ });
 ```
 
 ### Format options
 
 ```ts
-// option 1 | should + behaviour
-it('should apply tax based on shipping state', () => { /* ... */ });
+// option 1 | when <scenario>, then <outcome>
+it('when adding a 100 EUR item to an empty cart, the total is 100 EUR', () => { /* ... */ });
 
-// option 2 | when + then
-it('when adding 2 + 3, then returns 5', () => { /* ... */ });
-
-// option 3 | given/when/then (complex scenarios)
-describe('given a premium user', () => {
-  describe('when they checkout', () => {
-    it('then they receive 20% discount', () => { /* ... */ });
+// option 2 | given <context>, when <scenario>, then <outcome>
+describe('given a premium customer', () => {
+  describe('when they check out a 100 EUR cart', () => {
+    it('the order total is 80 EUR and a confirmation email is sent', () => { /* ... */ });
   });
 });
 ```
 
+Avoid titles that name functions (`getDiscount`, `calculateTotal`, `isValid`). If a title contains a function name, the test is almost certainly targeting the wrong SUT.
+
 ---
 
 ## Test doubles
+
+Three shapes are permitted: **dummy**, **stub**, **fake**. Hand-written spies (a fake that also records its inputs) are allowed when outcome assertions are not enough. Mocks from a mock library are banned — see the "No mocks" rule below.
 
 ### Dummy
 
@@ -179,9 +200,88 @@ const stubRepo: UserRepo = {
 };
 ```
 
-### Spy
+### Fake (preferred)
 
-Records how it was called.
+A working in-memory implementation of the contract.
+
+```ts
+export const createInMemoryUserRepo = (): UserRepo => {
+  const store = new Map<UserId, User>();
+  return {
+    save: async (user) => {
+      store.set(user.id, user);
+    },
+    findById: async (id) => store.get(id) ?? null,
+  };
+};
+```
+
+Fakes let tests assert on final state (the thing the domain actually cares about) rather than on call sequences, so they survive refactoring.
+
+### Fakes with an `errors` knob
+
+When the code under test returns `Result<T, E>`, the fake needs an optional `errors` config so tests can hit the error branch without a mocking library. Every port fake exposes this knob.
+
+```ts
+export const createSheetsFake = (config?: {
+  tabs?: Partial<Record<string, ReadonlyArray<SheetRow>>>;
+  errors?: {
+    readRows?: SheetsError;
+    appendOrUpdate?: SheetsError;
+    deleteRow?: SheetsError;
+  };
+}): Sheets => {
+  const store = new Map<string, SheetRow[]>();
+  for (const [tab, rows] of Object.entries(config?.tabs ?? {})) store.set(tab, [...(rows ?? [])]);
+
+  return {
+    readRows: async (tab) => {
+      if (config?.errors?.readRows) return err(config.errors.readRows);
+      return ok(store.get(tab) ?? []);
+    },
+    appendOrUpdate: async (tab, row) => {
+      if (config?.errors?.appendOrUpdate) return err(config.errors.appendOrUpdate);
+      const rows = store.get(tab) ?? [];
+      store.set(tab, [...rows.filter((r) => r.id !== row.id), row]);
+      return ok(undefined);
+    },
+  };
+};
+```
+
+Used in a test:
+
+```ts
+const sheets = createSheetsFake({
+  tabs: { POST: [row] },
+  errors: { appendOrUpdate: { kind: 'write-failed', message: 'quota' } },
+});
+```
+
+Cast the error-map value to the port's discriminated-union shape with `as const` on the `kind` so TypeScript narrows to the right variant. See `references/result-type.md`.
+
+### Batch use-cases: `ok(summary)` with an `errored` count
+
+Use-cases that iterate over many rows catch per-row port errors internally, increment an `errored` counter, and return `ok({ published, errored })`. They do **not** return `err(...)` per row. Tests assert on the summary and (optionally) on the logger-fake calls:
+
+```ts
+it('when one of three rows fails to post, the batch completes with errored=1', async () => {
+  const sheets = createSheetsFake({ tabs: { POST: [row1, row2, row3] } });
+  const telegram = createTelegramFake({ errors: { [row2.channel]: { kind: 'rate-limited', message: '429' } } });
+  const logger = createLoggerFake();
+
+  const result = unwrap(await createPostTelegram({ sheets, telegram, logger })(input));
+
+  expect(result).toEqual({ published: 2, errored: 1 });
+  expect(logger.calls.filter((c) => c.level === 'warn')).toHaveLength(1);
+});
+```
+
+`err(...)` from a batch use-case is reserved for prerequisites — the initial `sheets.readRows` fails, or credentials are missing. See `references/result-type.md` for the full rationale.
+
+### Hand-written spy
+
+When a test must assert that an outbound call happened (e.g. a notification was sent), write a fake that records its inputs in a field. No mocking library.
 
 ```ts
 type EmailSpy = { sentEmails: Email[]; send: (to: Email, message: string) => Promise<void> };
@@ -196,85 +296,102 @@ export const createEmailSpy = (): EmailSpy => {
   };
 };
 
-// later in test
+// assert on state, not on call sequences
 expect(spy.sentEmails).toContain(email('user@example.com'));
 ```
 
-### Mock
+### No `mock` from `bun:test` (absolute, enforced by lint)
 
-Verifies expected interactions. Use the test runner's mock utilities.
+The entire `mock` namespace of `bun:test` is banned — `mock()`, `mock.module()`, `.toHaveBeenCalledWith`, `.toHaveBeenCalledTimes`. Enforced by `no-restricted-imports` in `eslint.config.js`:
+
+```js
+'no-restricted-imports': ['error', {
+  paths: [{
+    name: 'bun:test',
+    importNames: ['mock'],
+    message: 'Use fakes (in-memory implementations), hand-written spies, or the createXFromApi(api) two-constructor pattern for infra adapters. See references/testing.md.',
+  }],
+}],
+```
 
 ```ts
+// BANNED
 import { mock } from 'bun:test';
-
 const mockSave = mock(async (_user: User): Promise<void> => {});
-const repo: UserRepo = { save: mockSave, findById: async () => null };
-
-// after act
 expect(mockSave).toHaveBeenCalledWith(expectedUser);
+
+// BANNED (module substitution is process-global and leaks across test files)
+mock.module('googleapis', () => ({ google: { drive: () => fakeApi } }));
+
+// REQUIRED — fake the port for use-case tests
+const repo = createInMemoryUserRepo();
+await placeOrder(order, { repo });
+expect(await repo.count()).toBe(1);
+
+// REQUIRED — pass the API slice for infra adapter tests (see "Testing infra adapters")
+const api: DriveApi = { files: { copy: async () => ({ data: { id: 'X' } }), /* ... */ } };
+const drive = createDriveFromApi(api);
 ```
 
-### Fake
+Why the absolute ban:
 
-A working in-memory implementation.
+- **`mock.module` is process-global, not file-scoped.** Once set in any test file, every subsequent file the runner loads sees the substitution. This silently corrupted an unrelated `sleep.test.ts` in production use. There is no per-file restore; the leak is a feature of Bun's module cache.
+- **`mock()` leaks without `mock.restore()` discipline.** Easy to forget; leak detection is best-effort.
+- **Mocks test call sequences, not outcomes.** A mock passes when the right method is called with the right arguments — even if the production code does nothing useful afterwards. A fake passes only when the final state is correct, which is what the system is actually for.
+- **Mocks couple tests to implementation.** Rename a method, split a call into two, extract a helper: the mock expectations break even though behaviour is unchanged. The fake keeps passing because the observable state is the same.
+- **Mocks hide design pressure.** If you need a mock to test something, the contract is probably too fat (Interface Segregation), or the adapter is missing its `createXFromApi(api)` factory. Fix the design; do not reach for a mock.
 
-```ts
-export const createInMemoryUserRepo = (): UserRepo => {
-  const store = new Map<UserId, User>();
-  return {
-    save: async (user) => {
-      store.set(user.id, user);
-    },
-    findById: async (id) => store.get(id) ?? null,
-  };
-};
-```
-
-**Use fakes over mocks when possible.** A fake lets you assert on final state rather than call sequences, which is less brittle.
+`installFetchMock` (see "Testing infra adapters") and per-file `globalThis.setTimeout` swaps are **not** `mock.module` — they swap a global within a lifecycle hook (`afterEach`, `afterAll`) that always restores. The scope is bounded to the test file, not the process.
 
 ---
 
-## Testing strategies by layer
+## What goes where
 
-### Domain layer (most tests)
+### Unit tests — primary port as SUT (the default)
 
-Unit tests with no doubles. Test business rules, value objects, entities.
+Most tests. The SUT is a use case, command handler, or application service. The domain runs real; secondary ports are faked.
 
 ```ts
-describe('money', () => {
-  it('adds amounts with the same currency', () => {
-    const sum = addMoney(money(10, 'EUR'), money(20, 'EUR'));
-    expect(moneyEquals(sum, money(30, 'EUR'))).toBe(true);
+describe('placeOrder', () => {
+  it('when a premium customer buys a 100 EUR item, the order is saved with a 80 EUR total and a confirmation email is queued', async () => {
+    const orders = createInMemoryOrderRepo();
+    const emails = createEmailSpy();
+    const customer = customerId('c-1');
+    const customers = createInMemoryCustomerRepo({ [customer]: { tier: 'premium' } });
+
+    await placeOrder(
+      { customer, items: [{ sku: 'SKU-1', price: money(100, 'EUR') }] },
+      { orders, customers, emails }
+    );
+
+    const [saved] = await orders.findByCustomer(customer);
+    expect(saved.total).toEqual(money(80, 'EUR'));
+    expect(emails.sentTo).toContain(email('c-1@example.com'));
+  });
+});
+```
+
+### Value-object / domain-service tests (the exception)
+
+If a value object or a domain service has genuinely complex logic of its own — `Money.add` with currency rules, `PricingPolicy` with tier brackets, `DateRange.overlaps` — a handful of small direct tests is fine. They supplement the primary-port tests, they do not replace them. Keep them rare and only when the logic is non-trivial enough that discovering it through a use-case test would be confusing.
+
+```ts
+describe('Money.add', () => {
+  it('adds two amounts with the same currency', () => {
+    expect(addMoney(money(10, 'EUR'), money(20, 'EUR'))).toEqual(money(30, 'EUR'));
   });
 
-  it('throws when adding different currencies', () => {
+  it('refuses to add different currencies', () => {
     expect(() => addMoney(money(10, 'EUR'), money(10, 'USD'))).toThrow('CurrencyMismatch');
   });
 });
 ```
 
-### Application layer
+A rough signal: if you find yourself writing more direct value-object tests than primary-port tests, something is off. The use case is where the business value lives; that is where most tests should point.
 
-Integration tests with faked infrastructure. Test use-case orchestration.
+### Secondary-port integration tests
 
-```ts
-describe('placeOrder use-case', () => {
-  it('saves the order and sends confirmation', async () => {
-    const repo = createInMemoryOrderRepo();
-    const sender = createEmailSpy();
-    const order = buildOrder({ customerId: customerId('c-1') });
-
-    await placeOrder(order, { repo, sender });
-
-    expect(await repo.count()).toBe(1);
-    expect(sender.sentEmails.length).toBe(1);
-  });
-});
-```
-
-### Infrastructure layer
-
-Integration tests with real dependencies. Test database and API adapters.
+Integration tests prove the real adapter (Postgres, SendGrid, Redis) fulfils the contract its in-memory fake already satisfies. Run in a separate CI stage with real infrastructure.
 
 ```ts
 describe('postgresOrderRepo', () => {
@@ -284,14 +401,26 @@ describe('postgresOrderRepo', () => {
     repo = createPostgresOrderRepo(testDb);
   });
 
-  it('persists and retrieves an order', async () => {
-    const order = buildOrder({});
+  it('saves an order and finds it by customer', async () => {
+    const order = buildOrder({ customer: customerId('c-1'), total: money(80, 'EUR') });
     await repo.save(order);
-    const found = await repo.findById(order.id);
+    const [found] = await repo.findByCustomer(customer('c-1'));
     expect(found).toEqual(order);
   });
 });
 ```
+
+Pair these with contract tests (below) so the fake and the real adapter cannot drift.
+
+---
+
+## Testing infra adapters
+
+Infra adapters need their own playbook because their job is to translate a third-party library's contract into `Result<T, PortError>`. Three patterns cover every adapter shape (HTTP via `fetch`, external SDK, filesystem), plus a production-wiring smoke test and the silent-gotcha around fetch-mock handler ordering.
+
+See `references/testing-infra.md` for the full treatment with worked examples.
+
+---
 
 ---
 
@@ -370,7 +499,7 @@ const withItems = buildOrder({ items: [item({ sku: 'ABC', price: money(100, 'EUR
 | Mistake | Problem | Fix |
 |:---|:---|:---|
 | Testing implementation | Brittle tests | Test observable behaviour only |
-| Too many mocks | Tests prove nothing | Prefer fakes over mocks |
+| Using mocks | Tests prove call sequences instead of outcomes; break on refactor | Never use mocks — write a fake for the contract |
 | Shared state between tests | Flaky tests | Isolate each test (fresh fakes per test) |
 | No assertions | False confidence | Always assert something meaningful |
 | Testing trivial code | Wasted effort | Focus on logic, edge cases, boundaries |

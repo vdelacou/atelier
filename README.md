@@ -23,13 +23,16 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 | Area | Rule |
 |------|------|
 | Toolchain | Bun only — never `npm`, `pnpm`, `yarn`, `node`, or `vite` directly |
-| Language | `const` arrow functions, no `class`, no `function` declaration, no `interface` |
-| Typing | Branded types for every domain primitive (IDs, emails, money, dates, URLs) |
-| Logging | Winston logger — never `console.*` |
-| Tests | Strict TDD, Red-Green-Refactor, tests next to source, `bun test` |
-| Architecture | Vertical slices, dependency rule, function-type contracts |
+| Language | `const` arrow functions, no `class`, no `function` declaration, no `interface`, no curried arrow chains |
+| Typing | Branded types for every domain primitive; `Partial<Record<K, V>>` when the key set is open |
+| Architecture | Clean Architecture: `src/{domain,use-cases,infra,presenter,composition,test-helpers}`, dependency rule inward-only |
+| Logging | Logger is a **port** (`src/use-cases/ports/logger.ts`), Winston adapter in `src/infra/`, fake in `src/test-helpers/`. Never `console.*` |
+| Tests | Outside-in classicist TDD — SUT is the primary port, domain runs real, only secondary ports are faked, never mocks |
+| Error handling | Every IO port returns `Result<T, PortError>` with a discriminated-union error; use-cases return `Result<Summary, StepError>`; `try/catch` quarantined to `infra/`, `main.ts`, and pure-domain native-API fallbacks |
 | Design | SOLID expressed through typed records and arrow functions, object calisthenics |
 | Complexity | YAGNI, KISS, DRY after Rule of Three, Tell-Don't-Ask, Law of Demeter |
+| Toolchain discipline | `bun run lint` must be 0 errors AND 0 warnings; no inline ignores of any tool ever; inner-loop checks (`bun test` + `lint` + `typecheck` + `coverage`) after every change; coverage gates 100% on `domain` + `use-cases`, 80% on `composition` + `infra` + `presenter`; Stryker mutation testing with ≥90% break threshold; no `"latest"` or `"*"` in `package.json` (use `bun add` / `bun update`); eight-gate pre-commit hook (commit-size ≤10 files / ≤300 lines, package.json check, gitleaks `protect --staged`, tests, lint:strict, typecheck, coverage, mutate:staged) |
+| Security | Source-to-sink threat model, branded types at trust boundaries (`SafeUrl`, `SanitizedHtml`, `EnvVar`, `SafePath`), strict false-positive filter when reviewing |
 | Memory | Append-only `.claude/LESSONS.md` and `.claude/lessons.local.md` across sessions |
 
 **Reference documentation included:**
@@ -44,17 +47,82 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 - `lessons.md` — session memory format, triggers, extraction heuristics, worked examples
 - `nextjs-monorepo.md` — Next.js 16 + Atomic Design + Tailwind v4 + i18n route groups
 - `object-design.md` — responsibility-driven design, stereotypes, tell-don't-ask, value objects vs entities, aggregates
+- `result-type.md` — `Result<T, E>` and helpers, per-port discriminated-union errors, `StepError` aggregation, `try/catch` quarantine, fan-out batch semantics, `retryOnErr`, fakes-with-error-injection, `captureRejection` helper
+- `security.md` — source-to-sink threat model, vulnerability categories for Bun/TypeScript + Next.js, branded types for trust boundaries, pre-merge checklist, adopted false-positive filter
 - `solid-principles.md` — SRP, OCP, LSP, ISP, DIP expressed as typed records and function contracts
-- `tdd.md` — Red-Green-Refactor, Three Laws, triangulation, transformation priority
-- `testing.md` — testing pyramid, AAA, test doubles, test builders, contract tests
+- `tdd.md` — Outside-in classicist TDD (Ian Cooper), primary-port SUT, real-domain + faked-secondary-ports rule, Red-Green-Refactor, Three Laws, triangulation
+- `testing.md` — primary-port unit tests, fakes with `errors` knob, batch-use-case semantics, test doubles catalogue, test builders, contract tests
+- `testing-infra.md` — three patterns for infra-adapter tests (custom-fetch DI / two-constructor / sync-builder export), production-wiring smoke test, `installFetchMock`, global-swap pattern, FS chmod tricks, ordering gotchas
+- `workflow.md` — four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, pre-commit hook, README consistency check
 
 ## Installation
 
+### 1. Install the skill (one-time, per machine)
+
+Drop the skill into Claude Code's user-level skills directory:
+
 ```bash
-npx skills add vdelacou/atelier
+git clone --depth 1 https://github.com/vdelacou/atelier.git /tmp/atelier
+mkdir -p ~/.claude/skills
+cp -r /tmp/atelier/skills/atelier ~/.claude/skills/atelier
+rm -rf /tmp/atelier
 ```
 
-The skill becomes available automatically in Claude Code the next time the agent looks at your repo.
+To track upstream changes instead, clone once and symlink:
+
+```bash
+git clone https://github.com/vdelacou/atelier.git ~/code/atelier
+mkdir -p ~/.claude/skills
+ln -s ~/code/atelier/skills/atelier ~/.claude/skills/atelier
+```
+
+The skill becomes available automatically in Claude Code the next time the agent looks at your repo. Verify it's loaded by asking Claude `/skills` (or any equivalent in your client).
+
+### 2. Install the gate scripts (per Bun/TypeScript repo)
+
+The skill ships executable assets in [`skills/atelier/assets/`](skills/atelier/assets/). They are not auto-installed — copy the ones you want into the target repo's `scripts/` directory and wire the pre-commit hook:
+
+```bash
+SKILL=~/.claude/skills/atelier   # or wherever you cloned the skill
+
+# Copy the gate scripts into your repo
+mkdir -p scripts .githooks
+cp $SKILL/assets/check-commit-size.sh   scripts/
+cp $SKILL/assets/check-package-json.sh  scripts/
+cp $SKILL/assets/check-coverage.ts      scripts/
+cp $SKILL/assets/coverage-preload.ts    scripts/
+cp $SKILL/assets/mutate-staged.sh       scripts/
+cp $SKILL/assets/mutate-changed.sh      scripts/
+cp $SKILL/assets/stryker.conf.json      ./
+
+# Test helpers (copy into src/test-helpers/)
+mkdir -p src/test-helpers
+cp $SKILL/assets/fetch-mock.ts          src/test-helpers/
+cp $SKILL/assets/format-error.ts        src/test-helpers/
+cp $SKILL/assets/capture-rejection.ts   src/test-helpers/
+
+# Install the pre-commit hook
+cp $SKILL/assets/pre-commit             .githooks/pre-commit
+chmod +x .githooks/pre-commit scripts/*.sh scripts/check-coverage.ts
+git config core.hooksPath .githooks
+```
+
+Add the matching scripts to `package.json`:
+
+```jsonc
+{
+  "scripts": {
+    "lint":           "eslint .",
+    "lint:strict":    "eslint . --max-warnings=0",
+    "typecheck":      "tsc --noEmit",
+    "coverage":       "bun run scripts/check-coverage.ts",
+    "mutate:staged":  "bash scripts/mutate-staged.sh",
+    "mutate:changed": "bash scripts/mutate-changed.sh"
+  }
+}
+```
+
+Optional: install `gitleaks` (`brew install gitleaks`) for the secret-scan gate. The hook degrades gracefully if it's missing.
 
 ## Usage
 
@@ -82,6 +150,18 @@ atelier/
 └── skills/
     └── atelier/
         ├── SKILL.md           # Main skill instructions
+        ├── assets/            # Copyable artefacts — drop into a fresh repo verbatim
+        │   ├── capture-rejection.ts   # rejection-assertion helper (SonarJS S4123)
+        │   ├── check-commit-size.sh   # block commits over 10 files / 300 lines (gate 1)
+        │   ├── check-coverage.ts      # per-tier coverage gate (gate 7)
+        │   ├── check-package-json.sh  # block "latest" / "*" version strings (gate 2)
+        │   ├── coverage-preload.ts    # makes untested infra visible in the coverage table
+        │   ├── fetch-mock.ts          # installFetchMock for infra adapter tests
+        │   ├── format-error.ts        # safe catch-block formatter (SonarJS S6551)
+        │   ├── mutate-changed.sh      # Stryker mutation on files changed vs origin/main
+        │   ├── mutate-staged.sh       # Stryker mutation on staged files (gate 8)
+        │   ├── pre-commit             # git pre-commit hook running 8 gates
+        │   └── stryker.conf.json      # Stryker config (mutation scope, 90% break threshold)
         └── references/        # Supporting documentation
             ├── architecture.md
             ├── bun-typescript.md
@@ -93,9 +173,13 @@ atelier/
             ├── lessons.md
             ├── nextjs-monorepo.md
             ├── object-design.md
+            ├── result-type.md
+            ├── security.md
             ├── solid-principles.md
             ├── tdd.md
-            └── testing.md
+            ├── testing.md
+            ├── testing-infra.md
+            └── workflow.md
 ```
 
 ## Variant references
@@ -107,7 +191,7 @@ The skill covers two repo shapes and picks the right reference automatically:
 
 ## Credits
 
-Inspired by the layout of [ramziddin/solid-skills](https://github.com/ramziddin/solid-skills). The engineering substance encodes patterns from Clean Code (Robert C. Martin), Test-Driven Development (Kent Beck), Domain-Driven Design (Eric Evans), and Refactoring (Martin Fowler), adapted to a class-free Bun/TypeScript codebase.
+Inspired by the layout of [ramziddin/solid-skills](https://github.com/ramziddin/solid-skills). The engineering substance encodes patterns from Clean Code (Robert C. Martin), Test-Driven Development (Kent Beck), Domain-Driven Design (Eric Evans), and Refactoring (Martin Fowler), adapted to a class-free Bun/TypeScript codebase. The security reference and its false-positive filter are adapted with credit from [anthropics/claude-code-security-review](https://github.com/anthropics/claude-code-security-review).
 
 ## License
 

@@ -136,19 +136,81 @@ it('should set the data property to 1', () => { /* ... */ });
 it('should recognise "mom" as a palindrome', () => { /* ... */ });
 ```
 
-## Classic vs Mockist TDD
+## Outside-in classicist TDD
 
-**Classic (Detroit/Chicago) TDD.**
-- Test with real collaborators.
-- Higher confidence, slower tests.
-- Best for pure functions, value objects, integration tests.
+Inspired by Ian Cooper's talk *TDD, Where Did It All Go Wrong?* (and the classic Detroit/Chicago school that predates it).
 
-**Mockist (London) TDD.**
-- Replace collaborators with test doubles.
-- Faster tests, more isolated.
-- Best for modules with infrastructure dependencies.
+The school we follow has three rules. Each one is a direct response to a pattern of test pain that the industry has learned the hard way.
 
-Start Classic when learning. Add doubles (stubs, fakes, spies) when testing modules that depend on databases, APIs, clocks.
+### 1. The SUT is the primary port
+
+Tests target the **primary port** — the use case, command handler, or application service at the hexagonal boundary. Never an individual entity, value object, or domain service.
+
+```ts
+// BAD - testing the entity directly
+describe('Order entity', () => {
+  it('getDiscount returns 20 when tier is premium', () => {
+    const order = createOrder(orderId('ord-1'), 'premium');
+    expect(getDiscount(order)).toBe(20);
+  });
+});
+
+// GOOD - testing the primary port; the entity is used, not tested
+describe('placeOrder use-case', () => {
+  it('when a premium customer buys 100 EUR, the order total is 80 EUR', async () => {
+    const orders = createInMemoryOrderRepo();
+    const customer = customerId('c-1');
+    await placeOrder(
+      { customer, items: [{ sku: 'SKU-1', price: money(100, 'EUR') }] },
+      { orders, customers: createInMemoryCustomerRepo({ [customer]: { tier: 'premium' } }) }
+    );
+    const saved = await orders.findByCustomer(customer);
+    expect(saved[0].total).toEqual(money(80, 'EUR'));
+  });
+});
+```
+
+### 2. Domain collaborators are real; only secondary ports get fakes
+
+| Kind | Role | Treatment in tests |
+|:---|:---|:---|
+| Entity | `Order`, `User`, `Subscription` | Real |
+| Value object | `Money`, `Email`, `OrderId` | Real |
+| Domain service | `pricingRules`, `discountPolicy` | Real |
+| Aggregate root | `Order`, `Cart` | Real |
+| Primary port | `placeOrder`, `registerUser`, `checkoutCart` | **The SUT** |
+| Secondary port | `OrderRepo`, `EmailSender`, `Clock`, `TokenDecoder`, `PaymentGateway` | **Faked** (hand-written in-memory) |
+
+The secondary ports are the ones that talk to the outside world — databases, HTTP, the clock, the filesystem, random sources. They are the only things that need a double. Everything else runs for real inside the test.
+
+This is the single most important property of the school: **the domain can be refactored freely.** Rename an entity, split a domain service into two, merge three value objects, change the shape of an aggregate, extract a helper, inline a helper — tests keep passing because they describe behaviour at the port, not structure inside.
+
+### 3. No mocks, ever
+
+Never import from the `mock` namespace of `bun:test` — `mock()`, `mock.module()`, `.toHaveBeenCalled*`. The entire namespace is banned and enforced by `no-restricted-imports`. Write a fake (a working in-memory implementation of the secondary-port contract) and assert on its final state. For infra adapters wrapping external SDKs, expose the two-constructor pattern (`createX` + `createXFromApi`) instead — see `references/testing.md`.
+
+```ts
+// BANNED - verifies call sequence, not outcome
+const save = mock(async (_o: Order): Promise<void> => {});
+const repo: OrderRepo = { save, findById: async () => null };
+await placeOrder(input, { orders: repo });
+expect(save).toHaveBeenCalledWith(expectedOrder);
+
+// REQUIRED - verifies outcome, survives refactors
+const orders = createInMemoryOrderRepo();
+await placeOrder(input, { orders });
+const [saved] = await orders.all();
+expect(saved.total).toEqual(money(80, 'EUR'));
+```
+
+Mocks pin the test to the sequence of internal calls; the test breaks on every innocent refactor and stops proving that behaviour is correct. See `references/testing.md` for the full rationale and the permitted test-double shapes (dummy, stub, fake, hand-written spy).
+
+### What this buys
+
+- **Freedom to refactor the domain.** Internal restructurings do not break tests. Tests describe the port's behaviour; the port's behaviour is what stays stable.
+- **Tests that survive for years.** Business scenarios are stable; code that implements them changes constantly.
+- **Tests that read as specifications.** Every test name is a complete business scenario. A new team member learns the product by reading test titles.
+- **Design pressure on the right boundary.** When a test is hard to write, it is telling you the primary port's contract is wrong — not that the entity needs a helper method.
 
 ## TDD for a pure arrow-function module
 
@@ -222,5 +284,5 @@ This is what "design happens during refactor" looks like.
 5. Testing implementation. Test behaviour, not how it is done.
 6. Abstract test names. Use concrete examples.
 7. Extracting too early. Wait for Rule of Three.
-8. Reaching for doubles too soon. Start with real collaborators.
+8. Reaching for doubles too soon. Start with real collaborators. If a double is needed, write a fake — never a mock.
 9. Asserting on multiple unrelated behaviours in one test. One behaviour per test.

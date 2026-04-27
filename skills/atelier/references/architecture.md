@@ -107,7 +107,7 @@ export type PaymentGateway = {
 // Multiple implementations possible
 export const stripeGateway: PaymentGateway = { /* ... */ };
 export const payPalGateway: PaymentGateway = { /* ... */ };
-export const mockGateway: PaymentGateway = { /* ... */ }; // for tests
+export const fakeGateway: PaymentGateway = { /* ... */ }; // in-memory fake for tests
 ```
 
 ### 5. Cross-cutting concerns
@@ -221,35 +221,134 @@ See `references/nextjs-monorepo.md` for the full layout and rules.
 
 ---
 
-## Feature-driven structure (backend)
+## Clean Architecture layout (backend, canonical)
 
-Aligns with the Bun-script variant:
+For any non-trivial Bun backend — pipelines, batch jobs, CLIs with real integrations — use this strict six-folder layout. Files land where they belong based on what they depend on, not on which feature they serve.
 
 ```
 src/
-  users/
-    domain/
-      user.ts                 | type + transforms
-      user-repo.ts            | function-type contract
-    application/
-      create-user.ts          | use case
-      get-user.ts             | use case
-    infrastructure/
-      postgres-user-repo.ts
-    presentation/
-      user-controller.ts
-      user-dto.ts
-  orders/
-    domain/
-    application/
-    infrastructure/
-    presentation/
-  shared/
-    domain/                   | shared value objects (Money, Email, etc.)
-    infrastructure/           | shared infra utilities
+├── domain/                     # branded value objects, Zod schemas, pure utilities, FlowConfig builder
+│   ├── ids.ts                  #   branded IDs (UserId, OrderId, ...)
+│   ├── urls.ts                 #   SafeUrl, canonicalUrl helpers
+│   ├── schemas/                #   Zod shape definitions (no IO)
+│   ├── utilities/              #   split-text, retry-on-err, rss-parser, format-error
+│   ├── result.ts               #   Result<T, E> + helpers
+│   └── flow.ts                 #   pure FlowConfig builder
+├── use-cases/                  # coordinators + the port interfaces they depend on
+│   ├── ports/                  #   type-only interfaces for every side-effectful dependency
+│   │   ├── sheets.ts
+│   │   ├── llm.ts
+│   │   ├── telegram.ts
+│   │   ├── rss-fetcher.ts
+│   │   ├── prompt-loader.ts
+│   │   ├── logger.ts
+│   │   └── step-error.ts
+│   ├── select-news.ts
+│   ├── post-telegram.ts
+│   └── run-pipeline.ts
+├── infra/                      # concrete adapters that implement the ports
+│   ├── google-auth.ts
+│   ├── sheets-google.ts
+│   ├── gemini-llm.ts
+│   ├── telegram-http.ts
+│   ├── rss-fetcher-http.ts
+│   ├── prompt-loader-fs.ts
+│   └── logger.ts
+├── presenter/                  # CLI argv parsing, usage text, output formatting
+│   └── cli.ts
+├── composition/                # the composition root: env parser + buildPipelineDeps
+│   ├── env.ts
+│   └── build-deps.ts           #   the ONLY place infra/ meets use-cases/
+├── test-helpers/               # in-memory fakes for every port + test data builders
+│   ├── sheets-fake.ts
+│   ├── llm-fake.ts
+│   ├── telegram-fake.ts
+│   ├── logger-fake.ts
+│   ├── capture-rejection.ts
+│   └── test-flow.ts
+└── main.ts                     # thin entry: argv → presenter → composition → use-case
 ```
 
-See `references/bun-typescript.md` for the canonical Bun-script layout.
+### Dependency rule (strict, inward-only)
+
+| Folder | Depends on |
+|:---|:---|
+| `domain/` | nothing inside `src/` |
+| `use-cases/` | `domain/` + its own `ports/` (types only) |
+| `infra/` | `domain/` + the ports it implements + third-party SDKs |
+| `presenter/` | `domain/` only |
+| `composition/` | everything (this is the only place where concrete `infra/` meets use-case deps) |
+| `test-helpers/` | `domain/` + ports (no production code depends on test-helpers) |
+| `main.ts` | `composition/` + `presenter/` + `infra/` (for top-level error notification only) |
+
+Invariants the layout protects:
+
+- The domain is zero-dependency on anything in `src/` except shared `domain/*`. `grep -rn "from '.*infra" src/domain src/use-cases` must return nothing.
+- Ports are type-only modules: they declare interfaces, never implementations.
+- The composition root is the only place where you may import both an adapter and a use-case.
+- Tests instantiate fakes; no production code imports from `test-helpers/`.
+
+### Adding a new external service
+
+1. Define the port under `src/use-cases/ports/<service>.ts` — type only, returns `Promise<Result<T, <Service>Error>>` where the error is a discriminated union.
+2. Create the in-memory fake under `src/test-helpers/<service>-fake.ts` with an optional `errors` config so tests can inject `err(...)`.
+3. Implement the real adapter under `src/infra/<service>-<protocol>.ts` (e.g. `sheets-google.ts`, `tmdb-http.ts`). The adapter is the only place `try/catch` wraps the SDK call.
+4. Wire it into `PipelineDeps` and `src/composition/build-deps.ts`.
+5. Write use-case tests that inject the fake and pattern-match on `Result.ok`.
+
+### Framework vs configuration
+
+Domain-specific data — brand lists, tenant slugs, feature flags, tier-discount rates, per-environment API endpoints — is **configuration**, not framework code. It lives in env vars, JSON files, or an external source loaded at runtime. The framework code never contains string-literal unions of brand slugs, hardcoded record maps of brands, or `if (brand === 'acme') ...` branches.
+
+Signal: if a new tenant requires editing a union type or a switch statement, the code is fused with the data. Refactor to drive the behaviour from config.
+
+### Composition root testability (no skip lists)
+
+`src/composition/build-deps.ts` is **not** a coverage-skip. It is fully unit-testable when two ergonomic switches are in place:
+
+1. Every "where do I read state from" point — file path, env var, system clock, random source — is parameterisable.
+2. Every "what do I write to / log to" sink can be injected as a port (Logger, EmailSender, Clock).
+
+The pattern is an optional `BuildDepsConfig` argument with sensible defaults that preserve production behaviour:
+
+```ts
+// src/composition/build-deps.ts
+export type BuildDepsConfig = {
+  readonly tokenStorePath?: string;
+  readonly logger?: Logger;
+};
+
+export const buildPipelineDeps = async (
+  env: Env,
+  config: BuildDepsConfig = {}
+): Promise<PipelineDeps> => {
+  const logger = config.logger ?? createWinstonLogger();
+  const tokenStore = createTokenStoreFs({ path: config.tokenStorePath ?? '.tokens.json' });
+  // ... rest unchanged
+};
+```
+
+Production callers (just `src/main.ts`) call `buildPipelineDeps(env)` with no second argument; behaviour is identical. Tests pass `{ tokenStorePath: tmpDir + '/tokens.json', logger: createLoggerFake() }`. With the token store empty and `staleAfterMs` set so refresh paths short-circuit, end-to-end execution is offline and the wiring covers itself.
+
+Also export the otherwise-private helpers (`overlayToken`, `buildEnrichmentPlugin`, etc.) so individual branches can be tested in isolation rather than only through the composed `buildPipelineDeps` call.
+
+The earlier policy that left `build-deps.ts` in the coverage skip list as "verified live, not via units" was hedging. With the two switches above, the file goes from "skipped" to 100%. The same logic applies to any composition or wiring file that feels untestable: parameterise the inputs, inject the outputs, and the test seam appears.
+
+## Feature-driven structure (simpler alternative, for small scripts)
+
+For throwaway scripts, one-off CLIs, or pre-pipeline prototypes, a simpler feature-first layout is fine. Skip the port/adapter split until the repo genuinely needs it.
+
+```
+src/
+  <feature>/
+    domain.ts
+    use-case.ts
+    infra.ts
+  utils/
+    logger.ts
+```
+
+Graduate to the Clean Architecture layout above when: the script gains a second external service, needs tests with fakes, or grows past ~500 lines. See `references/bun-typescript.md` for the small-script tsconfig / eslint setup.
 
 ---
 

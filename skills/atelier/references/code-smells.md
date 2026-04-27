@@ -94,7 +94,7 @@ export const processOrder = async (order: Order, deps: ProcessOrderDeps): Promis
 
 ```ts
 // SMELL - god module
-// src/user/index.ts
+// src/domain/user.ts
 export const createUser = () => { /* ... */ };
 export const login = () => { /* ... */ };
 export const logout = () => { /* ... */ };
@@ -106,12 +106,12 @@ export const sendSms = () => { /* ... */ };
 export const charge = () => { /* ... */ };
 export const refund = () => { /* ... */ };
 
-// REFACTORED - split by responsibility
-// src/user/user.ts         - createUser, updateUser
-// src/auth/auth.ts         - login, logout, resetPassword
-// src/preferences/         - setTheme, setLanguage
-// src/notifications/       - sendEmail, sendSms
-// src/billing/             - charge, refund
+// REFACTORED - split by responsibility, fitted to the Clean Architecture layout
+// src/domain/user.ts                    - createUser, updateUser
+// src/use-cases/auth/login.ts           - login, logout, resetPassword (with port deps)
+// src/domain/preferences.ts             - setTheme, setLanguage
+// src/use-cases/notifications/send.ts   - sendEmail, sendSms (port deps)
+// src/use-cases/billing/charge.ts       - charge, refund (port deps)
 ```
 
 ### 3. Feature envy
