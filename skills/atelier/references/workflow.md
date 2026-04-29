@@ -53,6 +53,56 @@ Before adding a rule to the `'off'` list, both of these must be true:
 
 Never disable a rule globally just to silence a single test, a single commit, or a single file. If the fire is localised, the right tool is a narrower `files:` scope in the ESLint config (disable the rule for `**/*.test.ts` only, for example) — still at the project level, still with a comment, never inline.
 
+## Keeping `coverage-preload.ts` in sync (auto-regeneration)
+
+`scripts/coverage-preload.ts` lists every file in `src/{infra,composition,presenter}/` so the coverage table can include them at 0% if untested. Keeping this file in sync by hand is tedious and the failure mode is silent — a missing import means the new file never appears in the coverage report and the gate trivially passes.
+
+Two scripts handle this. Both ship in the skill at `assets/`:
+
+| Script | Job |
+|---|---|
+| `assets/coverage-preload.ts` | Reference template; not used directly when the auto-regenerate flow is wired up |
+| `assets/regenerate-coverage-preload.ts` | Walks `src/{infra,composition,presenter}/`, excludes `*.test.ts` / `ports/` / `index.ts`, writes a fresh `scripts/coverage-preload.ts` |
+
+**Two modes:**
+
+```bash
+# Write a fresh preload from the current src/ tree.
+bun run scripts/regenerate-coverage-preload.ts
+
+# Exit non-zero if the on-disk file is out of sync — for pre-commit / CI.
+bun run scripts/regenerate-coverage-preload.ts --check
+```
+
+**Optional: wire `--check` into pre-commit as a pre-flight check** before the eight numbered gates. It's <100 ms and an out-of-sync preload silently lies about coverage:
+
+```bash
+# In .githooks/pre-commit (or assets/pre-commit), before "[1/8] commit size":
+echo "pre-flight: coverage-preload sync" >&2
+bun run scripts/regenerate-coverage-preload.ts --check
+```
+
+The pre-flight check is **not part of the eight numbered gates** — those stay 1..8 to keep the branding stable. The pre-flight is "you forgot to regenerate after adding a new file"; treat it like a typo check, not a quality gate.
+
+Then the workflow becomes: add a new file under `src/infra/`, run `bun run scripts/regenerate-coverage-preload.ts`, stage both files together, commit. The `--check` invocation catches any forgotten regeneration before it merges. CI can run the same `--check` as a separate job.
+
+## SDK-bridge lines: how coverage handles unreachable wiring
+
+Some lines in `src/infra/**` exist solely to bridge to a third-party SDK and are structurally unreachable without launching the SDK for real. Concretely:
+
+- `await import('playwright')` inside a closure that the smoke test never actually triggers
+- `google.drive({ version: 'v3', auth })` — instantiates a real Google client; can't be exercised without real credentials
+- `new MongoClient(url)` — opens a real driver
+- A `process.on('SIGTERM', ...)` handler that the test runner never sends
+
+These lines are covered by the **production-wiring smoke test** described in `references/testing-infra.md` whenever possible — the smoke test calls `createX(realDeps)` with a placeholder, which exercises the wiring line and asserts the resulting port has the right method shape.
+
+When even the smoke test cannot reach a line (a closure inside a method that requires real SDK behaviour to enter), accept it as exempt. The 80% gate on `src/infra/**` is calibrated for this; a single adapter at 88-95% line coverage with the rest of the file fully tested is healthy.
+
+**Rule of thumb.** Lines that exist solely to bridge into a third-party SDK (dynamic imports inside a closure, real-factory pass-throughs, SDK-instantiation one-liners) are exempt from line-coverage when the file's other paths bring it above the per-tier gate. Do not lower the gate; do not add a per-file skip in `bunfig.toml`. Just accept that the bridge line is the cost of doing business with the SDK and the gate is permissive enough to absorb it.
+
+If a single file is dragged below the 80% gate by SDK-bridge lines alone, the right move is usually to refactor — split the bridge into a thinner `createX(realSdk)` that only does the instantiation, and a fatter `createXFromApi(api)` that holds all the logic. Then the bridge file is one or two lines (still uncovered, but tiny) and the logic file is fully tested.
+
 ## Coverage gates (per-tier, enforced by custom script)
 
 Bun's built-in `coverageThreshold` is a single global number. It cannot express "100% on the domain, 80% on infra, skipped on test-helpers". The repo enforces per-tier rules via `scripts/check-coverage.ts`, which runs `bun test --coverage`, parses the text report, and applies path-prefix rules.
@@ -243,7 +293,7 @@ The hook is the safety net for the entire workflow. It runs **eight gates** in c
 | 7 | `bun run coverage` | per-tier thresholds pass | seconds |
 | 8 | `bun run mutate:staged` | ≥90% mutation score on staged domain/use-case files | 1–3 min per staged file |
 
-A ready-to-copy script lives in the skill at `assets/pre-commit`. The companion scripts (`check-commit-size.sh`, `check-package-json.sh`, `mutate-staged.sh`, `mutate-changed.sh`) live alongside it.
+A ready-to-copy script lives in the skill at `assets/pre-commit`. The companion scripts (`check-commit-size.sh`, `check-package-json.sh`, `mutate-staged.sh`, `mutate-changed.sh`, `regenerate-coverage-preload.ts`) live alongside it.
 
 ### Install once per clone
 
@@ -252,11 +302,15 @@ mkdir -p .githooks scripts
 cp <skill>/assets/pre-commit .githooks/pre-commit
 cp <skill>/assets/check-commit-size.sh scripts/check-commit-size.sh
 cp <skill>/assets/check-package-json.sh scripts/check-package-json.sh
+cp <skill>/assets/check-coverage.ts scripts/check-coverage.ts
+cp <skill>/assets/regenerate-coverage-preload.ts scripts/regenerate-coverage-preload.ts
 cp <skill>/assets/mutate-staged.sh scripts/mutate-staged.sh
 cp <skill>/assets/mutate-changed.sh scripts/mutate-changed.sh
 cp <skill>/assets/stryker.conf.json stryker.conf.json
-chmod +x .githooks/pre-commit scripts/*.sh
+chmod +x .githooks/pre-commit scripts/*.sh scripts/check-coverage.ts scripts/regenerate-coverage-preload.ts
 git config core.hooksPath .githooks
+# Generate the initial coverage-preload.ts from the current src/ tree
+bun run scripts/regenerate-coverage-preload.ts
 ```
 
 Add to `package.json`:

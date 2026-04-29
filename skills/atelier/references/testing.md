@@ -389,6 +389,63 @@ describe('Money.add', () => {
 
 A rough signal: if you find yourself writing more direct value-object tests than primary-port tests, something is off. The use case is where the business value lives; that is where most tests should point.
 
+### Branded types and `expect(...).toBe(raw)` — the test escape hatch
+
+Bun's `expect(x).toBe(y)` matcher infers `y`'s type from `x`. When `x` has a branded type, `y` must be the same brand or TypeScript fails:
+
+```ts
+const tok = accessToken('eyJ...'); // accessToken: (s: string) => AccessToken
+expect(tok).toBe('eyJ...');
+//             ^^^^^^^^ Argument of type 'string' is not assignable to 'AccessToken'.
+```
+
+Three options. Use the third.
+
+1. ❌ `as` the raw string — assertions are forbidden everywhere else, do not start in tests.
+2. ❌ Run the value through the real factory in the assertion (`expect(tok).toBe(accessToken('eyJ...'))`) — works, but the factory may have side effects (logging, parsing) that you don't want in a hot test loop.
+3. ✅ **Export an `xxxUnsafe(raw): X` helper next to the factory. Use it only in tests.**
+
+```ts
+// src/domain/access-token.ts
+export type AccessToken = string & { readonly __brand: 'AccessToken' };
+
+export const accessToken = (value: string): AccessToken => {
+  if (value.length === 0) throw new Error('AccessToken: empty');
+  return value as AccessToken;
+};
+
+// Test escape hatch — bypasses validation. Naming convention: <factory>Unsafe.
+// Production code MUST NOT import this; the only callers are *.test.ts files.
+export const accessTokenUnsafe = (value: string): AccessToken => value as AccessToken;
+```
+
+```ts
+// access-token.test.ts
+import { accessToken, accessTokenUnsafe } from './access-token.ts';
+
+it('round-trips through the factory', () => {
+  expect(accessToken('eyJ...')).toBe(accessTokenUnsafe('eyJ...')); // both sides are AccessToken
+});
+```
+
+**Naming convention.** `<factoryName>Unsafe` — `accessTokenUnsafe`, `envVarUnsafe`, `userIdUnsafe`, `safeUrlUnsafe`. The `Unsafe` suffix tells the next reader (and the next grep) exactly what they're looking at: a brand cast without validation, for tests only.
+
+**Boundary.** Production code must not import any `*Unsafe` helper. A simple lint rule (or a periodic grep) keeps it honest:
+
+```js
+// eslint.config.js
+{
+  files: ['src/**/!(*.test).ts'],
+  rules: {
+    'no-restricted-imports': ['error', {
+      patterns: [{ group: ['*'], importNames: ['/Unsafe$/'], message: '*Unsafe helpers are test-only' }],
+    }],
+  },
+}
+```
+
+(ESLint's `importNames` doesn't accept regex directly; in practice the rule is enforced by review or by a small custom rule. The convention is the load-bearing part.)
+
 ### Secondary-port integration tests
 
 Integration tests prove the real adapter (Postgres, SendGrid, Redis) fulfils the contract its in-memory fake already satisfies. Run in a separate CI stage with real infrastructure.

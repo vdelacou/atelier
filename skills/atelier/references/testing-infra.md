@@ -219,6 +219,79 @@ describe('driveGoogle.copy', () => {
 
 If strict lint flags the `as unknown as XApi` cast as unnecessary, the SDK's real type structurally matched the slice — drop the cast. Keep it only when the compiler genuinely needs it.
 
+### Anti-pattern: `XApi` shaped like the port
+
+The two-constructor pattern only buys testability when `XApi` slices the **SDK's** surface. If `XApi` is shaped like the **port**, the seam is in the wrong place and `createX` stays untestable.
+
+**Bad — `BrowserAuthApi` is a clone of the port:**
+
+```ts
+// src/infra/browser-auth.ts
+export type BrowserAuthApi = {
+  readonly acquireToken: (scopes: ReadonlyArray<string>) => Promise<string>;
+  readonly close: () => Promise<void>;
+};
+
+export const createBrowserAuthFromApi = (api: BrowserAuthApi): BrowserAuth => ({
+  acquire: async (scopes) => {
+    try { return ok({ token: await api.acquireToken(scopes) }); }
+    catch (e) { return err({ kind: 'acquire-failed', message: formatError(e) }); }
+  },
+  close: api.close,
+});
+
+// What does createBrowserAuth(realDeps) actually look like?
+// It has to call Playwright — but BrowserAuthApi doesn't say HOW.
+// All the real logic (launchPersistentContext, polling for the auth callback,
+// extracting the cookie) lives inside createBrowserAuth and isn't reachable
+// from createBrowserAuthFromApi at all.
+```
+
+`createBrowserAuthFromApi` is a tautological pass-through. The test you can write against it proves nothing, and the production wiring stays a black box.
+
+**Good — `PlaywrightApi` slices the SDK's real surface:**
+
+```ts
+// src/infra/browser-auth.ts
+export type PlaywrightApi = {
+  readonly launchPersistentContext: (
+    userDataDir: string,
+    options: { readonly headless: boolean }
+  ) => Promise<{
+    readonly newPage: () => Promise<{
+      readonly goto: (url: string) => Promise<void>;
+      readonly waitForURL: (pattern: RegExp, options: { readonly timeout: number }) => Promise<void>;
+      readonly url: () => string;
+    }>;
+    readonly cookies: () => Promise<ReadonlyArray<{ readonly name: string; readonly value: string }>>;
+    readonly close: () => Promise<void>;
+  }>;
+};
+
+export const createBrowserAuthFromApi = (api: PlaywrightApi, config: BrowserAuthConfig): BrowserAuth => ({
+  acquire: async (scopes) => {
+    try {
+      const ctx = await api.launchPersistentContext(config.userDataDir, { headless: false });
+      const page = await ctx.newPage();
+      await page.goto(buildAuthUrl(scopes));
+      await page.waitForURL(/code=/, { timeout: config.navigationTimeoutMs });
+      const cookies = await ctx.cookies();
+      return ok({ token: extractTokenFromCookies(cookies) });
+    } catch (e) {
+      return err({ kind: 'acquire-failed', message: formatError(e) });
+    }
+  },
+  // ...
+});
+
+export const createBrowserAuth = (config: BrowserAuthConfig): BrowserAuth =>
+  createBrowserAuthFromApi(playwright.chromium as unknown as PlaywrightApi, config);
+```
+
+Now the test passes a fake `PlaywrightApi` that returns a stub `ctx` with stub pages and stub cookies — and the **real** orchestration logic inside `createBrowserAuthFromApi` (build URL, wait for redirect, extract token) is exercised. `createBrowserAuth` becomes the genuine one-line wiring it should be, covered by the production-wiring smoke test below.
+
+**The diagnostic.** Look at your `XApi` and your port side-by-side. If the method names are nearly identical and the parameter shapes match 1:1, you've made a port clone. The right slice usually has SDK-flavoured names (`launchPersistentContext`, `files.copy`, `chat.completions.create`) and SDK-flavoured option bags — because that's what the production code actually calls.
+
 ### 2c. Sync constructor → export the private builder
 
 Some SDKs are sync constructors that return an object whose methods you call later (`new TwitterApi(creds).v1.tweet(...)`, `new MongoClient(url).db(...)`). Slicing is awkward because the real object shape is used throughout the adapter. Instead, export the otherwise-private builder factory so the test can invoke it directly with placeholder credentials. The constructor itself is offline; no network IO happens until a method is called.
@@ -256,7 +329,7 @@ The constructor runs — the wiring line executes and covers — but no network 
 
 ### Production-wiring smoke test (2b and 2c)
 
-`createX(realDeps)` is the production wiring line. Without a test that calls it, the coverage tool reports 0% on that line and the 80% gate for `src/infra/**` will fail. Every adapter that uses pattern 2b or 2c gets a one-describe-block smoke test that calls the production factory with a placeholder auth / credentials object.
+`createX(realDeps)` is the production wiring line. Without a test that calls it, the coverage tool reports 0% on that line and the 80% gate for `src/infra/**` will fail. Every adapter that uses pattern 2b or 2c gets a one-describe-block smoke test that calls the production factory with placeholder auth / credentials and asserts the returned object has the port's method shape.
 
 ```ts
 describe('createGoogleDrive (production wiring smoke)', () => {
@@ -268,7 +341,65 @@ describe('createGoogleDrive (production wiring smoke)', () => {
 });
 ```
 
+The smoke test does **two** jobs at once:
+
+1. It exercises the wiring line (the `createXFromApi(realSdk(...))` call) so the per-tier coverage gate passes without launching the real SDK.
+2. It pins the module as reachable, satisfying the `coverage-preload.ts` invariant — every infra file must be importable from the preload chain, and every infra file must have a test that touches it. The smoke test is the cheapest way to do both.
+
+Methods are asserted as `typeof === 'function'`, not invoked. Invoking would require either a real Playwright browser, a real Google Drive client, or a fake — which would defeat the point. The whole purpose is "prove the wiring compiles and produces the right shape, without doing anything else."
+
 Pattern 2a (custom-fetch DI) does not need a separate smoke test because the production wiring is itself exercised end-to-end by passing `fakeFetch`.
+
+### Configurable durations for IO loops with deadlines
+
+Adapters that retry, poll, or wait for external state always need a deadline. In production, the deadline matches user expectations (a 5-minute auth callback window, a 30-second LLM timeout, a 2-second between-poll delay). In tests, the same deadlines would crawl the suite to a halt — and `setTimeout` global swaps only help when the duration is genuinely "fire immediately".
+
+The pattern: every duration the adapter cares about is a field on a `Config` record passed into the factory. Production wiring fills it with real values; tests pass tiny values.
+
+```ts
+// src/infra/browser-auth.ts
+export type BrowserAuthConfig = {
+  readonly userDataDir: string;
+  readonly initialSettleMs: number;       // wait after page load before reading state
+  readonly pollIntervalMs: number;        // between checks for the redirect
+  readonly pollDeadlineMs: number;        // total time before giving up
+  readonly navigationTimeoutMs: number;   // single page navigation
+};
+
+// Production defaults. `Partial<>` so the caller only overrides what differs.
+export const productionBrowserAuthConfig = (overrides: Partial<BrowserAuthConfig> = {}): BrowserAuthConfig => ({
+  userDataDir: '.auth-cache',
+  initialSettleMs: 1_000,
+  pollIntervalMs: 500,
+  pollDeadlineMs: 5 * 60_000,
+  navigationTimeoutMs: 30_000,
+  ...overrides,
+});
+
+export const createBrowserAuth = (config: BrowserAuthConfig): BrowserAuth => /* ... */;
+```
+
+In production:
+
+```ts
+// src/composition/build-deps.ts
+const auth = createBrowserAuth(productionBrowserAuthConfig());
+```
+
+In tests:
+
+```ts
+const fastConfig: BrowserAuthConfig = {
+  userDataDir: tmp,
+  initialSettleMs: 1,
+  pollIntervalMs: 1,
+  pollDeadlineMs: 50,
+  navigationTimeoutMs: 50,
+};
+const auth = createBrowserAuthFromApi(fakePlaywright, fastConfig);
+```
+
+**Rule.** Any IO loop with a deadline (retry, poll, fetch-with-timeout, queue-drain, debounce) names every duration in a `Config` record and accepts it through the factory. The defaults factory (`productionXConfig`) holds the real values; tests construct `fastConfig` literals. This pulls the test runtime down by orders of magnitude without touching `setTimeout` at all.
 
 **Rule**: every new SDK adapter picks one of 2a, 2b, or 2c, and the pattern you chose must be visible from the exports. For 2b: both `createX` and `createXFromApi` exported. For 2c: `buildRealClient` also exported. For 2a: the `fetchImpl?` parameter visible in the signature. If none of these is true, the adapter has no test seam and the next change will reach for `mock.module`.
 
