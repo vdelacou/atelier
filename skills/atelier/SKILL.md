@@ -1,6 +1,6 @@
 ---
 name: atelier
-description: Senior-engineer coding standard for Bun/TypeScript and Next.js repos. Enforces strict TDD (Red-Green-Refactor, primary-port SUT, hand-written fakes for secondary ports only — never `mock` from `bun:test`), Clean Architecture (`src/{domain,use-cases,infra,presenter,composition,test-helpers}`), `Result<T, E>` at every IO boundary, branded value objects at trust boundaries, SOLID via typed arrow functions, and a Bun-only toolchain (no `class`, no `function` declaration, no `interface`, no `console.*`, no `npm`/`pnpm`/`yarn`/`vite`). Backed by an eight-gate pre-commit hook, per-tier coverage thresholds, and Stryker mutation testing. Use for ANY code task in a Bun or Next.js repo — writing, editing, scaffolding, testing, refactoring, dependency changes, React components, scripts, linting, architecture, error handling, code review, debugging, security review. Consult even when the user does not mention conventions; rules are non-negotiable and violations must be rewritten.
+description: Senior-engineer coding standard for Bun/TypeScript and Next.js repos. Enforces strict TDD (Red-Green-Refactor, primary-port SUT, hand-written fakes — never `mock` from `bun:test`), Clean Architecture (`src/{domain,use-cases,infra,presenter,composition}`), `Result<T, E>` at IO boundaries, branded types at trust boundaries, a Bun-only toolchain (no `class`, no `function` declaration, no `interface`, no `console.*`, no npm/pnpm/yarn/vite), and Atomic Design — a logic-free design system (`src/components/{atoms,molecules,organisms}`) of stateless props-only components, styling sealed inside (no Tailwind in app code). Backed by an eight-gate pre-commit hook, coverage tiers, and Stryker mutation. Use for ANY code task in Bun or Next.js repos — writing, editing, scaffolding, testing, refactoring, React components, design-system work, linting, architecture, error handling, code review, debugging, security. Consult even when conventions are not mentioned; rules are non-negotiable and violations must be rewritten.
 ---
 
 # Atelier
@@ -110,7 +110,7 @@ See `references/lessons.md` for the entry format, extraction heuristics, routing
 1. **No `class` keyword.** Anywhere. Value objects, entities, services, strategies, decorators, observers, factories: all expressed as modules of arrow functions and typed records. See the translation catalogue below and in `references/design-patterns.md`.
 2. **No `function` declarations.** Always `export const fn = (...) => {...}`. Enforced by `func-style: ['error', 'expression']`.
 3. **No `interface`.** Always `type Foo = {...}`. Enforced by `@typescript-eslint/consistent-type-definitions: ['error', 'type']`.
-4. **No `console.*`.** Use the injected `Logger` port (`src/use-cases/ports/logger.ts`); the production adapter is Winston-backed (`src/infra/logger.ts`). Enforced by the `no-console` ESLint rule.
+4. **No `console.*`.** Use the injected `Logger` port (`src/use-cases/ports/logger.ts`); the production adapter is Winston-backed (`src/infra/logger.ts`). Enforced by the `no-console` ESLint rule in both variant configs. *Next.js exception:* the React boundary and static export make constructor injection impractical across client components, so that variant sanctions exactly one module singleton, `src/lib/utils/logger.ts` (see `references/nextjs-monorepo.md`). Everywhere else a module-level logger stays banned.
 5. **Bun only.** Never `npm`, `pnpm`, `yarn`, `node`, or `vite` directly. Install with `bun install`. Run with `bun run` / `bunx`. Execute with `bun run src/main.ts`.
 6. **Explicit return types on every exported function.** Enforced by `@typescript-eslint/explicit-function-return-type`.
 7. **Type-only imports on their own line.** `import type { Foo } from './foo';`.
@@ -119,12 +119,12 @@ See `references/lessons.md` for the entry format, extraction heuristics, routing
 10. **No custom error classes.** Plain `Error` only. Narrow `unknown` before reading `.message`.
 11. **No production code without a failing test.** See the TDD section below.
 12. **Brand at trust boundaries; pass through inside one.** Wrap every domain primitive that crosses a **trust boundary** or feeds a **dangerous sink** in a branded type with a validating factory: tokens, secrets, URLs that reach `fetch`, paths that reach the filesystem, HTML that reaches the DOM, env-var values, money amounts, emails, phone numbers, ISO codes, IDs whose validity is enforced (e.g. UUID-shaped). The factory is the validation gate; once a value has type `Email`, downstream code trusts it. Inside a single trust boundary — e.g. a CLI where the user has already provided every argument through a validated Zod schema — IDs that are slotted directly into a URL template **may** stay as plain `string`; minting one branded type per Graph-API ID gives ceremony without security value when the only "source" is the user's own terminal. The test: would interpolating this value into a sink without a checkpoint create an exploitable category? If yes, brand. If no (the value already crossed a checkpoint upstream and is now traveling inside a single trust zone), a plain `string` is honest and lighter. See the Value Objects section below and `references/security.md`.
-13. **No `mock` from `bun:test` — the entire namespace.** `mock()`, `mock.module()`, `.toHaveBeenCalled*` — all banned. Enforced by `no-restricted-imports` in `eslint.config.js`. Reason: `mock.module` is **process-global, not file-scoped** — once set in any test file, every subsequent file the runner loads sees the substitution and unrelated tests break silently. `mock()` needs `mock.restore()` discipline that is easy to forget. Both are unnecessary when production code is designed for testability. Every infra adapter that wraps a third-party SDK **must** expose two constructors from day one: `createX(realDeps)` for production wiring, and `createXFromApi(api: XApi)` where `XApi` is a minimal type slice of **the SDK's real surface** — the actual methods the adapter calls, with the SDK's actual parameter shapes. **Anti-pattern: `XApi` shaped like the port itself.** If `XApi` is `{ acquireToken; close }` and the port is also `{ acquireToken; close }`, then `createXFromApi` is a one-line pass-through and `createX` is still untestable — you've moved the seam to the wrong place. The correct slice for a Playwright adapter is `{ launchPersistentContext(...) }` (the Playwright surface), not `{ acquireToken(...) }` (the port surface). The seam belongs on the SDK side, not the port side. Tests import `createXFromApi` and pass an in-memory object that satisfies the SDK slice. For `globalThis.fetch` adapters, use `installFetchMock` from `assets/fetch-mock.ts` — its swap is per-test via `afterEach().restore()`, not process-global. See `references/testing.md`, `references/testing-infra.md` (XApi-as-port-clone anti-pattern), and `references/workflow.md`.
+13. **No `mock` from `bun:test` — the entire namespace.** `mock()`, `mock.module()`, `.toHaveBeenCalled*` — all banned. Enforced by `no-restricted-imports` in the ESLint config. Reason: `mock.module` is **process-global, not file-scoped** — once set in any test file, every subsequent file the runner loads sees the substitution and unrelated tests break silently. `mock()` needs `mock.restore()` discipline that is easy to forget. Both are unnecessary when production code is designed for testability. Every infra adapter **must** expose a test seam from day one — one of the three patterns in `references/testing-infra.md`: custom-fetch DI, the two-constructor pair, or sync-builder export. For adapters wrapping a third-party SDK the default seam is the two-constructor pair: `createX(realDeps)` for production wiring, and `createXFromApi(api: XApi)` where `XApi` is a minimal type slice of **the SDK's real surface** — the actual methods the adapter calls, with the SDK's actual parameter shapes. **Anti-pattern: `XApi` shaped like the port itself.** If `XApi` is `{ acquireToken; close }` and the port is also `{ acquireToken; close }`, then `createXFromApi` is a one-line pass-through and `createX` is still untestable — you've moved the seam to the wrong place. The correct slice for a Playwright adapter is `{ launchPersistentContext(...) }` (the Playwright surface), not `{ acquireToken(...) }` (the port surface). The seam belongs on the SDK side, not the port side. Tests import `createXFromApi` and pass an in-memory object that satisfies the SDK slice. For `globalThis.fetch` adapters, use `installFetchMock` from `assets/fetch-mock.ts` — its swap is per-test via `afterEach().restore()`, not process-global. See `references/testing.md`, `references/testing-infra.md` (XApi-as-port-clone anti-pattern), and `references/workflow.md`.
 14. **Outside-in classicist TDD.** The System Under Test is the **primary port** (use case, command handler, application service), never an individual entity, value object, or domain service. Entities, value objects, and domain services are used **real** in tests. Only **secondary ports** (repository, email sender, clock, token decoder) get hand-written fakes. Every test name describes a complete business scenario in domain language. This keeps the domain free to refactor without breaking tests. Inspired by Ian Cooper's *TDD, Where Did It All Go Wrong?*. See `references/tdd.md`.
-15. **Zero lint warnings; no inline ignores, ever.** `bun run lint` fails on warnings, not only errors. Two acceptable ways to clear a finding: refactor the code so the rule stops firing, or change the rule's severity at the project level in `eslint.config.js` with a comment explaining why. Never `// eslint-disable*`, `// @ts-ignore`, `// @ts-expect-error`, `// snyk-ignore`, `// deepcode ignore`, `// sonar-ignore`, or any equivalent from another tool. See `references/workflow.md`.
+15. **Zero lint warnings; no inline ignores, ever.** `bun run lint` fails on warnings, not only errors. Two acceptable ways to clear a finding: refactor the code so the rule stops firing, or change the rule's severity at the project level in the ESLint config with a comment explaining why. Never `// eslint-disable*`, `// @ts-ignore`, `// @ts-expect-error`, `// snyk-ignore`, `// deepcode ignore`, `// sonar-ignore`, or any equivalent from another tool. See `references/workflow.md`.
 16. **`Result<T, E>` at IO boundaries.** Every port that crosses an IO boundary returns `Promise<Result<T, PortError>>` where `PortError` is a discriminated union. Every use-case returns `Promise<Result<Summary, StepError>>`. Thrown exceptions are reserved for programmer bugs; `main.ts` catches them and reports "crashed (unexpected)". See `references/result-type.md`.
-17. **`try/catch` is quarantined.** Allowed only in `src/infra/**` (adapters translate thrown library errors into `Result` errs), in pure-domain fallbacks for native-synchronous throwers (e.g. `JSON.parse`, `URL` constructor, `Buffer.from(b64).toString()`, `decodeURIComponent`, `BigInt(...)`, `new Date(invalid).toISOString()` — the list is illustrative, not exhaustive: any built-in that throws on bad input qualifies if the call sits in pure domain code and the catch returns a `Result`), and exactly once in `src/main.ts` for genuinely unexpected crashes. Zero `try/catch` inside `src/use-cases/**` — pattern-match on `Result.ok` instead.
-18. **No curried arrow chains.** Never `const f = (a) => (b) => { ... }`. Use a single arrow with all parameters and wrap at the call site: `const compareByPriority = (a: X, b: X, target: number) => { ... }` then `arr.sort((a, b) => compareByPriority(a, b, t))`. Curried chains cause Prettier/TS-formatter fights and obscure the signature.
+17. **`try/catch` is quarantined.** Allowed only in `src/infra/**` (adapters translate thrown library errors into `Result` errs), in pure-domain fallbacks for native-synchronous throwers (e.g. `JSON.parse`, `URL` constructor, `Buffer.from(b64).toString()`, `decodeURIComponent`, `BigInt(...)`, `new Date(invalid).toISOString()` — the list is illustrative, not exhaustive: any built-in that throws on bad input qualifies if the call sits in pure domain code and the catch returns a `Result`), and exactly once in `src/main.ts` for genuinely unexpected crashes. Zero `try/catch` inside `src/use-cases/**` — pattern-match on `Result.ok` instead. `*.test.ts` files and `src/test-helpers/**` sit outside the quarantine — test code may catch (e.g. the `captureRejection` helper), mirroring rule 20's test carve-out.
+18. **No curried arrow chains.** Never `const f = (a) => (b) => { ... }`. Use a single arrow with all parameters and wrap at the call site: `const compareByPriority = (a: X, b: X, target: number) => { ... }` then `arr.sort((a, b) => compareByPriority(a, b, t))`. Curried chains cause Prettier/TS-formatter fights and obscure the signature. *Exemption — DI factories:* `const createX = (deps: Deps): PortType => async (input) => { ... }` is sanctioned. The outer call runs once at composition, and the inner arrow IS the port function the type names — that is closure over dependencies, not currying on a call path.
 19. **No `"latest"` or `"*"` in `package.json`.** Every entry under `dependencies`, `devDependencies`, and `peerDependencies` declares a concrete version (`^X.Y.Z`, `~X.Y.Z`, `X.Y.Z`, or a real range). Add new packages with `bun add <pkg>` (runtime) or `bun add -d <pkg>` (dev) — Bun resolves the actual latest version at install time and writes it as `^X.Y.Z`. Never hand-edit `package.json` to insert `"latest"` or `"*"`. Reason: `"latest"` is non-deterministic — `bun install` on different days produces different `node_modules/` trees; the lockfile only partially mitigates it, and the literal string semantically signals "always upgrade", which is a silent-break footgun. To intentionally bump every dep to the current latest, run `bun update` (which rewrites `^X.Y.Z` ranges to the latest matching version) and commit the lockfile change. Enforced by `scripts/check-package-json.sh` in pre-commit gate 2.
 20. **Bun file API in production; `node:fs` only in tests and at directory boundaries; `node:path` anywhere.** All **file** IO in `src/**` production code goes through the Bun file API:
 
@@ -142,6 +142,10 @@ See `references/lessons.md` for the entry format, extraction heuristics, routing
     `node:fs` IS unconditionally allowed in `*.test.ts` and `src/test-helpers/**` for real-temp-dir setup (`mkdtempSync`, `writeFileSync`, `rmSync`) and for forcing error branches in FS adapters (`chmodSync` on a real file or directory) — `Bun.file` has no `mkdtemp` equivalent and cannot force a directory-write throw. `node:path` (`join`, `dirname`, `resolve`, `basename`) is allowed anywhere — it is path manipulation, not IO.
 
     Reason: keeping file IO on `Bun.file` is faster, has zero `import` ceremony, fits the `try/catch`-quarantine-in-`infra/**` pattern cleanly, and lets the project disable `security/detect-non-literal-fs-filename` at the lint level without losing real coverage (the rule does not watch `Bun.file`). See `references/result-type.md`, `references/testing-infra.md` (filesystem patterns), `references/workflow.md` (lint-rule rationale).
+
+21. **The design system is independent and logic-free.** In React/Next.js repos, everything under `src/components/{atoms,molecules,organisms}` is a stateless `const` arrow component: props in, JSX out. No hooks of any kind (`useState`, `useEffect`, `useContext`, …), no data fetching, no translation lookups, no `'use client'`, no imports from `src/lib/**`, `src/config/**`, `app/**`, or framework modules (`next/link`, `next/image`) — the only imports are `react` and lower design-system layers, strictly upward (atoms → molecules → organisms). Interactivity: native HTML first (`<details>`, CSS states), then state hoisted to props (`isOpen`/`onToggle`); the state itself lives in `src/lib/hooks/` and is wired by page shells in `src/page/`. Links and images are injected as `ComponentType<...>` props built in `src/lib/layout/wrappers.tsx`. The test: every component renders in Storybook with hardcoded props alone. See `references/atomic-design.md`.
+
+22. **Styling is sealed inside the design system — the app never sees Tailwind.** The mirror image of rule 21. Utility classes exist only under `src/components/**`; design tokens live in `app/globals.css` (Tailwind v4 CSS-first config). `app/**` routes, `src/page/**` shells, `src/lib/**`, and `src/config/**` never contain a class string: page shells stack organisms in a bare `<main>`, and each organism owns its own section spacing. Molecules and organisms expose typed variant props (`variant`, `size`, `tone`), never free-form `className`/`style`; only leaf atoms (icons and similar primitives) accept `className`, and only from design-system parents. If something needs styling, it *is* a design-system component. Two tests: a rebrand touches only `src/components/**` + `globals.css`; swapping the styling engine leaves the app byte-identical. See `references/atomic-design.md`.
 
 ## The TDD process (non-negotiable - every feature)
 
@@ -166,6 +170,8 @@ Red-Green-Refactor is the only loop:
 **Test structure.** Arrange-Act-Assert. When stuck, write backwards: Assert first, then Act, then Arrange.
 
 When the user asks for a feature without mentioning tests, write the test first anyway and state briefly that you are doing so. If they ask you to skip tests, do not comply silently. Ask why, and offer to proceed with TDD or at minimum add the characterisation tests that pin current behaviour.
+
+**Next.js variant scope.** The loop applies to logic — `src/lib/**` and `src/config/**` (path helpers, i18n, SEO builders, config factories, hook internals extracted as pure functions). Design-system components contain nothing unit-testable by design (rule 21 makes them prop→JSX maps); they are verified by the design-system lint block and review, not by tests. See the variant matrix below and `references/nextjs-monorepo.md` (Testing).
 
 See `references/tdd.md` and `references/testing.md`.
 
@@ -258,6 +264,19 @@ See `references/complexity.md`, `references/code-smells.md`.
 
 See `references/architecture.md`.
 
+## UI architecture: Atomic Design (React/Next.js repos)
+
+The UI is two worlds with a hard wall between them (hard rules 21–22):
+
+- **The design system** — `src/components/{atoms,molecules,organisms}`. Stateless, props-only, logic-free presentational components. Imports point strictly upward (atoms → molecules → organisms) and never leave the design system; the only external import is `react`. No hooks, no fetching, no i18n, no `next/*`.
+- **The application** — `src/page/` page shells own all state (hooks from `src/lib/hooks/`), resolve translations and config (`src/config/`, `data/translations/`), build framework wrappers (`src/lib/layout/wrappers.tsx` is the only place importing `next/link`/`next/image`), and hand everything to the design system as props: display strings, `isOpen` + `onToggle` pairs, injected `ComponentType` link/image components.
+
+The wall is two-way. No application knowledge enters the design system — and no styling knowledge leaves it. Tailwind utilities appear only under `src/components/**` (tokens in `app/globals.css`); routes, page shells, lib, and config never carry a class string, and component APIs expose typed variants instead of `className`. The app does not know Tailwind exists.
+
+Interactivity climbs a ladder: native HTML (`<details>`/`<summary>`, CSS `group-open:`) → hoisted state via props → a hook in `src/lib/hooks/` consumed by the page shell. Never a hook inside a component.
+
+Read `references/atomic-design.md` before touching `src/components/**`, `src/page/**`, or `src/lib/{hooks,layout}/**` — it has the layer table, component anatomy, the injection pattern, the data-flow wiring, and the "where does it go?" decision table.
+
 ## Security
 
 Security is a data-flow property: an untrusted **source** must cross a validating **checkpoint** before reaching a sensitive **sink**. The checkpoint is always a branded type with a validating factory. The pattern is the same as for domain primitives (Email, Money) — just extended to security-sensitive ones (`SafeUrl`, `SanitizedHtml`, `EnvVar`, `SafePath`).
@@ -281,7 +300,7 @@ If all four are true, the design is good enough. Stop polishing.
 
 ## Project type (pick the right variant reference)
 
-**Next.js monorepo** (read `references/nextjs-monorepo.md`) if:
+**Next.js monorepo** (read `references/nextjs-monorepo.md`; for any work on components, pages, or UI sections also read `references/atomic-design.md`) if:
 - `packages/*` with Bun workspaces at the root, or
 - `next.config.ts` in a package, or
 - `app/(en)/`, `app/(fr)/` route groups, or
@@ -294,10 +313,26 @@ If all four are true, the design is good enough. Stop polishing.
 
 If the repo is brand-new, ask which variant the user wants before scaffolding.
 
+### What applies where
+
+The hard rules are universal unless this table says otherwise. Gates and tooling differ by variant:
+
+| Concern | Bun script repo | Next.js monorepo |
+|:---|:---|:---|
+| TDD + `bun test` | Everything (rule 11, full loop) | `src/lib/**` + `src/config/**` logic; design-system components are prop-pure (rule 21) — lint + review, not unit tests |
+| Coverage tiers (`check-coverage.ts`) | Yes — 100/100/80 | No |
+| Stryker mutation | Yes — gates `mutate:staged`/`mutate:changed` | No |
+| Pre-commit | Eight-gate `.githooks/pre-commit` | `simple-git-hooks`: test + lint + commitlint — never install both hook mechanisms |
+| Logger | `Logger` port + `src/infra` adapter (rule 4) | Sanctioned singleton `src/lib/utils/logger.ts` (rule 4 exception) |
+| `Result<T, E>` (rule 16) | Every IO port | `src/lib/**` runtime IO; build-time data loaders may throw — a loud failed build is the desired outcome |
+| Mock ban (rule 13) | `no-restricted-imports` in ESLint config | Same rule, added with the test setup |
+| Rules 21–22 (design system, styling seal) | n/a (no UI) | Mandatory, lint-enforced (design-system ESLint block) |
+
 ## Reference files
 
 Toolchain:
-- `references/nextjs-monorepo.md` | Next.js 16 + Atomic Design + Tailwind v4 + i18n route groups + static export.
+- `references/nextjs-monorepo.md` | Next.js 16 + Tailwind v4 + i18n route groups + static export.
+- `references/atomic-design.md` | the logic-free design system: atoms/molecules/organisms layer rules, stateless props-only components, interactivity ladder (native HTML → hoisted state → `src/lib/hooks`), injected link/image wrappers, page-shell wiring, "where does it go?" table.
 - `references/bun-typescript.md` | Bun-script repo bootstrap: tsconfig, ESLint flat config (SonarJS + type-aware rules + `no-restricted-imports`), Logger port + Winston adapter, secrets discipline, full bootstrap checklist with asset copy steps.
 
 Engineering:
@@ -355,13 +390,13 @@ Process:
 
 ## Post-code checklist
 
-Inner-loop checks (run after every code change):
+Inner-loop checks 1–4 run after every code change; check 5 runs before staging (Bun variant — see the variant matrix for what applies in a Next.js repo):
 
 1. `bun test` — passes.
 2. `bun run lint` — 0 errors AND 0 warnings. No inline ignores added.
 3. `bun run typecheck` — `tsc --noEmit`, clean.
 4. `bun run coverage` — 100% on `src/domain/**` and `src/use-cases/**`, 80% on `composition` + `infra` + `presenter`.
-5. `bun run mutate:changed` — staged-and-changed domain/use-case files score ≥90% mutation. Pre-commit will run `mutate:staged` automatically; running `mutate:changed` during iteration catches surviving mutants before they reach the gate.
+5. Before staging (not after every edit — it costs 1–3 min per file): `bun run mutate:changed` — domain/use-case files score ≥90% mutation. The pre-commit gate runs `mutate:staged` regardless; running `mutate:changed` earlier catches surviving mutants sooner.
 
 Then review:
 
@@ -392,8 +427,8 @@ The pre-commit hook runs **eight gates** in order: commit size → package.json 
 - Untrusted input reaching a sensitive sink (SQL, shell, filesystem, HTTP, HTML, redirect) without a branded-type checkpoint between them.
 - A secret (token, password, API key, PII) interpolated into a log line, or placed in a `NEXT_PUBLIC_*` env var.
 - Importing anything from the `mock` namespace of `bun:test` — `mock()`, `mock.module()` — or asserting on `.toHaveBeenCalled*`. Write a fake, or expose a `createXFromApi(api)` factory the test can feed an in-memory object. Enforced by `no-restricted-imports`.
-- An infra adapter exported as a single `createX(realDeps)` with no matching `createXFromApi(api: XApi)` factory. Without the seam, someone will reach for `mock.module` on the next test. Expose the testable constructor from day one, even before the first test exists.
-- Adding a new `src/infra/*.ts` or `src/composition/*.ts` file without a matching side-effect import in `scripts/coverage-preload.ts`. Untested infra files are invisible to `bun test --coverage` unless something imports them; the preload makes them appear at 0% so the gate can fail loudly.
+- An infra adapter exported with no test seam at all — no custom-fetch DI, no `createXFromApi(api: XApi)` factory, no sync-builder export (`references/testing-infra.md`). Without a seam, someone will reach for `mock.module` on the next test. Expose one from day one, even before the first test exists.
+- Adding a new `src/infra/*.ts`, `src/composition/*.ts`, or `src/presenter/*.ts` file without a matching side-effect import in `scripts/coverage-preload.ts`. Untested infra files are invisible to `bun test --coverage` unless something imports them; the preload makes them appear at 0% so the gate can fail loudly.
 - `coverageThreshold` set in `bunfig.toml` while a per-tier script owns enforcement. Bun exits non-zero on the global threshold before the script can print per-file violations — looks like "coverage failed silently". Remove the global threshold; let the script own it.
 - An inline suppression of any tool: `// eslint-disable*`, `// @ts-ignore`, `// @ts-expect-error`, `// snyk-ignore`, `// sonar-ignore`, `// deepcode ignore`, `// istanbul ignore`. Refactor, or change rule severity at the project level.
 - `try/catch` anywhere outside `src/infra/**`, `src/main.ts`, or a pure-domain native-API fallback (`JSON.parse`, `URL`). Use-cases must pattern-match on `Result.ok`.
@@ -411,6 +446,12 @@ The pre-commit hook runs **eight gates** in order: commit size → package.json 
 - Closing a session (or declaring a task done) with non-README files modified but the README un-audited. The README is part of the change set — re-read it, update what drifted, or state in one sentence that nothing user-visible changed. See Behavioural Guideline #5.
 - A `node:fs` import (`readFile`, `writeFile`, `readFileSync`, `fs/promises`, etc.) in any file under `src/**` that is not a `*.test.ts`, under `src/test-helpers/**`, or a single isolated directory-boundary helper in `src/infra/**` documented with a one-line comment. Production file IO uses `Bun.file` / `Bun.write`. Hard rule 20.
 - An assignment to `process.env.X = ...` anywhere outside `*.test.ts` (and even there, only inside `beforeAll`/`afterAll` with a saved-and-restored original). `process.env` is shared mutable state — pass values as parameters instead. See the Security section.
+- A hook call (`useState`, `useEffect`, any `use*`) inside `src/components/**`. State is hoisted: native HTML first, then `isOpen`/`onToggle` props wired by the page shell from a hook in `src/lib/hooks/`. Hard rule 21.
+- An import of `src/lib/**`, `src/config/**`, `next/link`, or `next/image` anywhere under `src/components/**`. Links and images arrive as injected `ComponentType` props built in `src/lib/layout/wrappers.tsx`.
+- A design-system component that resolves translations, reads `process.env`, fetches data, or carries `'use client'`. Display strings and data arrive as props; the client boundary belongs to the page shell.
+- A downward import in the design system: an atom importing a molecule, or a molecule importing an organism. Imports point strictly upward.
+- A Tailwind utility string in `app/**` (anywhere but `globals.css`), `src/page/**`, `src/lib/**`, or `src/config/**`. Styling is sealed in the design system; the app never sees Tailwind. Hard rule 22.
+- A molecule or organism exposing free-form `className`/`style` in its public props, or a page shell passing one in. Visual variation is a typed variant prop — add the variant to the component.
 
 ## Remember
 

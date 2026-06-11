@@ -12,6 +12,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 
 - Writing or editing TypeScript for a Bun project
 - Scaffolding a new Next.js monorepo or Bun-script repo
+- Creating or modifying React UI components (Atomic Design, logic-free design system)
 - Refactoring existing code to a class-free functional style
 - Setting up ESLint, Prettier, TypeScript configuration
 - Writing or reviewing tests
@@ -26,6 +27,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 | Language | `const` arrow functions, no `class`, no `function` declaration, no `interface`, no curried arrow chains |
 | Typing | Branded types for every domain primitive; `Partial<Record<K, V>>` when the key set is open |
 | Architecture | Clean Architecture: `src/{domain,use-cases,infra,presenter,composition,test-helpers}`, dependency rule inward-only |
+| UI / Design system | Atomic Design: independent, logic-free design system (`src/components/{atoms,molecules,organisms}`) of stateless props-only components — no hooks, no fetching, no i18n, no `next/*` imports; state hoisted to page shells via `src/lib/hooks/`, links/images injected as `ComponentType` props. Styling sealed inside: Tailwind utilities only under `src/components/**` (tokens in `globals.css`), typed variants instead of `className` passthrough — the app layer never sees Tailwind |
 | Logging | Logger is a **port** (`src/use-cases/ports/logger.ts`), Winston adapter in `src/infra/`, fake in `src/test-helpers/`. Never `console.*` |
 | Tests | Outside-in classicist TDD — SUT is the primary port, domain runs real, only secondary ports are faked, never mocks |
 | Error handling | Every IO port returns `Result<T, PortError>` with a discriminated-union error; use-cases return `Result<Summary, StepError>`; `try/catch` quarantined to `infra/`, `main.ts`, and pure-domain native-API fallbacks |
@@ -38,14 +40,15 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 **Reference documentation included:**
 
 - `architecture.md` — vertical slices, dependency rule, hexagonal and clean architecture, walking skeleton
-- `bun-typescript.md` — feature-per-folder Bun script repos, ESLint config, logger setup
+- `atomic-design.md` — the logic-free design system: atoms/molecules/organisms layer rules, interactivity ladder (native HTML → hoisted state → `src/lib/hooks`), injected link/image wrappers, styling seal (Tailwind invisible outside the design system), page-shell wiring, decision table
+- `bun-typescript.md` — Clean Architecture Bun script repos, strict ESLint flat config (SonarJS + type-aware), Logger port + Winston adapter, bootstrap checklist
 - `class-to-module.md` — translation table for classical OO patterns (value object, interface, service, strategy, factory, decorator, observer, command, entity)
 - `clean-code.md` — naming priorities, object calisthenics in a class-free world, comments, formatting
 - `code-smells.md` — detection catalogue and the refactorings that clean each smell
 - `complexity.md` — essential vs accidental complexity, YAGNI, DRY + Rule of Three, KISS
 - `design-patterns.md` — full GoF catalogue rewritten as modules of arrow functions
 - `lessons.md` — session memory format, triggers, extraction heuristics, worked examples
-- `nextjs-monorepo.md` — Next.js 16 + Atomic Design + Tailwind v4 + i18n route groups
+- `nextjs-monorepo.md` — Next.js 16 + Tailwind v4 + i18n route groups + static export
 - `object-design.md` — responsibility-driven design, stereotypes, tell-don't-ask, value objects vs entities, aggregates
 - `result-type.md` — `Result<T, E>` and helpers, per-port discriminated-union errors, `StepError` aggregation, `try/catch` quarantine, fan-out batch semantics, `retryOnErr`, fakes-with-error-injection, `captureRejection` helper
 - `security.md` — source-to-sink threat model, vulnerability categories for Bun/TypeScript + Next.js, branded types for trust boundaries, pre-merge checklist, adopted false-positive filter
@@ -79,9 +82,9 @@ ln -s ~/code/atelier/skills/atelier ~/.claude/skills/atelier
 
 The skill becomes available automatically the next time Claude Code starts. Verify it's loaded with `/skills` (or your client's equivalent).
 
-### 2. Install the gate scripts (per Bun/TypeScript repo)
+### 2. Install the gate scripts (Bun-script repos)
 
-The skill ships executable assets in [`skills/atelier/assets/`](skills/atelier/assets/). They are not auto-installed — copy the ones you want into the target repo's `scripts/` directory and wire the pre-commit hook:
+The skill ships executable assets in [`skills/atelier/assets/`](skills/atelier/assets/) implementing the eight-gate pre-commit pipeline for the **Bun-script variant**. Next.js monorepos use `simple-git-hooks` (test + lint + commitlint) instead — see `references/nextjs-monorepo.md`; never install both hook mechanisms. For a Bun-script repo, copy the scripts and wire the hook:
 
 ```bash
 SKILL=~/.claude/skills/atelier   # or wherever you cloned the skill
@@ -96,14 +99,21 @@ cp $SKILL/assets/mutate-staged.sh                 scripts/
 cp $SKILL/assets/mutate-changed.sh                scripts/
 cp $SKILL/assets/stryker.conf.json                ./
 
+# Stryker must be a local devDependency — without it, `bunx stryker` resolves
+# the deprecated npm package named "stryker" instead of @stryker-mutator/core
+bun add -d @stryker-mutator/core
+
 # Generate the initial coverage-preload.ts from your current src/ tree
 bun run scripts/regenerate-coverage-preload.ts
 
 # Test helpers (copy into src/test-helpers/)
 mkdir -p src/test-helpers
 cp $SKILL/assets/fetch-mock.ts          src/test-helpers/
-cp $SKILL/assets/format-error.ts        src/test-helpers/
 cp $SKILL/assets/capture-rejection.ts   src/test-helpers/
+
+# formatError is production code (every catch block in src/infra/** uses it)
+mkdir -p src/domain/utilities
+cp $SKILL/assets/format-error.ts        src/domain/utilities/
 
 # Install the pre-commit hook
 cp $SKILL/assets/pre-commit             .githooks/pre-commit
@@ -116,12 +126,13 @@ Add the matching scripts to `package.json`:
 ```jsonc
 {
   "scripts": {
-    "lint":           "eslint .",
-    "lint:strict":    "eslint . --max-warnings=0",
+    "lint":           "eslint --cache",
+    "lint:strict":    "LINT_STRICT=1 eslint --max-warnings=0",
     "typecheck":      "tsc --noEmit",
     "coverage":       "bun run scripts/check-coverage.ts",
     "coverage:preload":       "bun run scripts/regenerate-coverage-preload.ts",
     "coverage:preload:check": "bun run scripts/regenerate-coverage-preload.ts --check",
+    "mutate":         "stryker run",
     "mutate:staged":  "bash scripts/mutate-staged.sh",
     "mutate:changed": "bash scripts/mutate-changed.sh"
   }
@@ -142,6 +153,7 @@ Once installed, the agent consults `atelier` on every code task in a Bun/TypeScr
 **Example prompts:**
 
 - "Add a CSV export use case for the orders feature."
+- "Add a pricing section with a monthly/yearly toggle to the landing page."
 - "Refactor `user-service.ts` to follow SOLID principles."
 - "Scaffold a new Bun script repo for a Firebase admin job."
 - "Review this module for code smells."
@@ -171,6 +183,7 @@ atelier/
         │   └── stryker.conf.json               # Stryker config (mutation scope, 90% break threshold)
         └── references/        # Supporting documentation
             ├── architecture.md
+            ├── atomic-design.md
             ├── bun-typescript.md
             ├── class-to-module.md
             ├── clean-code.md
@@ -193,8 +206,8 @@ atelier/
 
 The skill covers two repo shapes and picks the right reference automatically:
 
-- **Next.js monorepo** — Bun workspaces, Atomic Design, Tailwind v4, i18n route groups, static export. Identifiable by `packages/*` and `next.config.ts`.
-- **Bun TypeScript script** — feature-per-folder, simpler ESLint, Winston logger. Identifiable by `"module": "src/index.ts"` in `package.json`.
+- **Next.js monorepo** — Bun workspaces, Atomic Design with a logic-free design system, Tailwind v4, i18n route groups, static export. Identifiable by `packages/*` and `next.config.ts`.
+- **Bun TypeScript script** — Clean Architecture (`src/{domain,use-cases,infra,presenter,composition,test-helpers}`), strict ESLint (SonarJS + type-aware), Logger port + Winston adapter. Identifiable by `"module": "src/main.ts"` in `package.json`.
 
 ## Credits
 

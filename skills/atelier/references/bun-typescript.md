@@ -28,7 +28,7 @@ Minimal skeleton:
   "scripts": {
     "start": "bun run src/main.ts",
     "lint": "eslint --cache",
-    "lint:strict": "LINT_STRICT=1 eslint",
+    "lint:strict": "LINT_STRICT=1 eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "coverage": "bun run scripts/check-coverage.ts",
     "mutate": "stryker run",
@@ -209,7 +209,7 @@ export default [
 
 Notes on the config:
 
-- **One config file, two modes.** The inner-loop `bun run lint` runs only the fast non-type-aware rules (~2 s cached / ~7 s cold). `bun run lint:strict` sets `LINT_STRICT=1` and the conditional block adds `parserOptions.projectService: true` plus the type-aware `@typescript-eslint` rules (~25 s on a full repo). Pre-commit gate 4 runs the strict version. There is no separate `eslint.strict.config.js` — keeping one config eliminates drift.
+- **One config file, two modes.** The inner-loop `bun run lint` runs only the fast non-type-aware rules (~2 s cached / ~7 s cold). `bun run lint:strict` sets `LINT_STRICT=1` and the conditional block adds `parserOptions.projectService: true` plus the type-aware `@typescript-eslint` rules (~25 s on a full repo); `--max-warnings=0` makes warnings fail the run (the zero-warning rule). Pre-commit gate 5 runs the strict version. There is no separate `eslint.strict.config.js` — keeping one config eliminates drift.
 - **`sonarjsPlugin.configs.recommended`** catches SonarLint findings at lint time so they no longer escape the IDE. See `references/workflow.md` for the common ones (S4325, S6594, S4123, S6551, S6671). Three rules are turned off as always-on noise: `sonarjs/no-unused-vars` (duplicate), `sonarjs/no-empty-test-file` (false-positive on `describe` blocks), `sonarjs/cognitive-complexity` (we already cap function size).
 - **`no-console` is `error`**. Always use the logger port (see below), never `console.*`.
 - **`security/detect-object-injection`, `detect-unsafe-regex`, and `detect-non-literal-fs-filename`** are disabled at the project level because they only false-positive on this codebase's idioms (branded-type `Record<K, V>` lookups, bounded regexes, `chmodSync(mkdtempSync(...))` in tests). Comments in the config explain why each is off. Never inline-ignore them per-line.
@@ -298,10 +298,11 @@ For throwaway scripts, one-off CLIs, or prototypes with a single integration, a 
 
 ## Testing
 
-No tests today. If you add them:
+Tests are mandatory — TDD is hard rule 11, and the whole eight-gate pipeline (tests, coverage tiers, mutation) assumes they exist:
 
 - Filename convention: `*.test.ts` next to the source.
 - Runner: `bun test`.
+- See `references/tdd.md` and `references/testing.md` for the loop and the fakes-not-mocks discipline.
 
 ## Secrets & config hygiene
 

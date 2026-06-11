@@ -74,24 +74,28 @@ Infrastructure -> Application -> Domain
 
 ```ts
 // Domain defines the contract (inner)
+export type RepoError = { type: 'io'; message: string };
+
 export type UserRepo = {
-  save: (user: User) => Promise<void>;
-  findById: (id: UserId) => Promise<User | null>;
+  save: (user: User) => Promise<Result<void, RepoError>>;
+  findById: (id: UserId) => Promise<Result<User | null, RepoError>>;
 };
 
 // Infrastructure implements it (outer)
 export const createPostgresUserRepo = (db: Database): UserRepo => ({
   save: async (user) => {
-    /* SQL here */
+    /* SQL here, wrapped in ok()/err() */
   },
   findById: async (id) => {
-    /* SQL here */
+    /* SQL here, wrapped in ok()/err() */
   },
 });
 
 // Domain use-case depends on the contract, never on the postgres implementation
-export const createGetUser = (repo: UserRepo) => async (id: UserId): Promise<User | null> => repo.findById(id);
+export const createGetUser = (repo: UserRepo) => async (id: UserId): Promise<Result<User | null, RepoError>> => repo.findById(id);
 ```
+
+IO ports always return `Promise<Result<T, PortError>>`, never bare `Promise<T>` — see `references/result-type.md`.
 
 ### 4. Contracts
 
@@ -120,11 +124,13 @@ Options in our style:
 - Decorator functions (from `references/design-patterns.md`).
 
 ```ts
-// Higher-order function wraps a handler with logging
+// Higher-order function wraps a handler with logging.
+// The logger is a parameter, not a module-level singleton (hard rule 4).
 export type Handler<Req, Res> = (request: Req) => Promise<Res>;
 
 export const withLogging = <Req extends { path: string }, Res extends { status: number }>(
-  handler: Handler<Req, Res>
+  handler: Handler<Req, Res>,
+  logger: Logger
 ): Handler<Req, Res> =>
   async (request) => {
     logger.info('request', { path: request.path });
@@ -189,35 +195,22 @@ Similar to hexagonal, with explicit layers:
 
 ## Feature-driven structure (frontend)
 
-Aligns with the Next.js variant:
+In the Next.js variant there is no `features/` folder. A vertical slice is expressed as one organism per page section plus a page shell per route, with the slice's logic in `src/lib/<feature>/` (e.g. `src/lib/guides/`). Components never live outside the design system (`src/components/{atoms,molecules,organisms}` — hard rules 21-22), and state lives in `src/lib/hooks/`, wired by the page shells.
 
 ```
 src/
   components/
-    atoms/      | (Atomic Design: no internal composition)
-    molecules/  | (import atoms only)
-    organisms/  | (import atoms + molecules)
-  page/         | page shells
-  features/
-    auth/
-      components/
-      hooks/
-      services/
-      types/
-      index.ts  | public API
-    checkout/
-      components/
-      hooks/
-      services/
-      types/
-      index.ts
-  lib/          | truly shared
-    hooks/
+    atoms/      | no internal composition
+    molecules/  | import atoms only
+    organisms/  | import atoms + molecules; one per page section
+  page/         | page shells; one per route, wire organisms to lib state
+  lib/
+    guides/     | feature logic for the "guides" slice
+    hooks/      | state, consumed by page shells
     i18n/
-    utils/
 ```
 
-See `references/nextjs-monorepo.md` for the full layout and rules.
+See `references/nextjs-monorepo.md` for the full layout and rules, and `references/atomic-design.md` for the component layer rules.
 
 ---
 

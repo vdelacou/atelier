@@ -144,6 +144,7 @@ The pattern is the same every time: one factory, one branded type, one truthful 
 **Logging discipline:**
 ```ts
 // redact at the logger layer once; every call site benefits
+// src/infra/logger.ts — adapter factory, wired once at composition (hard rule 4), never a module-level singleton
 import { createLogger, format, transports } from 'winston';
 
 const REDACTED_KEYS = new Set(['password', 'token', 'authorization', 'apiKey', 'secret']);
@@ -155,10 +156,12 @@ const redactFormat = format((info) => {
   return info;
 });
 
-export const logger = createLogger({
-  format: format.combine(redactFormat(), format.json()),
-  transports: [new transports.Console()],
-});
+export const createWinstonLogger = (level: string): Logger =>
+  createLogger({
+    level,
+    format: format.combine(redactFormat(), format.json()),
+    transports: [new transports.Console()],
+  });
 ```
 
 Never interpolate secrets into log messages (`logger.info('token ' + token)`). Use structured logging and let the redactor do its job.

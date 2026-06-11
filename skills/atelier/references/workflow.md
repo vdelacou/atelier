@@ -19,7 +19,7 @@ If any of the four fail, fix the cause and re-run all four. Do not move on while
 {
   "scripts": {
     "lint": "eslint --cache",
-    "lint:strict": "LINT_STRICT=1 eslint",
+    "lint:strict": "LINT_STRICT=1 eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "coverage": "bun run scripts/check-coverage.ts"
   }
@@ -282,6 +282,8 @@ Every consumer that did `value !== undefined` on the first form was calling a ch
 
 The hook is the safety net for the entire workflow. It runs **eight gates** in cost-ascending order — cheap fast-fail gates first, expensive gates last so a slow mutation run only happens when everything else is clean.
 
+This eight-gate hook is the **Bun-script variant's** mechanism. The Next.js monorepo uses `simple-git-hooks` (test + lint + commitlint) instead — see `references/nextjs-monorepo.md`. Never install both: `core.hooksPath` and `simple-git-hooks` overwrite each other.
+
 | # | Gate | Purpose | Typical time |
 |:--:|:---|:---|:--:|
 | 1 | `scripts/check-commit-size.sh` | ≤10 files AND ≤300 lines | <1s |
@@ -494,20 +496,19 @@ A session usually contains several back-to-back tasks. Each one might pass its t
 
 Two guardrails prevent Prettier ↔ VS Code TS-formatter drift:
 
-1. `.vscode/settings.json` routes `[typescript]` and `[javascript]` overrides to `dbaeumer.vscode-eslint` so the editor never re-formats with TS's own rules.
+1. `source.fixAll.eslint` on save applies the ESLint-with-Prettier rules **after** whatever formatter handled the file, so the lint rules always have the last word. TS/TSX files format with `vscode.typescript-language-features` (its output is then normalised by the ESLint fix pass); everything else defaults to `dbaeumer.vscode-eslint`. The canonical per-variant `.vscode/settings.json` blocks live in `references/bun-typescript.md` and `references/nextjs-monorepo.md`.
 2. The pre-commit hook runs the full four-check loop, catching any drift at commit time.
 
 ```json
-// .vscode/settings.json
+// .vscode/settings.json (excerpt — full blocks in the variant references)
 {
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "dbaeumer.vscode-eslint",
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
-  "[typescript]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" },
-  "[javascript]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" },
-  "[typescriptreact]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" }
+  "[typescript]": { "editor.defaultFormatter": "vscode.typescript-language-features" },
+  "[typescriptreact]": { "editor.defaultFormatter": "vscode.typescript-language-features" }
 }
 ```
 

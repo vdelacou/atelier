@@ -122,8 +122,10 @@ After adopting `Result`, the repo has exactly these places that may contain `try
 | Location | What for |
 |:---|:---|
 | `src/infra/**` | Every adapter wraps its third-party call (`fetch`, `googleapis`, `Bun.file`, `twitter-api-v2`). The catch translates thrown exceptions into the port's discriminated-union error variants and returns `err(...)`. |
-| `src/domain/**` | Only for native synchronous APIs whose normal contract is to throw: `JSON.parse` (with a safe fallback), `URL` constructor (validation gate), `DOMException`. |
+| `src/domain/**` | Only for native synchronous APIs whose normal contract is to throw: `JSON.parse` (with a safe fallback), `URL` constructor (validation gate), `decodeURIComponent`. |
 | `src/main.ts` | Exactly one top-level catch. Sends the bug report ("crashed (unexpected)"), calls `process.exit(1)`. |
+
+`*.test.ts` files and `src/test-helpers/**` sit outside the quarantine — test code may catch (mirrors hard rule 20's test carve-out).
 
 `src/use-cases/**` has **zero** `try/catch`. Every port call is pattern-matched on `.ok`. If you catch a thrown exception inside a use-case, the port has lied about its contract — fix the port, don't silence the symptom.
 
@@ -224,15 +226,13 @@ export const retryOnErr = async <T, E>(
   shouldRetry: (error: E) => boolean,
   opts: RetryOpts
 ): Promise<Result<T, E>> => {
-  let lastErr: E | undefined;
-  for (let attempt = 0; attempt < opts.maxAttempts; attempt += 1) {
-    const result = await fn();
-    if (result.ok) return result;
-    lastErr = result.error;
-    if (!shouldRetry(result.error)) return result;
-    await sleep(opts.baseDelayMs * 2 ** attempt);
+  let last: Result<T, E> = await fn();
+  for (let attempt = 1; attempt < opts.maxAttempts; attempt += 1) {
+    if (last.ok || !shouldRetry(last.error)) return last;
+    await sleep(opts.baseDelayMs * 2 ** (attempt - 1));
+    last = await fn();
   }
-  return err(lastErr as E);
+  return last;
 };
 
 // usage: retry only on rate-limited, never on unauthorized

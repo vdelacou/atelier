@@ -4,6 +4,8 @@
 
 The SUT of every unit test is a **primary port** — a use case, command handler, or application service at the hexagonal boundary. Inside the port, the full domain runs real: entities, value objects, domain services, aggregate roots. The only test doubles are **fakes** for secondary ports (repository, email sender, clock, token decoder, payment gateway, any adapter to the outside world).
 
+> **Note on examples.** Some example port signatures in this file are elided to `Promise<T>` for brevity where error handling is not the lesson. Real IO ports return `Promise<Result<T, PortError>>` and use-cases return `Promise<Result<Summary, StepError>>` — hard rule 16, see `references/result-type.md`.
+
 Benefits:
 
 - Refactoring the domain never breaks tests.
@@ -182,10 +184,10 @@ Three shapes are permitted: **dummy**, **stub**, **fake**. Hand-written spies (a
 
 ### Dummy
 
-A record passed but never used.
+A record passed but never used. Satisfy the port with real no-ops — never `{} as Logger`, which is the non-narrowing `as` cast the skill bans.
 
 ```ts
-const dummyLogger = {} as Logger;
+const dummyLogger: Logger = { info: () => {}, warn: () => {}, error: () => {} };
 const service = createUserService(realRepo, dummyLogger);
 ```
 
@@ -225,40 +227,14 @@ When the code under test returns `Result<T, E>`, the fake needs an optional `err
 ```ts
 export const createSheetsFake = (config?: {
   tabs?: Partial<Record<string, ReadonlyArray<SheetRow>>>;
-  errors?: {
-    readRows?: SheetsError;
-    appendOrUpdate?: SheetsError;
-    deleteRow?: SheetsError;
-  };
+  errors?: { readRows?: SheetsError; appendOrUpdate?: SheetsError; deleteRow?: SheetsError };
 }): Sheets => {
-  const store = new Map<string, SheetRow[]>();
-  for (const [tab, rows] of Object.entries(config?.tabs ?? {})) store.set(tab, [...(rows ?? [])]);
-
-  return {
-    readRows: async (tab) => {
-      if (config?.errors?.readRows) return err(config.errors.readRows);
-      return ok(store.get(tab) ?? []);
-    },
-    appendOrUpdate: async (tab, row) => {
-      if (config?.errors?.appendOrUpdate) return err(config.errors.appendOrUpdate);
-      const rows = store.get(tab) ?? [];
-      store.set(tab, [...rows.filter((r) => r.id !== row.id), row]);
-      return ok(undefined);
-    },
-  };
+  // each operation checks its errors entry first: if set, return err(config.errors.<op>);
+  // otherwise act on an in-memory store seeded from config.tabs.
 };
 ```
 
-Used in a test:
-
-```ts
-const sheets = createSheetsFake({
-  tabs: { POST: [row] },
-  errors: { appendOrUpdate: { kind: 'write-failed', message: 'quota' } },
-});
-```
-
-Cast the error-map value to the port's discriminated-union shape with `as const` on the `kind` so TypeScript narrows to the right variant. See `references/result-type.md`.
+Full implementation: `references/result-type.md` (fakes with error injection).
 
 ### Batch use-cases: `ok(summary)` with an `errored` count
 
@@ -302,17 +278,7 @@ expect(spy.sentEmails).toContain(email('user@example.com'));
 
 ### No `mock` from `bun:test` (absolute, enforced by lint)
 
-The entire `mock` namespace of `bun:test` is banned — `mock()`, `mock.module()`, `.toHaveBeenCalledWith`, `.toHaveBeenCalledTimes`. Enforced by `no-restricted-imports` in `eslint.config.js`:
-
-```js
-'no-restricted-imports': ['error', {
-  paths: [{
-    name: 'bun:test',
-    importNames: ['mock'],
-    message: 'Use fakes (in-memory implementations), hand-written spies, or the createXFromApi(api) two-constructor pattern for infra adapters. See references/testing.md.',
-  }],
-}],
-```
+The entire `mock` namespace of `bun:test` is banned — `mock()`, `mock.module()`, `.toHaveBeenCalledWith`, `.toHaveBeenCalledTimes`. The canonical `no-restricted-imports` block that enforces this lives in `references/bun-typescript.md` (ESLint config section); it bans the entire `mock` namespace from `bun:test`.
 
 ```ts
 // BANNED
@@ -366,7 +332,7 @@ describe('placeOrder', () => {
 
     const [saved] = await orders.findByCustomer(customer);
     expect(saved.total).toEqual(money(80, 'EUR'));
-    expect(emails.sentTo).toContain(email('c-1@example.com'));
+    expect(emails.sentEmails).toContain(email('c-1@example.com'));
   });
 });
 ```
@@ -438,13 +404,13 @@ it('round-trips through the factory', () => {
   files: ['src/**/!(*.test).ts'],
   rules: {
     'no-restricted-imports': ['error', {
-      patterns: [{ group: ['*'], importNames: ['/Unsafe$/'], message: '*Unsafe helpers are test-only' }],
+      patterns: [{ group: ['**'], importNamePattern: 'Unsafe$', message: '*Unsafe helpers are test-only' }],
     }],
   },
 }
 ```
 
-(ESLint's `importNames` doesn't accept regex directly; in practice the rule is enforced by review or by a small custom rule. The convention is the load-bearing part.)
+(The pattern IS lint-enforceable: ESLint ≥ 8.31 supports `importNamePattern` — a regex over imported names — inside `patterns`, so no custom rule is needed.)
 
 ### Secondary-port integration tests
 
@@ -461,7 +427,7 @@ describe('postgresOrderRepo', () => {
   it('saves an order and finds it by customer', async () => {
     const order = buildOrder({ customer: customerId('c-1'), total: money(80, 'EUR') });
     await repo.save(order);
-    const [found] = await repo.findByCustomer(customer('c-1'));
+    const [found] = await repo.findByCustomer(customerId('c-1'));
     expect(found).toEqual(order);
   });
 });
