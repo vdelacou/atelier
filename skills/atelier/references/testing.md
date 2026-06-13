@@ -14,6 +14,19 @@ Benefits:
 
 See `references/tdd.md` for the full treatment and Ian Cooper's context.
 
+## Test the code you own; trust your dependencies
+
+The first question before writing any test is *whose behaviour am I pinning?* Test only the code this repo owns. Never write a test whose real assertion is that a third-party library, the runtime, or the framework behaves as documented — that test pins someone else's contract, breaks when they release, and proves nothing about your code. Trust your dependencies; if one is genuinely suspect, the answer is to pin its version (hard rule 19) or replace it, not to grow a test suite around it.
+
+This single principle is why several other rules look the way they do:
+
+- **Adapters test the translation, not the SDK.** An infra adapter's job is to turn a library's contract into `Result<T, PortError>`. The test feeds a slice of the SDK's real surface (the two-constructor pattern, hard rule 13) and asserts that *your* mapping of success and error is correct — not that the SDK itself works. You are testing the seam, not the library behind it. See the infra-adapter section below and `references/testing-infra.md`.
+- **SDK-bridge lines are coverage-exempt.** A line whose only job is to construct or call into a third-party SDK has no behaviour of yours to cover, so it is exempt from the line-coverage gate rather than wrapped in a contortion test. See `references/workflow.md` (SDK-bridge lines).
+- **Domain pieces are used, not tested.** Entities, value objects, and domain services run real inside a primary-port test (the classicist rule above). You own them, but you pin their behaviour *through the port*, not in isolation — so they stay free to refactor.
+- **Prop-pure components are not unit-tested.** A design-system component is a deterministic prop→JSX map with no logic of its own (hard rule 21); there is nothing to own a test. It is covered by the design-system lint block and review, never by React Testing Library ceremony that re-proves React renders props.
+
+The same instinct underlies the mock ban (hard rule 13): you write fakes for the secondary-port contracts *you define*, and for code you do not own you inject a thin slice of its real surface — you never reach into a dependency to puppet it.
+
 ## The testing pyramid
 
 ```

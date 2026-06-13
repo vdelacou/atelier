@@ -164,6 +164,8 @@ Red-Green-Refactor is the only loop:
 
 **What is the unit?** A unit is a **behaviour**, not a function. The test targets the primary port (use case, command handler, application service). Inside the port, every domain collaborator runs for real. The only test doubles are hand-written fakes for secondary ports (repository, email sender, clock, token decoder). This is Outside-in classicist TDD (Ian Cooper). See `references/tdd.md` for the full treatment.
 
+**Test the code you own; trust your dependencies.** Never write a test whose real assertion is that a third-party library, the runtime, or the framework behaves as documented — pin your own behaviour, not someone else's contract. This is why adapters test their *translation* of an SDK (not the SDK), SDK-bridge lines are coverage-exempt, domain pieces are exercised through the port rather than tested in isolation, and prop-pure design-system components carry no unit tests at all. See `references/testing.md` (Test the code you own).
+
 **Test naming.** Every test describes a complete business scenario in domain language. Not the name of a function.
 
 - Bad: `'getDiscount returns 20 when tier is premium'`
@@ -340,7 +342,7 @@ Toolchain:
 
 Engineering:
 - `references/tdd.md` | Red-Green-Refactor, Three Laws, triangulation, transformation priority, writing tests backwards, why we use fakes not mocks.
-- `references/testing.md` | Outside-in classicist school, primary-port SUT, fakes (with error-injection knob), the absolute no-`mock`-from-`bun:test` rule, test builders, contract tests, common mistakes.
+- `references/testing.md` | Outside-in classicist school, primary-port SUT, the test-the-code-you-own principle (trust your dependencies), fakes (with error-injection knob), the absolute no-`mock`-from-`bun:test` rule, test builders, contract tests, common mistakes.
 - `references/testing-infra.md` | three patterns for infra-adapter tests (custom-fetch DI / two-constructor / sync-builder export), production-wiring smoke test, `installFetchMock`, global-swap pattern, FS chmod tricks, ordering gotchas.
 - `references/solid-principles.md` | SRP, OCP, LSP, ISP, DIP expressed as typed records and function contracts.
 - `references/clean-code.md` | naming priorities, object calisthenics translated to a class-free world, comments, formatting, storytelling.

@@ -55,7 +55,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 - `security.md` — source-to-sink threat model, vulnerability categories for Bun/TypeScript + Next.js, branded types for trust boundaries, pre-merge checklist, adopted false-positive filter
 - `solid-principles.md` — SRP, OCP, LSP, ISP, DIP expressed as typed records and function contracts
 - `tdd.md` — Outside-in classicist TDD (Ian Cooper), primary-port SUT, real-domain + faked-secondary-ports rule, Red-Green-Refactor, Three Laws, triangulation
-- `testing.md` — primary-port unit tests, fakes with `errors` knob, batch-use-case semantics, test doubles catalogue, test builders, contract tests
+- `testing.md` — primary-port unit tests, the test-the-code-you-own principle (trust your dependencies), fakes with `errors` knob, batch-use-case semantics, test doubles catalogue, test builders, contract tests
 - `testing-infra.md` — three patterns for infra-adapter tests (custom-fetch DI / two-constructor / sync-builder export), production-wiring smoke test, `installFetchMock`, global-swap pattern, FS chmod tricks, ordering gotchas
 - `workflow.md` — four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, eight-gate pre-commit hook, Conventional Commits `commit-msg` hook, README consistency check
 
