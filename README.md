@@ -36,6 +36,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 | Toolchain discipline | `bun run lint` must be 0 errors AND 0 warnings; no inline ignores of any tool ever; inner-loop checks (`bun test` + `lint` + `typecheck` + `coverage`) after every change; coverage gates 100% on `domain` + `use-cases`, 80% on `composition` + `infra` + `presenter`; Stryker mutation testing with ≥90% break threshold; no `"latest"` or `"*"` in `package.json` (use `bun add` / `bun update`); eight-gate pre-commit hook (commit-size ≤10 files / ≤300 lines, package.json check, gitleaks `protect --staged`, tests, lint:strict, typecheck, coverage, mutate:staged) |
 | Security | Source-to-sink threat model, branded types at trust boundaries (`SafeUrl`, `SanitizedHtml`, `EnvVar`, `SafePath`), strict false-positive filter when reviewing |
 | Commits | Conventional Commits enforced by a `commit-msg` hook (rule 23) — `type(scope)!: subject`; the Bun-script variant ships a zero-dependency validator, the Next.js variant uses `@commitlint/config-conventional`. Same grammar both ways |
+| Integration | Trunk-based development — commit to `main` in small green increments (≤10 files / ≤300 lines), no long-lived feature branches; unfinished work hides behind a flag. The pre-commit gates keep every commit releasable |
 | Memory | Append-only `.claude/LESSONS.md` and `.claude/lessons.local.md` across sessions |
 
 **Reference documentation included:**
@@ -57,7 +58,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 - `tdd.md` — Outside-in classicist TDD (Ian Cooper), primary-port SUT, real-domain + faked-secondary-ports rule, Red-Green-Refactor, Three Laws, triangulation
 - `testing.md` — primary-port unit tests, the test-the-code-you-own principle (trust your dependencies), fakes with `errors` knob, batch-use-case semantics, test doubles catalogue, test builders, contract tests
 - `testing-infra.md` — three patterns for infra-adapter tests (custom-fetch DI / two-constructor / sync-builder export), production-wiring smoke test, `installFetchMock`, global-swap pattern, FS chmod tricks, ordering gotchas
-- `workflow.md` — four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, eight-gate pre-commit hook, Conventional Commits `commit-msg` hook, README consistency check
+- `workflow.md` — four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, trunk-based development, eight-gate pre-commit hook, Conventional Commits `commit-msg` hook, README consistency check
 
 ## Installation
 

@@ -278,6 +278,21 @@ const value = row['maybe-absent'] ?? ''; // typed as string | undefined, narrowe
 
 Every consumer that did `value !== undefined` on the first form was calling a check the type said could never be false. The `Partial` form makes the check real.
 
+## Trunk-based development
+
+Integrate to one branch — `main` (the trunk) — continuously. Commit straight to it, or through a branch that lives **less than a day** and merges back small. Long-lived feature branches are the thing this model exists to avoid: every day a branch diverges, the eventual merge gets riskier, review gets coarser, and `main` stops reflecting reality.
+
+The rules already in this skill are precisely what makes committing to the trunk safe — trunk-based development is their reason for existing, not a separate concern:
+
+- **Every commit keeps `main` releasable.** The eight-gate pre-commit hook (below) is the gate that lets you commit to a shared trunk without breaking everyone else — tests pass, types check, coverage and mutation hold, no secrets, before the commit lands.
+- **Commits stay small** (gate 1: ≤10 files AND ≤300 lines). Small commits are the unit of continuous integration; they review in minutes, revert cleanly, and bisect precisely. A 300-line ceiling is a trunk-based ceiling.
+- **History stays linear and legible** (Conventional Commits, `commit-msg` hook). A trunk read top-to-bottom is the changelog.
+- **Incomplete work hides behind a flag, not a branch.** When a feature spans several commits, keep each commit green and the half-built path dark behind a feature flag or simply unreferenced — never park weeks of work on a divergent branch. This is the same instinct as YAGNI and "minimal": ship the smallest safe increment.
+
+Practical loop: pull/rebase often to stay close to the trunk; run the four-check loop after every change; commit when green; push. If a change is too big to land safely in one ≤300-line commit, split it into a sequence of green commits, not a long-lived branch. Releases are cut from the trunk (tag or release branch at the moment of release), never developed on for weeks beforehand.
+
+This is the default for this codebase. It overrides any tooling habit of "branch first by default" — branch only when a short-lived branch genuinely helps (e.g. a PR-review gate your team requires), and merge it the same day.
+
 ## Pre-commit hook (eight gates)
 
 The hook is the safety net for the entire workflow. It runs **eight gates** in cost-ascending order — cheap fast-fail gates first, expensive gates last so a slow mutation run only happens when everything else is clean.

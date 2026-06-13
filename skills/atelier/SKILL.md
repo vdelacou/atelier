@@ -375,7 +375,9 @@ Process:
 7. Any new dependency uses `bun add` / `bun add -d`.
 8. Any logging goes through `deps.logger` (the `Logger` port). Never `console.*`, never a module-level singleton.
 9. Any commit message follows Conventional Commits — `type(scope)!: subject`, validated by the `commit-msg` hook (hard rule 23). Write it that way the first time; do not lean on `--no-verify`.
-10. If legacy code in the repo uses a forbidden pattern, match the local style in that file only. Flag the drift once and offer to refactor.
+10. Work trunk-based: commit to `main` in small green increments (≤10 files / ≤300 lines per gate 1), not onto long-lived feature branches. Every commit keeps `main` releasable — that is what the pre-commit gates guarantee. Hide unfinished work behind a flag, not a branch. This is the default and overrides any "branch first" habit. See `references/workflow.md` (Trunk-based development).
+11. If legacy code in the repo uses a forbidden pattern, match the local style in that file only. Flag the drift once and offer to refactor.
+12. At session wrap-up, scan for `[mistake]`, `[decision]`, `[gotcha]` entries worth capturing. Propose a candidate list and append on approval. See `references/lessons.md`.
 11. At session wrap-up, scan for `[mistake]`, `[decision]`, `[gotcha]` entries worth capturing. Propose a candidate list and append on approval. See `references/lessons.md`.
 
 ## Pre-code checklist
