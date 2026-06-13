@@ -147,6 +147,8 @@ See `references/lessons.md` for the entry format, extraction heuristics, routing
 
 22. **Styling is sealed inside the design system — the app never sees Tailwind.** The mirror image of rule 21. Utility classes exist only under `src/components/**`; design tokens live in `app/globals.css` (Tailwind v4 CSS-first config). `app/**` routes, `src/page/**` shells, `src/lib/**`, and `src/config/**` never contain a class string: page shells stack organisms in a bare `<main>`, and each organism owns its own section spacing. Molecules and organisms expose typed variant props (`variant`, `size`, `tone`), never free-form `className`/`style`; only leaf atoms (icons and similar primitives) accept `className`, and only from design-system parents. If something needs styling, it *is* a design-system component. Two tests: a rebrand touches only `src/components/**` + `globals.css`; swapping the styling engine leaves the app byte-identical. See `references/atomic-design.md`.
 
+23. **Conventional Commits, enforced by a hook — not by goodwill.** Every commit message is `type(optional-scope)!: subject` with a type from the standard set (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`), an optional lowercase scope, an optional `!` for breaking changes, a non-empty subject with no trailing period, and a header ≤100 chars. This is the project changelog and the `git bisect` surface; a soft convention drifts, so a `commit-msg` hook validates it on every commit and rejects the rest. Enforcement is wired per variant: the Bun-script variant installs the dependency-free `assets/commit-msg` validator into `.githooks/` (alongside the eight-gate `pre-commit`, both picked up by `core.hooksPath`); the Next.js monorepo enforces the identical grammar through `@commitlint/config-conventional` as a `simple-git-hooks` `commit-msg` step. The `commit-msg` hook is distinct from the eight pre-commit gates — it fires on the message, not the staged diff. See `references/workflow.md` (Commit message format).
+
 ## The TDD process (non-negotiable - every feature)
 
 Red-Green-Refactor is the only loop:
@@ -323,6 +325,7 @@ The hard rules are universal unless this table says otherwise. Gates and tooling
 | Coverage tiers (`check-coverage.ts`) | Yes — 100/100/80 | No |
 | Stryker mutation | Yes — gates `mutate:staged`/`mutate:changed` | No |
 | Pre-commit | Eight-gate `.githooks/pre-commit` | `simple-git-hooks`: test + lint + commitlint — never install both hook mechanisms |
+| Commit message (rule 23) | `commit-msg` hook: shipped `assets/commit-msg` validator (zero deps) | `commit-msg` hook: `@commitlint/config-conventional` via `simple-git-hooks` — same grammar |
 | Logger | `Logger` port + `src/infra` adapter (rule 4) | Sanctioned singleton `src/lib/utils/logger.ts` (rule 4 exception) |
 | `Result<T, E>` (rule 16) | Every IO port | `src/lib/**` runtime IO; build-time data loaders may throw — a loud failed build is the desired outcome |
 | Mock ban (rule 13) | `no-restricted-imports` in ESLint config | Same rule, added with the test setup |
@@ -369,7 +372,7 @@ Process:
 6. Never emit `class`, `function` declaration, `interface`, `console.*`, or `npm/pnpm/yarn/node/vite`. Refuse and rewrite.
 7. Any new dependency uses `bun add` / `bun add -d`.
 8. Any logging goes through `deps.logger` (the `Logger` port). Never `console.*`, never a module-level singleton.
-9. Any commit message uses Conventional Commits.
+9. Any commit message follows Conventional Commits — `type(scope)!: subject`, validated by the `commit-msg` hook (hard rule 23). Write it that way the first time; do not lean on `--no-verify`.
 10. If legacy code in the repo uses a forbidden pattern, match the local style in that file only. Flag the drift once and offer to refactor.
 11. At session wrap-up, scan for `[mistake]`, `[decision]`, `[gotcha]` entries worth capturing. Propose a candidate list and append on approval. See `references/lessons.md`.
 
@@ -441,6 +444,7 @@ The pre-commit hook runs **eight gates** in order: commit size → package.json 
 - Domain-specific data (brand lists, flow slugs, tier rates, tenant names) hardcoded as string-literal unions or records in framework code. Drive from env or config files; keep the framework generic.
 - A per-file exclusion in `stryker.conf.json` for "the tests are awkward". Skip lists rot. The only structural exclusions are `**/*.test.ts` and `**/ports/**`. If a file produces equivalent or flaky mutants, tighten the test or refactor the production code — never add it to a skip list.
 - A commit exceeding 10 files OR 300 lines (insertions + deletions) without a clear big-bang justification (initial scaffold, mass-rename, generated files). Split into smaller coherent slices. The pre-commit gate enforces this; do not normalise `--no-verify`.
+- A commit message that is not Conventional Commits — no `type:` prefix, an unlisted type (`wip:`, `update:`), a capitalised type, a trailing period, or a >100-char header. The `commit-msg` hook rejects these (hard rule 23); write `type(scope): subject` the first time rather than reaching for `--no-verify`. A repo with the eight-gate `pre-commit` installed but no `commit-msg` hook is half-protected — wire both.
 - A composition root or wiring file declared "untestable" and skipped. The two ergonomic switches make any composition file 100%-testable: parameterise every state-source (path, env var, clock) and inject every output sink (logger, sender). See `references/architecture.md` (Composition root testability).
 - A `"latest"` or `"*"` version string anywhere in `package.json`. Use `bun add <pkg>` so the version pins to `^X.Y.Z` at install time. To bump deliberately, run `bun update` and commit the lockfile change in the same commit. Enforced by `scripts/check-package-json.sh` (pre-commit gate 2).
 - Closing a session (or declaring a task done) with non-README files modified but the README un-audited. The README is part of the change set — re-read it, update what drifted, or state in one sentence that nothing user-visible changed. See Behavioural Guideline #5.

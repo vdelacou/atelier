@@ -295,13 +295,14 @@ This eight-gate hook is the **Bun-script variant's** mechanism. The Next.js mono
 | 7 | `bun run coverage` | per-tier thresholds pass | seconds |
 | 8 | `bun run mutate:staged` | ≥90% mutation score on staged domain/use-case files | 1–3 min per staged file |
 
-A ready-to-copy script lives in the skill at `assets/pre-commit`. The companion scripts (`check-commit-size.sh`, `check-package-json.sh`, `mutate-staged.sh`, `mutate-changed.sh`, `regenerate-coverage-preload.ts`) live alongside it.
+A ready-to-copy script lives in the skill at `assets/pre-commit`. The companion scripts (`check-commit-size.sh`, `check-package-json.sh`, `mutate-staged.sh`, `mutate-changed.sh`, `regenerate-coverage-preload.ts`) live alongside it, plus `assets/commit-msg` — a separate git hook documented under *Commit message format* below.
 
 ### Install once per clone
 
 ```bash
 mkdir -p .githooks scripts
 cp <skill>/assets/pre-commit .githooks/pre-commit
+cp <skill>/assets/commit-msg .githooks/commit-msg
 cp <skill>/assets/check-commit-size.sh scripts/check-commit-size.sh
 cp <skill>/assets/check-package-json.sh scripts/check-package-json.sh
 cp <skill>/assets/check-coverage.ts scripts/check-coverage.ts
@@ -309,11 +310,13 @@ cp <skill>/assets/regenerate-coverage-preload.ts scripts/regenerate-coverage-pre
 cp <skill>/assets/mutate-staged.sh scripts/mutate-staged.sh
 cp <skill>/assets/mutate-changed.sh scripts/mutate-changed.sh
 cp <skill>/assets/stryker.conf.json stryker.conf.json
-chmod +x .githooks/pre-commit scripts/*.sh scripts/check-coverage.ts scripts/regenerate-coverage-preload.ts
+chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh scripts/check-coverage.ts scripts/regenerate-coverage-preload.ts
 git config core.hooksPath .githooks
 # Generate the initial coverage-preload.ts from the current src/ tree
 bun run scripts/regenerate-coverage-preload.ts
 ```
+
+`core.hooksPath .githooks` picks up **both** `.githooks/pre-commit` (the eight gates, on the staged diff) and `.githooks/commit-msg` (Conventional Commits, on the message) — one config, two hooks.
 
 Add to `package.json`:
 
@@ -426,6 +429,27 @@ There is no native Bun runner today, so we use the command runner — Stryker sh
 Skip lists rot — the next person assumes a file was untestable when really it was just inconvenient that day. If you're tempted to exclude a file, that's a smell — fix the test instead.
 
 ESLint must ignore `.stryker-tmp/` and `reports/` so Stryker scratch dirs do not get linted (see `references/bun-typescript.md`).
+
+### Commit message format (commit-msg hook)
+
+The eight gates above run on the **staged diff** via `pre-commit`. Commit *messages* are validated by a separate git hook, `commit-msg`, which fires after you write the message — `assets/commit-msg`, installed to `.githooks/commit-msg` and picked up by the same `core.hooksPath`. It is not a ninth gate; it is a different hook on a different input (SKILL.md hard rule 23).
+
+The contract is [Conventional Commits](https://www.conventionalcommits.org):
+
+```
+type(optional-scope)!: subject
+```
+
+- **type** — one of `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert` (the `@commitlint/config-conventional` set).
+- **scope** — optional, lowercase, in parentheses: `feat(auth):`, `fix(api):`.
+- **!** — optional, marks a breaking change: `refactor(orders)!:`.
+- **subject** — required, no trailing period, header ≤100 chars.
+
+Why a hook and not just a guideline: the commit log is the project's changelog and `git bisect` surface. A machine-readable `type`/`scope` lets tooling derive release notes, group history, and flag breaking changes. A soft "please use Conventional Commits" drifts within a week; the hook keeps every commit on `main` honest and rejects `wip:`, `update stuff`, `Fix: thing`, and the like. git-generated `Merge`/`Revert`/`fixup!`/`squash!` headers are passed through untouched.
+
+The shipped `assets/commit-msg` is a **dependency-free shell validator** — it matches the hand-rolled style of the other gate scripts and adds nothing to `package.json`. The Next.js monorepo variant enforces the identical grammar through `@commitlint/config-conventional` (already in its root toolchain) wired as a `simple-git-hooks` `commit-msg` step; see `references/nextjs-monorepo.md`. Either way the grammar is the same — only the validator differs.
+
+For Husky, copy `assets/commit-msg`'s body into `.husky/commit-msg`.
 
 ### Periodic audit: surface dead code in `test-helpers`
 

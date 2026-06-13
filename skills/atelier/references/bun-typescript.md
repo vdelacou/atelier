@@ -412,13 +412,16 @@ The shared `formatError(err: unknown): string` helper lives in `src/domain/utili
     - `cp <skill-path>/assets/mutate-changed.sh scripts/mutate-changed.sh`
     - `chmod +x scripts/*.sh`
     - Add to `.gitignore`: `.stryker-tmp/` and `reports/` (Stryker scratch + output dirs).
-14. Install the pre-commit hook (eight gates):
+14. Install the git hooks (eight-gate pre-commit + commit-msg):
     - `cp <skill-path>/assets/check-commit-size.sh scripts/check-commit-size.sh`
     - `cp <skill-path>/assets/check-package-json.sh scripts/check-package-json.sh`
     - `chmod +x scripts/check-commit-size.sh scripts/check-package-json.sh`
-    - `mkdir -p .githooks && cp <skill-path>/assets/pre-commit .githooks/pre-commit && chmod +x .githooks/pre-commit`
-    - `git config core.hooksPath .githooks`
+    - `mkdir -p .githooks`
+    - `cp <skill-path>/assets/pre-commit .githooks/pre-commit`
+    - `cp <skill-path>/assets/commit-msg .githooks/commit-msg` (Conventional Commits validator, hard rule 23 — dependency-free, no `package.json` change)
+    - `chmod +x .githooks/pre-commit .githooks/commit-msg`
+    - `git config core.hooksPath .githooks` (picks up both hooks)
     - Optional: `brew install gitleaks` (macOS) or grab a binary from `github.com/gitleaks/gitleaks/releases`. The hook degrades gracefully if missing.
-    - See `references/workflow.md` for the eight-gate breakdown and the no-bypass rule.
-15. Verify: `bun run lint`, `bun run typecheck`, `bun run coverage`, and `bun run mutate` all clean on a minimal `src/main.ts`. Run `bash scripts/check-package-json.sh` once to confirm no `"latest"` slipped in.
-16. Commit with Conventional Commits; from here, follow the Clean Architecture rules for every new feature.
+    - See `references/workflow.md` for the eight-gate breakdown, the commit-message format, and the no-bypass rule.
+15. Verify: `bun run lint`, `bun run typecheck`, `bun run coverage`, and `bun run mutate` all clean on a minimal `src/main.ts`. Run `bash scripts/check-package-json.sh` once to confirm no `"latest"` slipped in, and confirm the `commit-msg` hook rejects a junk message (`echo 'nope' | …` or just try a bad commit).
+16. Commit with Conventional Commits (`type(scope): subject`); the `commit-msg` hook now enforces it. From here, follow the Clean Architecture rules for every new feature.
