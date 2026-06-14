@@ -49,7 +49,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 - `class-to-module.md` — translation table for classical OO patterns (value object, interface, service, strategy, factory, decorator, observer, command, entity)
 - `clean-code.md` — naming priorities, object calisthenics in a class-free world, comments, formatting
 - `code-smells.md` — detection catalogue and the refactorings that clean each smell
-- `complexity.md` — essential vs accidental complexity, YAGNI, DRY + Rule of Three, KISS
+- `complexity.md` — essential vs accidental complexity, YAGNI, the lazy ladder (stop at the first rung; simplicity is not negligence), KISS, DRY + Rule of Three
 - `design-patterns.md` — full GoF catalogue rewritten as modules of arrow functions
 - `lessons.md` — session memory format, triggers, extraction heuristics, worked examples
 - `nextjs-monorepo.md` — Next.js 16 + Tailwind v4 + i18n route groups + static export

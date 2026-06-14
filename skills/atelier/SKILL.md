@@ -39,6 +39,19 @@ Minimum code that solves the problem. Nothing speculative.
 
 Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 
+**The lazy ladder — stop at the first rung that solves it.** Before writing code, walk these in order and stop as soon as one applies; the cheapest code is the code you never wrote:
+
+1. **Does it need to exist?** YAGNI — if nothing requires it, skip it.
+2. **Standard library / language feature?** Use it before hand-rolling.
+3. **Native runtime capability?** Reach for `Bun.file`/`Bun.write` (rule 20), `crypto.subtle`, `fetch`, `URL`, Web APIs before adding a dependency.
+4. **A dependency already in `package.json`?** Use it before `bun add`-ing another (rule 19).
+5. **One clear line?** Then one line.
+6. **Only then** write the minimum that works.
+
+Tiebreaker: when two stdlib options are equally sized, pick the edge-case-correct, more efficient one. Delete before adding; prefer boring over clever.
+
+**Simplicity is not negligence.** The ladder trims speculation, never safety. Never minimized: trust-boundary validation (branded value objects), `Result` error handling at IO boundaries, security (source-to-sink), accessibility in UI, and anything the user explicitly asked for. "No error handling for impossible scenarios" means skip the *impossible* cases — not the real failure modes that branded types and `Result` exist to capture. See `references/complexity.md` (The lazy ladder).
+
 ### 3. Surgical changes
 
 Touch only what you must. Clean up only your own mess.
@@ -354,7 +367,7 @@ Engineering:
 - `references/clean-code.md` | naming priorities, object calisthenics translated to a class-free world, comments, formatting, storytelling.
 - `references/object-design.md` | RDD, stereotypes, tell-don't-ask, value objects vs entities, aggregates, polymorphism via dispatch.
 - `references/code-smells.md` | detection catalogue and the refactorings that clean each smell.
-- `references/complexity.md` | essential vs accidental complexity, YAGNI, DRY + Rule of Three, KISS, four elements.
+- `references/complexity.md` | essential vs accidental complexity, YAGNI, the lazy ladder (stop at the first rung), KISS, DRY + Rule of Three, four elements.
 - `references/behavioural-examples.md` | before/after worked examples (in this repo's idiom) for the four Behavioural Guidelines: think-before-coding, simplicity, surgical changes, goal-driven execution; anti-pattern table.
 - `references/architecture.md` | vertical slices, dependency rule, hexagonal and clean architecture, walking skeleton.
 - `references/design-patterns.md` | full GoF catalogue rewritten as modules of arrow functions.
@@ -390,7 +403,7 @@ Process:
 
 1. Do I understand the requirement? Write acceptance criteria.
 2. What is the first failing test? (domain-language name, concrete example)
-3. What is the simplest solution?
+3. What is the simplest solution? Walk the lazy ladder (Behavioural Guideline #2) — skip it / stdlib / native runtime / existing dep / one line / minimal custom, in that order.
 4. Am I solving a real need or a hypothetical one?
 
 ## During-code checklist
