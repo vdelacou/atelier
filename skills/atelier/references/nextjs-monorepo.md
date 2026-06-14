@@ -526,4 +526,4 @@ This module-level singleton is the **sanctioned rule-4 exception** for this vari
 7. Set up `app/globals.css` for Tailwind v4.
 8. Lay out `src/components/{atoms,molecules,organisms}/`, `src/page/`, `src/lib/`, `src/config/`, `src/types/`.
 9. Verify: `bun run --filter <package-name> test`, `bun run --filter <package-name> lint`, and `bun run --filter <package-name> build` all exit clean.
-10. Commit with Conventional Commits.
+10. Commit with Conventional Commits — once the user confirms (rule 25).

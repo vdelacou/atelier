@@ -104,12 +104,12 @@ Add caching when a profile shows a hot path; validation when bad data actually a
 
 **Request:** "Fix the bug where an empty email crashes the signup parser."
 
-✗ **Before** — fixes the crash *and* adds username length/charset rules, rewords comments, and brands fields nobody mentioned:
+✗ **Before** — fixes the crash *and* adds username length/charset rules nobody asked for:
 
 ```ts
 const parseSignup = (raw: RawSignup): Result<Signup, ValidationError> => {
-  const address = raw.email.trim().length === 0 ? undefined : email(raw.email.trim());
-  if (!address) return err({ type: 'validation', field: 'email' });
+  if (raw.email.trim().length === 0) return err({ type: 'validation', field: 'email' });
+  const address = email(raw.email);
   if (raw.username.length < 3) return err({ type: 'validation', field: 'username' }); // not requested
   if (!/^[a-z0-9]+$/iu.test(raw.username)) return err({ type: 'validation', field: 'username' }); // not requested
   return ok({ address, username: username(raw.username) });

@@ -424,4 +424,4 @@ The shared `formatError(err: unknown): string` helper lives in `src/domain/utili
     - Optional: `brew install gitleaks` (macOS) or grab a binary from `github.com/gitleaks/gitleaks/releases`. The hook degrades gracefully if missing.
     - See `references/workflow.md` for the eight-gate breakdown, the commit-message format, and the no-bypass rule.
 15. Verify: `bun run lint`, `bun run typecheck`, `bun run coverage`, and `bun run mutate` all clean on a minimal `src/main.ts`. Run `bash scripts/check-package-json.sh` once to confirm no `"latest"` slipped in, and confirm the `commit-msg` hook rejects a junk message (`echo 'nope' | …` or just try a bad commit).
-16. Commit with Conventional Commits (`type(scope): subject`); the `commit-msg` hook now enforces it. From here, follow the Clean Architecture rules for every new feature.
+16. Commit with Conventional Commits (`type(scope): subject`) — once the user confirms (rule 25); the `commit-msg` hook enforces the format. From here, follow the Clean Architecture rules for every new feature.
