@@ -289,7 +289,7 @@ The rules already in this skill are precisely what makes committing to the trunk
 - **History stays linear and legible** (Conventional Commits, `commit-msg` hook). A trunk read top-to-bottom is the changelog.
 - **Incomplete work hides behind a flag, not a branch.** When a feature spans several commits, keep each commit green and the half-built path dark behind a feature flag or simply unreferenced — never park weeks of work on a divergent branch. This is the same instinct as YAGNI and "minimal": ship the smallest safe increment.
 
-Practical loop: pull/rebase often to stay close to the trunk; run the four-check loop after every change; commit when green; push. If a change is too big to land safely in one ≤300-line commit, split it into a sequence of green commits, not a long-lived branch. Releases are cut from the trunk (tag or release branch at the moment of release), never developed on for weeks beforehand.
+Practical loop: pull/rebase often to stay close to the trunk; run the four-check loop after every change; when green, propose the commit and commit it once the user confirms (SKILL.md hard rule 25 — the agent never commits or pushes on its own initiative); then push on their say-so. If a change is too big to land safely in one ≤300-line commit, split it into a sequence of green commits, not a long-lived branch. Releases are cut from the trunk (tag or release branch at the moment of release), never developed on for weeks beforehand.
 
 This is the default for this codebase. It overrides any tooling habit of "branch first by default" — branch only when a short-lived branch genuinely helps (e.g. a PR-review gate your team requires), and merge it the same day.
 
