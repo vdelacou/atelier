@@ -10,7 +10,7 @@ RED -> GREEN -> REFACTOR -> RED -> ...
 
 ### RED phase
 
-Write a failing test that describes the behaviour you want. The test should:
+Propose a failing test that describes the behaviour you want, and get the user's confirmation before writing it (SKILL.md hard rule 24 — tests are confirmation-gated; never create, change, or delete one silently). The test should:
 
 - Use domain language, not technical jargon.
 - Describe WHAT, not HOW.

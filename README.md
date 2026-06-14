@@ -30,6 +30,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 | UI / Design system | Atomic Design: independent, logic-free design system (`src/components/{atoms,molecules,organisms}`) of stateless props-only components — no hooks, no fetching, no i18n, no `next/*` imports; state hoisted to page shells via `src/lib/hooks/`, links/images injected as `ComponentType` props. Styling sealed inside: Tailwind utilities only under `src/components/**` (tokens in `globals.css`), typed variants instead of `className` passthrough — the app layer never sees Tailwind |
 | Logging | Logger is a **port** (`src/use-cases/ports/logger.ts`), Winston adapter in `src/infra/`, fake in `src/test-helpers/`. Never `console.*` |
 | Tests | Outside-in classicist TDD — SUT is the primary port, domain runs real, only secondary ports are faked, never mocks |
+| Test integrity | Tests are confirmation-gated (rule 24): the agent never creates, edits, deletes, skips, or weakens a test without showing you the change and getting an explicit yes — TDD stays test-first by *proposing* the Red test for approval. Prevents silently weakening a test to go green |
 | Error handling | Every IO port returns `Result<T, PortError>` with a discriminated-union error; use-cases return `Result<Summary, StepError>`; `try/catch` quarantined to `infra/`, `main.ts`, and pure-domain native-API fallbacks |
 | Design | SOLID expressed through typed records and arrow functions, object calisthenics |
 | Complexity | YAGNI, KISS, DRY after Rule of Three, Tell-Don't-Ask, Law of Demeter |

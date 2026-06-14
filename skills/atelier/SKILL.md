@@ -151,11 +151,13 @@ See `references/lessons.md` for the entry format, extraction heuristics, routing
 
 23. **Conventional Commits, enforced by a hook — not by goodwill.** Every commit message is `type(optional-scope)!: subject` with a type from the standard set (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`), an optional lowercase scope, an optional `!` for breaking changes, a non-empty subject with no trailing period, and a header ≤100 chars. This is the project changelog and the `git bisect` surface; a soft convention drifts, so a `commit-msg` hook validates it on every commit and rejects the rest. Enforcement is wired per variant: the Bun-script variant installs the dependency-free `assets/commit-msg` validator into `.githooks/` (alongside the eight-gate `pre-commit`, both picked up by `core.hooksPath`); the Next.js monorepo enforces the identical grammar through `@commitlint/config-conventional` as a `simple-git-hooks` `commit-msg` step. The `commit-msg` hook is distinct from the eight pre-commit gates — it fires on the message, not the staged diff. See `references/workflow.md` (Commit message format).
 
+24. **Never touch a test without explicit user confirmation.** Test files (`*.test.ts`, `*.spec.ts`) are confirmation-gated. Do not create, edit, rename, move, delete, skip (`.skip`, `.only`, `xfail`), or weaken (loosen an assertion, change an expected value, comment out a case) **any** test without first showing the user the exact test or diff and getting an explicit yes. Tests are the contract and the safety net; silently editing a failing test to make it pass, or deleting an inconvenient one, is the most dangerous move an agent makes — it disables the very check that catches regressions. This holds even under TDD (rule 11): the loop stays test-first, but the Red step becomes *propose the failing test → get confirmation → then write it*. When a test fails, the default is to fix the production code; changing the test is a last resort that needs the user's sign-off and a one-line reason. If asked to "just make the tests pass", never weaken them silently — surface the conflict and ask. The same applies to a change in `src/test-helpers/**` that would alter what existing tests assert. (Behavioural gate, like rule 11 — not lint-enforced; the discipline is the enforcement.)
+
 ## The TDD process (non-negotiable - every feature)
 
-Red-Green-Refactor is the only loop:
+Red-Green-Refactor is the only loop — with the test boundary confirmation-gated (rule 24):
 
-1. **RED.** Write a failing test. Concrete example, domain language. Tests go in `*.test.ts` next to source. Runner: `bun test`.
+1. **RED.** Propose a failing test — concrete example, domain language — and get the user's confirmation before writing it to `*.test.ts` next to source. Once confirmed, write it and watch it fail. Runner: `bun test`.
 2. **GREEN.** Write the simplest arrow-function code that makes it pass. "Fake it" (hardcoded return) is a valid first step.
 3. **REFACTOR.** Remove duplication (Rule of Three, wait for the third occurrence), improve names, extract functions, promote primitives to branded types.
 
@@ -175,7 +177,7 @@ Red-Green-Refactor is the only loop:
 
 **Test structure.** Arrange-Act-Assert. When stuck, write backwards: Assert first, then Act, then Arrange.
 
-When the user asks for a feature without mentioning tests, write the test first anyway and state briefly that you are doing so. If they ask you to skip tests, do not comply silently. Ask why, and offer to proceed with TDD or at minimum add the characterisation tests that pin current behaviour.
+When the user asks for a feature without mentioning tests, still go test-first — but propose the test and get confirmation before writing it (rule 24), stating briefly that you are doing so. If they ask you to skip tests, do not comply silently. Ask why, and offer to proceed with TDD or at minimum add the characterisation tests that pin current behaviour. Modifying or deleting an existing test is never silent — show the change and wait for an explicit yes.
 
 **Next.js variant scope.** The loop applies to logic — `src/lib/**` and `src/config/**` (path helpers, i18n, SEO builders, config factories, hook internals extracted as pure functions). Design-system components contain nothing unit-testable by design (rule 21 makes them prop→JSX maps); they are verified by the design-system lint block and review, not by tests. See the variant matrix below and `references/nextjs-monorepo.md` (Testing).
 
@@ -370,7 +372,7 @@ Process:
 0. Read `.claude/LESSONS.md` and `.claude/lessons.local.md` if they exist. Apply any relevant past lessons silently.
 1. Identify the variant. Read the matching variant reference.
 2. Identify the feature. If non-trivial, skim `references/architecture.md`.
-3. Write a failing test in `*.test.ts` with a concrete example name.
+3. Propose a failing test in `*.test.ts` with a concrete example name; get the user's confirmation before writing it, and never modify or delete an existing test without explicit sign-off (rule 24).
 4. Write the simplest arrow-function code to make it green.
 5. Refactor. Apply object calisthenics. Promote primitives to branded types. Extract on Rule of Three.
 6. Never emit `class`, `function` declaration, `interface`, `console.*`, or `npm/pnpm/yarn/node/vite`. Refuse and rewrite.
@@ -395,7 +397,7 @@ Process:
 2. Does this module have one reason to change?
 3. Am I depending on function-type contracts, not concretions?
 4. Is there duplication I should extract? (Rule of Three, not before)
-5. Did I write the test first?
+5. Did I write the test first — proposed and confirmed before writing, never silently changed (rule 24)?
 
 ## Post-code checklist
 
@@ -435,6 +437,7 @@ The pre-commit hook runs **eight gates** in order: commit size → package.json 
 - Passing raw strings or numbers for domain concepts instead of branded types.
 - Untrusted input reaching a sensitive sink (SQL, shell, filesystem, HTTP, HTML, redirect) without a branded-type checkpoint between them.
 - A secret (token, password, API key, PII) interpolated into a log line, or placed in a `NEXT_PUBLIC_*` env var.
+- Creating, editing, deleting, renaming, or skipping a test file — or weakening an assertion, changing an expected value, or commenting out a case — without first showing the user and getting an explicit yes (rule 24). Weakening a failing test to go green instead of fixing the code is the worst of these; the default for a red test is to fix production code.
 - Importing anything from the `mock` namespace of `bun:test` — `mock()`, `mock.module()` — or asserting on `.toHaveBeenCalled*`. Write a fake, or expose a `createXFromApi(api)` factory the test can feed an in-memory object. Enforced by `no-restricted-imports`.
 - An infra adapter exported with no test seam at all — no custom-fetch DI, no `createXFromApi(api: XApi)` factory, no sync-builder export (`references/testing-infra.md`). Without a seam, someone will reach for `mock.module` on the next test. Expose one from day one, even before the first test exists.
 - Adding a new `src/infra/*.ts`, `src/composition/*.ts`, or `src/presenter/*.ts` file without a matching side-effect import in `scripts/coverage-preload.ts`. Untested infra files are invisible to `bun test --coverage` unless something imports them; the preload makes them appear at 0% so the gate can fail loudly.
