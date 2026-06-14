@@ -23,7 +23,7 @@ Do not assume. Do not hide confusion. Surface tradeoffs.
 
 Before implementing:
 - State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them. Do not pick silently.
+- If multiple interpretations exist, present them — with the rough effort and tradeoff of each so the choice is informed. Do not pick silently.
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what is confusing. Ask.
 
@@ -93,6 +93,8 @@ If anything you touched in this session changes any of those surfaces, update th
 The bar is "would a new contributor cloning this repo today get the same picture from the README that they would from reading the code?" If no, the README is stale.
 
 These guidelines are working if: fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, fewer "wait, the README says X but the code does Y" follow-ups, and clarifying questions come before implementation rather than after mistakes.
+
+See `references/behavioural-examples.md` for before/after worked examples of each guideline in this repo's idiom — over-abstraction vs one function, drive-by vs surgical edit, vague vs verifiable plan.
 
 ## Lessons (memory across sessions)
 
@@ -468,3 +470,5 @@ Code exists to build products for users and customers. Testable, flexible, maint
 Design happens during REFACTORING, not during coding. Let patterns emerge from tests and Rule of Three, never from speculation.
 
 "A little bit of duplication is 10x better than the wrong abstraction."
+
+"Solve today's problem simply, not tomorrow's prematurely." Most over-engineering is not wrong, only mistimed — abstraction added before its need is real.
