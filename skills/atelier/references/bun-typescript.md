@@ -306,9 +306,9 @@ Tests are mandatory — TDD is hard rule 11, and the whole eight-gate pipeline (
 
 ## Secrets & config hygiene
 
-No credentials in source. Load every env var through the `envVar` branded-type factory, centralised in a `config/env.ts` per feature. `.env*` is git-ignored. For Firebase Admin, add `*-service-account*.json` to `.gitignore` and load the path via env var, never commit the JSON.
+No credentials in source. Load every env var through the `envVar` branded-type factory — or its coerced siblings `envNumber` / `envEnum` — centralised in a `config/env.ts` per feature, including the logger's level (`createWinstonLogger(config.logLevel)`), so nothing reads `process.env` directly. `.env*` is git-ignored. For Firebase Admin, add `*-service-account*.json` to `.gitignore` and load the path via env var, never commit the JSON.
 
-See `references/security.md` for the full pattern: `envVar` factory, redacted Winston logger, never-sprinkle-`process.env` rule, and the list of what must never be committed.
+See `references/security.md` for the full pattern: the `envVar` / `envNumber` / `envEnum` factories (and the Zod-schema scale-up for large config), the redacted Winston logger, the never-sprinkle-`process.env` rule, and the list of what must never be committed.
 
 ## Logger (port + adapter + fake, not a module singleton)
 
@@ -339,9 +339,9 @@ const redactFormat = format((info) => {
   return info;
 });
 
-export const createWinstonLogger = (): Logger => {
+export const createWinstonLogger = (level: string): Logger => {
   const winston = createLogger({
-    level: process.env.LOG_LEVEL ?? 'info',
+    level,
     format: format.combine(redactFormat(), format.json()),
     transports: [new transports.Console()],
   });
@@ -372,7 +372,7 @@ export const createLoggerFake = (): LoggerFake => {
 };
 ```
 
-Every use-case declares `readonly logger: Logger` in its `Deps` and calls `deps.logger.info(...)`. Composition wires `createWinstonLogger()` in `src/composition/build-deps.ts`. Tests inject `createLoggerFake()` and assert on the `calls` array — logs become assertable without a mocking library.
+Every use-case declares `readonly logger: Logger` in its `Deps` and calls `deps.logger.info(...)`. Composition wires `createWinstonLogger(config.logLevel)` in `src/composition/build-deps.ts` (the level comes from the typed-env config, never `process.env` directly). Tests inject `createLoggerFake()` and assert on the `calls` array — logs become assertable without a mocking library.
 
 Why this and not a module-level singleton: a singleton makes the logger impossible to swap in tests without monkey-patching, and impossible to redact/reformat per-environment without mutating global state. A port is one extra type declaration and pays off the first time you want to assert that a warning fired, or run a test suite in silent mode.
 

@@ -107,12 +107,29 @@ export const envVar = (name: string): EnvVar => {
   return value as EnvVar;
 };
 
+// coerced + validated siblings — same gate at the env boundary, narrower output type
+export const envNumber = (name: string): number => {
+  const value = Number(envVar(name));
+  if (!Number.isFinite(value)) throw new Error(`Env var ${name} is not a finite number`);
+  return value;
+};
+
+export const envEnum = <T extends string>(name: string, allowed: readonly T[]): T => {
+  const value = envVar(name);
+  if (!allowed.includes(value as T)) throw new Error(`Env var ${name} must be one of: ${allowed.join(', ')}`);
+  return value as T;
+};
+
 // one central config module; import from here, never read process.env directly elsewhere
 export const config = {
   apiToken: envVar('API_TOKEN'),
   databaseUrl: envVar('DATABASE_URL'),
+  logLevel: envEnum('LOG_LEVEL', ['error', 'warn', 'info', 'debug'] as const),
+  port: envNumber('PORT'),
 };
 ```
+
+`envVar` brands the string because a raw `string` could bypass the non-empty check; the coerced siblings return their **natural** narrow types — `envNumber` a `number`, `envEnum` the literal union — which you wrap into a domain brand (`Port`, `TimeoutMs`) only where the value carries domain meaning (hard rule 12). A connection string consumed by a driver stays an `EnvVar`; a URL that will reach `fetch` is read with `safeUrl`, not `envVar`. When env outgrows a handful of vars or needs cross-field rules, parse it once at the composition root with a Zod schema instead — `const Env = z.object({ PORT: z.coerce.number().int().positive(), LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']) }).parse(process.env)` — same principle either way: parse once, at the edge, fail loud at startup.
 
 ```ts
 // file path that is guaranteed to live under a given root
