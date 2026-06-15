@@ -374,7 +374,7 @@ Engineering:
 - `references/code-smells.md` | detection catalogue and the refactorings that clean each smell.
 - `references/complexity.md` | essential vs accidental complexity, YAGNI, the lazy ladder (stop at the first rung), KISS, DRY + Rule of Three, four elements.
 - `references/behavioural-examples.md` | before/after worked examples (in this repo's idiom) for the four Behavioural Guidelines: think-before-coding, simplicity, surgical changes, goal-driven execution; anti-pattern table.
-- `references/architecture.md` | vertical slices, dependency rule, hexagonal and clean architecture, walking skeleton.
+- `references/architecture.md` | vertical slices, dependency rule, hexagonal and clean architecture, walking skeleton, inbound HTTP server archetype.
 - `references/design-patterns.md` | full GoF catalogue rewritten as modules of arrow functions.
 - `references/class-to-module.md` | translation table for OO patterns (value object, interface, service, strategy, factory, decorator, observer, command, entity) in this class-free style.
 

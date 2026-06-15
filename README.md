@@ -42,7 +42,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 
 **Reference documentation included:**
 
-- `architecture.md` — vertical slices, dependency rule, hexagonal and clean architecture, walking skeleton
+- `architecture.md` — vertical slices, dependency rule, hexagonal and clean architecture, walking skeleton, inbound HTTP server archetype
 - `atomic-design.md` — the logic-free design system: atoms/molecules/organisms layer rules, interactivity ladder (native HTML → hoisted state → `src/lib/hooks`), injected link/image wrappers, styling seal (Tailwind invisible outside the design system), page-shell wiring, decision table
 - `behavioural-examples.md` — before/after worked examples for the four Behavioural Guidelines in this repo's idiom (over-abstraction vs one function, drive-by vs surgical edit, vague vs verifiable plan), anti-pattern table
 - `bun-typescript.md` — Clean Architecture Bun script repos, strict ESLint flat config (SonarJS + type-aware), Logger port + Winston adapter, bootstrap checklist, optional containerization Dockerfile

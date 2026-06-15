@@ -150,6 +150,8 @@ export const placeOrder = async (input, deps): Promise<Result<Summary, StepError
 };
 ```
 
+**Mapping errors to an HTTP status.** That flatten is also why an inbound HTTP adapter cannot exhaustively switch a use-case failure to `401`/`404`/`429`: `cause` is now a plain `string`, not the literal `kind` union. So decide precise client errors (`400`) upstream at the branded request checkpoint where the type is still narrow, and default a use-case `StepError` to `500`. To honor a typed status from a port failure, compute it at the `.ok` guard — where `error.kind` is still a literal union TypeScript checks for totality — and carry it as plain data through the flatten (the way `retryOnErr` branches on the live `e.kind` before any flatten). See `references/architecture.md` § Inbound HTTP (server archetype).
+
 ## Adapter pattern: the `try/catch` boundary
 
 An infra adapter is the only place where a `throw` from a third-party library gets turned into a `Result`. This is the quarantine — everything beyond it is exception-free.

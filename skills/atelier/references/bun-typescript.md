@@ -16,6 +16,8 @@ Identifiable by `"module": "src/main.ts"` in `package.json` and the Clean Archit
 
 Never call `node`, `tsc`, `ts-node`, `vite`, `npm`, `pnpm`, or `yarn`.
 
+**Server archetype.** The default shape is a CLI/batch job that runs and `process.exit`s, but `src/main.ts` may instead call `Bun.serve` to serve HTTP. The inbound server is then an `infra/` adapter (the mirror of an outbound one), `main.ts` stays the single entry with its one top-level catch, and the Dockerfile gains `EXPOSE <port>`. See `references/architecture.md` § Inbound HTTP (server archetype).
+
 ## `package.json`
 
 Minimal skeleton:
