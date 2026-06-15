@@ -76,9 +76,9 @@ A small companion skill for stress-testing a plan or design *before* building. T
 
 ### review-me
 
-The pre-land companion: a rule-aware conformance review of a diff against the atelier standard. Trigger it with "review me" (or to check a branch/PR against the rules before committing). It resolves the diff scope, maps each changed file to the hard rules that bind it, and reports findings that cite the exact rule or red-flag number — applying the security false-positive filter, deferring generic correctness bugs to `/code-review` and mechanical cleanups to `/simplify`. Report-only by default; it offers to apply the fixes on request. grill-me owns the pre-decision moment, bootstrap repo-birth, review-me the pre-land moment.
+The pre-land companion: a rule-aware conformance review of a diff against the atelier standard. Trigger it with "review me" (or to check a branch/PR against the rules before committing). It resolves the diff scope, maps each changed file to the hard rules that bind it, and reports findings that cite the exact rule or red-flag number — applying the security false-positive filter, deferring generic correctness bugs to `/code-review` and mechanical cleanups to `/simplify`. Report-only by default; it offers to apply the fixes on request. It also runs an **adopt mode** for brownfield — scanning a whole existing repo and emitting a staged migration plan to bring it up to the standard (the counterpart to bootstrap's greenfield birth). grill-me owns the pre-decision moment, bootstrap repo-birth, review-me the pre-land moment and brownfield adoption.
 
-**Use when:** you want a conformance checkpoint before a change lands — a rule-cited review of staged changes, a feature branch, or a PR. For generic correctness bugs use `/code-review`; for reuse/simplification cleanups use `/simplify`.
+**Use when:** you want a conformance checkpoint before a change lands — a rule-cited review of staged changes, a feature branch, or a PR — or to adopt the standard into an existing brownfield repo (adopt mode). For generic correctness bugs use `/code-review`; for reuse/simplification cleanups use `/simplify`.
 
 ## Installation
 
