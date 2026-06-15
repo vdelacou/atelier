@@ -145,7 +145,7 @@ Add the matching scripts to `package.json`:
 ```jsonc
 {
   "scripts": {
-    "lint":           "eslint --cache",
+    "lint":           "eslint --cache --max-warnings=0",
     "lint:strict":    "LINT_STRICT=1 eslint --max-warnings=0",
     "typecheck":      "tsc --noEmit",
     "coverage":       "bun run scripts/check-coverage.ts",

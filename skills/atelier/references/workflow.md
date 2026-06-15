@@ -18,7 +18,7 @@ If any of the four fail, fix the cause and re-run all four. Do not move on while
 ```json
 {
   "scripts": {
-    "lint": "eslint --cache",
+    "lint": "eslint --cache --max-warnings=0",
     "lint:strict": "LINT_STRICT=1 eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "coverage": "bun run scripts/check-coverage.ts"
@@ -422,7 +422,7 @@ The atelier policy: **every staged file under `src/domain/**` or `src/use-cases/
 }
 ```
 
-There is no native Bun runner today, so we use the command runner — Stryker shells out to `bun test` once per mutant (~7 s on a typical codebase). `incremental: true` caches per-mutant results so unchanged code is not re-tested. `packageManager: "npm"` is needed because Stryker probes for a JS-ecosystem package manager and does not yet recognise Bun's lockfile. `ignorePatterns` skips non-source dirs from the sandbox copy — `.claude/` in particular often contains a symlink Stryker cannot copy (ENOTSUP).
+There is no first-party `@stryker-mutator` Bun runner today (community plugins exist, but we don't depend on them), so we use the command runner — Stryker shells out to `bun test` once per mutant (~7 s on a typical codebase). `incremental: true` caches per-mutant results so unchanged code is not re-tested. `packageManager: "npm"` is needed because Stryker probes for a JS-ecosystem package manager and does not yet recognise Bun's lockfile. `ignorePatterns` skips non-source dirs from the sandbox copy — `.claude/` in particular often contains a symlink Stryker cannot copy (ENOTSUP).
 
 **Three commands, three scopes:**
 

@@ -86,7 +86,7 @@ Activate hooks after install: `bun run prepare`.
     "build": "rimraf out && bun next build",
     "start": "bunx serve ./out",
     "test": "bun test",
-    "lint": "eslint"
+    "lint": "eslint --max-warnings=0"
   },
   "dependencies": {
     "next": "16.1.1",

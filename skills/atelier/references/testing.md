@@ -423,7 +423,7 @@ it('round-trips through the factory', () => {
 }
 ```
 
-(The pattern IS lint-enforceable: ESLint ≥ 8.31 supports `importNamePattern` — a regex over imported names — inside `patterns`, so no custom rule is needed.)
+(The pattern IS lint-enforceable: ESLint ≥ 8.55 supports `importNamePattern` — a regex over imported names — inside `patterns`, so no custom rule is needed.)
 
 ### Secondary-port integration tests
 

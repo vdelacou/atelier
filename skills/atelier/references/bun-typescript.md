@@ -27,7 +27,7 @@ Minimal skeleton:
   "type": "module",
   "scripts": {
     "start": "bun run src/main.ts",
-    "lint": "eslint --cache",
+    "lint": "eslint --cache --max-warnings=0",
     "lint:strict": "LINT_STRICT=1 eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "coverage": "bun run scripts/check-coverage.ts",
@@ -209,7 +209,7 @@ export default [
 
 Notes on the config:
 
-- **One config file, two modes.** The inner-loop `bun run lint` runs only the fast non-type-aware rules (~2 s cached / ~7 s cold). `bun run lint:strict` sets `LINT_STRICT=1` and the conditional block adds `parserOptions.projectService: true` plus the type-aware `@typescript-eslint` rules (~25 s on a full repo); `--max-warnings=0` makes warnings fail the run (the zero-warning rule). Pre-commit gate 5 runs the strict version. There is no separate `eslint.strict.config.js` — keeping one config eliminates drift.
+- **One config file, two modes.** Both scripts carry `--max-warnings=0`, so warnings fail either run (the zero-warning rule, hard rule 15) — the modes differ only in depth. The inner-loop `bun run lint` runs the fast non-type-aware rules (~2 s cached / ~7 s cold); `bun run lint:strict` sets `LINT_STRICT=1` and the conditional block adds `parserOptions.projectService: true` plus the type-aware `@typescript-eslint` rules (~25 s on a full repo). Pre-commit gate 5 runs the strict version. There is no separate `eslint.strict.config.js` — keeping one config eliminates drift.
 - **`sonarjsPlugin.configs.recommended`** catches SonarLint findings at lint time so they no longer escape the IDE. See `references/workflow.md` for the common ones (S4325, S6594, S4123, S6551, S6671). Three rules are turned off as always-on noise: `sonarjs/no-unused-vars` (duplicate), `sonarjs/no-empty-test-file` (false-positive on `describe` blocks), `sonarjs/cognitive-complexity` (we already cap function size).
 - **`no-console` is `error`**. Always use the logger port (see below), never `console.*`.
 - **`security/detect-object-injection`, `detect-unsafe-regex`, and `detect-non-literal-fs-filename`** are disabled at the project level because they only false-positive on this codebase's idioms (branded-type `Record<K, V>` lookups, bounded regexes, `chmodSync(mkdtempSync(...))` in tests). Comments in the config explain why each is off. Never inline-ignore them per-line.
@@ -456,7 +456,7 @@ Four things keep it conforming — and they are exactly where a copied-from-a-bl
 - **Entry is `src/main.ts`**, never `src/index.ts` — the atelier's named entry (rule 5, `"module": "src/main.ts"`).
 - **Copy `bun.lock`, not `bun.lockb`** — Bun's lockfile is text now; the binary `bun.lockb` is legacy.
 - **No `EXPOSE`** for the CLI/batch archetype — it runs and `process.exit`s; there is no port to bind. Add `EXPOSE <port>` only for an actual server whose `src/main.ts` calls `Bun.serve`.
-- **No `bun run lint` or tests inside the build.** Quality is already owned by the eight pre-commit gates and CI; linting in the image duplicates the gate and couples building with checking. If you want a build-time backstop anyway, run `bun run lint:strict` (the zero-warning, type-aware gate) — never bare `bun run lint`, which exits 0 on warnings.
+- **No `bun run lint` or tests inside the build.** Quality is already owned by the eight pre-commit gates and CI; linting in the image duplicates the gate and couples building with checking. If you want a build-time backstop anyway, run `bun run lint:strict` (the full type-aware gate) rather than bare `bun run lint` (which runs only the fast non-type-aware rules — both already fail on warnings).
 
 Add a `.dockerignore` so the build context stays small and the image never ships local cruft:
 
