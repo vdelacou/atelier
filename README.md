@@ -62,7 +62,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 - `testing-infra.md` — three patterns for infra-adapter tests (custom-fetch DI / two-constructor / sync-builder export), production-wiring smoke test, `installFetchMock`, global-swap pattern, FS chmod tricks, ordering gotchas
 - `workflow.md` — four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, trunk-based development, eight-gate pre-commit hook, Conventional Commits `commit-msg` hook, README consistency check
 
-### bootstrap
+### greenfield
 
 A companion skill for the one moment the main standard assumes has already happened: repo birth. Trigger it when starting a fresh repo or a new monorepo package ("scaffold a new Bun repo", "bootstrap a new project to the standard"). It detects the variant, follows that variant's bootstrap checklist verbatim — scaffolding the layout, copying the gate assets from the installed `atelier` skill, wiring the git hook(s), writing the `package.json` scripts — then lays a minimal green walking skeleton and proves every gate passes before stopping for you to confirm the first commit (rule 25). Greenfield only; it orchestrates the existing checklists rather than duplicating them.
 
@@ -76,7 +76,7 @@ A small companion skill for stress-testing a plan or design *before* building. T
 
 ### review-me
 
-The pre-land companion: a rule-aware conformance review of a diff against the atelier standard. Trigger it with "review me" (or to check a branch/PR against the rules before committing). It resolves the diff scope, maps each changed file to the hard rules that bind it, and reports findings that cite the exact rule number (or red flag) — applying the security false-positive filter, deferring generic correctness bugs to `/code-review` and mechanical cleanups to `/simplify`. Report-only by default; it offers to apply the fixes on request. It also runs an **adopt mode** for brownfield — scanning a whole existing repo and emitting a staged migration plan to bring it up to the standard (the counterpart to bootstrap's greenfield birth). grill-me owns the pre-decision moment, bootstrap repo-birth, review-me the pre-land moment and brownfield adoption.
+The pre-land companion: a rule-aware conformance review of a diff against the atelier standard. Trigger it with "review me" (or to check a branch/PR against the rules before committing). It resolves the diff scope, maps each changed file to the hard rules that bind it, and reports findings that cite the exact rule number (or red flag) — applying the security false-positive filter, deferring generic correctness bugs to `/code-review` and mechanical cleanups to `/simplify`. Report-only by default; it offers to apply the fixes on request. It also runs an **adopt mode** for brownfield — scanning a whole existing repo and emitting a staged migration plan to bring it up to the standard (the counterpart to greenfield's repo birth). grill-me owns the pre-decision moment, greenfield repo-birth, review-me the pre-land moment and brownfield adoption.
 
 **Use when:** you want a conformance checkpoint before a change lands — a rule-cited review of staged changes, a feature branch, or a PR — or to adopt the standard into an existing brownfield repo (adopt mode). For generic correctness bugs use `/code-review`; for reuse/simplification cleanups use `/simplify`.
 
@@ -227,8 +227,8 @@ atelier/
     │       ├── testing.md
     │       ├── testing-infra.md
     │       └── workflow.md
-    ├── bootstrap/
-    │   └── SKILL.md           # standalone greenfield repo scaffolder (orchestrates the variant bootstrap checklists)
+    ├── greenfield/
+    │   └── SKILL.md           # standalone greenfield-repo scaffolder (orchestrates the variant bootstrap checklists)
     ├── grill-me/
     │   └── SKILL.md           # standalone "grill me" plan stress-test skill
     └── review-me/

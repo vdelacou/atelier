@@ -7,7 +7,7 @@ description: Review a diff against the atelier standard before it lands — a ru
 
 Audit a change against the atelier standard before it lands. This is the conformance lens the always-on standard and the generic review tools do not give you on their own: a whole-diff pass that checks every changed file against the hard rules it is bound by, in domain language, citing rule numbers — so a violation is caught at review cost, not in production or three rounds into a reviewer's comment thread.
 
-The third on-demand companion to the always-on atelier standard: grill-me owns the pre-decision moment, bootstrap owns repo-birth, review-me owns the pre-land moment.
+The third on-demand companion to the always-on atelier standard: grill-me owns the pre-decision moment, greenfield owns repo-birth, review-me owns the pre-land moment.
 
 ## When to use
 
@@ -41,7 +41,7 @@ When the target is an **existing non-conforming repo** rather than a diff, revie
 5. **Trunk, not branches.** Land each slice on `main`, half-done work dark behind a flag (`references/workflow.md` § Trunk-based) — never a long-lived migration branch that rots.
 6. **Flip the gates to blocking** once the tree conforms: full `lint:strict`, coverage tiers, mutation. Adoption is done when a fresh clone passes all eight gates with no scoping and no bypass.
 
-The output here is a **staged adoption plan** — the ordered slices with the first one ready to start — not a verdict on one diff. It is the brownfield counterpart to what bootstrap does for a greenfield repo: bootstrap births a conforming repo, adopt mode walks an existing one to conformance.
+The output here is a **staged adoption plan** — the ordered slices with the first one ready to start — not a verdict on one diff. It is the brownfield counterpart to what the greenfield skill does for a new repo: greenfield births a conforming repo, adopt mode walks an existing one to conformance.
 
 ## Output
 
