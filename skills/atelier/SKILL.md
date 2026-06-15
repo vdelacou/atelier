@@ -27,6 +27,11 @@ Before implementing:
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what is confusing. Ask.
 
+When clarification is warranted (use judgment — trivial tasks do not need an interview), ask *well*:
+- **Answer your own questions first.** If the codebase can settle a question, explore it instead of asking — never ask what you could find out yourself.
+- **One question at a time, each led with your recommended answer** — so a clarification is a quick yes-or-correct, not homework handed back to the user.
+- **For a non-trivial plan or design, walk the decision tree one branch at a time**, resolving dependencies between decisions in order, rather than dumping every open question at once.
+
 ### 2. Simplicity first
 
 Minimum code that solves the problem. Nothing speculative.

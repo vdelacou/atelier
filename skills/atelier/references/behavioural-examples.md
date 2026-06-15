@@ -43,6 +43,38 @@ Result<UserPage, ExportError>. File export is more work — confirm before I bui
 Which matters for your use case? They pull the design in different directions.
 ```
 
+### Explore before asking; one question at a time
+
+**Request:** "Add caching to the guides loader."
+
+✗ **Before** — fires a batch of questions the codebase already answers:
+
+```
+A few questions before I start:
+1. Which cache library should I use?
+2. Where are guides loaded?
+3. What should the cache key be?
+4. How long should entries live?
+5. Is this server- or client-side?
+```
+
+✓ **After** — answer from the code what the code can answer, then ask the *one* real question, leading with a recommendation:
+
+```
+Checked the code: guides load in src/lib/guides/guides.ts via Bun.file at build
+time (static export — next.config.ts has output: 'export'), so the loader runs
+once per build, not per request. Most "caching" is therefore moot.
+
+The one real decision: memoize the parsed-MDX result within a single build run?
+  Recommended: yes — a module-level Map keyed by slug, ~5 lines, no dependency
+  (lazy ladder rung 3). I'd skip a cache library entirely.
+
+Proceed with that, or did you mean per-request caching? (That implies dropping
+static export — a much bigger change, so I want to confirm before assuming it.)
+```
+
+Four questions evaporated because the codebase answered them; the fifth became a one-line yes/no with a recommendation and a flagged dependency (static export). That is the difference between handing the user homework and handing them a decision.
+
 ---
 
 ## 2. Simplicity first
