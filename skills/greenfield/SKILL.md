@@ -1,6 +1,6 @@
 ---
 name: greenfield
-description: Stand up a NEW Bun/TypeScript or Next.js repo to the atelier standard from zero — scaffold the Clean Architecture (or Atomic Design) layout, copy the gate assets, wire the git hooks, write the package.json scripts, lay a minimal green walking skeleton, and prove every gate passes before the first commit. Use when starting a fresh repo or a new monorepo package from scratch: "scaffold a new Bun repo", "bootstrap a new project to the standard", "set up a new atelier repo / Next.js package". Greenfield only — for an existing repo with code, the main atelier skill applies.
+description: Stand up a NEW Bun/TypeScript or Next.js repo to the atelier standard from zero — scaffold the Clean Architecture (or Atomic Design) layout, copy the gate assets, wire the git hooks, write the package.json scripts, lay a minimal green walking skeleton, and prove every gate passes before the first commit. Use when starting a fresh repo or a new monorepo package from scratch — say "scaffold a new Bun repo", "bootstrap a new project to the standard", or "set up a new atelier repo / Next.js package". Greenfield only — for an existing repo with code, the main atelier skill applies.
 ---
 
 # Greenfield
