@@ -1,6 +1,6 @@
 ---
 name: review-me
-description: Review a diff against the atelier standard before it lands — a rule-aware conformance audit that maps each changed file to the hard rules that bind it, cites the exact rule and red-flag numbers a change violates, applies the security false-positive filter, and defers generic correctness bugs to /code-review and mechanical cleanups to /simplify. Use to pre-land-review staged changes, a feature branch, or a PR, to check a diff for rule violations, or when the user says "review me" / "review my changes against the standard". Also runs an adopt mode for brownfield — scan a whole existing repo and emit a staged plan to bring it up to the standard, e.g. "adopt the standard into this repo", "migrate this repo to atelier", "bring this repo up to standard".
+description: Review a diff against the atelier standard before it lands — a rule-aware conformance audit that maps each changed file to the hard rules that bind it, cites the exact rule number — or the red flag — a change violates, applies the security false-positive filter, and defers generic correctness bugs to /code-review and mechanical cleanups to /simplify. Use to pre-land-review staged changes, a feature branch, or a PR, to check a diff for rule violations, or when the user says "review me" / "review my changes against the standard". Also runs an adopt mode for brownfield — scan a whole existing repo and emit a staged plan to bring it up to the standard, e.g. "adopt the standard into this repo", "migrate this repo to atelier", "bring this repo up to standard".
 ---
 
 # Review me
@@ -28,7 +28,7 @@ Match intensity to stakes — a one-line typo fix does not need the full rule sw
    - `package.json` → 19 (no `"latest"`/`"*"`). Any commit → 23 (Conventional Commits) and small (≤10 files / ≤300 lines).
 3. **Check the universal hard rules on every file** — no `class` / `function` declaration / `interface` / `console.*` (1-4), explicit return types on exports (6), single-arrow not curried (18), zero inline ignores of any tool (15).
 4. **Run the security source-to-sink lens.** Does any untrusted source reach a sink (SQL, shell, filesystem, HTTP, HTML, redirect) without crossing a branded-type checkpoint? Apply the strict false-positive filter — only concrete, exploitable findings with a clear attack path; skip DoS, defence-in-depth hardening, and theoretical concerns.
-5. **Note, do not re-run, the mechanical gates.** Lint / typecheck / coverage / mutation are enforced by pre-commit gates 4-8 — remind the user to run them rather than checking by eye. review-me is for the judgment rules the gates cannot catch.
+5. **Note, do not re-run, the mechanical gates.** Tests / lint / typecheck / coverage / mutation are enforced by pre-commit gates 4-8 — remind the user to run them rather than checking by eye. review-me is for the judgment rules the gates cannot catch.
 
 ## Adopt mode (brownfield)
 
@@ -45,7 +45,7 @@ The output here is a **staged adoption plan** — the ordered slices with the fi
 
 ## Output
 
-A rule-cited verdict: each finding names the file, the exact rule or red-flag number it breaks, why, and the fix — grouped by severity, in domain language, the single most important fix first. End with a one-line verdict: conformant, or N violations across M files.
+A rule-cited verdict: each finding names the file, the exact rule number (or the red flag) it breaks, why, and the fix — grouped by severity, in domain language, the single most important fix first. End with a one-line verdict: conformant, or N violations across M files.
 
 Report only — never edit the tree. Offer to apply the fixes on request, hand mechanical cleanups to `/simplify`, and pass correctness bugs to `/code-review`. Review toward the *simplest* conforming change: a finding that demands more code than the rule requires is itself a smell.
 
