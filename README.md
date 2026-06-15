@@ -62,6 +62,12 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 - `testing-infra.md` — three patterns for infra-adapter tests (custom-fetch DI / two-constructor / sync-builder export), production-wiring smoke test, `installFetchMock`, global-swap pattern, FS chmod tricks, ordering gotchas
 - `workflow.md` — four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, trunk-based development, eight-gate pre-commit hook, Conventional Commits `commit-msg` hook, README consistency check
 
+### grill-me
+
+A small companion skill for stress-testing a plan or design *before* building. Trigger it with "grill me" (or when a decision needs pressure-testing): it interviews you one question at a time — each led with a recommended answer, exploring the codebase before asking — walking the decision tree until you reach shared understanding, then writes a tight decision record. Independent of the atelier standard but atelier-aware: it grills toward the simplest design and proposes durable choices as `.claude/LESSONS.md` `[decision]` entries.
+
+**Use when:** you want to be grilled, stress-test or pressure-test a plan, or de-risk a high-stakes decision (architecture, data model, public API, migration) before writing code.
+
 ## Installation
 
 ### 1. Install the skill (one-time, per machine)
@@ -173,7 +179,7 @@ atelier/
 ├── LICENSE
 ├── README.md
 └── skills/
-    └── atelier/
+    ├── atelier/
         ├── SKILL.md           # Main skill instructions
         ├── assets/            # Copyable artefacts — install with the steps above
         │   ├── capture-rejection.ts            # rejection-assertion helper (SonarJS S4123)
@@ -209,6 +215,8 @@ atelier/
             ├── testing.md
             ├── testing-infra.md
             └── workflow.md
+    └── grill-me/
+        └── SKILL.md           # standalone "grill me" plan stress-test skill
 ```
 
 ## Variant references
