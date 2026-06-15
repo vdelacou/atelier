@@ -1,0 +1,9 @@
+#!/bin/sh
+# Pre-commit: validate every skill's YAML frontmatter before allowing a commit.
+# Catches the colon-space class of bug that silently breaks skill loading.
+# Degrades gracefully if Bun is unavailable, mirroring the gitleaks gate.
+if ! command -v bun >/dev/null 2>&1; then
+  echo "pre-commit: bun not found — skipping skill-frontmatter validation" >&2
+  exit 0
+fi
+exec bun run scripts/validate-frontmatter.ts
