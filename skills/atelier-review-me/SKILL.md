@@ -1,5 +1,5 @@
 ---
-name: review-me
+name: atelier-review-me
 description: Review a diff against the atelier standard before it lands — a rule-aware conformance audit that maps each changed file to the hard rules that bind it, cites the exact rule number — or the red flag — a change violates, applies the security false-positive filter, and defers generic correctness bugs to /code-review and mechanical cleanups to /simplify. Use to pre-land-review staged changes, a feature branch, or a PR, to check a diff for rule violations, or when the user says "review me" / "review my changes against the standard". Also runs an adopt mode for brownfield — scan a whole existing repo and emit a staged plan to bring it up to the standard, e.g. "adopt the standard into this repo", "migrate this repo to atelier", "bring this repo up to standard".
 ---
 
@@ -7,7 +7,7 @@ description: Review a diff against the atelier standard before it lands — a ru
 
 Audit a change against the atelier standard before it lands. This is the conformance lens the always-on standard and the generic review tools do not give you on their own: a whole-diff pass that checks every changed file against the hard rules it is bound by, in domain language, citing rule numbers — so a violation is caught at review cost, not in production or three rounds into a reviewer's comment thread.
 
-The third on-demand companion to the always-on atelier standard: grill-me owns the pre-decision moment, greenfield owns repo-birth, review-me owns the pre-land moment.
+The third on-demand companion to the always-on atelier standard: atelier-grill-me owns the pre-decision moment, atelier-greenfield owns repo-birth, atelier-review-me owns the pre-land moment.
 
 ## When to use
 
@@ -15,7 +15,7 @@ The third on-demand companion to the always-on atelier standard: grill-me owns t
 - A change is staged or a feature branch is ready to land and you want a conformance checkpoint.
 - The user wants to adopt the standard into an **existing** repo, migrate a brownfield codebase, or get a staged plan to bring a repo up to the standard — this triggers adopt mode (below).
 
-Match intensity to stakes — a one-line typo fix does not need the full rule sweep; say so and skip it. And review-me does not replace the built-ins, it complements them (as the security reference complements `/security-review`): defer generic correctness bugs to `/code-review` and mechanical reuse/simplification/altitude cleanups to `/simplify`. review-me owns rule conformance.
+Match intensity to stakes — a one-line typo fix does not need the full rule sweep; say so and skip it. And atelier-review-me does not replace the built-ins, it complements them (as the security reference complements `/security-review`): defer generic correctness bugs to `/code-review` and mechanical reuse/simplification/altitude cleanups to `/simplify`. atelier-review-me owns rule conformance.
 
 ## How to run
 
@@ -28,11 +28,11 @@ Match intensity to stakes — a one-line typo fix does not need the full rule sw
    - `package.json` → 19 (no `"latest"`/`"*"`). Any commit → 23 (Conventional Commits) and small (≤10 files / ≤300 lines).
 3. **Check the universal hard rules on every file** — no `class` / `function` declaration / `interface` / `console.*` (1-4), explicit return types on exports (6), single-arrow not curried (18), zero inline ignores of any tool (15).
 4. **Run the security source-to-sink lens.** Does any untrusted source reach a sink (SQL, shell, filesystem, HTTP, HTML, redirect) without crossing a branded-type checkpoint? Apply the strict false-positive filter — only concrete, exploitable findings with a clear attack path; skip DoS, defence-in-depth hardening, and theoretical concerns.
-5. **Note, do not re-run, the mechanical gates.** Tests / lint / typecheck / coverage / mutation are enforced by pre-commit gates 4-8 — remind the user to run them rather than checking by eye. review-me is for the judgment rules the gates cannot catch.
+5. **Note, do not re-run, the mechanical gates.** Tests / lint / typecheck / coverage / mutation are enforced by pre-commit gates 4-8 — remind the user to run them rather than checking by eye. atelier-review-me is for the judgment rules the gates cannot catch.
 
 ## Adopt mode (brownfield)
 
-When the target is an **existing non-conforming repo** rather than a diff, review-me switches to adopt mode: it scans the whole tree, then sequences the migration so the repo reaches the standard in green increments instead of one unreviewable rewrite. The conformance scan is the same layer→rule mapping as above, widened from the diff to all of `src/**`; the new work is the *order*. Most of adoption is deciding what NOT to migrate yet — YAGNI applies to migrations too.
+When the target is an **existing non-conforming repo** rather than a diff, atelier-review-me switches to adopt mode: it scans the whole tree, then sequences the migration so the repo reaches the standard in green increments instead of one unreviewable rewrite. The conformance scan is the same layer→rule mapping as above, widened from the diff to all of `src/**`; the new work is the *order*. Most of adoption is deciding what NOT to migrate yet — YAGNI applies to migrations too.
 
 1. **Assess.** Scan the whole tree and report which rules are violated, where, and how pervasively. Rank by leverage — the toolchain and the test seam before cosmetic rules.
 2. **Install the gates without tripping them on the legacy tree.** Add the ESLint flat config, `tsconfig`, and the hooks, but scope enforcement to changed files at first (lint the diff, not the thousand pre-existing warnings) so every commit isn't blocked. The only sanctioned bypass is the initial mechanical scaffold / mass-rename commit — `--no-verify` with a justification in the commit body (`references/workflow.md` § Never bypass) — never on a failing check, never as a habit.
@@ -41,7 +41,7 @@ When the target is an **existing non-conforming repo** rather than a diff, revie
 5. **Trunk, not branches.** Land each slice on `main`, half-done work dark behind a flag (`references/workflow.md` § Trunk-based) — never a long-lived migration branch that rots.
 6. **Flip the gates to blocking** once the tree conforms: full `lint:strict`, coverage tiers, mutation. Adoption is done when a fresh clone passes all eight gates with no scoping and no bypass.
 
-The output here is a **staged adoption plan** — the ordered slices with the first one ready to start — not a verdict on one diff. It is the brownfield counterpart to what the greenfield skill does for a new repo: greenfield births a conforming repo, adopt mode walks an existing one to conformance.
+The output here is a **staged adoption plan** — the ordered slices with the first one ready to start — not a verdict on one diff. It is the brownfield counterpart to what the atelier-greenfield skill does for a new repo: atelier-greenfield births a conforming repo, adopt mode walks an existing one to conformance.
 
 ## Output
 
