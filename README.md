@@ -62,6 +62,12 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 - `testing-infra.md` — three patterns for infra-adapter tests (custom-fetch DI / two-constructor / sync-builder export), production-wiring smoke test, `installFetchMock`, global-swap pattern, FS chmod tricks, ordering gotchas
 - `workflow.md` — four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, trunk-based development, eight-gate pre-commit hook, Conventional Commits `commit-msg` hook, README consistency check
 
+### bootstrap
+
+A companion skill for the one moment the main standard assumes has already happened: repo birth. Trigger it when starting a fresh repo or a new monorepo package ("scaffold a new Bun repo", "bootstrap a new project to the standard"). It detects the variant, follows that variant's bootstrap checklist verbatim — scaffolding the layout, copying the gate assets from the installed `atelier` skill, wiring the git hook(s), writing the `package.json` scripts — then lays a minimal green walking skeleton and proves every gate passes before stopping for you to confirm the first commit (rule 25). Greenfield only; it orchestrates the existing checklists rather than duplicating them.
+
+**Use when:** starting a brand-new Bun/TypeScript script repo or a new package in a Next.js monorepo, from zero. For an existing repo with code, the main atelier skill applies.
+
 ### grill-me
 
 A small companion skill for stress-testing a plan or design *before* building. Trigger it with "grill me" (or when a decision needs pressure-testing): it interviews you one question at a time — each led with a recommended answer, exploring the codebase before asking — walking the decision tree until you reach shared understanding, then writes a tight decision record. Independent of the atelier standard but atelier-aware: it grills toward the simplest design and proposes durable choices as `.claude/LESSONS.md` `[decision]` entries.
@@ -215,6 +221,8 @@ atelier/
             ├── testing.md
             ├── testing-infra.md
             └── workflow.md
+    ├── bootstrap/
+        └── SKILL.md           # standalone greenfield repo scaffolder (orchestrates the variant bootstrap checklists)
     └── grill-me/
         └── SKILL.md           # standalone "grill me" plan stress-test skill
 ```
