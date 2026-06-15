@@ -425,3 +425,52 @@ The shared `formatError(err: unknown): string` helper lives in `src/domain/utili
     - See `references/workflow.md` for the eight-gate breakdown, the commit-message format, and the no-bypass rule.
 15. Verify: `bun run lint`, `bun run typecheck`, `bun run coverage`, and `bun run mutate` all clean on a minimal `src/main.ts`. Run `bash scripts/check-package-json.sh` once to confirm no `"latest"` slipped in, and confirm the `commit-msg` hook rejects a junk message (`echo 'nope' | …` or just try a bad commit).
 16. Commit with Conventional Commits (`type(scope): subject`) — once the user confirms (rule 25); the `commit-msg` hook enforces the format. From here, follow the Clean Architecture rules for every new feature.
+
+## Containerization (optional)
+
+The atelier takes no position on deployment — `bootstrap` scopes Docker out of repo-birth, and the canonical archetypes (CLIs, batch jobs, Firebase Admin jobs) ship as a `bun run`, not an image. This section exists only so that *if* you containerize, the image conforms instead of drifting. It is documentation, not a gate.
+
+A minimal, production-ready multi-stage build:
+
+```dockerfile
+# syntax=docker/dockerfile:1
+FROM oven/bun:1 AS base
+WORKDIR /usr/src/app
+
+# Production deps only, in a layer cached on the lockfile.
+FROM base AS install
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
+# Final image: prod deps + source, run as the non-root `bun` user.
+FROM base AS release
+COPY --from=install /usr/src/app/node_modules node_modules
+COPY package.json ./
+COPY src/ src/
+USER bun
+ENTRYPOINT ["bun", "run", "src/main.ts"]
+```
+
+Four things keep it conforming — and they are exactly where a copied-from-a-blog Dockerfile drifts:
+
+- **Entry is `src/main.ts`**, never `src/index.ts` — the atelier's named entry (rule 5, `"module": "src/main.ts"`).
+- **Copy `bun.lock`, not `bun.lockb`** — Bun's lockfile is text now; the binary `bun.lockb` is legacy.
+- **No `EXPOSE`** for the CLI/batch archetype — it runs and `process.exit`s; there is no port to bind. Add `EXPOSE <port>` only for an actual server whose `src/main.ts` calls `Bun.serve`.
+- **No `bun run lint` or tests inside the build.** Quality is already owned by the eight pre-commit gates and CI; linting in the image duplicates the gate and couples building with checking. If you want a build-time backstop anyway, run `bun run lint:strict` (the zero-warning, type-aware gate) — never bare `bun run lint`, which exits 0 on warnings.
+
+Add a `.dockerignore` so the build context stays small and the image never ships local cruft:
+
+```
+node_modules
+.git
+coverage
+.stryker-tmp
+reports
+```
+
+Build and run a CLI image (argv in, process exits — no port mapping):
+
+```bash
+docker build -t my-app .
+docker run --rm my-app <args>
+```

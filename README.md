@@ -45,7 +45,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 - `architecture.md` — vertical slices, dependency rule, hexagonal and clean architecture, walking skeleton
 - `atomic-design.md` — the logic-free design system: atoms/molecules/organisms layer rules, interactivity ladder (native HTML → hoisted state → `src/lib/hooks`), injected link/image wrappers, styling seal (Tailwind invisible outside the design system), page-shell wiring, decision table
 - `behavioural-examples.md` — before/after worked examples for the four Behavioural Guidelines in this repo's idiom (over-abstraction vs one function, drive-by vs surgical edit, vague vs verifiable plan), anti-pattern table
-- `bun-typescript.md` — Clean Architecture Bun script repos, strict ESLint flat config (SonarJS + type-aware), Logger port + Winston adapter, bootstrap checklist
+- `bun-typescript.md` — Clean Architecture Bun script repos, strict ESLint flat config (SonarJS + type-aware), Logger port + Winston adapter, bootstrap checklist, optional containerization Dockerfile
 - `class-to-module.md` — translation table for classical OO patterns (value object, interface, service, strategy, factory, decorator, observer, command, entity)
 - `clean-code.md` — naming priorities, object calisthenics in a class-free world, comments, formatting
 - `code-smells.md` — detection catalogue and the refactorings that clean each smell

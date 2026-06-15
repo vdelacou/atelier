@@ -362,7 +362,7 @@ The hard rules are universal unless this table says otherwise. Gates and tooling
 Toolchain:
 - `references/nextjs-monorepo.md` | Next.js 16 + Tailwind v4 + i18n route groups + static export.
 - `references/atomic-design.md` | the logic-free design system: atoms/molecules/organisms layer rules, stateless props-only components, interactivity ladder (native HTML → hoisted state → `src/lib/hooks`), injected link/image wrappers, page-shell wiring, "where does it go?" table.
-- `references/bun-typescript.md` | Bun-script repo bootstrap: tsconfig, ESLint flat config (SonarJS + type-aware rules + `no-restricted-imports`), Logger port + Winston adapter, secrets discipline, full bootstrap checklist with asset copy steps.
+- `references/bun-typescript.md` | Bun-script repo bootstrap: tsconfig, ESLint flat config (SonarJS + type-aware rules + `no-restricted-imports`), Logger port + Winston adapter, secrets discipline, full bootstrap checklist with asset copy steps, optional containerization Dockerfile.
 
 Engineering:
 - `references/tdd.md` | Red-Green-Refactor, Three Laws, triangulation, transformation priority, writing tests backwards, why we use fakes not mocks.
