@@ -74,6 +74,12 @@ A small companion skill for stress-testing a plan or design *before* building. T
 
 **Use when:** you want to be grilled, stress-test or pressure-test a plan, or de-risk a high-stakes decision (architecture, data model, public API, migration) before writing code.
 
+### review-me
+
+The pre-land companion: a rule-aware conformance review of a diff against the atelier standard. Trigger it with "review me" (or to check a branch/PR against the rules before committing). It resolves the diff scope, maps each changed file to the hard rules that bind it, and reports findings that cite the exact rule or red-flag number — applying the security false-positive filter, deferring generic correctness bugs to `/code-review` and mechanical cleanups to `/simplify`. Report-only by default; it offers to apply the fixes on request. grill-me owns the pre-decision moment, bootstrap repo-birth, review-me the pre-land moment.
+
+**Use when:** you want a conformance checkpoint before a change lands — a rule-cited review of staged changes, a feature branch, or a PR. For generic correctness bugs use `/code-review`; for reuse/simplification cleanups use `/simplify`.
+
 ## Installation
 
 ### 1. Install the skill (one-time, per machine)
@@ -223,8 +229,10 @@ atelier/
             └── workflow.md
     ├── bootstrap/
         └── SKILL.md           # standalone greenfield repo scaffolder (orchestrates the variant bootstrap checklists)
-    └── grill-me/
+    ├── grill-me/
         └── SKILL.md           # standalone "grill me" plan stress-test skill
+    └── review-me/
+        └── SKILL.md           # standalone rule-aware pre-land diff-review skill
 ```
 
 ## Variant references
