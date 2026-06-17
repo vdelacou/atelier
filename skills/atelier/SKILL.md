@@ -23,6 +23,7 @@ Do not assume. Do not hide confusion. Surface tradeoffs.
 
 Before implementing:
 - State your assumptions explicitly. If uncertain, ask.
+- Do not write against an unfamiliar external API, SDK, or config surface from memory — verify its signatures, option names, and version-specific behavior against current docs or the installed package source first. Trust what a dependency *does*; verify how it is *called*. A guessed call that happens to typecheck is still a latent bug.
 - If multiple interpretations exist, present them — with the rough effort and tradeoff of each so the choice is informed. Do not pick silently.
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what is confusing. Ask.
