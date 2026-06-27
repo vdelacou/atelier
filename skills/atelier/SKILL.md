@@ -131,7 +131,7 @@ See `references/lessons.md` for the entry format, extraction heuristics, routing
 1. **No `class` keyword.** Anywhere. Value objects, entities, services, strategies, decorators, observers, factories: all expressed as modules of arrow functions and typed records. See the translation catalogue below and in `references/design-patterns.md`.
 2. **No `function` declarations.** Always `export const fn = (...) => {...}`. Enforced by `func-style: ['error', 'expression']`.
 3. **No `interface`.** Always `type Foo = {...}`. Enforced by `@typescript-eslint/consistent-type-definitions: ['error', 'type']`.
-4. **No `console.*`.** Use the injected `Logger` port (`src/use-cases/ports/logger.ts`); the production adapter is Winston-backed (`src/infra/logger.ts`). Enforced by the `no-console` ESLint rule in both variant configs. *Next.js exception:* the React boundary and static export make constructor injection impractical across client components, so that variant sanctions exactly one module singleton, `src/lib/utils/logger.ts` (see `references/nextjs-monorepo.md`). Everywhere else a module-level logger stays banned.
+4. **No `console.*`.** Use the injected `Logger` port (`src/use-cases/ports/logger.ts`); the production adapter is Winston-backed (`src/infra/logger.ts`). Enforced by the `no-console` ESLint rule in both variant configs. *Next.js client/static exception only:* the React boundary and static export make constructor injection impractical across **client components**, so that variant sanctions exactly one module singleton, `src/lib/utils/logger.ts` (see `references/nextjs-monorepo.md`). This does **not** extend to a Next.js server app — route handlers, use-cases, and infra adapters have a composition root, so they inject the `Logger` port like the Bun variant. Everywhere else a module-level logger stays banned.
 5. **Bun only.** Never `npm`, `pnpm`, `yarn`, `node`, or `vite` directly. Install with `bun install`. Run with `bun run` / `bunx`. Execute with `bun run src/main.ts`.
 6. **Explicit return types on every exported function.** Enforced by `@typescript-eslint/explicit-function-return-type`.
 7. **Type-only imports on their own line.** `import type { Foo } from './foo';`.
@@ -335,6 +335,8 @@ If all four are true, the design is good enough. Stop polishing.
 - `app/(en)/`, `app/(fr)/` route groups, or
 - `tailwindcss` in dependencies.
 
+Within the Next.js variant, pick the **static content site** sub-shape (the default — `output: 'export'`, build-time data) unless the app has `output: 'export'` *absent* and contains `app/**/route.ts` handlers or runtime/in-memory server state — that is the **server app** sub-variant (`references/nextjs-monorepo.md` § Next.js server app). Static export and request-time route handlers are mutually exclusive, so this is a real fork, not a spectrum.
+
 **Bun TypeScript script repo** (read `references/bun-typescript.md`) if:
 - single `src/main.ts` entry with `"module": "src/main.ts"`, or
 - the `src/{domain,use-cases,infra,presenter,composition,test-helpers}` Clean Architecture layout (see `references/architecture.md`), or
@@ -353,8 +355,8 @@ The hard rules are universal unless this table says otherwise. Gates and tooling
 | Stryker mutation | Yes — gates `mutate:staged`/`mutate:changed` | No |
 | Pre-commit | Eight-gate `.githooks/pre-commit` | `simple-git-hooks`: test + lint + commitlint — never install both hook mechanisms |
 | Commit message (rule 23) | `commit-msg` hook: shipped `assets/commit-msg` validator (zero deps) | `commit-msg` hook: `@commitlint/config-conventional` via `simple-git-hooks` — same grammar |
-| Logger | `Logger` port + `src/infra` adapter (rule 4) | Sanctioned singleton `src/lib/utils/logger.ts` (rule 4 exception) |
-| `Result<T, E>` (rule 16) | Every IO port | `src/lib/**` runtime IO; build-time data loaders may throw — a loud failed build is the desired outcome |
+| Logger | `Logger` port + `src/infra` adapter (rule 4) | **Client/static:** sanctioned singleton `src/lib/utils/logger.ts` (rule 4 exception). **Server app:** `Logger` port + `src/infra` adapter, like the Bun variant |
+| `Result<T, E>` (rule 16) | Every IO port | **Static:** `src/lib/**` runtime IO; build-time data loaders may throw — a loud failed build is the desired outcome. **Server app:** every IO port returns `Result`, route handlers map it to HTTP via a presenter |
 | Mock ban (rule 13) | `no-restricted-imports` in ESLint config | Same rule, added with the test setup |
 | Rules 21–22 (design system, styling seal) | n/a (no UI) | Mandatory, lint-enforced (design-system ESLint block) |
 
