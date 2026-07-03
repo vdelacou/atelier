@@ -131,7 +131,7 @@ See `references/lessons.md` for the entry format, extraction heuristics, routing
 1. **No `class` keyword.** Anywhere. Value objects, entities, services, strategies, decorators, observers, factories: all expressed as modules of arrow functions and typed records. See the translation catalogue below and in `references/design-patterns.md`.
 2. **No `function` declarations.** Always `export const fn = (...) => {...}`. Enforced by `func-style: ['error', 'expression']`.
 3. **No `interface`.** Always `type Foo = {...}`. Enforced by `@typescript-eslint/consistent-type-definitions: ['error', 'type']`.
-4. **No `console.*`.** Use the injected `Logger` port (`src/use-cases/ports/logger.ts`); the production adapter is Winston-backed (`src/infra/logger.ts`). Enforced by the `no-console` ESLint rule in both variant configs. *Next.js client/static exception only:* the React boundary and static export make constructor injection impractical across **client components**, so that variant sanctions exactly one module singleton, `src/lib/utils/logger.ts` (see `references/nextjs-monorepo.md`). This does **not** extend to a Next.js server app — route handlers, use-cases, and infra adapters have a composition root, so they inject the `Logger` port like the Bun variant. Everywhere else a module-level logger stays banned.
+4. **No `console.*`.** Use the injected `Logger` port (`src/use-cases/ports/logger.ts`); the production adapter is Winston-backed (`src/infra/logger.ts`). Enforced by the `no-console` ESLint rule in both variant configs — scoped to application code: `scripts/**` gate scripts are terminal tools whose output is their interface, so the config turns the rule off there at the project level (see `references/bun-typescript.md`). *Next.js client/static exception only:* the React boundary and static export make constructor injection impractical across **client components**, so that variant sanctions exactly one module singleton, `src/lib/utils/logger.ts` (see `references/nextjs-monorepo.md`). This does **not** extend to a Next.js server app — route handlers, use-cases, and infra adapters have a composition root, so they inject the `Logger` port like the Bun variant. Everywhere else a module-level logger stays banned.
 5. **Bun only.** Never `npm`, `pnpm`, `yarn`, `node`, or `vite` directly. Install with `bun install`. Run with `bun run` / `bunx`. Execute with `bun run src/main.ts`.
 6. **Explicit return types on every exported function.** Enforced by `@typescript-eslint/explicit-function-return-type`.
 7. **Type-only imports on their own line.** `import type { Foo } from './foo';`.
@@ -398,14 +398,10 @@ Process:
 2. Identify the feature. If non-trivial, skim `references/architecture.md`.
 3. Propose a failing test in `*.test.ts` with a concrete example name; get the user's confirmation before writing it, and never modify or delete an existing test without explicit sign-off (rule 24).
 4. Write the simplest arrow-function code to make it green.
-5. Refactor. Apply object calisthenics. Promote primitives to branded types. Extract on Rule of Three.
-6. Never emit `class`, `function` declaration, `interface`, `console.*`, or `npm/pnpm/yarn/node/vite`. Refuse and rewrite.
-7. Any new dependency uses `bun add` / `bun add -d`.
-8. Any logging goes through `deps.logger` (the `Logger` port). Never `console.*`, never a module-level singleton.
-9. Any commit message follows Conventional Commits — `type(scope)!: subject`, validated by the `commit-msg` hook (hard rule 23). Write it that way the first time; do not lean on `--no-verify`.
-10. Work trunk-based: commit to `main` in small green increments (≤10 files / ≤300 lines per gate 1), not onto long-lived feature branches. Every commit keeps `main` releasable — that is what the pre-commit gates guarantee. Hide unfinished work behind a flag, not a branch. This is the default and overrides any "branch first" habit. See `references/workflow.md` (Trunk-based development).
-11. If legacy code in the repo uses a forbidden pattern, match the local style in that file only. Flag the drift once and offer to refactor.
-12. At session wrap-up, scan for `[mistake]`, `[decision]`, `[gotcha]` entries worth capturing. Propose a candidate list and append on approval. See `references/lessons.md`.
+5. Refactor. Apply object calisthenics. Promote primitives to branded types. Extract on Rule of Three. (The hard rules bind throughout — no banned syntax, deps via `bun add`, logging via the `Logger` port, Conventional Commits.)
+6. Work trunk-based: commit to `main` in small green increments (≤10 files / ≤300 lines per gate 1), not onto long-lived feature branches. Every commit keeps `main` releasable — that is what the pre-commit gates guarantee. Hide unfinished work behind a flag, not a branch. This is the default and overrides any "branch first" habit. See `references/workflow.md` (Trunk-based development).
+7. If legacy code in the repo uses a forbidden pattern, match the local style in that file only. Flag the drift once and offer to refactor.
+8. At session wrap-up, scan for `[mistake]`, `[decision]`, `[gotcha]` entries worth capturing. Propose a candidate list and append on approval. See `references/lessons.md`.
 
 ## Pre-code checklist
 
@@ -437,7 +433,7 @@ Then review:
 6. Is there dead code to remove? Are names still accurate? Can conditionals simplify?
 7. Does any user input reach a sensitive sink (SQL, shell, filesystem, HTTP, HTML)? If yes, did it cross a branded-type checkpoint?
 8. Every new IO port returns `Result<T, PortError>` and its `PortError` is a discriminated union. Every new use-case returns `Result<Summary, StepError>`. `try/catch` only in `infra/`, `main.ts`, or a pure-domain native-API fallback.
-9. New `src/infra/`, `src/composition/`, or `src/presenter/` files added in the same commit as a matching side-effect import in `scripts/coverage-preload.ts`.
+9. New `src/infra/`, `src/composition/`, or `src/presenter/` files land in the same commit as a regenerated `scripts/coverage-preload.ts` (`bun run scripts/regenerate-coverage-preload.ts`).
 10. The commit is small: ≤10 files AND ≤300 lines (insertions + deletions). The pre-commit gate enforces this; aim well under during iteration.
 11. `README.md` audited against the user-visible surface area (install steps, `package.json` scripts, CLI flags, env vars, top-level layout, public exports, pinned versions) and updated in the same commit if anything is now stale. See Behavioural Guideline #5. The audit runs **twice**: once before declaring the task done, and again before ending the session — the same READMEs that are correct at task-done can drift across multiple back-to-back tasks in one session.
 12. Would a new team member understand this in six months?
@@ -446,30 +442,16 @@ The pre-commit hook runs **eight gates** in order: commit size → package.json 
 
 ## Red flags (stop and rethink)
 
-- Writing production code without a failing test.
-- Using `class`, `function` declaration, `interface`, or `console.*`.
-- A module longer than 50 lines or a function longer than 10 lines.
-- More than one level of indentation in a function.
-- Using `else` when an early return works.
-- Hardcoding values that should be configurable.
-- Extracting an abstraction before the third duplication.
-- Adding a feature "just in case" (YAGNI).
-- A module with more than one reason to change.
-- `npm`, `pnpm`, `yarn`, `node`, or `vite` in any script or command.
-- Accessing an object through more than one dot (`a.b.c`).
-- Passing raw strings or numbers for domain concepts instead of branded types.
+Any hard-rule violation (1–25) is a red flag by definition — as is any breach of the clean-code numbers (function > 10 lines, module > 50, more than one indentation level, `else` where a guard clause works, more than one dot per line) or of complexity management (a speculative abstraction, extraction before the third duplication, a module with more than one reason to change, hardcoded values that should be configurable). Beyond restating those, stop and rethink when you see:
+
 - Untrusted input reaching a sensitive sink (SQL, shell, filesystem, HTTP, HTML, redirect) without a branded-type checkpoint between them.
 - A secret (token, password, API key, PII) interpolated into a log line, or placed in a `NEXT_PUBLIC_*` env var.
 - Creating, editing, deleting, renaming, or skipping a test file — or weakening an assertion, changing an expected value, or commenting out a case — without first showing the user and getting an explicit yes (rule 24). Weakening a failing test to go green instead of fixing the code is the worst of these; the default for a red test is to fix production code.
 - Running `git commit` or `git push` without the user's explicit confirmation (rule 25). Staging and proposing the commit is the agent's role; pulling the trigger is the user's. "Do it" on a task is not commit approval — show the proposed commit and ask.
-- Importing anything from the `mock` namespace of `bun:test` — `mock()`, `mock.module()` — or asserting on `.toHaveBeenCalled*`. Write a fake, or expose a `createXFromApi(api)` factory the test can feed an in-memory object. Enforced by `no-restricted-imports`.
 - An infra adapter exported with no test seam at all — no custom-fetch DI, no `createXFromApi(api: XApi)` factory, no sync-builder export (`references/testing-infra.md`). Without a seam, someone will reach for `mock.module` on the next test. Expose one from day one, even before the first test exists.
-- Adding a new `src/infra/*.ts`, `src/composition/*.ts`, or `src/presenter/*.ts` file without a matching side-effect import in `scripts/coverage-preload.ts`. Untested infra files are invisible to `bun test --coverage` unless something imports them; the preload makes them appear at 0% so the gate can fail loudly.
+- Adding a new `src/infra/*.ts`, `src/composition/*.ts`, or `src/presenter/*.ts` file without regenerating `scripts/coverage-preload.ts` in the same commit (`bun run scripts/regenerate-coverage-preload.ts`). Untested infra files are invisible to `bun test --coverage` unless something imports them; the preload makes them appear at 0% so the gate can fail loudly.
 - `coverageThreshold` set in `bunfig.toml` while a per-tier script owns enforcement. Bun exits non-zero on the global threshold before the script can print per-file violations — looks like "coverage failed silently". Remove the global threshold; let the script own it.
 - An inline suppression of any tool: `// eslint-disable*`, `// @ts-ignore`, `// @ts-expect-error`, `// snyk-ignore`, `// sonar-ignore`, `// deepcode ignore`, `// istanbul ignore`. Refactor, or change rule severity at the project level.
-- `try/catch` anywhere outside `src/infra/**`, `src/main.ts`, or a pure-domain native-API fallback (`JSON.parse`, `URL`). Use-cases must pattern-match on `Result.ok`.
-- A port that returns `Promise<T>` instead of `Promise<Result<T, PortError>>` for an IO call. Expected failures belong in the type.
-- A curried arrow chain (`const f = (a) => (b) => { ... }`). Use a single arrow with all parameters.
 - A trailing `!` (non-null assertion) or a `as Type` assertion that is not a genuine narrowing. Replace with a guard clause (SonarJS S4325).
 - `String(err)` in a catch block. Use the shared `formatError(err: unknown): string` helper (SonarJS S6551).
 - `.match(re)` used to read capture groups. Use `re.exec(...)` (SonarJS S6594).
@@ -479,16 +461,8 @@ The pre-commit hook runs **eight gates** in order: commit size → package.json 
 - A commit exceeding 10 files OR 300 lines (insertions + deletions) without a clear big-bang justification (initial scaffold, mass-rename, generated files). Split into smaller coherent slices. The pre-commit gate enforces this; do not normalise `--no-verify`.
 - A commit message that is not Conventional Commits — no `type:` prefix, an unlisted type (`wip:`, `update:`), a capitalised type, a trailing period, or a >100-char header. The `commit-msg` hook rejects these (hard rule 23); write `type(scope): subject` the first time rather than reaching for `--no-verify`. A repo with the eight-gate `pre-commit` installed but no `commit-msg` hook is half-protected — wire both.
 - A composition root or wiring file declared "untestable" and skipped. The two ergonomic switches make any composition file 100%-testable: parameterise every state-source (path, env var, clock) and inject every output sink (logger, sender). See `references/architecture.md` (Composition root testability).
-- A `"latest"` or `"*"` version string anywhere in `package.json`. Use `bun add <pkg>` so the version pins to `^X.Y.Z` at install time. To bump deliberately, run `bun update` and commit the lockfile change in the same commit. Enforced by `scripts/check-package-json.sh` (pre-commit gate 2).
-- Closing a session (or declaring a task done) with non-README files modified but the README un-audited. The README is part of the change set — re-read it, update what drifted, or state in one sentence that nothing user-visible changed. See Behavioural Guideline #5.
-- A `node:fs` import (`readFile`, `writeFile`, `readFileSync`, `fs/promises`, etc.) in any file under `src/**` that is not a `*.test.ts`, under `src/test-helpers/**`, or a single isolated directory-boundary helper in `src/infra/**` documented with a one-line comment. Production file IO uses `Bun.file` / `Bun.write`. Hard rule 20.
 - An assignment to `process.env.X = ...` anywhere outside `*.test.ts` (and even there, only inside `beforeAll`/`afterAll` with a saved-and-restored original). `process.env` is shared mutable state — pass values as parameters instead. See the Security section.
-- A hook call (`useState`, `useEffect`, any `use*`) inside `src/components/**`. State is hoisted: native HTML first, then `isOpen`/`onToggle` props wired by the page shell from a hook in `src/lib/hooks/`. Hard rule 21.
-- An import of `src/lib/**`, `src/config/**`, `next/link`, or `next/image` anywhere under `src/components/**`. Links and images arrive as injected `ComponentType` props built in `src/lib/layout/wrappers.tsx`.
-- A design-system component that resolves translations, reads `process.env`, fetches data, or carries `'use client'`. Display strings and data arrive as props; the client boundary belongs to the page shell.
-- A downward import in the design system: an atom importing a molecule, or a molecule importing an organism. Imports point strictly upward.
-- A Tailwind utility string in `app/**` (anywhere but `globals.css`), `src/page/**`, `src/lib/**`, or `src/config/**`. Styling is sealed in the design system; the app never sees Tailwind. Hard rule 22.
-- A molecule or organism exposing free-form `className`/`style` in its public props, or a page shell passing one in. Visual variation is a typed variant prop — add the variant to the component.
+- A rule 21–22 breach anywhere in the UI: a hook call inside `src/components/**`; an import of `src/lib/**`, `src/config/**`, or `next/*` in a design-system component; `'use client'`, translation resolution, `process.env`, or data fetching in one; a downward import (an atom importing a molecule); a Tailwind utility string outside `src/components/**` (tokens in `globals.css` aside); or free-form `className`/`style` in a molecule/organism public API. State is hoisted, links/images arrive as injected `ComponentType` props, and visual variation is a typed variant prop.
 
 ## Remember
 
