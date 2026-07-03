@@ -623,7 +623,7 @@ Translations are JSON files in `data/translations/` loaded by `src/lib/i18n/`. E
 
 ## Secrets & config
 
-No credentials in source. Centralise env reads in `src/lib/config/env.ts` rather than sprinkling `process.env` across modules (SKILL.md, Security). The only env vars the app consumes besides `NODE_ENV` are `LOG_LEVEL` and `LOG_FILE`, read once at logger init — treat those two inline reads as part of the sanctioned logger singleton, not as a precedent for new code.
+No credentials in source. Centralise env reads in `src/config/env.ts` (the same location the server-app composition root imports from) rather than sprinkling `process.env` across modules (SKILL.md, Security). Besides `NODE_ENV`, the only env vars the app consumes are `LOG_LEVEL` and `LOG_FILE` — both read inside the sanctioned logger singleton below, where `NODE_ENV` is also read to pick prod-vs-dev formatting. Treat those reads as part of the singleton, not as a precedent for new code.
 
 `.env*` is git-ignored.
 

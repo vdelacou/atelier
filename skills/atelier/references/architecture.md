@@ -1,5 +1,7 @@
 # Software Architecture
 
+> Code samples here are simplified to show *structure*. Some port signatures elide the mandatory `Result<T, E>` wrapper — e.g. a use-case shown returning `Result<User | null, RepoError>` would, in real code, aggregate to `Result<Summary, StepError>` (hard rule 16) — and some inner arrows omit explicit return types. The layout and dependency direction are the point; apply the hard rules in full when writing the real thing.
+
 ## The goal
 
 Enable the team to:

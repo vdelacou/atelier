@@ -412,9 +412,12 @@ it('round-trips through the factory', () => {
 **Boundary.** Production code must not import any `*Unsafe` helper. A simple lint rule (or a periodic grep) keeps it honest:
 
 ```js
-// eslint.config.js
+// eslint.config.js — scope with files + ignores (flat config's reliable idiom;
+// negated extglobs like `!(*.test).ts` in `files` are not dependable). This block
+// binds to production sources and excludes tests, so *Unsafe imports stay test-only.
 {
-  files: ['src/**/!(*.test).ts'],
+  files: ['src/**/*.ts'],
+  ignores: ['**/*.test.ts', 'src/test-helpers/**'],
   rules: {
     'no-restricted-imports': ['error', {
       patterns: [{ group: ['**'], importNamePattern: 'Unsafe$', message: '*Unsafe helpers are test-only' }],
