@@ -94,14 +94,8 @@ const parseRow = (line: string): FileRow | undefined => {
 // every plain `bun test` run. Loading the preload only when computing
 // coverage keeps the inner-loop tests fast without losing the gate.
 const runTestsWithCoverage = async (): Promise<{ readonly status: number; readonly output: string }> => {
-  const proc = Bun.spawn(
-    ['bun', 'test', '--coverage', '--preload', './scripts/coverage-preload.ts'],
-    { stdout: 'pipe', stderr: 'pipe' }
-  );
-  const [stdoutText, stderrText] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-  ]);
+  const proc = Bun.spawn(['bun', 'test', '--coverage', '--preload', './scripts/coverage-preload.ts'], { stdout: 'pipe', stderr: 'pipe' });
+  const [stdoutText, stderrText] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
   process.stdout.write(stdoutText);
   process.stderr.write(stderrText);
   const status = await proc.exited;
@@ -150,14 +144,10 @@ const collectViolations = (rows: ReadonlyArray<FileRow>): ReadonlyArray<Violatio
 const printViolations = (violations: ReadonlyArray<Violation>): void => {
   console.error('\ncoverage: per-file gate violations:');
   for (const v of violations) {
-    console.error(
-      `  ${v.file.path}  [${v.tier}]  ${v.metric}=${v.actual.toFixed(1)}%  required=${v.threshold}%`
-    );
+    console.error(`  ${v.file.path}  [${v.tier}]  ${v.metric}=${v.actual.toFixed(1)}%  required=${v.threshold}%`);
   }
   const word = violations.length === 1 ? 'violation' : 'violations';
-  console.error(
-    `\ncoverage: ${violations.length} ${word}. Add tests, or restructure to remove unreachable branches — never lower the threshold.`
-  );
+  console.error(`\ncoverage: ${violations.length} ${word}. Add tests, or restructure to remove unreachable branches — never lower the threshold.`);
 };
 
 const main = async (): Promise<number> => {
