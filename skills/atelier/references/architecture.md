@@ -152,46 +152,11 @@ export const withLogging = <Req extends { path: string }, Res extends { status: 
 
 ## Common architectural styles
 
-### Layered architecture
+- **Layered** (Presentation → Business → Persistence): simple and well-understood, but without a dependency-direction rule it decays into a big ball of mud.
+- **Hexagonal (Ports and Adapters)**: the domain at the centre; **ports** are function-type contracts defined by the domain, **adapters** the concrete implementations that connect to the outside world. The layer diagram at the top of this file *is* this style.
+- **Clean architecture**: hexagonal with named rings — entities (enterprise rules), use cases (application rules), interface adapters (controllers/presenters/gateways), frameworks and drivers (web, DB, external interfaces).
 
-Traditional layers: Presentation -> Business -> Persistence.
-
-**Pros.** Simple, well-understood.
-**Cons.** Can become a "big ball of mud" without discipline. No clear story about dependency direction.
-
-### Hexagonal architecture (Ports and Adapters)
-
-Domain at the centre, adapters around the edges.
-
-```
-        +---------------------+
-        |    HTTP adapter     |
-        +----------+----------+
-                   |
-+------------------v------------------+
-|              DOMAIN                  |
-|   +--------------------------+      |
-|   |     business logic        |      |
-|   |     use cases             |      |
-|   +--------------------------+      |
-+------------------+------------------+
-                   |
-        +----------v----------+
-        |  database adapter   |
-        +---------------------+
-```
-
-- **Ports** | function-type contracts defined by the domain.
-- **Adapters** | concrete implementations that connect to the outside world.
-
-### Clean architecture
-
-Similar to hexagonal, with explicit layers:
-
-1. **Entities** | enterprise business rules.
-2. **Use cases** | application business rules.
-3. **Interface adapters** | controllers, presenters, gateways.
-4. **Frameworks and drivers** | web, DB, external interfaces.
+This standard's `src/{domain,use-cases,infra,presenter,composition}` layout (below) is the concrete expression of the last two.
 
 ---
 
@@ -424,18 +389,8 @@ From there, flesh out each feature fully with TDD.
 
 ## Testing architecture
 
-```
-+--------------------------------------------+
-|       E2E / acceptance tests               |  few, slow, high confidence
-+--------------------------------------------+
-|       Integration tests                    |  some, medium speed
-+--------------------------------------------+
-|       Unit tests                           |  many, fast, isolated
-+--------------------------------------------+
-```
-
-Test by layer:
-- **Domain** | unit tests (most tests here).
+Test by layer, most tests at the bottom of the pyramid:
+- **Domain** | unit tests through the primary port (most tests here).
 - **Application** | integration tests with faked infrastructure.
 - **Infrastructure** | integration tests with real dependencies.
 - **E2E** | critical paths only.
@@ -444,32 +399,9 @@ See `references/testing.md` for the full strategy.
 
 ---
 
-## Architecture Decision Records (ADRs)
+## Recording architectural decisions
 
-Document significant decisions:
-
-```markdown
-# ADR 001 | Use PostgreSQL for persistence
-
-## Status
-Accepted
-
-## Context
-We need a database. Options: PostgreSQL, MongoDB, MySQL.
-
-## Decision
-PostgreSQL, because:
-- ACID compliance
-- Team familiarity
-- JSON support for flexibility
-
-## Consequences
-- Need PostgreSQL expertise.
-- Schema migrations required.
-- Excellent query capabilities.
-```
-
-Store ADRs under `docs/adr/` in the repo. One file per decision, numbered.
+This standard does not keep a separate `docs/adr/` tree. Significant decisions are captured as `[decision]` entries in `.claude/LESSONS.md` — append-only, one line, superseded by a newer `[decision]` when they change (see `references/lessons.md`). For decisions worth pressure-testing *before* they are made, the atelier-grill-me companion skill walks the decision tree and writes the decision record.
 
 ---
 

@@ -129,6 +129,13 @@ export const envEnum = <T extends string>(name: string, allowed: readonly T[]): 
 // (that reads real process.env at import time, which leaks into every test that
 // touches the importer). readConfig() lives in src/composition/**; use-cases and
 // adapters receive `config` (or the single value they need) as a parameter.
+export type AppConfig = {
+  readonly apiToken: EnvVar;
+  readonly databaseUrl: EnvVar;
+  readonly logLevel: 'error' | 'warn' | 'info' | 'debug';
+  readonly port: number;
+};
+
 export const readConfig = (): AppConfig => ({
   apiToken: envVar('API_TOKEN'),
   databaseUrl: envVar('DATABASE_URL'),

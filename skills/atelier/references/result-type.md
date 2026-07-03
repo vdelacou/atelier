@@ -314,8 +314,9 @@ export const captureRejection = async (promise: Promise<unknown>): Promise<Error
     await promise;
   } catch (e) {
     if (e instanceof Error) return e;
-    // formatNonError avoids String(e) (SonarJS S6551) — full impl in the asset
-    throw new Error(`captureRejection: rejected with non-Error value: ${formatNonError(e)}`);
+    // formatNonError avoids String(e) (SonarJS S6551) — full impl in the asset.
+    // { cause: e } preserves the original value (ESLint preserve-caught-error).
+    throw new Error(`captureRejection: rejected with non-Error value: ${formatNonError(e)}`, { cause: e });
   }
   throw new Error('captureRejection: expected promise to reject, but it resolved');
 };

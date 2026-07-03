@@ -185,7 +185,7 @@ When introducing a per-tier coverage gate in an existing repo, remove any global
 
 SonarLint runs IDE-side; CI and pre-commit do not see it. To keep IDE-only findings from drifting back in, ESLint is wired to catch them at lint time.
 
-In `eslint.config.js` (one config, two modes — `LINT_STRICT=1` switches on the type-aware block). The **canonical, complete** flat config lives in `references/bun-typescript.md` (§ ESLint) — the excerpt below shows only the SonarJS / type-aware slice this section is about, so if the two ever disagree, `bun-typescript.md` wins:
+In `eslint.config.js` (one config, two modes — `LINT_STRICT=1` switches on the type-aware block). The **canonical, complete** flat config lives in `references/bun-typescript.md` (§ `eslint.config.js`) — the excerpt below shows only the SonarJS / type-aware slice this section is about, so if the two ever disagree, `bun-typescript.md` wins:
 
 ```js
 import pluginJs from '@eslint/js';
@@ -558,11 +558,7 @@ If the audit finds drift, fix the README in the **same commit** as the code chan
 
 ### Five-check task-done gate
 
-1. `bun test` — passes
-2. `bun run lint` — 0 errors AND 0 warnings (fast, ~2 s cached / ~7 s cold)
-3. `bun run typecheck` — clean
-4. `bun run coverage` — per-directory gates pass
-5. `README.md` — audited against the surface table above; either updated, or one-sentence "nothing user-visible changed"
+The four inner-loop checks from the top of this file (`bun test`, `bun run lint`, `bun run typecheck`, `bun run coverage`) plus a fifth: `README.md` audited against the surface table above — either updated, or a one-sentence "nothing user-visible changed".
 
 ### End-of-session re-audit
 

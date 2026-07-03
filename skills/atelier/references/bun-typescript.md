@@ -211,10 +211,13 @@ export default [
       'sonarjs/cognitive-complexity': 'off',    // we already cap function size; this is noise
     },
   },
-  // Stryker scratch dirs, the reports/ output dir, and other non-source paths
-  // must not be linted. Stryker copies the source tree into .stryker-tmp/ during a run.
+  // Non-source paths must not be linted: Stryker copies the tree into .stryker-tmp/
+  // during a run, reports/ is output, and the config file itself would trip no-undef
+  // on `process` (it runs under Node semantics, not the **/*.ts globals block).
+  // scripts/ IS linted — the gate scripts stay under the full rule set, with only
+  // no-console turned off for them above.
   {
-    ignores: ['.stryker-tmp/**', 'reports/**', 'docs/**', 'scripts/**', '.claude/**', '.agents/**'],
+    ignores: ['eslint.config.js', '.stryker-tmp/**', 'reports/**', 'docs/**', '.claude/**', '.agents/**'],
   },
 ];
 ```
