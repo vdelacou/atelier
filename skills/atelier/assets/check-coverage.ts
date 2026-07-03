@@ -42,10 +42,10 @@ const SKIPPED: ReadonlyArray<SkipRule> = [
   { name: 'test-helpers', match: (p) => p.startsWith('src/test-helpers/') },
   { name: 'entry point', match: (p) => p === 'src/main.ts' },
 ];
-// NOTE: src/composition/build-deps.ts USED to be skipped here. It is now
-// fully unit-testable via the optional `BuildDepsConfig` argument pattern
-// (token store path + logger injectable, sensible defaults preserve prod
-// behaviour). See references/architecture.md and references/workflow.md.
+// Resist adding composition/wiring files here: any composition root is
+// 100%-testable once its state-sources (paths, env, clock) are parameters
+// and its sinks (logger, sender) injected — see references/architecture.md
+// (Composition root testability). SKIPPED is for genuine non-code entries.
 
 type FileRow = {
   readonly path: string;
