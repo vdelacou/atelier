@@ -197,7 +197,8 @@ atelier/
 ├── .githooks/                     # this repo's own hooks (frontmatter check, Conventional Commits)
 ├── scripts/
 │   ├── validate-frontmatter.ts    # frontmatter gate: name/description present + within skill limits
-│   └── smoke-test.sh              # e2e: install the assets per this README into a scratch repo, run every gate
+│   ├── smoke-test.sh              # e2e (Bun): install the assets per this README into a scratch repo, run every gate
+│   └── smoke-test-next.sh         # e2e (Next.js): scaffold a package, assert rules 21-22 enforcement
 └── skills/
     ├── atelier/
     │   ├── SKILL.md           # Main skill instructions
@@ -245,7 +246,13 @@ atelier/
 
 ## Repository CI
 
-Every push and pull request runs two GitHub Actions jobs: the frontmatter validator, and `scripts/smoke-test.sh` — an end-to-end test that follows this README's install steps into a scratch Bun repo, extracts the canonical `tsconfig.json` / `eslint.config.js` from `references/bun-typescript.md`, installs the **current unpinned** toolchain, and proves every gate both passes on a conforming tree and blocks its target violation (25 checks, including the full 8-gate pre-commit hook with Stryker). A new ESLint/TypeScript/Stryker major that breaks a shipped asset — or doc drift in the canonical configs — fails CI before a user hits it. Run it locally with `bash scripts/smoke-test.sh`.
+Every push and pull request runs three GitHub Actions jobs, each guarding against the same failure mode — a toolchain major or a doc edit silently breaking what the skill ships:
+
+- **frontmatter validator** — every `SKILL.md` opens with a valid `name`/`description` within the skill-loader limits.
+- **`scripts/smoke-test.sh` (Bun variant)** — follows this README's install steps into a scratch Bun repo, extracts the canonical `tsconfig.json` / `eslint.config.js` from `references/bun-typescript.md`, installs the **current unpinned** toolchain, and proves every gate both passes on a conforming tree and blocks its target violation (25 checks, including the full 8-gate pre-commit hook with Stryker).
+- **`scripts/smoke-test-next.sh` (Next.js variant)** — scaffolds a Next.js package from the canonical configs in `references/nextjs-monorepo.md`, builds a conforming design system + page shell + static export, and asserts the design-system lint block catches its target violations: rule 21 (a hook / `next/*` import / `'use client'` / app-code import inside a component) and rule 22 (a `className` / `class` / `style` attribute outside `src/components/**`).
+
+A new ESLint/TypeScript/Stryker/Next major that breaks a shipped asset — or doc drift in the canonical configs — fails CI before a user hits it. Run them locally with `bash scripts/smoke-test.sh` and `bash scripts/smoke-test-next.sh`.
 
 ## Variant references
 

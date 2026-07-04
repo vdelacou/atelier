@@ -15,7 +15,7 @@ jobs:
       - run: bun run scripts/validate-frontmatter.ts
 
   asset-smoke-test:
-    name: asset smoke test (install docs verbatim, run all gates)
+    name: asset smoke test (Bun variant, all gates)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -24,3 +24,15 @@ jobs:
       # TypeScript / Stryker major that breaks a shipped asset or a documented
       # config should fail here before a user hits it.
       - run: bash scripts/smoke-test.sh
+
+  next-smoke-test:
+    name: next.js smoke test (rules 21-22 enforcement)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      # Scaffolds a Next.js package from the canonical configs in
+      # references/nextjs-monorepo.md, then asserts conforming code passes and
+      # rule 21/22 violations are caught — so a future ESLint/Next major can't
+      # silently disable the design-system enforcement.
+      - run: bash scripts/smoke-test-next.sh
