@@ -134,9 +134,11 @@ mkdir -p src/test-helpers
 cp $SKILL/assets/fetch-mock.ts          src/test-helpers/
 cp $SKILL/assets/capture-rejection.ts   src/test-helpers/
 
-# formatError is production code (every catch block in src/infra/** uses it)
+# formatError is production code (every catch block in src/infra/** uses it).
+# It lives in src/domain/**, so the mutation gate covers it — copy its test too.
 mkdir -p src/domain/utilities
 cp $SKILL/assets/format-error.ts        src/domain/utilities/
+cp $SKILL/assets/format-error.test.ts   src/domain/utilities/
 
 # Install the git hooks: eight-gate pre-commit + Conventional Commits commit-msg
 cp $SKILL/assets/pre-commit             .githooks/pre-commit
@@ -207,6 +209,7 @@ atelier/
     │   │   ├── commit-msg                       # git commit-msg hook: enforce Conventional Commits (rule 23)
     │   │   ├── fetch-mock.ts                   # installFetchMock for infra adapter tests
     │   │   ├── format-error.ts                 # safe catch-block formatter (SonarJS S6551)
+    │   │   ├── format-error.test.ts            # its test (format-error is in the mutation scope)
     │   │   ├── mutate-changed.sh               # Stryker mutation on files changed vs origin/main
     │   │   ├── mutate-staged.sh                # Stryker mutation on staged files (gate 8)
     │   │   ├── pre-commit                      # git pre-commit hook running 8 gates

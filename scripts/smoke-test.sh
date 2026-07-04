@@ -64,7 +64,7 @@ cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-package-json.sh" \
    "$SKILL/assets/check-coverage.ts" "$SKILL/assets/regenerate-coverage-preload.ts" \
    "$SKILL/assets/mutate-staged.sh" "$SKILL/assets/mutate-changed.sh" scripts/
 cp "$SKILL/assets/fetch-mock.ts" "$SKILL/assets/capture-rejection.ts" src/test-helpers/
-cp "$SKILL/assets/format-error.ts" src/domain/utilities/
+cp "$SKILL/assets/format-error.ts" "$SKILL/assets/format-error.test.ts" src/domain/utilities/
 cp "$SKILL/assets/pre-commit" "$SKILL/assets/commit-msg" .githooks/
 cp "$SKILL/assets/stryker.conf.json" ./
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh scripts/check-coverage.ts scripts/regenerate-coverage-preload.ts
@@ -118,7 +118,6 @@ EOF
 cat > src/domain/greeting.test.ts <<'EOF'
 import { expect, test } from 'bun:test';
 import { captureRejection } from '../test-helpers/capture-rejection.ts';
-import { formatError } from './utilities/format-error.ts';
 import { greet, name } from './greeting.ts';
 
 test('when a visitor gives their name, they are greeted by it', () => {
@@ -130,16 +129,8 @@ test('an empty name is rejected at the trust boundary', async () => {
   const err = await captureRejection(Promise.reject(new Error('invalid Name')));
   expect(err.message).toBe('invalid Name');
 });
-
-test('formatError renders every thrown shape readably', () => {
-  expect(formatError(new Error('boom'))).toBe('boom');
-  expect(formatError('boom')).toBe('boom');
-  expect(formatError(42)).toBe('42');
-  expect(formatError({ code: 7 })).toBe('{"code":7}');
-  const circular: { self?: unknown } = {};
-  circular.self = circular;
-  expect(formatError(circular)).toBe('[unstringifiable error]');
-});
+// formatError is exercised by its own shipped test (format-error.test.ts,
+// copied into src/domain/utilities/ alongside format-error.ts above).
 EOF
 
 cat > src/infra/fetch-greeting.ts <<'EOF'

@@ -415,6 +415,7 @@ The shared `formatError(err: unknown): string` helper lives in `src/domain/utili
 10. Create `src/use-cases/ports/logger.ts` and `src/infra/logger.ts` with the port + Winston adapter above; create `src/test-helpers/logger-fake.ts`.
 11. Copy the canonical helpers from the skill's `assets/`:
     - `cp <skill-path>/assets/format-error.ts src/domain/utilities/format-error.ts`
+    - `cp <skill-path>/assets/format-error.test.ts src/domain/utilities/format-error.test.ts` (format-error is in the mutation scope; its shipped test keeps it above the 90% gate)
     - `cp <skill-path>/assets/capture-rejection.ts src/test-helpers/capture-rejection.ts`
     - `cp <skill-path>/assets/fetch-mock.ts src/test-helpers/fetch-mock.ts`
 12. Set up the per-tier coverage gate:
