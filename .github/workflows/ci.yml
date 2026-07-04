@@ -10,7 +10,7 @@ jobs:
     name: skill frontmatter
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun run scripts/validate-frontmatter.ts
 
@@ -18,7 +18,7 @@ jobs:
     name: asset smoke test (install docs verbatim, run all gates)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       # Deliberately unpinned toolchain inside the smoke test: a new ESLint /
       # TypeScript / Stryker major that breaks a shipped asset or a documented
