@@ -190,6 +190,11 @@ Once installed, the agent consults `atelier` on every code task in a Bun/TypeScr
 atelier/
 ├── LICENSE
 ├── README.md
+├── .github/workflows/ci.yml       # CI: frontmatter validation + asset smoke test
+├── .githooks/                     # this repo's own hooks (frontmatter check, Conventional Commits)
+├── scripts/
+│   ├── validate-frontmatter.ts    # frontmatter gate: name/description present + within skill limits
+│   └── smoke-test.sh              # e2e: install the assets per this README into a scratch repo, run every gate
 └── skills/
     ├── atelier/
     │   ├── SKILL.md           # Main skill instructions
@@ -233,6 +238,10 @@ atelier/
     └── atelier-review-me/
         └── SKILL.md           # standalone rule-aware pre-land diff-review skill
 ```
+
+## Repository CI
+
+Every push and pull request runs two GitHub Actions jobs: the frontmatter validator, and `scripts/smoke-test.sh` — an end-to-end test that follows this README's install steps into a scratch Bun repo, extracts the canonical `tsconfig.json` / `eslint.config.js` from `references/bun-typescript.md`, installs the **current unpinned** toolchain, and proves every gate both passes on a conforming tree and blocks its target violation (25 checks, including the full 8-gate pre-commit hook with Stryker). A new ESLint/TypeScript/Stryker major that breaks a shipped asset — or doc drift in the canonical configs — fails CI before a user hits it. Run it locally with `bash scripts/smoke-test.sh`.
 
 ## Variant references
 

@@ -1,0 +1,26 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate-frontmatter:
+    name: skill frontmatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun run scripts/validate-frontmatter.ts
+
+  asset-smoke-test:
+    name: asset smoke test (install docs verbatim, run all gates)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      # Deliberately unpinned toolchain inside the smoke test: a new ESLint /
+      # TypeScript / Stryker major that breaks a shipped asset or a documented
+      # config should fail here before a user hits it.
+      - run: bash scripts/smoke-test.sh
