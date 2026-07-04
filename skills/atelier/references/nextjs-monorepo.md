@@ -149,6 +149,7 @@ No `format` or `lint:fix` script — save-in-editor triggers ESLint autofix. The
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -170,7 +171,9 @@ No `format` or `lint:fix` script — save-in-editor triggers ESLint autofix. The
 
 Full strictness: `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`. `moduleResolution: "bundler"` + `isolatedModules` required by Next.js / Turbopack.
 
-`"jsx": "preserve"` is mandatory and not negotiable: Next ships its own optimized JSX transform and **rewrites any other value** — including `react-jsx` — to `preserve` on the first `dev`/`build`. Set it to `preserve` from the start so the managed tsconfig does not surprise you with a diff. (This is the one place the Next tsconfig diverges from the Bun-script variant's `react-jsx`, which is correct there because plain `tsc`, not Next, compiles it.) If you vendor Bun-script code that imports with explicit `.ts` extensions (`import { x } from './coherence.ts'`), add `"allowImportingTsExtensions": true` here — Turbopack resolves the extensionful specifier at build time, but `tsc --noEmit` errors `TS5097` without the flag.
+`"allowImportingTsExtensions": true` is standard here, not a vendoring exception: this variant and the Bun-script variant both import with explicit `.ts`/`.tsx` extensions, so the same import style works across every package in the monorepo (and the server-app example below uses it). Turbopack resolves the extensionful specifier at build time; without the flag, `tsc --noEmit` errors `TS5097`.
+
+`"jsx"` is Next-managed: Next runs its own JSX transform and rewrites this key on the first `dev`/`build` regardless of what you set (observed on 16.1.1: `preserve` becomes `react-jsx`, "next.js uses the React automatic runtime"). The build succeeds either way, so treat the value as owned by Next and do not fight the managed diff. (The Bun-script variant sets `react-jsx` explicitly because plain `tsc`, not Next, compiles it there.)
 
 ## `eslint.config.mjs`
 
@@ -287,6 +290,21 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  {
+    // Hard rule 22 (the mirror of rule 21): styling is sealed inside the design system.
+    // Routes, page shells, lib, and config never carry a class string — visual variation
+    // is a typed variant prop on a design-system component, never free-form className/
+    // style outside src/components/**. Rule 21 bans the imports; this bans the styling leak.
+    files: ['app/**/*.tsx', 'src/page/**/*.tsx', 'src/lib/**/*.tsx', 'src/config/**/*.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        { selector: "JSXAttribute[name.name='className']", message: 'No className outside the design system — Tailwind is sealed under src/components/** (hard rule 22). Move the styling into a design-system component with a typed variant.' },
+        { selector: "JSXAttribute[name.name='class']", message: 'No class attribute outside the design system — styling is sealed under src/components/** (hard rule 22).' },
+        { selector: "JSXAttribute[name.name='style']", message: 'No inline style outside the design system — styling is sealed under src/components/** (hard rule 22).' },
+      ],
+    },
+  },
   pluginJs.configs.recommended,
   ...tsPlugin.configs.recommended,
   tailwind.configs.recommended,
@@ -315,7 +333,7 @@ const eslintConfig = defineConfig([
   },
   ...nextVitals,
   ...nextTs,
-  globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'node_modules/**']),
+  globalIgnores(['eslint.config.mjs', '.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'node_modules/**']),
 ]);
 
 export default eslintConfig;
