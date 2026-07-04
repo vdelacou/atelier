@@ -23,6 +23,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 
 | Area | Rule |
 |------|------|
+| Interaction | Terse direct prose, no em dashes, coach-style pushback, 2-4 concrete options via AskUserQuestion, one clarification round max then stated assumptions, next steps at wrap-up; headless runs are never blocked on a question but still never commit or weaken tests (rules 24-25) |
 | Toolchain | Bun only — never `npm`, `pnpm`, `yarn`, `node`, or `vite` directly |
 | Language | `const` arrow functions, no `class`, no `function` declaration, no `interface`, no curried arrow chains |
 | Typing | Branded types for every domain primitive; `Partial<Record<K, V>>` when the key set is open |
