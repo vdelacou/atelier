@@ -1,6 +1,41 @@
 # Workflow
 
-The four-check loop, coverage gates, lint discipline, and the editor/CI rules that keep them enforced. Run through this after every code change; nothing ships until it is clean.
+The durable plan, the four-check loop, coverage gates, lint discipline, and the editor/CI rules that keep them enforced. Run through this after every code change; nothing ships until it is clean.
+
+## The durable plan (`.claude/PLAN.md`)
+
+Before a multi-step task, write the plan to `.claude/PLAN.md`, not just to the chat. Chat context is lost the moment the session ends or a fresh one starts; a committed file survives both. The plan is the resumability contract: a returning human or a cold Claude session reads it first and continues at the same place with the same information, instead of re-deriving the plan from a half-remembered thread.
+
+**What it holds.** The goal in a sentence or two; the whole-task definition of done; the ordered steps, each with a checkbox and a per-step DoD (the concrete check that proves the step is finished); and a short breadcrumbs section (paths touched, commands to rerun, decisions made and why). Enough that a reader with zero prior context could pick up the next unchecked step.
+
+```markdown
+# PLAN: <task>
+Status: in progress. Started YYYY-MM-DD.
+
+## Goal
+<one or two sentences>
+
+## Definition of done (whole task)
+- <checkable outcome> ...
+
+## Steps
+1. [x] <step>  DoD: <check> [met]
+2. [ ] <step>  DoD: <check>
+3. [ ] <step>  DoD: <check>
+
+## Notes / breadcrumbs
+- <decisions, paths, commands a cold reader needs>
+```
+
+**Lifecycle.**
+- **Write it before executing** a multi-step task; trivial one-step work does not need it.
+- **Keep it live.** Tick each box the moment its DoD is met; mark steps done / in-progress / blocked as you go. The on-disk file is the source of truth, current even between commits, so it survives a context loss immediately.
+- **Commit it alongside the work slices** it describes (it rides with the same commits, not a separate noisy stream), so a fresh clone has the current plan.
+- **Close it out at task end.** All boxes ticked, or a note on what remains for next time. When the next task begins, overwrite it.
+
+**PLAN.md is not LESSONS.md.** `PLAN.md` is the *mutable current plan* and is rewritten and overwritten freely. `.claude/LESSONS.md` is *append-only memory* (decisions, gotchas) and is never rewritten. A durable decision that outlives the task graduates from a PLAN breadcrumb into a `[decision]` lesson; the plan step itself is transient. See `references/lessons.md`.
+
+**On resume.** Start of session, read `.claude/PLAN.md` (alongside the lesson files). If it shows an unfinished task, continue from the first unchecked step rather than re-planning. If the user's new request supersedes the open plan, say so in one sentence and overwrite it.
 
 ## The four-check loop (after every change)
 

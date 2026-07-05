@@ -95,13 +95,15 @@ Transform tasks into verifiable goals:
 - "Fix the bug" becomes "Write a test that reproduces it, then make it pass".
 - "Refactor X" becomes "Ensure tests pass before and after".
 
-For multi-step tasks, state a brief plan:
+For multi-step tasks, write the plan to a durable file, not just the chat. Chat evaporates when either party loses context; a file does not. Before executing, put the plan in `.claude/PLAN.md` with a checkable definition of done per step:
 
 ```
-1. [Step] -> verify: [check]
-2. [Step] -> verify: [check]
-3. [Step] -> verify: [check]
+1. [ ] [Step]  DoD: [the concrete check that proves this step is finished]
+2. [ ] [Step]  DoD: [check]
+3. [ ] [Step]  DoD: [check]
 ```
+
+Keep it live: tick each box as its DoD is met, mark steps done / in-progress / blocked, and leave enough breadcrumbs (paths, commands, decisions) that a cold reader could continue. This is the resumability contract: a returning human or a fresh session reads `.claude/PLAN.md` first and picks up at the same place with the same context. `.claude/PLAN.md` is the *mutable current plan*; it is distinct from the append-only `.claude/LESSONS.md` (which is memory, never rewritten). See `references/workflow.md` (The durable plan). Trivial one-step tasks do not need the ceremony.
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
@@ -129,9 +131,9 @@ See `references/behavioural-examples.md` for before/after worked examples of eac
 
 ## Lessons (memory across sessions)
 
-The repo may contain two append-only journals: `.claude/LESSONS.md` (committed, team-shared) and `.claude/lessons.local.md` (gitignored, personal). Both follow the same strict format.
+The repo may contain two append-only journals: `.claude/LESSONS.md` (committed, team-shared) and `.claude/lessons.local.md` (gitignored, personal). Both follow the same strict format. A third durable file, `.claude/PLAN.md`, holds the *current* work plan (mutable, not append-only) so an interrupted task resumes losslessly — see Behavioural Guideline #4 and `references/workflow.md` (The durable plan).
 
-- **Start of session.** Before code or tools, check both files; read in full if present. Apply applicable entries silently, never narrate "per LESSONS.md line 42". If a past entry contradicts the user's new request, surface the conflict in one sentence.
+- **Start of session.** Before code or tools, check all three files (`LESSONS.md`, `lessons.local.md`, `PLAN.md`); read in full if present. If `PLAN.md` shows an unfinished task, resume from its first unchecked step rather than re-planning. Apply lesson entries silently, never narrate "per LESSONS.md line 42". If a past entry contradicts the user's new request, surface the conflict in one sentence.
 - **End of session.** If the session had real back-and-forth (corrections, decisions, non-obvious debugging), propose 0–5 candidate entries as a one-line list and wait for approval. Append-only; never edit or delete past entries; supersede with a new `[decision]` if needed.
 - **Three kinds, nothing else.** `[mistake]` (something to not repeat), `[decision]` (architectural choice that constrains future work), `[gotcha]` (non-obvious fact that cost time).
 - **Routing.** `LESSONS.md` if the team benefits or it concerns shared code; `lessons.local.md` for personal workflow. When unsure, personal — the team file has a higher bar.
@@ -400,20 +402,20 @@ Error handling:
 - `references/result-type.md` | `Result<T, E>` and helpers, per-port discriminated-union errors, `StepError` aggregation, try/catch quarantine, fan-out batch semantics, `retryOnErr`, fakes-with-error-injection, `captureRejection`.
 
 Process:
-- `references/workflow.md` | inner-loop checks, zero-warning rule, no-inline-ignore, per-tier coverage gates, SonarJS-at-lint-time, eight-gate pre-commit hook (commit-size + package.json + gitleaks + tests + lint + typecheck + coverage + Stryker mutation), dependency hygiene (no `"latest"`), periodic test-helpers audit, README consistency check.
+- `references/workflow.md` | the durable plan (`.claude/PLAN.md`), inner-loop checks, zero-warning rule, no-inline-ignore, per-tier coverage gates, SonarJS-at-lint-time, eight-gate pre-commit hook (commit-size + package.json + gitleaks + tests + lint + typecheck + coverage + Stryker mutation), dependency hygiene (no `"latest"`), periodic test-helpers audit, README consistency check.
 - `references/lessons.md` | session memory format, triggers, extraction heuristics, entry templates, worked examples, and harvesting accumulated lessons as an audit source for the standard itself.
 
 ## Workflow when writing or editing code
 
-0. Read `.claude/LESSONS.md` and `.claude/lessons.local.md` if they exist. Apply any relevant past lessons silently.
+0. Read `.claude/LESSONS.md`, `.claude/lessons.local.md`, and `.claude/PLAN.md` if they exist. Apply past lessons silently; if `PLAN.md` holds an unfinished task, resume from its first unchecked step.
 1. Identify the variant. Read the matching variant reference.
-2. Identify the feature. If non-trivial, skim `references/architecture.md`.
+2. Identify the feature. If it is multi-step, write the plan and a definition of done per step to `.claude/PLAN.md` before coding (Behavioural Guideline #4); if non-trivial, skim `references/architecture.md`.
 3. Propose a failing test in `*.test.ts` with a concrete example name; get the user's confirmation before writing it, and never modify or delete an existing test without explicit sign-off (rule 24).
 4. Write the simplest arrow-function code to make it green.
 5. Refactor. Apply object calisthenics. Promote primitives to branded types. Extract on Rule of Three. (The hard rules bind throughout — no banned syntax, deps via `bun add`, logging via the `Logger` port, Conventional Commits.)
 6. Work trunk-based: commit to `main` in small green increments (≤10 files / ≤300 lines per gate 1), not onto long-lived feature branches. Every commit keeps `main` releasable — that is what the pre-commit gates guarantee. Hide unfinished work behind a flag, not a branch. This is the default and overrides any "branch first" habit. See `references/workflow.md` (Trunk-based development).
 7. If legacy code in the repo uses a forbidden pattern, match the local style in that file only. Flag the drift once and offer to refactor.
-8. At session wrap-up, scan for `[mistake]`, `[decision]`, `[gotcha]` entries worth capturing. Propose a candidate list and append on approval. See `references/lessons.md`.
+8. At session wrap-up, update `.claude/PLAN.md` to reflect the final state (all DoD ticked, or what remains for next time), and scan for `[mistake]`, `[decision]`, `[gotcha]` entries worth capturing. Propose a candidate list and append on approval. See `references/lessons.md`.
 
 ## Pre-code checklist
 

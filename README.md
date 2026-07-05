@@ -39,7 +39,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 | Security | Source-to-sink threat model, branded types at trust boundaries (`SafeUrl`, `SanitizedHtml`, `EnvVar`, `SafePath`), strict false-positive filter when reviewing |
 | Commits | Conventional Commits enforced by a `commit-msg` hook (rule 23) — `type(scope)!: subject`; the Bun-script variant ships a zero-dependency validator, the Next.js variant uses `@commitlint/config-conventional`. Same grammar both ways. The agent never commits or pushes without explicit user confirmation (rule 25) |
 | Integration | Trunk-based development — commit to `main` in small green increments (≤10 files / ≤300 lines), no long-lived feature branches; unfinished work hides behind a flag. The pre-commit gates keep every commit releasable |
-| Memory | Append-only `.claude/LESSONS.md` and `.claude/lessons.local.md` across sessions |
+| Memory | Append-only `.claude/LESSONS.md` and `.claude/lessons.local.md` across sessions; plus a mutable `.claude/PLAN.md` (plan + per-step definition of done) so a multi-step task resumes losslessly after a context reset |
 
 **Reference documentation included:**
 
