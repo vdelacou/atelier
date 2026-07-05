@@ -401,7 +401,7 @@ Error handling:
 
 Process:
 - `references/workflow.md` | inner-loop checks, zero-warning rule, no-inline-ignore, per-tier coverage gates, SonarJS-at-lint-time, eight-gate pre-commit hook (commit-size + package.json + gitleaks + tests + lint + typecheck + coverage + Stryker mutation), dependency hygiene (no `"latest"`), periodic test-helpers audit, README consistency check.
-- `references/lessons.md` | session memory format, triggers, extraction heuristics, entry templates, worked examples.
+- `references/lessons.md` | session memory format, triggers, extraction heuristics, entry templates, worked examples, and harvesting accumulated lessons as an audit source for the standard itself.
 
 ## Workflow when writing or editing code
 
