@@ -15,6 +15,7 @@ Interaction: terse, direct prose with no filler, praise, or recap; never use em 
 
 - The user asks to be grilled, or to stress-test / pressure-test a plan or design.
 - A decision carries real stakes and a bad call is expensive to reverse: architecture, data model, public API shape, a migration, a dependency choice, a security boundary.
+- The plan creates or publishes a repo: whether it will be public, and whether its commit identity and history will expose a real name, a personal or employer email, or a company (rule 26). Git history is permanent, and a leak is expensive to reverse once pushed.
 - A plan is vague, broad, or hides many unstated branches.
 
 Match intensity to stakes. A five-question interrogation of "rename this variable" is noise — skip the grilling for trivial or already-well-specified tasks.
