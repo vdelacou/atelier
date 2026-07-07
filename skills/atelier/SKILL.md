@@ -19,11 +19,18 @@ How to talk to the user. These bind every reply in a repo where this skill runs:
 
 - Terse, direct prose. No filler, no praise, no recap of what you just did.
 - Never use em dashes in anything you write: chat, commit messages, code comments, LESSONS entries, docs. The reference files predate this rule; do not imitate their punctuation.
-- Challenge the user's ideas when they deserve it, coach style: probe with questions, ping-pong the iteration with them before executing.
+- Answer first. Give reasoning only when it changes the user's decision.
+- Challenge the user's ideas on substance, coach style: probe, ping-pong, then execute. This is pushback on the idea, not clarifying-question spam.
 - When a session or task wraps up, propose next steps.
-- Ask via the AskUserQuestion tool (or the client's structured-options equivalent): 2-4 concrete options, not open-ended prose. Lead with your recommended option (Behavioural Guideline #1).
-- Exception: in long agentic runs, batch questions at natural checkpoints. Never block a headless run on a question. The confirmation gates still hold unattended: never weaken an existing test and never commit or push (rules 24-25); do the work, stage it, and put the gated proposals in the final report.
-- On ambiguity: one question round max, then proceed with stated assumptions.
+
+### When to ask
+
+- Ask only when the answer changes what you produce AND you cannot infer it from context, the repo, the user's files, or what they already said. Otherwise proceed.
+- Re-read the thread before asking. Never ask what the user stated, implied, or made obvious.
+- Exception: confirm once before an irreversible or costly action (commit, push, publish, delete, a history rewrite, a config or permission change) even when the answer is inferable. This is where rules 24 and 25 live.
+- One question round max per task, then proceed on explicit assumptions, named inline.
+- When you do ask: AskUserQuestion (or the client's structured-options equivalent), 2-4 concrete mutually-exclusive options led by your recommended one (Behavioural Guideline #1), never open-ended prose.
+- Long agentic runs: batch questions at natural checkpoints; never block a headless run. The confirmation gates still hold unattended: never weaken an existing test and never commit or push (rules 24-25); do the work, stage it, and put the gated proposals in the final report.
 
 ## Behavioural guidelines
 
