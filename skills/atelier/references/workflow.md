@@ -327,6 +327,47 @@ Practical loop: pull/rebase often to stay close to the trunk; run the four-check
 
 This is the default for this codebase. It overrides any tooling habit of "branch first by default" — branch only when a short-lived branch genuinely helps (e.g. a PR-review gate your team requires), and merge it the same day.
 
+## Commit identity (rule 26)
+
+Every commit carries an author and a committer (each a name plus an email), taken from git config, and whatever they are becomes permanent public history the moment you push. `gitleaks` (gate 3) scans the staged *diff* for secrets, but it is blind to the *identity* on the commit itself: a real name or an `@company.com` email in the author field sails through every gate. Rule 26 covers that gap. It is a behavioural gate, not a tool.
+
+**Decide the identity on purpose, before the first commit.** Do not let the global git config leak whatever it happens to hold. Set a repo-local identity so the choice is explicit and scoped to this repo:
+
+```bash
+# Neutral: the repo is not tied to a person or employer.
+git config --local user.name  "atelier"
+git config --local user.email "atelier@users.noreply.github.com"
+
+# Attributed: you deliberately want credit on your own work.
+git config --local user.name  "Your Name"
+git config --local user.email "you@personal.example"   # or <id>+<user>@users.noreply.github.com
+```
+
+`--local` writes to this repo's `.git/config` only, so it never changes how you commit elsewhere and it wins over the global identity. Neither choice is wrong; the failure mode rule 26 prevents is the *unchosen* one, where a client's name or a work email you never meant to publish rides along by default.
+
+**Audit before publishing or handing off.** The identity is already inside every commit, so grepping files is not enough; check the metadata across all of history:
+
+```bash
+git log --all --format='%an <%ae>  ||  %cn <%ce>' | sort -u   # every identity ever used
+git log --all --format='%an <%ae>' | grep -i '@yourcompany'   # hunt a specific leak
+```
+
+`gitleaks detect` (the history-wide mode, not the pre-commit `protect --staged`) is the secret-scanning complement. Run both before the first push to a public host.
+
+**If the wrong identity already shipped, rewrite history.** A one-time, destructive, gated operation; never run it unprompted (rule 25). Use `git filter-repo` (install: `brew install git-filter-repo`) with a mailmap that maps the leaked identity to the intended one:
+
+```bash
+# mailmap.txt maps any commit with the old email to the new identity:
+#   Intended Name <intended@email>  <leaked@company.com>
+git filter-repo --mailmap mailmap.txt --force
+git remote add origin <url>          # filter-repo strips the remote as a safety measure
+git push --force-with-lease origin main
+```
+
+To scrub a name from *file contents* too (a LICENSE header, a comment), add `--replace-text` with `Old Name==>New Name` lines. `filter-repo` rewrites every commit SHA, so this is a coordinated force-push: anyone holding a clone must re-clone.
+
+**A force-push does not purge the old commits.** The rewritten branch no longer points at them, but the host keeps unreferenced commits reachable by their SHA, through cached views, and via any fork or open PR, until it garbage-collects on its own schedule. Treat a leaked commit as exposed even after the fix: rotate anything that was a live secret, and for a hard guarantee delete-and-recreate the repo or ask the host's support to purge. atelier-greenfield sets the identity at repo birth so the whole procedure is never needed; atelier-review-me's adopt mode scans an existing repo for the leak.
+
 ## Pre-commit hook (eight gates)
 
 The hook is the safety net for the entire workflow. It runs **eight gates** in cost-ascending order — cheap fast-fail gates first, expensive gates last so a slow mutation run only happens when everything else is clean.
@@ -641,6 +682,7 @@ After the change, restart the TS server in VS Code (Cmd/Ctrl + Shift + P → "Ty
 - **Coverage gates per-tier:** 100% on `domain` + `use-cases`, 80% on `composition` + `infra` + `presenter`, skip `test-helpers` and `main.ts` only. `build-deps.ts` is now in scope (testable via optional config DI).
 - **SonarLint parity at lint time** via `eslint-plugin-sonarjs` + type-aware `@typescript-eslint` rules.
 - **Pre-commit hook runs eight gates**, in cost-ascending order: commit size → package.json (no `"latest"` / `"*"`) → gitleaks → tests → lint:strict → typecheck → coverage → mutate:staged.
+- **Commit identity is chosen deliberately** (rule 26): a repo-local `user.name` / `user.email`, neutral or attributed, set before commit one. `gitleaks` catches secrets in the diff but not a name or `@company` email in the commit itself; a leaked identity is undone only by a `git filter-repo` rewrite plus a force-push, and even then the host may keep the old commits cached.
 - **Dependency CVE scanning lives in CI, not the gate** (`bun audit --audit-level=high`): a daily scheduled watchdog for new CVEs in untouched deps, plus a PR run scoped to `package.json` / `bun.lock` for deliberately-introduced ones.
 - **Mutation testing on staged files** (Stryker, ≥90% break threshold) makes "tests don't actually pin behaviour" findable in CI.
 - **Commits stay small:** ≤10 files AND ≤300 lines per commit. The hook enforces it.
