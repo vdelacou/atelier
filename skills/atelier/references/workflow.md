@@ -598,7 +598,24 @@ jobs:
 
 `--audit-level=high` fails the job only on high/critical advisories; moderate and low are reported but do not block — run `bun audit` locally to see the full list. The scan covers **all** dependencies, not `--prod` only: dev and build tooling are part of the supply-chain attack surface CI exists to watch.
 
-This is the one piece of CI the standard prescribes today. The broader CI pipeline atelier assumes elsewhere ("quality is owned by the eight gates **and CI**") is deliberately left to the adopter.
+Beyond this scan, CI gains a job whenever the matching concern exists in the repo: an eval gate on any LLM hole (`references/ai.md`), an axe scan on a UI (`references/product.md`), a load-test threshold on a hot route (`references/reliability.md`), the compose portability boot, deployment events, and the scheduled restore drill (`references/delivery.md`). Each is prescribed by its reference; the wiring is per-repo.
+
+## Verification discipline (a control is a hypothesis until tested)
+
+The gates make the standard executable; this section is about not trusting a gate, a guard, or a fix until something has tried to defeat it.
+
+- **Test the bypass, not the happy path.** A guard proves nothing until a test walks the forbidden path and is refused: wrong role 403, missing token 401, cross-tenant 404, forged trust header inert. See `references/testing.md` (Bypass tests) and `references/isolation.md`.
+- **Audit the seams between systems.** The dangerous gap lives where two individually-correct systems meet (proxy to app, edge to service); test the path a real request travels, not each box in isolation.
+- **Fix the class, not the instance.** When a flaw is found, assume it repeats wherever the pattern does: enumerate with `rg` first, fix every hit, then add a CI guard that fails if the pattern returns.
+
+```bash
+rg -n '(db\.query|db\.execute)\(`.*\$\{' -- 'src/**/*.ts'   # enumerate the whole class
+# then a CI step: if rg -q <same pattern>; then echo "interpolated SQL sink" >&2; exit 1; fi
+```
+
+- **Compliance is not proof.** A ticked checklist and a passed audit describe paperwork. The standard is a runnable check: "show me how you verify it, and let me run it myself." Evidence is the exit code of a committed script anyone accountable can execute, never a screenshot of a green run (`references/governance.md`, owner-verifiable done).
+- **Generated code meets the same bar (provenance is not proof).** Code from a scaffolder, a generator, or an AI assistant runs through the identical hooks, gates, suite, and review a human's would; the reviewer reads the diff, not the attribution. No `--no-verify` because "the tool wrote it".
+- **Prefer failing loud.** A gate that stays green for the wrong reason lies: that is why untested files enter coverage at 0% (the preload), why the mutation gate exists at all, and why each new gate should be tried against a known violation once before it is trusted (the smoke tests do exactly this for the shipped configs).
 
 ## README consistency
 
@@ -685,6 +702,7 @@ After the change, restart the TS server in VS Code (Cmd/Ctrl + Shift + P → "Ty
 - **Commit identity is chosen deliberately** (rule 26): a repo-local `user.name` / `user.email`, neutral or attributed, set before commit one. `gitleaks` catches secrets in the diff but not a name or `@company` email in the commit itself; a leaked identity is undone only by a `git filter-repo` rewrite plus a force-push, and even then the host may keep the old commits cached.
 - **Dependency CVE scanning lives in CI, not the gate** (`bun audit --audit-level=high`): a daily scheduled watchdog for new CVEs in untouched deps, plus a PR run scoped to `package.json` / `bun.lock` for deliberately-introduced ones.
 - **Mutation testing on staged files** (Stryker, ≥90% break threshold) makes "tests don't actually pin behaviour" findable in CI.
+- **Verification discipline:** a control is a hypothesis until a test walks the forbidden path; test the bypass, audit the seams, fix the class not the instance, and proof is a runnable check, not a checklist or a screenshot. Generated code meets the identical bar; provenance is not proof.
 - **Commits stay small:** ≤10 files AND ≤300 lines per commit. The hook enforces it.
 - **Periodic audits**: once per release, drop the `test-helpers` skip and run coverage; anything below 100% is dead code or untested defensive code.
 - **README.md is part of the change set.** Re-read it before declaring any task done.
