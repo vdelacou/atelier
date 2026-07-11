@@ -345,7 +345,7 @@ export type Logger = {
 import { createLogger, format, transports } from 'winston';
 import type { Logger } from '../use-cases/ports/logger.ts';
 
-const REDACTED_KEYS = new Set(['password', 'token', 'authorization', 'apikey', 'secret']);
+const REDACTED_KEYS = new Set(['password', 'token', 'authorization', 'apikey', 'secret', 'email', 'phone']); // secrets plus natural identifiers (rule 27); extend with the domain's own
 
 const redactFormat = format((info) => {
   for (const key of Object.keys(info)) {
