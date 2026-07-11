@@ -1,21 +1,22 @@
 # Atelier
 
-A personal engineering standard for Bun/TypeScript repos, packaged as an [Agent Skill](https://github.com/anthropics/skills) for AI coding agents. Turns generic code generation into senior-engineer output that follows a consistent toolchain, TDD workflow, SOLID design, and class-free functional style.
+A personal engineering standard for Bun/TypeScript, Next.js, and Java (Quarkus) repos, packaged as an [Agent Skill](https://github.com/anthropics/skills) for AI coding agents. Turns generic code generation into senior-engineer output that follows a consistent toolchain, TDD workflow, SOLID design, a class-free functional style (records and sealed types on the Java side), and the production disciplines a real system needs from day one: privacy, tenant isolation, reliability, observability, delivery, and validated product decisions.
 
 ## Available skills
 
 ### atelier
 
-A single, opinionated skill covering the whole coding loop. Applies to every code task in a Bun/TypeScript repo — writing, editing, scaffolding, testing, refactoring, reviewing, debugging.
+A single, opinionated skill covering the whole coding loop. Applies to every code task in a Bun/TypeScript, Next.js, or Java repo — writing, editing, scaffolding, testing, refactoring, reviewing, debugging.
 
 **Use when:**
 
-- Writing or editing TypeScript for a Bun project
-- Scaffolding a new Next.js monorepo or Bun-script repo
+- Writing or editing TypeScript for a Bun project, or Java for a Quarkus service
+- Scaffolding a new Next.js monorepo, Bun-script repo, or Java service
 - Creating or modifying React UI components (Atomic Design, logic-free design system)
 - Refactoring existing code to a class-free functional style
-- Setting up ESLint, Prettier, TypeScript configuration
+- Setting up ESLint, Prettier, TypeScript configuration (or Spotless/JaCoCo/PIT on the Java side)
 - Writing or reviewing tests
+- Building APIs, persistence, multi-tenant paths, or AI-model integrations to production discipline
 - Discussing architecture, design patterns, or code smells
 - Capturing cross-session lessons (`.claude/LESSONS.md`)
 
@@ -41,34 +42,53 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 | Identity | Commit identity chosen deliberately (rule 26): a neutral repo-local handle by default so nothing leaks by accident, or your own name and email when you want attribution. Whatever ships is permanent, so decide it at repo birth; an *unintended* identity leaked into history is rewritten with `git filter-repo` plus a force-push (treating cached commits as still exposed) |
 | Integration | Trunk-based development — commit to `main` in small green increments (≤10 files / ≤300 lines), no long-lived feature branches; unfinished work hides behind a flag. The pre-commit gates keep every commit releasable |
 | Memory | Append-only `.claude/LESSONS.md` and `.claude/lessons.local.md` across sessions; plus a mutable `.claude/PLAN.md` (plan + per-step definition of done) so a multi-step task resumes losslessly after a context reset |
+| Privacy (rules 27, 34) | Personal data never in logs, URLs, or query strings (user-typed text travels in POST bodies; opaque ids only in logs, natural identifiers redacted at the logger); user rights (see/export/correct/erase/withdraw) as routine endpoints; a data map with classifications; production data never leaves production; synthetic fixtures only |
+| Isolation (rule 28) | Owner/tenant id from the verified token only, fail-closed reads, defense in depth (RLS), least-privilege runtime role, a cross-tenant 404 test on every owner-scoped endpoint, UUIDv7 ids that are never the authorization |
+| Reliability (rules 29-31) | A deadline on every outbound call with bounded jittered retries and idempotency keys; explicit hot reads and keyset pagination; the transactional outbox for side effects; optimistic locking (no lost updates); soft delete + versioned expand-contract migrations; stateless scaling; load-tested latency budgets |
+| Observability | SLOs as numbers with windows; correlated OpenTelemetry traces/metrics/logs; behaviour metrics split by outcome; symptom-based alerts that page only when a human must act |
+| Delivery & ops | Pipeline-only deploys (canary + one-step rollback), infrastructure as code with read-only humans, ephemeral environments, managed over self-run (no SSH, automatic TLS), open-standard interfaces for portability, SBOM + signed artifacts, restore drills, blameless postmortems |
+| Metrics | The four DORA metrics derived from pipeline events, flow metrics (cycle time, not story points), system metrics never per-person leaderboards, trends over snapshots, cost as a first-class metric with idle-cheap design |
+| AI models (rule 32) | The model behind a capability port with a hand-written fake; pinned dated snapshots (never `latest`); model output checkpointed as untrusted input; prompt-injection fencing with server-side action authorization; eval gates in CI; per-caller spend caps on metered endpoints |
+| Governance | Decision records (`[decision]` entries + an ADR tier), API docs generated from the contract, thresholds as numbers not adjectives, one honest backlog, CODEOWNERS with exactly one Accountable per area, separation of duties, audit trails, owner-verifiable done |
+| Product & accessibility | Error copy naming cause + next step over stable error codes, honest flows (cancel as easy as subscribe), market-driven defaults, a visible human path, i18n catalog, semantic HTML + keyboard + token contrast + an axe gate, and validate-before-build (problem interviews, dated go/no-go, keep-or-kill on measured adoption) |
 
 **Reference documentation included:**
 
-- `architecture.md` — vertical slices, dependency rule, hexagonal and clean architecture, walking skeleton, inbound HTTP server archetype
+- `ai.md` | the AI model as a dependency: capability port + fake, pinned snapshots, eval gates in CI, prompt-injection fencing + server-side action authorization, per-caller spend caps
+- `architecture.md` — vertical slices, dependency rule, hexagonal and clean architecture, walking skeleton, inbound HTTP server archetype, client-agnostic API shape and the three model boundaries (domain/DB/wire), the frontend gateway
 - `atomic-design.md` — the logic-free design system: atoms/molecules/organisms layer rules, interactivity ladder (native HTML → hoisted state → `src/lib/hooks`), injected link/image wrappers, styling seal (Tailwind invisible outside the design system), page-shell wiring, decision table
 - `behavioural-examples.md` — before/after worked examples for the four Behavioural Guidelines in this repo's idiom (over-abstraction vs one function, drive-by vs surgical edit, vague vs verifiable plan), anti-pattern table
 - `bun-typescript.md` — Clean Architecture Bun script repos, strict ESLint flat config (SonarJS + type-aware), Logger port + Winston adapter, bootstrap checklist, optional containerization Dockerfile
 - `class-to-module.md` — translation table for classical OO patterns (value object, interface, service, strategy, factory, decorator, observer, command, entity)
 - `clean-code.md` — naming priorities, object calisthenics in a class-free world, comments, formatting
 - `code-smells.md` — detection catalogue and the refactorings that clean each smell
-- `complexity.md` — essential vs accidental complexity, YAGNI, the lazy ladder (stop at the first rung; simplicity is not negligence), KISS, DRY + Rule of Three
+- `complexity.md` — essential vs accidental complexity, YAGNI, the lazy ladder (stop at the first rung; simplicity is not negligence; defer the build, not the seam), KISS, DRY + Rule of Three
+- `delivery.md` | pipeline-only deploys with canary + one-step rollback, infrastructure as code with read-only humans, ephemeral environments, managed over self-run (no SSH, automatic TLS), open-standard portability + compose gate, SBOM + signed artifacts, restore drills, blameless postmortems
 - `design-patterns.md` — full GoF catalogue rewritten as modules of arrow functions
+- `governance.md` | decision records (`[decision]` + ADR tier), API docs from the contract, numbers not adjectives, one honest backlog, CODEOWNERS/RACI, separation of duties, audit trail, owner-verifiable done
+- `isolation.md` | token-derived owner, RLS defense in depth, fail closed, blast radius, cross-tenant 404 tests per endpoint, UUIDv7 identifiers
+- `java-quarkus.md` | the Java variant: records + sealed `Result`, ports as interfaces with hand-written fakes (no Mockito), Maven-wrapper toolchain with exact pins, Spotless, JaCoCo tiers + PIT mutation, Flyway expand-contract, Panache writes / explicit reads, authenticated-by-default resources, hard-rules translation table, bootstrap checklist
 - `lessons.md` — session memory format, triggers, extraction heuristics, worked examples
+- `metrics.md` | measure whether you are improving: DORA from pipeline events, flow metrics over story points, system metrics never per-person, trend over snapshot, cost as a first-class metric
 - `nextjs-monorepo.md` — Next.js 16 + Tailwind v4 + i18n route groups + static export
 - `object-design.md` — responsibility-driven design, stereotypes, tell-don't-ask, value objects vs entities, aggregates
+- `observability.md` | SLOs as numbers, correlated OpenTelemetry traces/metrics/logs, behaviour metrics by outcome, symptom-based alerting and alert hygiene
+- `privacy.md` | private by default: minimize collection, PII out of logs/URLs/query strings, user rights as routine endpoints, data map, synthetic fixtures, impact assessments
+- `product.md` | the whole experience: error copy over stable codes, honest flows, market-driven defaults, human path, accessibility, and validate-before-build (interviews, cheapest demand test, dated go/no-go, keep-or-kill on adoption)
+- `reliability.md` | design for failure: deadlines + jittered idempotent retries, explicit hot reads, keyset pagination, transactional outbox, optimistic locking, soft delete + expand-contract migrations, stateless scaling, load-tested budgets
 - `result-type.md` — `Result<T, E>` and helpers, per-port discriminated-union errors, `StepError` aggregation, `try/catch` quarantine, fan-out batch semantics, `retryOnErr`, fakes-with-error-injection, `captureRejection` helper
-- `security.md` — source-to-sink threat model, vulnerability categories for Bun/TypeScript + Next.js, branded types for trust boundaries, pre-merge checklist, adopted false-positive filter
+- `security.md` — source-to-sink threat model, vulnerability categories for Bun/TypeScript + Next.js, branded types for trust boundaries, rented auth/crypto, the one security baseline, pre-merge checklist, adopted false-positive filter
 - `solid-principles.md` — SRP, OCP, LSP, ISP, DIP expressed as typed records and function contracts
 - `tdd.md` — Outside-in classicist TDD (Ian Cooper), primary-port SUT, real-domain + faked-secondary-ports rule, Red-Green-Refactor, Three Laws, triangulation
-- `testing.md` — primary-port unit tests, the test-the-code-you-own principle (trust your dependencies), fakes with `errors` knob, batch-use-case semantics, test doubles catalogue, test builders, contract tests
+- `testing.md` — primary-port unit tests, the test-the-code-you-own principle (trust your dependencies), fakes with `errors` knob, regression + bypass + performance layers, test doubles catalogue, test builders, contract tests
 - `testing-infra.md` — three patterns for infra-adapter tests (custom-fetch DI / two-constructor / sync-builder export), production-wiring smoke test, `installFetchMock`, global-swap pattern, FS chmod tricks, ordering gotchas
-- `workflow.md` — four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, trunk-based development, eight-gate pre-commit hook, dependency CVE scanning in CI (`bun audit`), Conventional Commits `commit-msg` hook, README consistency check
+- `workflow.md` — four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, trunk-based development, eight-gate pre-commit hook, dependency CVE scanning in CI (`bun audit`), verification discipline (test the bypass, fix the class, compliance is not proof), Conventional Commits `commit-msg` hook, README consistency check
 
 ### atelier-greenfield
 
-A companion skill for the one moment the main standard assumes has already happened: repo birth. Trigger it when starting a fresh repo or a new monorepo package ("scaffold a new Bun repo", "bootstrap a new project to the standard"). It detects the variant, follows that variant's bootstrap checklist verbatim — scaffolding the layout, copying the gate assets from the installed `atelier` skill, wiring the git hook(s), writing the `package.json` scripts — then lays a minimal green walking skeleton and proves every gate passes before stopping for you to confirm the first commit (rule 25). Greenfield only; it orchestrates the existing checklists rather than duplicating them.
+A companion skill for the one moment the main standard assumes has already happened: repo birth. Trigger it when starting a fresh repo or a new monorepo package ("scaffold a new Bun repo", "bootstrap a new project to the standard", "scaffold a new Java service"). It detects the variant (Bun-script, Next.js, or Java/Quarkus), follows that variant's bootstrap checklist verbatim — scaffolding the layout, copying the gate assets from the installed `atelier` skill, wiring the git hook(s), writing the build scripts — then lays a minimal green walking skeleton and proves every gate passes before stopping for you to confirm the first commit (rule 25). Greenfield only; it orchestrates the existing checklists rather than duplicating them. It is the standard's paved road: a repo born from it starts already passing every gate.
 
-**Use when:** starting a brand-new Bun/TypeScript script repo or a new package in a Next.js monorepo, from zero. For an existing repo with code, the main atelier skill applies.
+**Use when:** starting a brand-new Bun/TypeScript script repo, a new package in a Next.js monorepo, or a new Java (Quarkus) service, from zero. For an existing repo with code, the main atelier skill applies.
 
 ### atelier-grill-me
 
@@ -80,7 +100,7 @@ A small companion skill for stress-testing a plan or design *before* building. T
 
 The pre-land companion: a rule-aware conformance review of a diff against the atelier standard. Trigger it with "review me" (or to check a branch/PR against the rules before committing). It resolves the diff scope, maps each changed file to the hard rules that bind it, and reports findings that cite the exact rule number (or red flag) — applying the security false-positive filter, deferring generic correctness bugs to `/code-review` and mechanical cleanups to `/simplify`. Report-only by default; it offers to apply the fixes on request. It also runs an **adopt mode** for brownfield — scanning a whole existing repo and emitting a staged migration plan to bring it up to the standard (the counterpart to atelier-greenfield's repo birth). atelier-grill-me owns the pre-decision moment, atelier-greenfield repo-birth, atelier-review-me the pre-land moment and brownfield adoption.
 
-**Use when:** you want a conformance checkpoint before a change lands — a rule-cited review of staged changes, a feature branch, or a PR — or to adopt the standard into an existing brownfield repo (adopt mode). For generic correctness bugs use `/code-review`; for reuse/simplification cleanups use `/simplify`.
+**Use when:** you want a conformance checkpoint before a change lands — a rule-cited review of staged changes, a feature branch, or a PR (covering the core rules and the production disciplines, rules 27-34) — or to adopt the standard into an existing brownfield repo (adopt mode). For generic correctness bugs use `/code-review`; for reuse/simplification cleanups use `/simplify`.
 
 ## Installation
 
@@ -170,13 +190,16 @@ Add the matching scripts to `package.json`:
 
 Optional: install `gitleaks` (`brew install gitleaks`) for the secret-scan gate. The hook degrades gracefully if it's missing.
 
+For a **Java (Quarkus) repo**, the equivalent install copies `assets/pre-commit-java`, `assets/check-pom.sh`, the shared `assets/check-commit-size.sh`, and the same `assets/commit-msg` — see `references/java-quarkus.md` (§ Gates and hooks) for the copy block and the pom-side configuration (Spotless, JaCoCo tiers, PIT).
+
 ## Usage
 
-Once installed, the agent consults `atelier` on every code task in a Bun/TypeScript project — you do not need to mention it by name. It will:
+Once installed, the agent consults `atelier` on every code task in a Bun/TypeScript, Next.js, or Java project — you do not need to mention it by name. It will:
 
-- Refuse generated code that uses `class`, `function` declarations, `interface`, `console.*`, or `npm`/`pnpm`/`yarn` and rewrite it in the class-free style.
+- Refuse generated code that uses `class`, `function` declarations, `interface`, `console.*`, or `npm`/`pnpm`/`yarn` and rewrite it in the class-free style (on the Java side: refuse Mockito, `@SuppressWarnings`, version ranges, and business failures thrown as exceptions).
 - Write a failing test before production code when implementing a feature.
 - Promote raw domain primitives to branded types with validating factories.
+- Apply the production disciplines when the change touches them: keep personal data out of logs and URLs, derive tenants from the verified token and ship the cross-tenant test, put deadlines on outbound calls, version mutable records, keep migrations additive, pin AI-model snapshots behind ports.
 - Read `.claude/LESSONS.md` and `.claude/lessons.local.md` at session start and propose new entries at session end.
 
 **Example prompts:**
@@ -185,6 +208,7 @@ Once installed, the agent consults `atelier` on every code task in a Bun/TypeScr
 - "Add a pricing section with a monthly/yearly toggle to the landing page."
 - "Refactor `user-service.ts` to follow SOLID principles."
 - "Scaffold a new Bun script repo for a Firebase admin job."
+- "Add a paginated invoices endpoint to the Quarkus service." (Java variant: keyset pagination, cross-tenant 404 test, REST Assured)
 - "Review this module for code smells."
 - "Wrap the `email`, `userId`, and `money` primitives as branded types."
 
@@ -205,19 +229,22 @@ atelier/
     │   ├── SKILL.md           # Main skill instructions
     │   ├── assets/            # Copyable artefacts — install with the steps above
     │   │   ├── capture-rejection.ts            # rejection-assertion helper (SonarJS S4123)
-    │   │   ├── check-commit-size.sh            # block commits over 10 files / 300 lines (gate 1)
+    │   │   ├── check-commit-size.sh            # block commits over 10 files / 300 lines (gate 1; shared with the Java hook)
     │   │   ├── check-coverage.ts               # per-tier coverage gate (gate 7)
     │   │   ├── check-package-json.sh           # block "latest" / "*" / dist-tag version strings (gate 2)
-    │   │   ├── commit-msg                       # git commit-msg hook: enforce Conventional Commits (rule 23)
+    │   │   ├── check-pom.sh                    # Java: block version ranges + -SNAPSHOT deps in pom.xml (rule 19)
+    │   │   ├── commit-msg                       # git commit-msg hook: enforce Conventional Commits (rule 23, all variants)
     │   │   ├── fetch-mock.ts                   # installFetchMock for infra adapter tests
     │   │   ├── format-error.ts                 # safe catch-block formatter (SonarJS S6551)
     │   │   ├── format-error.test.ts            # its test (format-error is in the mutation scope)
     │   │   ├── mutate-changed.sh               # Stryker mutation on files changed vs origin/main
     │   │   ├── mutate-staged.sh                # Stryker mutation on staged files (gate 8)
-    │   │   ├── pre-commit                      # git pre-commit hook running 8 gates
+    │   │   ├── pre-commit                      # git pre-commit hook running 8 gates (Bun variant)
+    │   │   ├── pre-commit-java                 # git pre-commit hook running 6 gates (Java variant)
     │   │   ├── regenerate-coverage-preload.ts  # auto-glob src/{infra,composition,presenter} → coverage-preload.ts
     │   │   └── stryker.conf.json               # Stryker config (mutation scope, 90% break threshold)
     │   └── references/        # Supporting documentation
+    │       ├── ai.md
     │       ├── architecture.md
     │       ├── atomic-design.md
     │       ├── behavioural-examples.md
@@ -226,10 +253,19 @@ atelier/
     │       ├── clean-code.md
     │       ├── code-smells.md
     │       ├── complexity.md
+    │       ├── delivery.md
     │       ├── design-patterns.md
+    │       ├── governance.md
+    │       ├── isolation.md
+    │       ├── java-quarkus.md
     │       ├── lessons.md
+    │       ├── metrics.md
     │       ├── nextjs-monorepo.md
     │       ├── object-design.md
+    │       ├── observability.md
+    │       ├── privacy.md
+    │       ├── product.md
+    │       ├── reliability.md
     │       ├── result-type.md
     │       ├── security.md
     │       ├── solid-principles.md
@@ -257,14 +293,15 @@ A new ESLint/TypeScript/Stryker/Next major that breaks a shipped asset — or do
 
 ## Variant references
 
-The skill covers two repo shapes and picks the right reference automatically:
+The skill covers three repo shapes and picks the right reference automatically:
 
 - **Next.js monorepo** — Bun workspaces, Atomic Design with a logic-free design system, Tailwind v4, i18n route groups, static export. Identifiable by `packages/*` and `next.config.ts`.
 - **Bun TypeScript script** — Clean Architecture (`src/{domain,use-cases,infra,presenter,composition,test-helpers}`), strict ESLint (SonarJS + type-aware), Logger port + Winston adapter. Identifiable by `"module": "src/main.ts"` in `package.json`.
+- **Java (Quarkus)** | the same commitments in Java 21+ idiom: records + sealed `Result`, ports as small interfaces with hand-written fakes (no Mockito), Maven wrapper with exact pins, Spotless, JaCoCo coverage tiers, PIT mutation, Flyway expand-contract migrations, authenticated-by-default JAX-RS resources. Identifiable by `pom.xml` with `src/main/java/**`.
 
 ## Credits
 
-Inspired by the layout of [ramziddin/solid-skills](https://github.com/ramziddin/solid-skills). The engineering substance encodes patterns from Clean Code (Robert C. Martin), Test-Driven Development (Kent Beck), Domain-Driven Design (Eric Evans), and Refactoring (Martin Fowler), adapted to a class-free Bun/TypeScript codebase. The security reference and its false-positive filter are adapted with credit from [anthropics/claude-code-security-review](https://github.com/anthropics/claude-code-security-review).
+Inspired by the layout of [ramziddin/solid-skills](https://github.com/ramziddin/solid-skills). The engineering substance encodes patterns from Clean Code (Robert C. Martin), Test-Driven Development (Kent Beck), Domain-Driven Design (Eric Evans), and Refactoring (Martin Fowler), adapted to a class-free Bun/TypeScript codebase (and its Java translation). The production disciplines (hard rules 27-34 and the references they point to) are the executable encoding of the eighteen pillars in *The Global Rules Every New Project Should Have* and its *Do and Don't* companion. The security reference and its false-positive filter are adapted with credit from [anthropics/claude-code-security-review](https://github.com/anthropics/claude-code-security-review).
 
 ## License
 
