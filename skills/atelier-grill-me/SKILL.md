@@ -1,6 +1,6 @@
 ---
 name: atelier-grill-me
-description: Relentlessly interview the user about a plan, design, or architectural decision — one question at a time, each with your recommended answer, exploring the codebase before asking — until every branch of the decision tree is resolved and you reach shared understanding. Use when the user wants to stress-test or pressure-test a plan, de-risk a big decision before building, walk through a design's tradeoffs, or says "grill me".
+description: Relentlessly interview the user about a plan, design, or architectural decision — one question at a time, each with your recommended answer, exploring the codebase before asking — until every branch of the decision tree is resolved and you reach shared understanding. Use when the user wants to stress-test or pressure-test a plan, de-risk a big decision before building, walk through a design's tradeoffs, validate whether a new product or feature is worth building at all (problem evidence, demand test, go/no-go), or says "grill me".
 ---
 
 # Grill me
@@ -16,6 +16,7 @@ Interaction: terse, direct prose with no filler, praise, or recap; never use em 
 - The user asks to be grilled, or to stress-test / pressure-test a plan or design.
 - A decision carries real stakes and a bad call is expensive to reverse: architecture, data model, public API shape, a migration, a dependency choice, a security boundary.
 - The plan creates or publishes a repo: whether it will be public, and whether its commit identity is chosen deliberately (neutral, or attributed) for the permanent history it will expose (rule 26). Git history is forensic, and an unintended identity is expensive to reverse once pushed.
+- The plan is a new product or feature: before grilling how to build it, grill whether to build it at all (the atelier `references/product.md` § Validate before you build). What evidence of the problem exists beyond the room? What is the cheapest test of demand (a landing page, a concierge run) before the build? What dated go/no-go criteria would make "no" sayable? What adoption threshold decides keep-or-kill after launch? A killed idea at interview cost is this skill's best outcome.
 - A plan is vague, broad, or hides many unstated branches.
 
 Match intensity to stakes. A five-question interrogation of "rename this variable" is noise — skip the grilling for trivial or already-well-specified tasks.
@@ -32,7 +33,7 @@ Match intensity to stakes. A five-question interrogation of "rename this variabl
 
 ## Output
 
-When the interview converges, write a short **decision record**: the goal, each decision with its one-line rationale, and the first concrete next step. Keep it tight — it is the spec the implementation will follow.
+When the interview converges, write a short **decision record**: the goal, each decision with its one-line rationale, and the first concrete next step. Keep it tight — it is the spec the implementation will follow. For a decision with rejected alternatives and a reversal path worth keeping, shape it as the ADR the repo commits (`docs/adr/NNNN-title.md`, atelier `references/governance.md` § Decision records); for a build/no-build question, the record is the dated go/no-go checklist with its explicit criteria (atelier `references/product.md`).
 
 Grill toward the *simplest* design that survives the questions, not the most elaborate one — every answer you recommend should still respect YAGNI and "the cheapest code is the code you never wrote."
 
