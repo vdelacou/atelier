@@ -288,6 +288,18 @@ const eslintConfig = defineConfig([
         { selector: 'CallExpression[callee.name=/^use[A-Z]/]', message: 'No hooks inside the design system — hoist state to the page shell via src/lib/hooks (hard rule 21).' },
         { selector: 'Program > ExpressionStatement[directive="use client"]', message: "The 'use client' boundary belongs to page shells, not design-system components (hard rule 21)." },
       ],
+      // Accessible by default (rule 17.6): the design system is where a11y is won or
+      // lost, so the doctrine's structural rules are error-level here. The jsx-a11y plugin
+      // is registered by next/core-web-vitals (spread below), which enables its recommended
+      // subset app-wide but NOT the interaction rules that catch the flagship clickable-div;
+      // these reference that same plugin and make them explicit and unmissable. Contrast is
+      // not lintable (needs layout) — it lives in the design tokens (rule 22) and review.
+      'jsx-a11y/no-static-element-interactions': 'error',
+      'jsx-a11y/click-events-have-key-events': 'error',
+      'jsx-a11y/interactive-supports-focus': 'error',
+      'jsx-a11y/control-has-associated-label': 'error',
+      'jsx-a11y/alt-text': 'error',
+      'jsx-a11y/anchor-is-valid': 'error',
     },
   },
   {

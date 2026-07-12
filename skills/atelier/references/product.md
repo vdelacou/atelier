@@ -59,7 +59,7 @@ A user who cannot see, hear, or use a mouse is still a user, and like privacy th
 - **Every flow workable by keyboard**: focus visible, order sensible, no pointer-only interactions.
 - **Contrast lives in the design tokens**: token pairs (`--color-primary` / `--color-on-primary`) are chosen to pass WCAG once, in `globals.css`, so components inherit compliance (rule 22).
 - **Labels and states**: inputs labelled, images with meaningful `alt`, busy/expanded states via `aria-*` driven by props.
-- **Automated checks in the gate**: an axe scan on every PR fails the build on a missing label or a contrast breach, like any other gate (`references/workflow.md`, the standard is executable).
+- **Automated checks in the gate**: `eslint-plugin-jsx-a11y` runs error-level on the design system (`references/atomic-design.md`, Accessible by default; `references/nextjs-monorepo.md`), failing the build on the structural violations (clickable div, missing label, missing alt) exactly as any lint rule does. Contrast and focus order are not lintable and stay with tokens plus review; a runtime axe scan is the optional deeper pass.
 
 ```tsx
 // BAD: no role, no keyboard path, contrast by vibe

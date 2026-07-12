@@ -236,7 +236,7 @@ A user who cannot see, hear, or use a mouse is still a user, and this is law tha
 - **Contrast lives in the tokens.** Token pairs in `globals.css` (`--color-primary` with `--color-on-primary`) are chosen once to pass WCAG contrast; components consume pairs, never mix-and-match raw colours, so compliance is inherited (rule 22).
 - **Labels and states are props.** Inputs get labels, icon-only buttons get an `aria-label` prop, images get meaningful `alt` (or explicit `alt=""` when decorative), busy/expanded/selected states surface as `aria-*` driven by the same props that drive the visuals.
 - **Error, empty, and loading are designed states**, not afterthoughts: components expose them as typed variants so a page shell with a failed `Result` renders an explicit state instead of a blank (`references/product.md`, error copy).
-- **The gate is automated.** An axe scan (CI or Storybook test runner) fails the build on a missing label or contrast breach, like any other gate; review covers what the scanner cannot (focus order, meaningfulness of alt text).
+- **The gate is automated.** `eslint-plugin-jsx-a11y` runs error-level on `src/components/**` in the canonical Next config (`references/nextjs-monorepo.md`): it fails the build on a clickable `<div>`, a control with no accessible name, a missing `alt`, or an invalid anchor, and the Next smoke test proves those rules fire. It is AST-based, so it cannot judge contrast (no layout) or focus order; those stay with the design tokens (rule 22) and review, and a runtime axe scan is the optional deeper pass a team adds when it wants dynamic-state and contrast coverage.
 
 ## Where does it go?
 

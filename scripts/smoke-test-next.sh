@@ -290,6 +290,26 @@ rule22_hits=$(bunx eslint app/_bad.tsx 2>&1 | grep -c 'hard rule 22' || true)
   || { echo "expected >=2 'hard rule 22' findings, got ${rule22_hits:-0}"; fail "rule 22 enforcement"; }
 rm app/_bad.tsx
 
+echo "== negative path: rule 17.6, the design-system a11y rules reject an inaccessible component =="
+# The flagship: a clickable div (no role, no keyboard path) plus an image with no alt.
+# next/core-web-vitals' jsx-a11y subset does not error on the clickable div; the explicit
+# design-system rules do. Proves a11y is machine-enforced, not just doctrine.
+cat > src/components/atoms/inaccessible.tsx <<'EOF'
+import type { ReactNode } from 'react';
+
+export type InaccessibleProps = { readonly onActivate: () => void; readonly src: string };
+
+export const Inaccessible = ({ onActivate, src }: InaccessibleProps): ReactNode => (
+  <div className="cursor-pointer" onClick={onActivate}>
+    <img src={src} />
+  </div>
+);
+EOF
+a11y_hits=$(bunx eslint src/components/atoms/inaccessible.tsx 2>&1 | grep -c 'jsx-a11y/' || true)
+[ "${a11y_hits:-0}" -ge 2 ] && pass "rule 17.6 caught (${a11y_hits} jsx-a11y findings: clickable div, missing alt)" \
+  || { echo "expected >=2 'jsx-a11y/' findings, got ${a11y_hits:-0}"; fail "rule 17.6 a11y enforcement"; }
+rm src/components/atoms/inaccessible.tsx
+
 echo
 if [ "$FAILURES" -gt 0 ]; then
   echo "next-smoke-test: $FAILURES check(s) FAILED"
