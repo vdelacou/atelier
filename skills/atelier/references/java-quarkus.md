@@ -15,8 +15,177 @@ Pick this variant when the repo has a `pom.xml` (or `build.gradle`) and Java sou
 
 - **Exact versions only.** Never a version range (`[1.0,)`) and never a `-SNAPSHOT` dependency in `main`. Maven resolves ranges to whatever is newest that day, which is the `"latest"` footgun with different syntax.
 - All versions live in `<properties>` or the parent pom / BOM; children declare nothing loose. One formatter version, one runtime BOM, inherited everywhere (the one-committed-config rule).
-- **maven-enforcer-plugin** makes it executable: `requireUpperBoundDeps`, `banSnapshots` (release builds), `requireJavaVersion`.
+- **maven-enforcer-plugin** makes it executable: `requireJavaVersion` (a bare `21` means "at least 21"; avoid the `[21,)` range form, which `check-pom.sh` would flag as a version range), `requireReleaseDeps` (no `-SNAPSHOT` dependencies), `requireUpperBoundDeps`.
 - Renovate (or equivalent) keeps pins current so a pinned version never rots into a known-vulnerable one; **OWASP dependency-check** (or the platform's scanner) runs in CI and fails on high CVSS, the `bun audit` analogue: daily schedule plus a PR run scoped to `pom.xml`.
+- **google-java-format on JDK 16+** needs the `jdk.compiler` exports: commit a one-line `.mvn/jvm.config` (shown under the canonical pom below). Harmless where unneeded.
+
+### Canonical `pom.xml`
+
+The gate skeleton every atelier Java repo carries, framework-free: a Quarkus service adds the pinned Quarkus BOM in `<dependencyManagement>` and its extensions on top. This block is extracted verbatim by `scripts/smoke-test-java.sh` in the skill repo's CI, so drift here fails a build, not a user.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>app</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+
+  <!-- Exact pins only (rule 19): no ranges, no -SNAPSHOT dependencies. -->
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <junit.version>5.14.4</junit.version>
+    <compiler.plugin.version>3.15.0</compiler.plugin.version>
+    <surefire.plugin.version>3.5.6</surefire.plugin.version>
+    <spotless.plugin.version>3.8.0</spotless.plugin.version>
+    <google-java-format.version>1.35.0</google-java-format.version>
+    <jacoco.plugin.version>0.8.15</jacoco.plugin.version>
+    <pitest.plugin.version>1.25.7</pitest.plugin.version>
+    <pitest-junit5.plugin.version>1.2.3</pitest-junit5.plugin.version>
+    <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- rule 15: warnings are errors -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${compiler.plugin.version}</version>
+        <configuration>
+          <compilerArgs>
+            <arg>-Xlint:all</arg>
+            <arg>-Werror</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${surefire.plugin.version}</version>
+      </plugin>
+      <!-- rule 8: one committed formatter, machine-owned -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>${spotless.plugin.version}</version>
+        <configuration>
+          <java>
+            <googleJavaFormat>
+              <version>${google-java-format.version}</version>
+            </googleJavaFormat>
+          </java>
+        </configuration>
+      </plugin>
+      <!-- coverage tiers: 100 on domain+usecases, 80 on infra/api/composition -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.plugin.version}</version>
+        <executions>
+          <execution>
+            <goals><goal>prepare-agent</goal></goals>
+          </execution>
+          <execution>
+            <id>check-tiers</id>
+            <phase>verify</phase>
+            <goals><goal>check</goal></goals>
+            <configuration>
+              <rules>
+                <rule>
+                  <element>PACKAGE</element>
+                  <includes>
+                    <include>com.example.app.domain*</include>
+                    <include>com.example.app.usecases*</include>
+                  </includes>
+                  <limits>
+                    <limit><counter>LINE</counter><value>COVEREDRATIO</value><minimum>1.00</minimum></limit>
+                  </limits>
+                </rule>
+                <rule>
+                  <element>PACKAGE</element>
+                  <includes>
+                    <include>com.example.app.infra*</include>
+                    <include>com.example.app.api*</include>
+                    <include>com.example.app.composition*</include>
+                  </includes>
+                  <limits>
+                    <limit><counter>LINE</counter><value>COVEREDRATIO</value><minimum>0.80</minimum></limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- mutation gate: invoked by the hook and CI, not bound to verify (the mutate:staged analogue) -->
+      <plugin>
+        <groupId>org.pitest</groupId>
+        <artifactId>pitest-maven</artifactId>
+        <version>${pitest.plugin.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.pitest</groupId>
+            <artifactId>pitest-junit5-plugin</artifactId>
+            <version>${pitest-junit5.plugin.version}</version>
+          </dependency>
+        </dependencies>
+        <configuration>
+          <targetClasses>
+            <param>com.example.app.domain.*</param>
+            <param>com.example.app.usecases.*</param>
+          </targetClasses>
+          <targetTests>
+            <param>com.example.app.*</param>
+          </targetTests>
+          <mutationThreshold>90</mutationThreshold>
+          <timestampedReports>false</timestampedReports>
+        </configuration>
+      </plugin>
+      <!-- rule 19 at build time: JDK floor, no snapshot deps, converging versions -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${enforcer.plugin.version}</version>
+        <executions>
+          <execution>
+            <id>enforce</id>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>21</version>
+                </requireJavaVersion>
+                <requireReleaseDeps>
+                  <message>No -SNAPSHOT dependencies (rule 19)</message>
+                </requireReleaseDeps>
+                <requireUpperBoundDeps />
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+```
+
+`.mvn/jvm.config` (one line, committed):
+
+```text
+--add-exports jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
+```
 
 ## Source architecture
 
@@ -167,7 +336,7 @@ Quarkus ships OpenTelemetry: enable it, add `@WithSpan` on application services 
 - **Integration tests** use `@QuarkusTest` + REST Assured against the real edge: the happy path, the bypass (`references/testing.md`, Test the bypass: wrong role is 403, missing token 401), the cross-tenant 404, and the forged-header seam (`references/isolation.md`). Testcontainers (or dev services) provide a real database; fixtures are synthetic (rule 34).
 - **Test names are business scenarios**: `premiumCustomerGets20PercentOff`, `crossTenantReadIsNotFound`, `regressionEmptyCartTotalsToZero`.
 - **Coverage tiers with JaCoCo**: 100% line on `domain` + `usecases`, 80% on `infra` + `api` + `composition`, enforced by per-package `<rule>` limits in the JaCoCo check goal so the build fails loudly, untested classes included in the denominator (the coverage-preload principle is native here: JaCoCo counts all classes in the module).
-- **Mutation testing with PIT**: `mutationThreshold=90` on `domain` + `usecases` packages, incremental analysis on PRs, full sweep on main. Same policy as Stryker: no per-file exclusions because tests feel awkward; tighten the test or refactor.
+- **Mutation testing with PIT**: `mutationThreshold=90` on `domain` + `usecases` packages. PIT's incremental history moved behind a commercial add-on, so the open-source speed levers are the narrow target scope and running the gate only when staged files touch it (the hook does exactly that); in a multi-module repo, scope PIT per module. Same policy as Stryker: no per-file exclusions because tests feel awkward; tighten the test or refactor.
 - **Evals for any LLM hole** gate the merge like PIT does (`references/ai.md`).
 
 ## Gates and hooks
@@ -191,7 +360,7 @@ CI runs the identical chain plus the scheduled dependency scan and, where the re
 ## Bootstrap checklist (fresh Java repo)
 
 1. `quarkus create app com.example:app` (or the Maven archetype); commit the wrapper; delete sample code.
-2. Parent pom: pin Java 21+, the Quarkus BOM, Spotless + google-java-format, JaCoCo with per-package tier rules, PIT with `mutationThreshold=90` scoped to `domain`/`usecases`, maven-enforcer (`requireUpperBoundDeps`, `banSnapshots`, `requireJavaVersion`), `-Xlint:all -Werror`. Exact versions everywhere.
+2. Parent pom: start from the canonical `pom.xml` above (compiler `-Werror`, Spotless + google-java-format, JaCoCo tier rules, PIT `mutationThreshold=90` scoped to `domain`/`usecases`, enforcer with `requireJavaVersion`/`requireReleaseDeps`/`requireUpperBoundDeps`), add the pinned Quarkus BOM and extensions, commit `.mvn/jvm.config`. Exact versions everywhere.
 3. Scaffold packages: `domain`, `usecases/ports`, `infra`, `api`, `composition`; add `Result`/`Ok`/`Err` records in `domain`.
 4. `application.properties`: authenticated-by-default policy, OIDC config placeholders, OTel enabled, JSON logging with the redaction filter, datasource for the constrained runtime role.
 5. Flyway: `src/main/resources/db/migration/V1__init.sql`; dev services or Testcontainers for the integration ring.
