@@ -37,7 +37,22 @@ rule 27-30 guards, CLAUDE.md seed, committed trigger-eval harness, CI green at c
   over an idempotency dedupe key: kept, not massaged). e9 baseline's earlier 0/3 was the
   contaminated empty run; the clean rerun baseline also did expand-contract (3/3). Strong Fable
   baseline conforms on most tasks, so the delta is real but modest and concentrated in the
-  PII-channel/soft-delete disciplines. Rerun e10 when the limit resets.
+  PII-channel/soft-delete disciplines.
+- 1.2 e10-llm COMPLETED on Sonnet (Fable stayed monthly-spend-blocked this cycle; both Fable
+  arms returned the limit message; the grader is now model-agnostic so a Sonnet run is a valid
+  measurement, the only caveat is that the pooled total mixes 9 Fable tasks + 1 Sonnet task).
+  Corrected verdict with_skill 3/3, baseline 1/3. Delta is two disciplines: baseline shipped a
+  floating `prov-large-latest` default alias (skill pinned via a branded EnvVar) AND returned
+  bare `Promise<string>` that throws (skill returns Result). Only the canned-fake is shared.
+- 1.2 GRADER GENERALITY FIX (DONE, from the e10 finding): grade.py now grades the agent's DIFF
+  from the fixture, not the whole run tree. It keys on fixture CONTENT (FIXTURE_BASELINE): a
+  run-dir file byte-identical to its fixture original is excluded (unmodified scaffolding), while
+  agent MODIFICATIONS still count; `skills/` is also excluded (older dirs nested other-task run
+  trees). Added `grade.py --selftest`: a pristine fixture copy must score 0, red under the old
+  grader (result.ts alone made e1#5/e5#2/e10#3 pass), green now. Re-grading the existing runs
+  moved exactly one cell: e10 baseline 2/3 -> 1/3. e1 (4/5) and e5 (2/2) baselines were
+  UNCHANGED, proving the Fable e1-e9 verdict (24/25 vs 22/25) was honest, not inflated; with_skill
+  held 27/28 throughout. Pooled corrected totals: with_skill 27/28, baseline 23/28.
 - 2.2 DONE: Java domain assets (Result/Ok/Err/Email.java) shipped under assets/java/, copied
   by the bootstrap checklist and by smoke-test-java (16/16 green) instead of hand-written.
 - 3.1 DONE: CHANGELOG.md (keep-a-changelog, 2.0.0 = production-disciplines + Java release),
@@ -46,8 +61,9 @@ rule 27-30 guards, CLAUDE.md seed, committed trigger-eval harness, CI green at c
 - 3.2 DONE: repo CLAUDE.md dogfooding the seed, adapted to the skill repo (authoring
   conventions: no em dashes, YAML colon-space trap, description ceiling; structure; verify
   commands; plan-first + commit-slicing + confirmation gates; read LESSONS at start).
-- Not yet: 1.3 (multi-model), 2.4 (guard hardening), 4.1 (SonarJS paste: yours),
-  e10-llm conformance (spend-blocked).
+- Not yet: 1.3 (multi-model), 2.4 (guard hardening: the check-pii-channels URLSearchParams
+  evasion case; the grade.py generality fix it also listed is now DONE), 4.1 (SonarJS paste:
+  yours). e10-llm conformance DONE on Sonnet; a Fable rerun is optional (next billing month).
 
 ## How this plan is ordered
 Phase 1 deepens MEASUREMENT (extends the "will it respect the guidelines" thread: what we

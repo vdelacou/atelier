@@ -55,3 +55,14 @@ jobs:
       # (range, SNAPSHOT dep, oversized commit, junk message, misformatted
       # file, -Werror warning, untested class, surviving mutant).
       - run: bash scripts/smoke-test-java.sh
+
+  conformance-grader-selftest:
+    name: conformance grader selftest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Proves the conformance grader credits only the agent's diff from the
+      # fixture, so a pristine fixture copy scores 0. Guards against a fixture
+      # file (src/domain/result.ts) drifting back into scope and silently
+      # satisfying present-mode assertions for both arms.
+      - run: python3 scripts/conformance-eval/grade.py --selftest

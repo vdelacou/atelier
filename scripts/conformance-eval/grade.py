@@ -14,13 +14,22 @@ baseline. Missing directories are reported as ungraded, not failed.
 
 import json
 import re
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).parent
-FIXTURE_FILES = {
-    str(p.relative_to(HERE / "fixture"))
-    for p in (HERE / "fixture").rglob("*")
+FIXTURE_DIR = HERE / "fixture"
+# Content of every scaffolding file a run STARTS with. Grading is a property of
+# the agent's contribution only: a run-dir file whose bytes equal its fixture
+# original was never touched by the agent, so it must neither satisfy nor violate
+# any assertion. Keying on content (not path) still credits files the agent
+# MODIFIES. This makes the verdict depend on the produced diff, not on which model
+# produced it, and not on scaffolding the fixture happened to ship.
+FIXTURE_BASELINE = {
+    str(p.relative_to(FIXTURE_DIR)): p.read_text(errors="replace")
+    for p in FIXTURE_DIR.rglob("*")
     if p.is_file()
 }
 
@@ -31,9 +40,14 @@ def read_sources(run_dir: Path, exts: tuple[str, ...], exclude: set[str]) -> dic
         if not p.is_file() or p.suffix not in exts:
             continue
         rel = str(p.relative_to(run_dir))
-        if rel.startswith((".claude/", "node_modules/")) or rel in exclude:
+        # skills/ guards against older run dirs copied from a transiently polluted
+        # fixture, which nested whole other-task run trees under skills/.
+        if rel.startswith((".claude/", "node_modules/", "skills/")) or rel in exclude:
             continue
-        out[rel] = p.read_text(errors="replace")
+        text = p.read_text(errors="replace")
+        if FIXTURE_BASELINE.get(rel) == text:
+            continue  # unmodified scaffolding, not the agent's work
+        out[rel] = text
     return out
 
 
@@ -52,8 +66,35 @@ def grade_run(run_dir: Path, assertions: list[dict]) -> list[tuple[str, bool]]:
     return marks
 
 
+def selftest() -> None:
+    """Prove the grader credits only the agent's diff. A pristine fixture copy
+    (no agent work) must satisfy NO assertion in any task: present-mode has no
+    agent file to match, absent-mode has no agent file in scope. This is red under
+    a grader that scans unmodified scaffolding (the fixture's result.ts alone made
+    three present-assertions pass) and green once such files are excluded."""
+    tasks = json.loads((HERE / "tasks.json").read_text())
+    credited = []
+    with tempfile.TemporaryDirectory() as tmp:
+        run_dir = Path(tmp) / "fixture-only"
+        shutil.copytree(FIXTURE_DIR, run_dir)
+        for task in tasks:
+            for desc, passed in grade_run(run_dir, task["assertions"]):
+                if passed:
+                    credited.append(f"{task['id']}: {desc}")
+    if credited:
+        print("SELFTEST FAILED: a pristine fixture copy was credited for work it did not do:")
+        for c in credited:
+            print(f"  {c}")
+        sys.exit(1)
+    print("selftest OK: a pristine fixture copy scores 0 (grader credits only the agent's diff)")
+
+
 def main() -> None:
-    runs_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else None
+    args = sys.argv[1:]
+    if "--selftest" in args:
+        selftest()
+        return
+    runs_dir = Path(args[0]) if args else None
     if runs_dir is None:
         workspaces = sorted(Path("skills/atelier-workspace").glob("conformance-*/runs"))
         if not workspaces:
