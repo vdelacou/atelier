@@ -46,7 +46,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: maven
+          # no `cache: maven` — it requires a pom.xml in the repo, and this
+          # repo's pom is generated at runtime by the smoke test
       # Scaffolds a Maven repo from the canonical pom.xml in
       # references/java-quarkus.md and the shipped hook assets, then proves the
       # gate chain passes on a conforming tree (spotless, verify with JaCoCo
