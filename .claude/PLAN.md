@@ -121,6 +121,17 @@ so this run is Sonnet+Haiku (both confirmed runnable by the e10-Sonnet run). Use
   -> Haiku [0,0,0], agents hard-delete regardless); e10 (LLM port+pin) is the most robust win
   (Sonnet with_skill [3,3,3] vs baseline [2,1,2]). Full 1.3 verdict: smaller tiers both under-invoke
   AND under-apply the skill. Commit CONFORMANCE_TAG + this writeup + the LESSONS entry.
+- CORRECTION (retune branch, supersedes part of the trigger finding): the committed suite-routing
+  "8/13 sonnet, 4/13 haiku" (0763b22) was SINGLE-RUN and noise-inflated. Replicating Sonnet routing
+  3x with the unchanged description gave 12/13, 12/13, 12/13 (logs clean, so run variance not probe
+  failure), so real Sonnet routing is ~12/13, near Fable parity; the sharp regression was mostly a
+  measurement artifact and Haiku 4/13 is an unverified single draw (not re-measured, user skipped).
+  The trigger-eval needs >=3 harness runs before a routing tier-delta is claimed. RETUNE OUTCOME:
+  grill-me description restructured trigger-first; a replicated A/B kept it (own cases 0.89->1.00,
+  control flat 0.66->0.66, negatives 0, precision intact) but the effect is marginal. Companions
+  greenfield/review-me NOT edited (the motivating regression was largely noise). 1.3 fix-half closed
+  as "small safe grill-me tweak + a methodology correction"; the main-skill ceiling surgery is moot
+  since the regression it targeted was mostly variance.
 
 ## How this plan is ordered
 Phase 1 deepens MEASUREMENT (extends the "will it respect the guidelines" thread: what we

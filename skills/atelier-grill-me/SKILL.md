@@ -1,6 +1,6 @@
 ---
 name: atelier-grill-me
-description: Relentlessly interview the user about a plan, design, or architectural decision — one question at a time, each with your recommended answer, exploring the codebase before asking — until every branch of the decision tree is resolved and you reach shared understanding. Use when the user wants to stress-test or pressure-test a plan, de-risk a big decision before building, walk through a design's tradeoffs, validate whether a new product or feature is worth building at all (problem evidence, demand test, go/no-go), or says "grill me".
+description: Use when the user wants to stress-test, pressure-test, or poke holes in a plan, design, migration, or architectural decision before building or committing to it, de-risk a big decision, walk through a design's tradeoffs, validate whether a new product or feature is worth building at all (problem evidence, demand test, go/no-go), or says "grill me" or "grill me on this". It then relentlessly interviews you one question at a time, each with a recommended answer, exploring the codebase before asking, until every branch of the decision tree is resolved and you reach shared understanding.
 ---
 
 # Grill me
