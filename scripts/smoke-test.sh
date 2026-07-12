@@ -141,7 +141,12 @@ export type FetchGreeting = (visitor: string) => Promise<GreetingResult>;
 
 export const createFetchGreeting = (baseUrl: string): FetchGreeting => async (visitor) => {
   try {
-    const response = await fetch(`${baseUrl}/greet?name=${encodeURIComponent(visitor)}`);
+    // user-typed text travels in the body (rule 27); every call carries a deadline (rule 29)
+    const response = await fetch(`${baseUrl}/greet`, {
+      method: 'POST',
+      body: JSON.stringify({ visitor }),
+      signal: AbortSignal.timeout(2_000),
+    });
     if (!response.ok) return { ok: false, error: `http ${response.status}` };
     return { ok: true, text: await response.text() };
   } catch (e) {
@@ -246,6 +251,39 @@ expect_err "commit-msg rejects capitalised type" check_msg "Feat: x"
 expect_err "commit-msg rejects trailing period" check_msg "feat: add thing."
 expect_err "commit-msg rejects >100-char header" check_msg "feat: $(printf 'x%.0s' $(seq 1 120))"
 rm -f .msg
+
+echo "== discipline tripwires (rules 27-30, staged-diff guards) =="
+cp "$SKILL/assets/check-pii-channels.sh" "$SKILL/assets/check-io-deadlines.sh" \
+   "$SKILL/assets/check-data-lifecycle.sh" "$SKILL/assets/check-isolation-tests.sh" scripts/
+chmod +x scripts/check-pii-channels.sh scripts/check-io-deadlines.sh scripts/check-data-lifecycle.sh scripts/check-isolation-tests.sh
+mkdir -p src/use-cases
+
+printf 'export const s = async (u: { email: string }) => fetch(`/search?email=${u.email}`);\n' > src/use-cases/leak.ts
+git add src/use-cases/leak.ts
+expect_err "pii guard blocks an email in a query string" bash scripts/check-pii-channels.sh
+git reset -q && rm src/use-cases/leak.ts
+
+printf 'export const f = (): Promise<Response> => fetch("https://svc.test/x");\n' > src/infra/no-deadline.ts
+git add src/infra/no-deadline.ts
+expect_err "deadline guard blocks fetch without a deadline marker" bash scripts/check-io-deadlines.sh
+git reset -q && rm src/infra/no-deadline.ts
+git add src/infra/fetch-greeting.ts
+expect_ok "deadline guard passes the conforming adapter" bash scripts/check-io-deadlines.sh
+git reset -q
+
+printf 'export const rm = async (id: string): Promise<void> => { await db.delete(orders); };\n' > src/use-cases/hard-delete.ts
+git add src/use-cases/hard-delete.ts
+expect_err "lifecycle guard blocks a hard delete" bash scripts/check-data-lifecycle.sh
+git reset -q && rm src/use-cases/hard-delete.ts
+
+mkdir -p src/infra/http
+printf 'export const route = (orgId: string): string => orgId;\n' > src/infra/http/invoices.ts
+git add src/infra/http/invoices.ts
+expect_err "isolation guard blocks a route without a 404 test" bash scripts/check-isolation-tests.sh
+printf 'import { test, expect } from "bun:test";\ntest("cross-tenant read is not_found", () => { expect(404).toBe(404); });\n' > src/infra/http/invoices.test.ts
+git add src/infra/http/invoices.test.ts
+expect_ok "isolation guard passes once the 404 test is staged" bash scripts/check-isolation-tests.sh
+git reset -q && rm -rf src/infra/http
 
 echo "== full 8-gate pre-commit hook (includes Stryker on the staged domain file) =="
 git add package.json src/domain/greeting.ts src/domain/greeting.test.ts
