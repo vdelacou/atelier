@@ -1,0 +1,48 @@
+# CLAUDE.md
+
+This repo IS the atelier coding standard, packaged as an Agent Skill suite. It is not a
+Bun/Java application, so the hard rules 1-34 are the *product*, not constraints on this
+tree. What binds work HERE is the authoring and process discipline below.
+
+## Authoring conventions
+- **Never use em dashes** in anything you write: prose, code comments, commit messages,
+  skill text, LESSONS/PLAN entries. The reference files predate this rule; do not imitate
+  their punctuation. Grep new work: `git diff | grep '^+' | grep '—'` must be empty.
+- **YAML frontmatter descriptions carry no `: ` (colon-space)** and no unescaped `:` mid-line;
+  it breaks the single-line YAML parse. Rephrase (a comma, a dash with spaces, parentheses).
+  The frontmatter validator catches it: `bun run scripts/validate-frontmatter.ts`.
+- **Skill descriptions max 1024 chars** (the loader limit; the validator enforces it). The
+  main `atelier` description runs near the ceiling, so trimming is needed to add anything.
+- Terse, direct prose; lead with the outcome; match the surrounding file's idiom.
+
+## Structure
+- `skills/atelier/` is the main skill: `SKILL.md` (hard rules + workflow) plus `references/`
+  (the doctrine, one file per concern) and `assets/` (copyable gate scripts + Java exemplars).
+- `skills/atelier-{greenfield,review-me,grill-me}/` are the companion skills.
+- `scripts/` holds the CI harnesses: three `smoke-test*.sh` (Bun/Next/Java, each proving the
+  gates pass AND block their target violation), `trigger-eval/` (does the skill load; suite
+  mode measures which skill wins a query), `conformance-eval/` (does produced code follow the
+  rules, with-skill vs baseline).
+
+## Verify commands
+- `bun run scripts/validate-frontmatter.ts` (fast; the CI frontmatter gate).
+- `bash scripts/smoke-test.sh` / `smoke-test-next.sh` / `smoke-test-java.sh` (the CI e2e gates;
+  Java needs JDK 21+ and mvn; each takes minutes on first run for dependency downloads).
+- `bash scripts/trigger-eval/run.sh <set> <skill-dir> [fixture] [runs]` after any SKILL.md
+  description edit (a description is a triggering contract).
+- CI (`.github/workflows/ci.yml`) runs the four gates on every push; `canary.yml` weekly-probes
+  whether the typescript pin can lift.
+
+## Process
+- **Plan-first**: before multi-step work, write the plan and a per-step definition of done to
+  `.claude/PLAN.md`; keep it live; overwrite it when the next task begins. It is the resume
+  contract, distinct from the append-only `.claude/LESSONS.md`.
+- **Commit slicing**: small, coherent commits (the standard's own gate 1 spirit: <=10 files /
+  <=300 lines), Conventional Commits, references before the SKILL.md that cites them.
+- **Never commit or push without explicit confirmation** (rules 25). Commit and push are
+  separate decisions; ask per landing. Eval results stay gitignored (`skills/*-workspace/`);
+  harnesses and sets are committed.
+- **Every new gate proves it can fail**: ship a fixture violation case alongside it, and wire
+  it into the matching smoke test so a toolchain major cannot silently disable it.
+- **Read `.claude/LESSONS.md` at session start**: it holds the toolchain gotchas (TypeScript 7
+  vs sonarjs, PIT history, the eval-harness pitfalls) that cost real time to find.

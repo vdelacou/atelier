@@ -38,8 +38,16 @@ rule 27-30 guards, CLAUDE.md seed, committed trigger-eval harness, CI green at c
   contaminated empty run; the clean rerun baseline also did expand-contract (3/3). Strong Fable
   baseline conforms on most tasks, so the delta is real but modest and concentrated in the
   PII-channel/soft-delete disciplines. Rerun e10 when the limit resets.
-- Not yet: 1.3 (multi-model), 2.2 (Java assets), 2.4 (guard hardening),
-  3.1 (changelog+tag), 3.2 (repo CLAUDE.md), 4.1 (SonarJS paste: yours), e10-llm conformance.
+- 2.2 DONE: Java domain assets (Result/Ok/Err/Email.java) shipped under assets/java/, copied
+  by the bootstrap checklist and by smoke-test-java (16/16 green) instead of hand-written.
+- 3.1 DONE: CHANGELOG.md (keep-a-changelog, 2.0.0 = production-disciplines + Java release),
+  README changelog section. Tag v2.0.0 NOT cut (user declined the tag; CHANGELOG stands as the
+  release record; tag later if desired: `git tag -a v2.0.0 -m ... && git push origin v2.0.0`).
+- 3.2 DONE: repo CLAUDE.md dogfooding the seed, adapted to the skill repo (authoring
+  conventions: no em dashes, YAML colon-space trap, description ceiling; structure; verify
+  commands; plan-first + commit-slicing + confirmation gates; read LESSONS at start).
+- Not yet: 1.3 (multi-model), 2.4 (guard hardening), 4.1 (SonarJS paste: yours),
+  e10-llm conformance (spend-blocked).
 
 ## How this plan is ordered
 Phase 1 deepens MEASUREMENT (extends the "will it respect the guidelines" thread: what we

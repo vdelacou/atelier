@@ -310,6 +310,11 @@ The skill covers three repo shapes and picks the right reference automatically:
 
 Inspired by the layout of [ramziddin/solid-skills](https://github.com/ramziddin/solid-skills). The engineering substance encodes patterns from Clean Code (Robert C. Martin), Test-Driven Development (Kent Beck), Domain-Driven Design (Eric Evans), and Refactoring (Martin Fowler), adapted to a class-free Bun/TypeScript codebase (and its Java translation). The production disciplines (hard rules 27-34 and the references they point to) are the executable encoding of the eighteen pillars in *The Global Rules Every New Project Should Have* and its *Do and Don't* companion. The security reference and its false-positive filter are adapted with credit from [anthropics/claude-code-security-review](https://github.com/anthropics/claude-code-security-review).
 
+## Changelog
+
+Notable changes are tracked in [CHANGELOG.md](./CHANGELOG.md); the suite is versioned as a
+whole. The current release is 2.0.0 (the production-disciplines + Java-variant release).
+
 ## License
 
 [MIT](./LICENSE)
