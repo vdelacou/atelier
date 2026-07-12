@@ -23,8 +23,23 @@ rule 27-30 guards, CLAUDE.md seed, committed trigger-eval harness, CI green at c
 - 3.3 DONE: four LESSONS entries (conformance methodology, guards-as-tripwires, single-skill
   probe limitation, pycache).
 - 3.4 DONE: description edits gate on the trigger eval (workflow.md + review-me map).
-- Not yet: 1.3 (multi-model), 2.1 (a11y gate), 2.2 (Java assets), 2.4 (guard hardening),
-  3.1 (changelog+tag), 3.2 (repo CLAUDE.md), 4.1 (SonarJS paste: yours).
+- 2.1 DONE: accessibility gate. eslint-plugin-jsx-a11y (already a devDependency) wired
+  error-level on src/components/** in the canonical Next config with the doctrine's
+  interaction rules (no-static-element-interactions, click-events-have-key-events,
+  interactive-supports-focus, control-has-associated-label, alt-text, anchor-is-valid);
+  next/core-web-vitals only enables the recommended subset, which misses the flagship
+  clickable-div. smoke-test-next proves it: conforming components lint clean, an inaccessible
+  atom produces 3 jsx-a11y findings. atomic-design.md + product.md name the enforced gate;
+  contrast/focus-order stay with tokens + review (not lintable), runtime axe noted as optional.
+- 1.2 conformance data COMPLETED for e1-e9 (e10 still spend-blocked): reconciled clean verdict
+  with_skill 24/25 (96%), baseline 22/25 (88%). Clear skill wins e1 (POST+deadline vs GET),
+  e2 (soft-delete+test vs hard delete). One honest skill LOSS e7 (at-least-once status flag
+  over an idempotency dedupe key: kept, not massaged). e9 baseline's earlier 0/3 was the
+  contaminated empty run; the clean rerun baseline also did expand-contract (3/3). Strong Fable
+  baseline conforms on most tasks, so the delta is real but modest and concentrated in the
+  PII-channel/soft-delete disciplines. Rerun e10 when the limit resets.
+- Not yet: 1.3 (multi-model), 2.2 (Java assets), 2.4 (guard hardening),
+  3.1 (changelog+tag), 3.2 (repo CLAUDE.md), 4.1 (SonarJS paste: yours), e10-llm conformance.
 
 ## How this plan is ordered
 Phase 1 deepens MEASUREMENT (extends the "will it respect the guidelines" thread: what we
