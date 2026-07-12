@@ -36,3 +36,21 @@ jobs:
       # rule 21/22 violations are caught — so a future ESLint/Next major can't
       # silently disable the design-system enforcement.
       - run: bash scripts/smoke-test-next.sh
+
+  java-smoke-test:
+    name: java smoke test (Quarkus variant, all gates)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      # Scaffolds a Maven repo from the canonical pom.xml in
+      # references/java-quarkus.md and the shipped hook assets, then proves the
+      # gate chain passes on a conforming tree (spotless, verify with JaCoCo
+      # tiers, PIT, a full hooked commit) and blocks each target violation
+      # (range, SNAPSHOT dep, oversized commit, junk message, misformatted
+      # file, -Werror warning, untested class, surviving mutant).
+      - run: bash scripts/smoke-test-java.sh

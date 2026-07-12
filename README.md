@@ -223,7 +223,8 @@ atelier/
 ├── scripts/
 │   ├── validate-frontmatter.ts    # frontmatter gate: name/description present + within skill limits
 │   ├── smoke-test.sh              # e2e (Bun): install the assets per this README into a scratch repo, run every gate
-│   └── smoke-test-next.sh         # e2e (Next.js): scaffold a package, assert rules 21-22 enforcement
+│   ├── smoke-test-next.sh         # e2e (Next.js): scaffold a package, assert rules 21-22 enforcement
+│   └── smoke-test-java.sh         # e2e (Java): scaffold from the canonical pom, run + block every gate
 └── skills/
     ├── atelier/
     │   ├── SKILL.md           # Main skill instructions
@@ -283,13 +284,14 @@ atelier/
 
 ## Repository CI
 
-Every push and pull request runs three GitHub Actions jobs, each guarding against the same failure mode — a toolchain major or a doc edit silently breaking what the skill ships:
+Every push and pull request runs four GitHub Actions jobs, each guarding against the same failure mode — a toolchain major or a doc edit silently breaking what the skill ships:
 
 - **frontmatter validator** — every `SKILL.md` opens with a valid `name`/`description` within the skill-loader limits.
 - **`scripts/smoke-test.sh` (Bun variant)** — follows this README's install steps into a scratch Bun repo, extracts the canonical `tsconfig.json` / `eslint.config.js` from `references/bun-typescript.md`, installs the **current unpinned** toolchain, and proves every gate both passes on a conforming tree and blocks its target violation (25 checks, including the full 8-gate pre-commit hook with Stryker).
 - **`scripts/smoke-test-next.sh` (Next.js variant)** — scaffolds a Next.js package from the canonical configs in `references/nextjs-monorepo.md`, builds a conforming design system + page shell + static export, and asserts the design-system lint block catches its target violations: rule 21 (a hook / `next/*` import / `'use client'` / app-code import inside a component) and rule 22 (a `className` / `class` / `style` attribute outside `src/components/**`).
+- **`scripts/smoke-test-java.sh` (Java variant)** | scaffolds a Maven repo from the canonical `pom.xml` in `references/java-quarkus.md` plus the shipped hook assets, proves the gates pass on a conforming skeleton (spotless, `verify` with the JaCoCo tiers, PIT, a real hooked commit through `pre-commit-java`), and that each gate blocks its target violation (a version range, a `-SNAPSHOT` dependency, an oversized commit, a junk commit message, a misformatted file, a warning under `-Werror`, an untested domain class, a covered-but-unasserted mutant survivor).
 
-A new ESLint/TypeScript/Stryker/Next major that breaks a shipped asset — or doc drift in the canonical configs — fails CI before a user hits it. Run them locally with `bash scripts/smoke-test.sh` and `bash scripts/smoke-test-next.sh`.
+A new ESLint/TypeScript/Stryker/Next/Maven-plugin major that breaks a shipped asset — or doc drift in the canonical configs — fails CI before a user hits it. Run them locally with `bash scripts/smoke-test.sh`, `bash scripts/smoke-test-next.sh`, and `bash scripts/smoke-test-java.sh`.
 
 ## Variant references
 
