@@ -44,6 +44,7 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
     <jacoco.plugin.version>0.8.15</jacoco.plugin.version>
     <pitest.plugin.version>1.25.7</pitest.plugin.version>
     <pitest-junit5.plugin.version>1.2.3</pitest-junit5.plugin.version>
+    <pitest.threads>4</pitest.threads>
     <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
   </properties>
 
@@ -151,6 +152,9 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
           </targetTests>
           <mutationThreshold>90</mutationThreshold>
           <timestampedReports>false</timestampedReports>
+          <!-- Free parallelism: mutation results are thread-independent. Tune to cores.
+               Incremental history is NOT a free lever here (see the prose below). -->
+          <threads>${pitest.threads}</threads>
         </configuration>
       </plugin>
       <!-- rule 19 at build time: JDK floor, no snapshot deps, converging versions -->
@@ -338,7 +342,7 @@ Quarkus ships OpenTelemetry: enable it, add `@WithSpan` on application services 
 - **Integration tests** use `@QuarkusTest` + REST Assured against the real edge: the happy path, the bypass (`references/testing.md`, Test the bypass: wrong role is 403, missing token 401), the cross-tenant 404, and the forged-header seam (`references/isolation.md`). Testcontainers (or dev services) provide a real database; fixtures are synthetic (rule 34).
 - **Test names are business scenarios**: `premiumCustomerGets20PercentOff`, `crossTenantReadIsNotFound`, `regressionEmptyCartTotalsToZero`.
 - **Coverage tiers with JaCoCo**: 100% line on `domain` + `usecases`, 80% on `infra` + `api` + `composition`, enforced by per-package `<rule>` limits in the JaCoCo check goal so the build fails loudly, untested classes included in the denominator (the coverage-preload principle is native here: JaCoCo counts all classes in the module).
-- **Mutation testing with PIT**: `mutationThreshold=90` on `domain` + `usecases` packages. PIT's incremental history moved behind a commercial add-on, so the open-source speed levers are the narrow target scope and running the gate only when staged files touch it (the hook does exactly that); in a multi-module repo, scope PIT per module. Same policy as Stryker: no per-file exclusions because tests feel awkward; tighten the test or refactor.
+- **Mutation testing with PIT**: `mutationThreshold=90` on `domain` + `usecases` packages. Incremental history is NOT free in current PIT: 1.25.7 errors `History has been enabled but no history plugin has been installed/activated` for BOTH `withHistory` and explicit `historyInputFile`/`historyOutputFile` (verified via `smoke-test-java`), and the only history plugin is Arcmutate's commercial `+arcmutate_history`. So the free speed levers are the narrow target scope (`targetClasses`/`targetTests`), parallel `threads` (set in the pom, mutation results are thread-independent), and running the gate only when staged files touch it (the hook does exactly that); in a multi-module repo, scope PIT per module. If incremental speed becomes a hard requirement at scale, Arcmutate is the only supplier, which makes it a licence decision, not a library swap. Same policy as Stryker: no per-file exclusions because tests feel awkward; tighten the test or refactor.
 - **Evals for any LLM hole** gate the merge like PIT does (`references/ai.md`).
 
 ## Gates and hooks

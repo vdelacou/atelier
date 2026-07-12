@@ -61,9 +61,9 @@ if [ -z "$staged_scope" ]; then
   echo "  no staged files in the mutation scope, skipping."
 else
   # The threshold lives in the pom (pitest-maven mutationThreshold=90 scoped
-  # to domain/usecases packages). PIT's incremental history is a commercial
-  # add-on in current PIT; the open-source lever for speed is the narrow
-  # target scope plus this staged-files trigger.
+  # to domain/usecases packages, run with parallel threads). PIT's incremental
+  # history needs Arcmutate's commercial +arcmutate_history plugin in current
+  # PIT, so the free speed levers are the narrow scope, threads, and this trigger.
   ./mvnw -q test-compile org.pitest:pitest-maven:mutationCoverage
 fi
 

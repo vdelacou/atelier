@@ -282,7 +282,13 @@ atelier itself). Phase 4 tracks EXTERNAL follow-ups. Within a phase, items are i
 
 ### 4.3 Lift conditions ledger
 - typescript@^5 pin: lift when sonarjs supports TS 7 (canary 2.3 detects).
-- PIT incremental: revisit if PIT's history returns to open source.
+- PIT incremental: needs a history plugin in PIT 1.25.7 (VERIFIED 2026-07-12 via smoke-test-java:
+  both withHistory and explicit historyInputFile/historyOutputFile error "no history plugin
+  installed"; the only one is Arcmutate's commercial +arcmutate_history). The 2026-07-11 entry was
+  right; a doc-driven "it's free" correction was tried and reverted. Decision: stay on PIT, drop
+  withHistory, keep runs fast with the narrow scope + parallel threads (added to the pom) + the
+  staged-file trigger. Incremental at scale is a licence decision (Arcmutate is the only supplier),
+  not a library swap. Revisit if a free history plugin ships or PIT reintroduces built-in history.
 - Single-skill probing artifacts: closed by 1.1.
 
 ---
