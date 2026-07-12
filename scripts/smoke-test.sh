@@ -176,9 +176,14 @@ test('when the connection dies, the adapter translates the throw', async () => {
 EOF
 
 echo "== install current toolchain (unpinned — new majors are the point) =="
+# typescript is the one deliberate exception to unpinned: the canonical skeleton
+# pins "typescript": "^5.0.0", and eslint-plugin-sonarjs (<= 4.1.0) crashes at
+# rule load under TypeScript 7 (reads ts.SyntaxKind at module scope; TS 7's
+# module shape breaks the CJS default-export interop). Caught by this test on
+# 2026-07-12. Lift the pin when sonarjs supports TS 7.
 expect_ok "bun add -d toolchain" bun add -d eslint @eslint/js globals typescript-eslint \
   eslint-plugin-security eslint-plugin-sonarjs eslint-plugin-unicorn eslint-plugin-prettier \
-  prettier typescript @types/bun @stryker-mutator/core
+  prettier typescript@^5 @types/bun @stryker-mutator/core
 
 # The four fixture-authored files above are test scaffolding, not shipped assets —
 # normalise THEIR formatting only, so a formatting regression in a shipped asset
