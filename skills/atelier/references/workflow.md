@@ -629,6 +629,7 @@ rg -n '(db\.query|db\.execute)\(`.*\$\{' -- 'src/**/*.ts'   # enumerate the whol
 - **Compliance is not proof.** A ticked checklist and a passed audit describe paperwork. The standard is a runnable check: "show me how you verify it, and let me run it myself." Evidence is the exit code of a committed script anyone accountable can execute, never a screenshot of a green run (`references/governance.md`, owner-verifiable done).
 - **Generated code meets the same bar (provenance is not proof).** Code from a scaffolder, a generator, or an AI assistant runs through the identical hooks, gates, suite, and review a human's would; the reviewer reads the diff, not the attribution. No `--no-verify` because "the tool wrote it".
 - **Prefer failing loud.** A gate that stays green for the wrong reason lies: that is why untested files enter coverage at 0% (the preload), why the mutation gate exists at all, and why each new gate should be tried against a known violation once before it is trusted (the smoke tests do exactly this for the shipped configs).
+- **A skill description is a triggering contract; edits to it rerun the trigger eval.** Any change to a `SKILL.md` frontmatter description runs its eval set before landing (`bash scripts/trigger-eval/run.sh <set> <skill-dir>`; the `suite-routing.json` set with `TRIGGER_EVAL_SUITE` when wording could shift which suite skill wins a query). A description tuned by feel regresses silently; the eval is one command.
 
 ## README consistency
 
