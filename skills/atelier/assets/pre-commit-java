@@ -60,9 +60,11 @@ staged_scope=$(git diff --cached --name-only --diff-filter=ACMR | grep -E 'src/m
 if [ -z "$staged_scope" ]; then
   echo "  no staged files in the mutation scope, skipping."
 else
-  # -DwithHistory keeps runs incremental; the threshold lives in the pom
-  # (pitest-maven mutationThreshold=90 scoped to domain/usecases packages).
-  ./mvnw -q test-compile org.pitest:pitest-maven:mutationCoverage -DwithHistory
+  # The threshold lives in the pom (pitest-maven mutationThreshold=90 scoped
+  # to domain/usecases packages). PIT's incremental history is a commercial
+  # add-on in current PIT; the open-source lever for speed is the narrow
+  # target scope plus this staged-files trigger.
+  ./mvnw -q test-compile org.pitest:pitest-maven:mutationCoverage
 fi
 
 echo "pre-commit: all gates passed"

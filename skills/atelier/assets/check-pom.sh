@@ -27,10 +27,12 @@ while IFS= read -r pom; do
     status=1
   fi
 
-  # 2. -SNAPSHOT inside parent/dependencies/plugins blocks (never third-party).
+  # 2. A -SNAPSHOT <version> inside parent/dependencies/plugins blocks (never
+  #    third-party). Matching only <version> elements keeps prose such as an
+  #    enforcer <message> mentioning -SNAPSHOT from tripping the gate.
   snapshot_hits=$(awk '
-    /<parent>|<dependencies>|<plugins>/     { depth += 1 }
-    depth > 0 && /-SNAPSHOT/                { printf "    line %d: %s\n", NR, $0 }
+    /<parent>|<dependencies>|<plugins>/       { depth += 1 }
+    depth > 0 && /<version>[^<]*-SNAPSHOT/    { printf "    line %d: %s\n", NR, $0 }
     /<\/parent>|<\/dependencies>|<\/plugins>/ { if (depth > 0) depth -= 1 }
   ' "$pom")
   if [ -n "$snapshot_hits" ]; then
@@ -38,6 +40,8 @@ while IFS= read -r pom; do
     echo "$snapshot_hits" >&2
     status=1
   fi
-done < <(git ls-files '*pom.xml' 'pom.xml')
+# --others --exclude-standard: a brand-new pom is checked before its first
+# commit too, not only once tracked.
+done < <(git ls-files --cached --others --exclude-standard '*pom.xml' 'pom.xml' | sort -u)
 
 exit "$status"
