@@ -235,8 +235,10 @@ Dependency rule unchanged: `domain` imports nothing from the framework; `usecase
 
 ## `Result` in Java (rule 16)
 
+Shipped as copyable assets (`assets/java/Result.java`, `Ok.java`, `Err.java`); copy them at bootstrap rather than retyping. Sealed, so a `switch` is exhaustive and the compiler owns totality:
+
 ```java
-// domain/Result.java: sealed, so switch is exhaustive and the compiler owns totality
+// domain/Result.java
 public sealed interface Result<T, E> permits Ok, Err {}
 public record Ok<T, E>(T value) implements Result<T, E> {}
 public record Err<T, E>(E error) implements Result<T, E> {}
@@ -266,7 +268,7 @@ return switch (repo.find(id)) {
 
 ## Value records at trust boundaries (rule 12)
 
-The compact constructor is the guard (constructing an invalid instance is a bug, so it throws); the static `parse` is the boundary factory returning `Result` (expected-invalid input is a value):
+The compact constructor is the guard (constructing an invalid instance is a bug, so it throws); the static `parse` is the boundary factory returning `Result` (expected-invalid input is a value). Shipped as `assets/java/Email.java`, the exemplar to copy for `Money` (integer minor units), `UserId`, `IsoCountryCode`, and every other domain primitive:
 
 ```java
 public record Email(String value) {
@@ -361,7 +363,12 @@ CI runs the identical chain plus the scheduled dependency scan and, where the re
 
 1. `quarkus create app com.example:app` (or the Maven archetype); commit the wrapper; delete sample code.
 2. Parent pom: start from the canonical `pom.xml` above (compiler `-Werror`, Spotless + google-java-format, JaCoCo tier rules, PIT `mutationThreshold=90` scoped to `domain`/`usecases`, enforcer with `requireJavaVersion`/`requireReleaseDeps`/`requireUpperBoundDeps`), add the pinned Quarkus BOM and extensions, commit `.mvn/jvm.config`. Exact versions everywhere.
-3. Scaffold packages: `domain`, `usecases/ports`, `infra`, `api`, `composition`; add `Result`/`Ok`/`Err` records in `domain`.
+3. Scaffold packages: `domain`, `usecases/ports`, `infra`, `api`, `composition`; copy the shipped domain assets into `domain` rather than hand-writing them, then rename their package to your own groupId:
+   ```bash
+   cp <skill>/assets/java/{Result,Ok,Err,Email}.java src/main/java/<pkg>/domain/
+   # Result/Ok/Err are the sealed Result union (rule 16); Email is the value-record
+   # exemplar (rule 12) to copy for Money, UserId, and every other domain primitive.
+   ```
 4. `application.properties`: authenticated-by-default policy, OIDC config placeholders, OTel enabled, JSON logging with the redaction filter, datasource for the constrained runtime role.
 5. Flyway: `src/main/resources/db/migration/V1__init.sql`; dev services or Testcontainers for the integration ring.
 6. Test support: `testsupport` package with the first hand-written fakes (logger recorder, clock); **no Mockito in the pom**.

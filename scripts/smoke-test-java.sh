@@ -96,39 +96,13 @@ chmod +x mvnw
 printf 'target/\n' > .gitignore
 
 # --- minimal atelier-style skeleton: sealed Result, a value record, a use-case ---
-cat > src/main/java/com/example/app/domain/Result.java <<'EOF'
-package com.example.app.domain;
-
-public sealed interface Result<T, E> permits Ok, Err {}
-EOF
-
-cat > src/main/java/com/example/app/domain/Ok.java <<'EOF'
-package com.example.app.domain;
-
-public record Ok<T, E>(T value) implements Result<T, E> {}
-EOF
-
-cat > src/main/java/com/example/app/domain/Err.java <<'EOF'
-package com.example.app.domain;
-
-public record Err<T, E>(E error) implements Result<T, E> {}
-EOF
-
-cat > src/main/java/com/example/app/domain/Email.java <<'EOF'
-package com.example.app.domain;
-
-public record Email(String value) {
-  public Email {
-    if (!value.matches("^[^@\\s]+@[^@\\s]+$")) {
-      throw new IllegalArgumentException("email");
-    }
-  }
-
-  public static Result<Email, String> parse(String raw) {
-    return raw.matches("^[^@\\s]+@[^@\\s]+$") ? new Ok<>(new Email(raw)) : new Err<>("invalid_email");
-  }
-}
-EOF
+# The four invariant domain files are shipped assets, not hand-written here:
+# copy them exactly as a real bootstrap does (java-quarkus.md, Bootstrap
+# checklist), so this test exercises what ships. They already declare
+# package com.example.app.domain, matching this fixture.
+cp "$SKILL/assets/java/Result.java" "$SKILL/assets/java/Ok.java" \
+   "$SKILL/assets/java/Err.java" "$SKILL/assets/java/Email.java" \
+   src/main/java/com/example/app/domain/
 
 cat > src/main/java/com/example/app/usecases/ports/UserStore.java <<'EOF'
 package com.example.app.usecases.ports;

@@ -242,6 +242,7 @@ atelier/
     │   │   ├── fetch-mock.ts                   # installFetchMock for infra adapter tests
     │   │   ├── format-error.ts                 # safe catch-block formatter (SonarJS S6551)
     │   │   ├── format-error.test.ts            # its test (format-error is in the mutation scope)
+    │   │   ├── java/                           # Java variant exemplars: sealed Result/Ok/Err + the Email value-record
     │   │   ├── mutate-changed.sh               # Stryker mutation on files changed vs origin/main
     │   │   ├── mutate-staged.sh                # Stryker mutation on staged files (gate 8)
     │   │   ├── pre-commit                      # git pre-commit hook running 8 gates (Bun variant)
