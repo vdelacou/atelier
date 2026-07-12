@@ -111,8 +111,16 @@ so this run is Sonnet+Haiku (both confirmed runnable by the e10-Sonnet run). Use
   (db.delete in order-repository.ts, no test), e1 built the hexagon but missed POST+deadline. To
   call a conformance tier-trend needs >=3 runs/task. VERDICT: a real triggering regression (recall,
   not precision); conformance-when-applied is noisy parity. No description fix applied yet (that is
-  a recall-vs-precision retune, its own task). Harness change (model-namespaced run.sh x2) ready to
-  commit with this writeup.
+  a recall-vs-precision retune, its own task). Harness change (model-namespaced run.sh x2) shipped
+  in 0763b22.
+- CONFORMANCE VARIANCE RESOLVED (3 runs/task/tier via new CONFORMANCE_TAG): the noisy n=1 read was
+  bad luck. Sonnet with_skill 8.3/13 vs baseline 6.3/13 (delta +2.0); Haiku 8.0 vs 7.3 (+0.7). On
+  the e1+e2+e6 overlap Fable ran too: Fable +3.0/10 -> Sonnet +0.67/10 -> Haiku +0.33/10, so the
+  skill's delta SHRINKS on smaller tiers (refutes the "delta grows" hypothesis). Driver: soft-delete
+  (e2) collapses on both small tiers EVEN WITH the skill (with_skill e2 Fable 3/3 -> Sonnet [0,1,0]
+  -> Haiku [0,0,0], agents hard-delete regardless); e10 (LLM port+pin) is the most robust win
+  (Sonnet with_skill [3,3,3] vs baseline [2,1,2]). Full 1.3 verdict: smaller tiers both under-invoke
+  AND under-apply the skill. Commit CONFORMANCE_TAG + this writeup + the LESSONS entry.
 
 ## How this plan is ordered
 Phase 1 deepens MEASUREMENT (extends the "will it respect the guidelines" thread: what we
