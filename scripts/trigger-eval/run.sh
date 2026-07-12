@@ -36,7 +36,7 @@ RUNS="${4:-3}"
 
 OUT_DIR="$REPO_ROOT/skills/atelier-workspace/trigger-eval-$(date +%F)"
 mkdir -p "$OUT_DIR"
-BASE="$(basename "$SET" .json)-$(basename "$SKILL")"
+BASE="$(basename "$SET" .json)-$(basename "$SKILL")${TRIGGER_EVAL_MODEL:+-$TRIGGER_EVAL_MODEL}"
 
 # Routing mode: TRIGGER_EVAL_SUITE holds comma-separated EXTRA skill dirs
 # (relative to the repo root) to register alongside the primary skill, so a

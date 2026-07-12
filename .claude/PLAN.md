@@ -79,9 +79,40 @@ rule 27-30 guards, CLAUDE.md seed, committed trigger-eval harness, CI green at c
   work rather than run a context past the wall). Declined to add it as a hard rule (not
   diff-visible) or as full agent-runtime doctrine (harness altitude); the checkpoint/resume core
   was already the plan-first discipline.
-- Not yet: 1.3 (multi-model), 4.1 (SonarJS paste: yours). e10-llm conformance DONE on Sonnet; a
-  Fable rerun is optional (next billing month). 2.4 fully closed (URLSearchParams shipped,
-  residuals investigated as non-issues).
+- Not yet: 4.1 (SonarJS paste: yours). e10-llm conformance DONE on Sonnet; a Fable rerun is
+  optional (next billing month). 2.4 fully closed (URLSearchParams shipped, residuals
+  investigated as non-issues). 1.3 IN PROGRESS (Round 6 below).
+
+## Round 6 progress (1.3 multi-model robustness, started 2026-07-12)
+Goal: a per-tier matrix (Sonnet + Haiku) for triggering AND conformance, since evals were
+Fable-only and the skill ships to whatever model the user runs. Fable stays monthly-spend-blocked,
+so this run is Sonnet+Haiku (both confirmed runnable by the e10-Sonnet run). User chose FULL scope.
+- Scope: conformance e1/e2/e6/e10 + trigger sets atelier-bun (31 cases) and suite-routing (13),
+  each x {sonnet, haiku}. ~16 conformance agent runs + ~264 trigger probes (3 runs/query).
+- Harness prep DONE: both run.sh outputs are now model-namespaced (conformance writes
+  runs-<model>, trigger writes <set>-<skill>-<model>) so tiers do not collide; unset model keeps
+  the old paths. Commit this harness change with the results writeup.
+- Staging (checkpoint between so a mid-run spend cap does not lose the earlier stage):
+  A. conformance e1/e2/e6/e10 on sonnet then haiku, grade each runs-<model> dir.
+  B. trigger suite-routing (highest signal) then atelier-bun on sonnet+haiku.
+- DoD: per-tier verdict table (trigger pass-rate + conformance with_skill vs baseline per model);
+  SKILL.md/description fixes ONLY if a tier regresses. Raw results stay gitignored in workspaces.
+- Resume: for any incomplete tier rerun `CONFORMANCE_MODEL=<m> bash scripts/conformance-eval/run.sh
+  e1-search e2-removal e6-logging-pii e10-llm` and `TRIGGER_EVAL_MODEL=<m> bash
+  scripts/trigger-eval/run.sh <set>.json skills/atelier`; grade via `grade.py <runs-<m>>`.
+- RESULTS (2026-07-12): TRIGGER (3 runs/query, robust) shows recall degrading on smaller tiers with
+  precision intact (over-trigger=0 on EVERY set/tier, so the skills never false-fire). atelier-bun
+  29/31 sonnet -> 24/31 haiku (all misses are under-trigger). suite-routing 13/13 fable -> 8/13
+  sonnet -> 4/13 haiku (the companion skills grill-me/greenfield under-fire hardest; the model
+  invokes NONE rather than the wrong one). Headline: smaller/faster tiers under-invoke skills; the
+  trigger contract is tuned for Fable. CONFORMANCE (n=1/task, NOISY) sonnet with_skill 7/13 =
+  baseline 7/13 (delta 0), haiku with_skill 9/13 vs baseline 7/13 (+2); direction inconsistent, so
+  within run variance. Spot-checked NOT a grader bug: sonnet e2 with_skill genuinely hard-deleted
+  (db.delete in order-repository.ts, no test), e1 built the hexagon but missed POST+deadline. To
+  call a conformance tier-trend needs >=3 runs/task. VERDICT: a real triggering regression (recall,
+  not precision); conformance-when-applied is noisy parity. No description fix applied yet (that is
+  a recall-vs-precision retune, its own task). Harness change (model-namespaced run.sh x2) ready to
+  commit with this writeup.
 
 ## How this plan is ordered
 Phase 1 deepens MEASUREMENT (extends the "will it respect the guidelines" thread: what we
