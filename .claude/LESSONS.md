@@ -2,6 +2,22 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [decision] 2026-07-12 | conformance evals are the skill's benchmark
+
+Trigger evals prove the skill LOADS; conformance evals prove the produced code FOLLOWS the rules: each task in `scripts/conformance-eval/tasks.json` runs with-skill and baseline in isolated fixture copies via `claude -p --permission-mode acceptEdits`, then declarative regex assertions grade the output (`grade.py`). First measurement: with-skill 14/14, baseline 11/14; the deltas were exactly the discipline rules (soft delete, POST-not-query, deadline). Rerun with `bash scripts/conformance-eval/run.sh` after any change to SKILL.md's rules or the discipline references.
+
+## [decision] 2026-07-12 | discipline guards are staged-diff tripwires
+
+The rule 27-30 guards check STAGED ADDED LINES by default (like gitleaks protect), with `--all` for adopt-mode tree audits, and exceptions ride on path conventions (erasure/retention paths, `*contract*` migrations, `*public*`/`*health*` routes), never inline suppressions (rule 15). They are tripwires, not proofs: conservative patterns, review keeps the full duty.
+
+## [gotcha] 2026-07-12 | single-skill trigger probes cannot measure suite routing
+
+A probe registering only one synthetic skill scores "review my diff" as an atelier miss and "set up eslint in this existing repo" as a greenfield false-trigger, because the skill that SHOULD win is not in the model's choice set. Fixed by suite mode in `scripts/trigger-eval/run_eval.py` (`--suite`, cases carry `expected_skill`): with all four registered, routing scored 13/13. Rule for next time: a triggering verdict is only as valid as the choice set the probe shows the model.
+
+## [gotcha] 2026-07-12 | git add of a directory sweeps bytecode
+
+`git add scripts/trigger-eval` happily staged `__pycache__/run_eval.cpython-312.pyc` because nothing ignored it; the repo had never held Python before. When a commit adds a directory wholesale, list what got staged before committing, and extend .gitignore the moment a new language enters the repo.
+
 ## [gotcha] 2026-07-12 | typescript 7 crashes eslint-plugin-sonarjs at rule load
 
 The smoke test's unpinned toolchain install pulled TypeScript 7.0.2, and sonarjs (<= 4.1.0, dependency spec `typescript: '>=5'`) crashed ESLint outright: its rules read `ts.SyntaxKind.*` at module scope, and TS 7's module shape breaks the CJS default-export interop (`Cannot read properties of undefined`). `tsc` itself is fine; only programmatic API consumers break. Fix: `typescript@^5` is the one deliberate pin in the smoke-test install (matching the canonical skeleton's `^5.0.0`), lifted when sonarjs supports TS 7. Rule for next time: an unpinned-toolchain canary that fires is a success; respond by pinning the one incompatible dep with a dated reason, not by pinning everything.

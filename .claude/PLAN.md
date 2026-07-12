@@ -1,74 +1,190 @@
-# PLAN: round 4, shrink the residual gaps (all four improvements approved)
+# PLAN: the atelier roadmap (all open next steps, prioritized)
 
-Status: IN PROGRESS. Started 2026-07-12. User selected all four next-round items.
+Status: PROPOSED 2026-07-12. Nothing below is started; each phase lands independently in
+green slices. Rounds 1-4 are done and pushed (18 pillars encoded, Java variant, smoke tests
+for all three variants, trigger evals 32/34 + companions, conformance evals 13/13 vs 10/13,
+rule 27-30 guards, CLAUDE.md seed, committed trigger-eval harness, CI green at ce66856).
 
-## Goal
-Shrink the two residual gaps named in the confidence discussion: (1) the LLM
-instruction-following gap, via a deterministic CLAUDE.md seed in every atelier repo and
-task-based conformance evals that measure rule-following in produced code; (2) the
-behavioral-rules gap, via executable ripgrep guards for the mechanical slices of rules
-27-30. Plus eval infrastructure hygiene so the trigger eval is a committed, rerunnable
-one-liner, and upstream bug reports drafted for user sign-off.
+## Round 5 progress (2026-07-12, started from "start")
+- 1.1 DONE: suite-mode trigger probing (`--suite` + `expected_skill`); routing set 13/13 with
+  all four skills registered. Closes both prior artifacts (review-diff, existing-repo eslint).
+- 1.2 DONE (committed harness) + PARTIAL (data): `scripts/conformance-eval/` (tasks.json,
+  run.sh bash-3.2-safe, grade.py declarative). Clean verdict on the 6 completed tasks:
+  with_skill 17/17, baseline 14/17. Deltas were the disciplines: e1 baseline used GET (skill
+  POSTed with a deadline), e2 baseline hard-deleted (skill soft-deleted + test). e6 surfaced a
+  GRADER false positive (matched a redactEmail helper), retuned. e7-e10 blocked: the `claude -p`
+  subagents hit the account monthly spend limit mid-run, so those dirs are empty/partial and
+  are NOT counted. Rerun e7-e10 when the limit resets: `bash scripts/conformance-eval/run.sh
+  e7-outbox e8-lost-updates e9-migration e10-llm`.
+- 1.4 DONE: rule-24 unattended carve-out (new tests may be written headless; existing tests
+  stay gated) in SKILL.md rule 24 + Interaction + review-me; e2 pins it with a test assertion.
+- 2.3 DONE: `.github/workflows/canary.yml` weekly-runs the Bun smoke test with typescript
+  unpinned (SMOKE_TS_SPEC), non-blocking, to signal when the ^5 pin can lift.
+- 3.3 DONE: four LESSONS entries (conformance methodology, guards-as-tripwires, single-skill
+  probe limitation, pycache).
+- 3.4 DONE: description edits gate on the trigger eval (workflow.md + review-me map).
+- Not yet: 1.3 (multi-model), 2.1 (a11y gate), 2.2 (Java assets), 2.4 (guard hardening),
+  3.1 (changelog+tag), 3.2 (repo CLAUDE.md), 4.1 (SonarJS paste: yours).
 
-## Definition of done (whole task)
-- Greenfield and review-me adopt mode seed a short repo CLAUDE.md pointing at the standard
-  (canonical block defined once); docs updated.
-- New guard assets (PII channels, IO deadlines, data lifecycle, isolation-test presence)
-  ship in assets/, each proven on positive+negative fixtures, wired into the discipline
-  references and exercised by smoke-test.sh so they cannot rot.
-- scripts/trigger-eval/ holds the patched runner, both probe fixtures, and the eval sets
-  (atelier + three companions), committed; results stay gitignored. Companion sets run once.
-- Conformance eval set exists (tasks + mechanical assertions), run with-skill vs without,
-  graded, verdict reported.
-- Upstream issue drafts (sonarjs TS7, skill-creator harness contamination) presented for
-  explicit confirmation before ANY posting; nothing posted without a yes.
-- All new prose em-dash-free; frontmatter valid; smoke tests green locally; commits proposed
-  slice-by-slice (rule 25), push only on explicit confirmation.
+## How this plan is ordered
+Phase 1 deepens MEASUREMENT (extends the "will it respect the guidelines" thread: what we
+cannot measure we cannot trust). Phase 2 extends EXECUTABLE coverage (moves more doctrine
+into the machine tier). Phase 3 runs the repo AS A PRODUCT (governance.md applied to
+atelier itself). Phase 4 tracks EXTERNAL follow-ups. Within a phase, items are independent.
 
-## Steps
-1. [x] CLAUDE.md seed: canonical block in greenfield step 6 (deterministic repo context) +
-   review-me adopt step 2 seeds it in the gate-install slice.
-2. [x] Guard assets written and PROVEN: 17/17 fixture cases (pii blocks query-string email,
-   log interpolation, @QueryParam; deadlines blocks bare fetch/HttpClient, passes AbortSignal;
-   lifecycle blocks db.delete + DROP COLUMN, exempts erasure paths + *contract* migrations,
-   ignores cache.delete; isolation blocks routes without a 404 test, exempts health/public).
-   Staged-diff by default, --all for audits.
-3. [x] Guards wired: privacy/reliability/isolation tripwire sections, workflow.md "Discipline
-   tripwires" table, SKILL.md disciplines tail, README assets list. smoke-test.sh gained a
-   6-check tripwire section; full run green (31 checks). Bonus: the deadline guard caught the
-   smoke fixture's own adapter (bare fetch + name in query string); fixture now models rules
-   27+29 (POST body + AbortSignal.timeout).
-4. [x] Eval infra committed: scripts/trigger-eval/{run_eval.py (self-contained, provenance
-   header), run.sh, sets/, probe-root, probe-root-java, probe-root-empty}. Companion verdicts
-   (3 runs/query, fable): review-me 12/12, grill-me 10/10, greenfield 9/10 whose one miss was
-   a fixture mismatch (existing-repo negatives probed from the empty fixture); those negatives
-   split into sets/atelier-greenfield-existing.json and rerun from probe-root [pending].
-5. [x] Conformance evals DONE: 5 tasks x (with_skill | baseline) subagents in isolated fixture
-   copies, graded by scripted greps (grade.py in the conformance workspace).
-   VERDICT: with_skill 13/13 assertions, baseline 10/13. The skill closed exactly the
-   discipline gaps: e1 search travelled as POST with a deadline (baseline used a GET),
-   e2 removal was a deletedAt soft delete (baseline hard db.delete, the flagship rule-30
-   contrast). Strong-baseline finding: claims scoping (e4), integer cents (e5), and
-   idempotent bounded retries (e3) the model already does unprompted at this tier.
-   Cost observation: with_skill runs ~2.5-3x tokens and 3-8x wall time (reads SKILL.md +
-   references first). Follow-up idea: greenfield addendum also passed rule-24 headless
-   (agents wrote PLAN.md, proposed tests in-report or wrote them; worth a look at
-   transcripts later, not asserted on).
-6. [x] Upstream drafts written (workspace/upstream-drafts/): sonarjs-ts7.md with exact
-   crash line + interop cause + repro + fix suggestions; skill-creator-harness.md with the
-   three harness findings + working fixes. NOT posted; awaiting explicit user yes and
-   target repos.
-7. [ ] Verify + land proposal (commits sliced, push gated on confirmation).
-   Extra finding this round: greenfield over-triggered on existing-repo tooling queries
-   even from the populated fixture (1/3 -> hardened the description's negative clause ->
-   2/3; the residual "set up eslint" case is a single-skill-harness artifact: the main
-   atelier skill is not registered in the probe to win the query. True fix = multi-skill
-   probing, noted as a future harness enhancement).
+---
 
-## Notes / breadcrumbs
-- Guard design: tripwires, not proofs; conservative patterns to respect the false-positive
-  discipline; exceptions by path convention (erasure/retention for rule 30), never inline
-  ignores (rule 15).
-- Conformance runner: skill-creator flow with Agent-tool subagents; assertions are greps run
-  by a script, not eyeballs.
-- Prior rounds all landed and pushed; CI green at bbb3c26.
+## Phase 1: measurement depth
+
+### 1.1 Multi-skill trigger probing (harness enhancement)
+- What: extend scripts/trigger-eval/run_eval.py to register ALL FOUR suite skills as
+  synthetic commands in each probe root, and detect WHICH one the model invokes. Eval sets
+  gain an `expected_skill` field; a case passes when the RIGHT skill wins, not merely any.
+- Why: the two annotated artifacts become measurable: "review this diff" should route to
+  atelier-review-me (today unmeasurable, scored as an atelier miss), "set up eslint in this
+  existing repo" should route to the main skill (today a greenfield false-trigger). This
+  measures suite-internal routing, which single-skill probes structurally cannot.
+- How: run_single_query writes four command files (stable per-skill uuids), detection
+  captures the invoked name and compares to expected_skill; sets updated (atelier-bun.json
+  review-diff case moves to expected_skill=atelier-review-me, etc.); rerun all sets.
+- DoD: routing verdict table for the whole suite; the two artifacts either pass or become
+  real description findings with fixes.
+- Effort: half a day (runner change + set updates + one full rerun ~30 min probes).
+
+### 1.2 Committed conformance harness + expanded task set
+- What: promote the one-off conformance run into scripts/conformance-eval/ mirroring
+  trigger-eval/: fixture(s), tasks.json (task + assertions), a runner that spawns with-skill
+  and baseline agents into isolated copies, grade.py, run.sh. Expand from 5 to ~12 tasks:
+  a11y component task (Next fixture: clickable-div bait), LLM adapter task (pinned snapshot
+  + fake + output checkpoint assertions), expand-contract migration task, logging-PII task,
+  outbox task, optimistic-locking task, plus 3 Java-fixture tasks (soft delete via
+  @SQLRestriction, REST Assured 404 test presence, no-Mockito).
+- Why: conformance is THE metric for the skill's promise; 5 TS tasks is a smoke, not a
+  benchmark. Java conformance is currently unmeasured entirely.
+- How: subagent runner can be a bash script driving `claude -p` (works headless/CI-less) or
+  documented as an in-session Agent-tool procedure; assertions stay scripted greps. Add
+  variance: 3 runs per arm per task, report mean pass-rate (skill-creator benchmark style).
+- DoD: `bash scripts/conformance-eval/run.sh` produces the graded table; committed; verdict
+  recorded; flaky assertions tightened until two consecutive runs agree within 1 assertion.
+- Effort: 1-2 days including probe iterations and token spend (~36 agent runs per full pass).
+
+### 1.3 Multi-model robustness matrix
+- What: rerun trigger sets and a conformance subset with --model sonnet and haiku tiers.
+- Why: evals ran on fable only; the skill ships to whatever model a user runs. Strong-model
+  baselines already conform unprompted (e3/e4/e5); the skill's delta is likely LARGER on
+  smaller tiers, and trigger rates may drop. Unmeasured today.
+- How: TRIGGER_EVAL_MODEL env already supported; conformance runner takes a model flag.
+- DoD: per-model verdict table; description or SKILL.md fixes only if a tier regresses.
+- Effort: half a day, mostly probe wall-time.
+
+### 1.4 Rule-24 headless policy (finding from conformance transcripts)
+- What: decide and encode what TDD's confirmation gate means with no user present: the
+  with-skill agents variously wrote tests directly or proposed-then-wrote. Options:
+  (a) headless carve-out: write new tests freely, never touch existing ones (rule 24 narrows
+  to protection of EXISTING tests when unattended); (b) strict: propose tests in the final
+  report only. Recommendation: (a), because (b) makes headless TDD impossible and the rule's
+  danger is silent weakening, not creation.
+- DoD: SKILL.md rule 24 + Interaction section state the unattended behavior in one sentence
+  each; review-me test-integrity lens updated; a conformance assertion pins it.
+- Effort: an hour.
+
+## Phase 2: executable coverage extensions
+
+### 2.1 Accessibility gate as a shipped asset (rule 17.6 executable)
+- What: an axe-core scan asset for the Next.js variant (script + config: render components
+  or built pages, fail on violations), wired into smoke-test-next.sh with a violating
+  fixture case (icon button without aria-label) and documented in atomic-design.md/product.md.
+- Why: a11y is doctrine + review today; the article demands it in the gate. This is the
+  largest discipline still without a machine check.
+- DoD: smoke-test-next proves the gate passes conforming components and blocks the bait;
+  docs updated; CI green.
+- Effort: a day (axe against static export or component render needs a real DOM runner:
+  evaluate playwright vs jsdom cost; pick the lightest that works).
+
+### 2.2 Java code assets (parity with the TS asset set)
+- What: ship Result.java/Ok.java/Err.java, Email.java (value-record exemplar), and a
+  MemoryStore fake exemplar in assets/java/, referenced by the bootstrap checklist instead
+  of write-from-doc; smoke-test-java copies them rather than heredocing equivalents.
+- Why: pillar 14, artifacts over instructions; today Java bootstrap hand-writes what the
+  Bun variant copies.
+- DoD: java-quarkus.md checklist copies assets; smoke-test-java green using them.
+- Effort: half a day.
+
+### 2.3 TypeScript-pin lift canary
+- What: a weekly scheduled CI job (allowed-to-fail / non-blocking) running the Bun smoke
+  test with typescript UNPINNED, so the day sonarjs supports TS 7 we notice and lift the pin.
+- Why: the ^5 pin is deliberately temporary; without a canary it silently becomes permanent
+  (a pinned version rotting in reverse).
+- DoD: .github/workflows/canary.yml (schedule, continue-on-error, TS_UNPINNED=1 branch in
+  the smoke install line); LESSONS entry updated with the lift procedure.
+- Effort: an hour.
+
+### 2.4 Guard hardening from field use
+- What: after the guards run in a real repo for a while, revisit patterns: URLSearchParams
+  construction (the e1 baseline evaded the query-string regex via `new URLSearchParams`),
+  logger metadata keys vs message text, multi-line fetch options. Add cases to the fixture
+  battery first, then patterns.
+- Why: tripwires earn trust by catching real evasions; e1 already showed one gap.
+- DoD: URLSearchParams case added to check-pii-channels + battery; battery stays green.
+- Effort: two hours.
+
+## Phase 3: the repo as a product (governance.md applied to itself)
+
+### 3.1 CHANGELOG + release tag
+- What: CHANGELOG.md (keep-a-changelog style) summarizing the v2 milestone (18 pillars,
+  Java variant, guards, eval harnesses), tag v2.0.0; note the deprecation/versioning policy
+  (platform-as-product, 14.3).
+- DoD: changelog committed, tag pushed, README points at it.
+- Effort: an hour.
+
+### 3.2 Repo CLAUDE.md (dogfood the seed)
+- What: a CLAUDE.md for the atelier repo itself: no em dashes anywhere, PLAN/LESSONS
+  conventions, commit slicing + confirmation gates, pointer to smoke tests and eval harness
+  as the verify commands.
+- Why: the skill repo is the one repo where the standard's authoring conventions are not
+  yet deterministic context; this session re-derived them from memory files.
+- DoD: CLAUDE.md at repo root; next fresh session follows the conventions without memory.
+- Effort: an hour.
+
+### 3.3 LESSONS round-4 entries
+- What: append [decision] conformance-eval methodology (subagent pairs + scripted greps),
+  [decision] guards are staged-diff tripwires with path-convention exceptions,
+  [gotcha] single-skill trigger probes cannot measure suite routing,
+  [gotcha] git add of a directory sweeps pycache (ignore bytecode).
+- DoD: entries appended in strict format; committed.
+- Effort: 30 minutes.
+
+### 3.4 Trigger-eval as a description-change gate
+- What: document (workflow.md + review-me) that any SKILL.md description edit reruns the
+  relevant trigger set before landing, now a one-liner via scripts/trigger-eval/run.sh.
+- DoD: one paragraph in workflow.md, one line in review-me's map for SKILL.md files.
+- Effort: 30 minutes.
+
+## Phase 4: external follow-ups (tracking, mostly not my keyboard)
+
+### 4.1 SonarJS TS-7 report: YOUR paste
+- The draft is ready at skills/atelier-workspace/upstream-drafts/sonarjs-ts7.md; venue is
+  https://community.sonarsource.com/ (Report a Bug). Needs your forum account. Until posted
+  or fixed upstream, the ^5 pin + canary (2.3) cover us.
+
+### 4.2 anthropics/claude-code#76818: respond if maintainers engage
+- Offer the patched run_single_query (now public in this repo at scripts/trigger-eval/
+  run_eval.py); link it in a follow-up comment if asked.
+
+### 4.3 Lift conditions ledger
+- typescript@^5 pin: lift when sonarjs supports TS 7 (canary 2.3 detects).
+- PIT incremental: revisit if PIT's history returns to open source.
+- Single-skill probing artifacts: closed by 1.1.
+
+---
+
+## Suggested execution order
+1.1 -> 1.2 -> 3.3 (cheap, banks the decisions) -> 2.3 (cheap canary) -> 1.4 -> 2.2 -> 2.1
+-> 1.3 -> 3.1 + 3.2 + 3.4 -> 2.4 (after field use). Phase 4 runs in the background of all.
+
+## Standing constraints (bind every phase)
+- No em dashes in anything authored; YAML descriptions carry no colon-space.
+- Frontmatter validator + relevant smoke test green before proposing any commit.
+- Commits sliced small; nothing committed or pushed without explicit confirmation.
+- Every new gate proves it can fail (a fixture violation case) before it ships.
+- Eval results stay gitignored in workspaces; harnesses and sets are committed.
