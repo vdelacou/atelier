@@ -126,6 +126,10 @@ The assessment is a committed document (like an ADR, `references/governance.md`)
 - Never put personal data in URL parameters sent to any third party.
 - Sharing data with a processor is part of the data map: record who, what, and under which agreement.
 
+## Executable tripwire
+
+The mechanical slice of rule 27 ships as a staged-diff gate: `assets/check-pii-channels.sh` blocks a natural identifier in a query string, a logger message interpolation, or a Java `@QueryParam`, on the lines a commit adds (`--all` audits the whole tree). It is a tripwire, not a proof: this checklist remains the review duty; the script just refuses the common concrete leaks. Wire it as a pre-commit pre-flight or CI step wherever the repo holds personal data (`references/workflow.md`, Discipline tripwires).
+
 ## Review checklist (changes touching personal data)
 
 1. New field collected: what is the one-sentence purpose? Is it in the data map with a class?

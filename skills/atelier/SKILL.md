@@ -379,6 +379,8 @@ The hard rules govern how code is written; these govern what production-grade co
 
 Scale judgment, not principle: a throwaway CLI does not need an SLO, but a system holding two users' data always needs rule 28. When a concern's trigger exists in the repo (personal data, tenants, network IO, a schema, a deploy target, an LLM call, a UI), its discipline is not optional.
 
+The mechanical slices of rules 27-30 also ship as executable staged-diff guards (`assets/check-pii-channels.sh`, `check-io-deadlines.sh`, `check-data-lifecycle.sh`, `check-isolation-tests.sh`): wire them as pre-commit pre-flights or CI steps where the concern exists. See `references/workflow.md` (Discipline tripwires).
+
 ## The four elements of simple design (priority order)
 
 1. Runs all the tests.

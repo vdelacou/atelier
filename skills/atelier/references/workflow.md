@@ -552,6 +552,19 @@ Once per release (or quarterly), temporarily remove the `test-helpers` skip from
 
 Restore the skip after the audit. Schedule it on a calendar; the longer between audits, the more dead code accumulates.
 
+### Discipline tripwires (rules 27-30, optional gates)
+
+Four shipped guards move the mechanical slices of the production disciplines into the machine tier. Each checks the **staged diff** (like `gitleaks protect --staged`), so it blocks a violation entering history without flooding a brownfield tree; each takes `--all` for a tree-wide adopt-mode audit; exceptions ride on path conventions, never inline suppressions (rule 15).
+
+| Guard | Rule | Blocks |
+|:---|:--:|:---|
+| `assets/check-pii-channels.sh` | 27 | a natural identifier in a query string, a logger message interpolation, a Java `@QueryParam` |
+| `assets/check-io-deadlines.sh` | 29 | an infra `fetch` / Java `HttpClient` with no deadline marker in the file |
+| `assets/check-data-lifecycle.sh` | 30 | a hard delete in app code (erasure/retention paths exempt); destructive DDL outside a `*contract*` migration |
+| `assets/check-isolation-tests.sh` | 28 | a new route file with no nearby test mentioning 404 (`*public*`/`*health*` exempt) |
+
+They are not part of the branded eight gates: wire them as pre-commit pre-flight steps or CI checks **in repos where the concern exists** (personal data, network IO, a schema, tenants). They are tripwires, not proofs; the discipline references keep the full review duty. The repo smoke test exercises all four so a regression in a guard fails CI here first.
+
 ### Never bypass with `--no-verify`
 
 `git commit --no-verify` skips every gate. It is reserved for genuine big-bang changes — initial scaffolds, mass-rename refactors, generated-file updates — never for a failing check. **Justify every bypass in the commit body.** Do not normalise bypassing.

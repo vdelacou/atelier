@@ -132,6 +132,10 @@ Parse, don't validate (rule 12): validate once at the boundary, then carry the f
 - **Money is integer minor units** (`cents`) behind a branded type or value record, never a float: `0.1 + 0.2 !== 0.3`, and the rounding error lands on an invoice.
 - **Instants are UTC** behind a type; a timezone is a display concern applied at the presentation edge, never stored in the domain value.
 
+## Executable tripwires
+
+The mechanical slices of rules 29 and 30 ship as staged-diff gates (`references/workflow.md`, Discipline tripwires): `assets/check-io-deadlines.sh` blocks an infra file that calls `fetch` (or opens a Java `HttpClient`) with no deadline marker, and `assets/check-data-lifecycle.sh` blocks a hard delete in application code and destructive DDL in a non-contract migration. Exceptions ride on path conventions, never inline suppressions: erasure/retention/prune/sweep paths for the sanctioned hard deletes, a `*contract*` filename for the deliberate contract-step migration. Tripwires, not proofs; the checklist below stays the review duty.
+
 ## Review checklist (changes touching IO, persistence, or state)
 
 1. Every new outbound call: deadline set in the adapter? Retry bounded, jittered, and kind-filtered? Idempotency key if retried and not naturally idempotent? (rule 29)

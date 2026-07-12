@@ -118,6 +118,10 @@ app.get('/me/invoices', requireAuth, (c) => c.json(listInvoices(c.get('claims').
 
 The in-memory fakes in `src/test-helpers/` must model the boundary, or use-case tests cannot exercise it: a fake repository stores rows keyed by owner and its readers require the `OrgId`. A fake whose `list()` ignores the owner will happily pass a use-case that leaks.
 
+## Executable tripwire
+
+`assets/check-isolation-tests.sh` refuses a newly staged route/resource file with no nearby test mentioning a 404 (globs configurable at the top of the script; `*public*`/`*health*` paths exempt by convention). It is deliberately the weakest of the four guards: it proves a cross-tenant test exists near the route, not that it asserts the right thing. The per-endpoint test above remains the contract; the wire just refuses the common failure of landing a route with no isolation test at all.
+
 ## Review checklist (changes in a multi-user code path)
 
 1. Where does the owner id come from? A verified claim (or a branded `OrgId` minted from one), or something the caller controls?

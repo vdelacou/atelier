@@ -232,7 +232,11 @@ atelier/
     │   │   ├── capture-rejection.ts            # rejection-assertion helper (SonarJS S4123)
     │   │   ├── check-commit-size.sh            # block commits over 10 files / 300 lines (gate 1; shared with the Java hook)
     │   │   ├── check-coverage.ts               # per-tier coverage gate (gate 7)
+    │   │   ├── check-data-lifecycle.sh         # rule-30 tripwire: hard deletes + destructive DDL in the staged diff
+    │   │   ├── check-io-deadlines.sh           # rule-29 tripwire: infra fetch/HttpClient without a deadline marker
+    │   │   ├── check-isolation-tests.sh        # rule-28 tripwire: new route files without a nearby 404 test
     │   │   ├── check-package-json.sh           # block "latest" / "*" / dist-tag version strings (gate 2)
+    │   │   ├── check-pii-channels.sh           # rule-27 tripwire: PII in query strings, log messages, @QueryParam
     │   │   ├── check-pom.sh                    # Java: block version ranges + -SNAPSHOT deps in pom.xml (rule 19)
     │   │   ├── commit-msg                       # git commit-msg hook: enforce Conventional Commits (rule 23, all variants)
     │   │   ├── fetch-mock.ts                   # installFetchMock for infra adapter tests
