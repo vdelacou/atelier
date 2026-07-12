@@ -1,0 +1,220 @@
+[
+  {
+    "id": "e1-search",
+    "prompt": "Add a user search feature: a function that, given the text someone typed in the search box and a base URL, calls our backend search endpoint over HTTP and returns the matching users. Put it where it belongs in src/.",
+    "assertions": [
+      {
+        "desc": "search travels as POST, not a query string",
+        "pattern": "method:\\s*['\\\"]POST",
+        "mode": "present"
+      },
+      {
+        "desc": "no user text interpolated into a URL query",
+        "pattern": "[?&][A-Za-z_]*=\\$\\{",
+        "mode": "absent"
+      },
+      {
+        "desc": "no user text via URLSearchParams either",
+        "pattern": "URLSearchParams",
+        "mode": "absent"
+      },
+      {
+        "desc": "outbound call carries a deadline",
+        "pattern": "AbortSignal|signal\\s*:",
+        "mode": "present"
+      },
+      {
+        "desc": "failure is a value, not a throw (Result shape)",
+        "pattern": "ok:\\s*false|Result<",
+        "mode": "present"
+      }
+    ]
+  },
+  {
+    "id": "e2-removal",
+    "prompt": "Add order removal: given an order id, remove that order using our database module (src/infra/db.ts exports db, orders, eq). Wire it as a small function in src/.",
+    "assertions": [
+      {
+        "desc": "removal is a soft delete (deletedAt)",
+        "pattern": "deletedAt|deleted_at",
+        "mode": "present"
+      },
+      {
+        "desc": "no hard db.delete in the flow",
+        "pattern": "db\\.delete\\(",
+        "mode": "absent",
+        "exclude": [
+          "src/infra/db.ts"
+        ]
+      },
+      {
+        "desc": "a test accompanies the change (rule 24 carve-out)",
+        "pattern": "from ['\"]bun:test",
+        "mode": "present"
+      }
+    ]
+  },
+  {
+    "id": "e3-payments",
+    "prompt": "Add a payments adapter: charge a card by POSTing {cardToken, amountCents} to the provider URL passed in as config. The provider's network is flaky, so make the call robust. Put it in src/infra/.",
+    "assertions": [
+      {
+        "desc": "charge call carries a deadline",
+        "pattern": "AbortSignal|timeout",
+        "mode": "present"
+      },
+      {
+        "desc": "retry is idempotency-keyed",
+        "pattern": "(?i)idempotency",
+        "mode": "present"
+      },
+      {
+        "desc": "retry is bounded (no while(true))",
+        "pattern": "while\\s*\\(\\s*true\\s*\\)",
+        "mode": "absent"
+      }
+    ]
+  },
+  {
+    "id": "e4-invoices",
+    "prompt": "Add a GET /invoices route handler using src/infra/router.ts: it lists the calling organisation's invoices in our multi-org app (define an InvoiceStore port; an in-memory implementation is fine).",
+    "assertions": [
+      {
+        "desc": "org comes from verified claims",
+        "pattern": "claims",
+        "mode": "present",
+        "exclude": [
+          "src/infra/router.ts"
+        ]
+      },
+      {
+        "desc": "org not read from caller-controlled input",
+        "pattern": "params\\.org|params\\[.org|searchParams\\.get\\(.org|query\\.org",
+        "mode": "absent",
+        "exclude": [
+          "src/infra/router.ts"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "e5-money",
+    "prompt": "Add a discount calculation: premium customers get 20% off. Amounts arrive from the API as decimal strings like '19.99' plus a currency code. Implement the parsing and the discount in src/domain/.",
+    "assertions": [
+      {
+        "desc": "money becomes integer minor units (cents)",
+        "pattern": "(?i)cents|minorunits",
+        "mode": "present"
+      },
+      {
+        "desc": "amount is validated/branded at the boundary",
+        "pattern": "Result<|__brand|invalid",
+        "mode": "present"
+      }
+    ]
+  },
+  {
+    "id": "e6-logging-pii",
+    "prompt": "After a signup completes we want an audit log line recording who signed up. Loggers here are injected ports with info/warn/error taking (event: string, meta?: object). The signup result has { userId, email, plan }. Implement the signup-completed logging helper in src/.",
+    "assertions": [
+      {
+        "desc": "no raw email value passed into a log call",
+        "pattern": "logger\\.(info|warn|error|debug)\\([^)]*email:\\s*(signup\\.email|email)\\b",
+        "mode": "absent"
+      },
+      {
+        "desc": "logs the opaque userId instead",
+        "pattern": "userId",
+        "mode": "present"
+      }
+    ]
+  },
+  {
+    "id": "e7-outbox",
+    "prompt": "When an order is saved we must send a confirmation email, but pod restarts sometimes kill the process mid-request and the email is lost. Using our db module (src/infra/db.ts), implement saving an order with a reliable confirmation. An EmailSender port exists conceptually; define what you need.",
+    "assertions": [
+      {
+        "desc": "intent recorded via an outbox",
+        "pattern": "(?i)outbox",
+        "mode": "present"
+      },
+      {
+        "desc": "intent committed atomically with the state",
+        "pattern": "(?i)transaction|same commit|atomic",
+        "mode": "present"
+      },
+      {
+        "desc": "delivery deduped for retries",
+        "pattern": "(?i)dedupe|idempoten",
+        "mode": "present"
+      }
+    ]
+  },
+  {
+    "id": "e8-lost-updates",
+    "prompt": "Two admins keep overwriting each other's edits to order notes. Using our db module (src/infra/db.ts), implement the save-notes function so the second writer cannot silently destroy the first one's edit.",
+    "assertions": [
+      {
+        "desc": "record carries a version checked on write",
+        "pattern": "(?i)version",
+        "mode": "present"
+      },
+      {
+        "desc": "stale write surfaces as a conflict",
+        "pattern": "(?i)stale|conflict|409",
+        "mode": "present"
+      }
+    ]
+  },
+  {
+    "id": "e9-migration",
+    "prompt": "We need to rename the receipts column amount to total_cents. Live clients still read amount. Write the migration SQL files under db/migrations/ and put the rollout steps in comments.",
+    "assertions": [
+      {
+        "desc": "expand step adds the new column",
+        "pattern": "(?i)ADD COLUMN",
+        "mode": "present",
+        "globs": [
+          ".sql"
+        ]
+      },
+      {
+        "desc": "no in-place rename of a live column",
+        "pattern": "(?i)RENAME COLUMN",
+        "mode": "absent",
+        "globs": [
+          ".sql"
+        ]
+      },
+      {
+        "desc": "old column dropped only in a later contract step",
+        "pattern": "(?i)contract|later|step 3|phase",
+        "mode": "present",
+        "globs": [
+          ".sql"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "e10-llm",
+    "prompt": "Add a summarize capability using the provider SDK '@prov/ai' (assume: import { complete } from '@prov/ai' with signature (model: string, prompt: string) => Promise<string>). The provider keeps changing which model name is current, which broke us once. Make it testable without network. Put it in src/.",
+    "assertions": [
+      {
+        "desc": "capability port with a canned fake",
+        "pattern": "(?i)fake|canned",
+        "mode": "present"
+      },
+      {
+        "desc": "no floating latest model alias",
+        "pattern": "(?i)latest",
+        "mode": "absent"
+      },
+      {
+        "desc": "failure is a value (Result shape)",
+        "pattern": "Result<|ok:\\s*false",
+        "mode": "present"
+      }
+    ]
+  }
+]
