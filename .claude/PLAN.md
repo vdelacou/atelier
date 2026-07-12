@@ -69,7 +69,17 @@ Status: IN PROGRESS. Started 2026-07-11. Previous task (18 pillars + Java varian
        atelier-review-me in the real suite, which the synthetic harness cannot register),
        coverage-threshold 1/5 and pom-hygiene 1/5 (noise level). Description fix kept.
 6. [x] Verified: frontmatter 4/4, authored lines em-dash-free, smoke test 16/16, ci.yml parses.
-       Commits proposed to the user (rule 25); awaiting confirmation.
+       Landed 2026-07-12 as 6 slices (1faffde..01f6dee), commit only, no push. Eval workspace stays
+       untracked by design (gitignore: skills/*-workspace/).
+7. [x] (round 3, user: "do both") Seeded .claude/LESSONS.md: 3 gotchas (eval harness, PIT history,
+       check-pom prose match) + 4 decisions (two-tier ADRs, rules 27-34 tier, Quarkus-only,
+       metrics split), strict format, newest-first.
+8. [x] (round 3) Final full-set eval at 5 runs/query, split fixtures (31 Bun / 3 Java, the Java
+       probe-root has a real range + SNAPSHOT dep + mvnw). VERDICT: 32/34, positives 16/18 mean
+       0.88, negatives 16/16 mean 0.00. All three Java cases 5/5 (pom-hygiene 0/3 -> 5/5 proves the
+       fixture artifact). Two residual misses are structural, not description defects: review-diff
+       (no git state in isolated roots; belongs to atelier-review-me) and coverage-threshold debug
+       (directly-solvable under-trigger class). Merged record: eval-final-merged.json.
 
 ## Notes / breadcrumbs
 - Java smoke scope: proves OUR canonical configs + shipped assets against the toolchain, not Quarkus
