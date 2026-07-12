@@ -186,9 +186,9 @@ atelier itself). Phase 4 tracks EXTERNAL follow-ups. Within a phase, items are i
 ## Phase 4: external follow-ups (tracking, mostly not my keyboard)
 
 ### 4.1 SonarJS TS-7 report: YOUR paste
-- The draft is ready at skills/atelier-workspace/upstream-drafts/sonarjs-ts7.md; venue is
-  https://community.sonarsource.com/ (Report a Bug). Needs your forum account. Until posted
-  or fixed upstream, the ^5 pin + canary (2.3) cover us.
+- The draft is now tracked at docs/upstream/sonarjs-ts7.md (moved out of the gitignored
+  workspace); venue is https://community.sonarsource.com/ (Report a Bug). Needs your forum
+  account. Until posted or fixed upstream, the ^5 pin + canary (2.3) cover us.
 
 ### 4.2 anthropics/claude-code#76818: respond if maintainers engage
 - Offer the patched run_single_query (now public in this repo at scripts/trigger-eval/
