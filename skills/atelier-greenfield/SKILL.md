@@ -1,6 +1,6 @@
 ---
 name: atelier-greenfield
-description: Stand up a NEW Bun/TypeScript, Next.js, or Java (Quarkus) repo to the atelier standard from zero — scaffold the Clean Architecture (or Atomic Design) layout, copy the gate assets, wire the git hooks, write the build scripts, lay a minimal green walking skeleton, and prove every gate passes before the first commit. Use when starting a fresh repo or a new monorepo package from scratch — say "scaffold a new Bun repo", "bootstrap a new project to the standard", "set up a new atelier repo / Next.js package", or "scaffold a new Java/Quarkus service". Greenfield only — for an existing repo with code, the main atelier skill applies.
+description: Stand up a NEW Bun/TypeScript, Next.js, or Java (Quarkus) repo to the atelier standard from zero — scaffold the Clean Architecture (or Atomic Design) layout, copy the gate assets, wire the git hooks, write the build scripts, lay a minimal green walking skeleton, and prove every gate passes before the first commit. Use when starting a fresh repo or a new monorepo package from scratch — say "scaffold a new Bun repo", "bootstrap a new project to the standard", "set up a new atelier repo / Next.js package", or "scaffold a new Java/Quarkus service". Greenfield only. NEVER use it for work inside an existing codebase (adding features, setting up lint or tooling, config changes) — those belong to the main atelier skill, or to atelier-review-me adopt mode for bringing a brownfield repo up to the standard.
 ---
 
 # Greenfield
@@ -30,7 +30,19 @@ Greenfield only. For a repo that already has code, the main atelier skill applie
    Never install both hook mechanisms — eight-gate `.githooks` for Bun-script, `simple-git-hooks` for Next.js; the Java variant reuses `.githooks` with its own gate chain.
 4. **Pin versions properly.** Add every dependency with `bun add` / `bun add -d` so it resolves to a concrete `^X.Y.Z`; never hand-write `"latest"` or `"*"` (rule 19 — gate 2 would reject it). Java: exact versions in the pom, no ranges, no SNAPSHOT deps (the enforcer blocks them).
 5. **Choose the commit identity deliberately.** Before the first commit, decide what identity every commit will carry (rule 26): a neutral repo-local handle (for example `atelier <atelier@users.noreply.github.com>`) if the repo should not be tied to a person, or your own name and email if you want attribution on your work. Set it explicitly with `git config --local` so it is a conscious choice, not whatever the global identity happens to be. Repo birth is the only moment this is free; changing it later means a `git filter-repo` history rewrite and a force-push.
-6. **Seed session memory.** Create `.claude/LESSONS.md` with just its header so the cross-session journal works from commit one. Offer `/init` for a `CLAUDE.md` rather than writing one here.
+6. **Seed session memory and the standard pointer.** Create `.claude/LESSONS.md` with just its header so the cross-session journal works from commit one, and write a minimal `CLAUDE.md` so the standard rides in deterministic repo context on every future session instead of depending on skill triggering alone:
+
+   ```markdown
+   # CLAUDE.md
+
+   This repo follows the atelier coding standard. Consult the `atelier` skill for every
+   code task here; its hard rules 1-34 bind (TDD with hand-written fakes, `Result` at IO
+   boundaries, branded types at trust boundaries, and the production disciplines: privacy,
+   isolation, reliability, observability). Run the `atelier-review-me` skill before landing
+   changes. Journals: `.claude/LESSONS.md` (append-only memory), `.claude/PLAN.md` (current plan).
+   ```
+
+   Offer `/init` afterwards to extend it with codebase-specific documentation; the pointer block above stays at the top.
 7. **Lay a minimal walking skeleton.** The thinnest end-to-end slice that touches every layer (see the installed `atelier` skill's `references/architecture.md` § The walking skeleton): for a Bun-script repo, one use-case returning `Result.ok` through its primary port, its branded input, and its confirmed test (rule 24 — propose the test, get the yes, then write it); for Next.js, one `src/lib` pure function with a test wired into a page shell that renders a single atom; for Java, one application service returning `Ok` through its port with its JUnit test, plus one resource with its REST Assured test including the 401 refusal. This is not speculative code — it is what makes coverage and mutation pass for real and demonstrates the TDD loop in place. Keep it to the absolute minimum, and offer to skip it for a bare scaffold.
 8. **Prove green.** Run the inner loop and confirm each is clean — `bun test`, `bun run lint`, `bun run typecheck`, `bun run coverage`, and for the Bun-script variant `bun run mutate`; for Java, `./mvnw spotless:check verify` plus PIT on the skeleton. Confirm the `commit-msg` hook rejects a junk message. A bootstrap that does not end green has not finished.
 9. **Stop before the first commit.** Stage the tree, propose the Conventional-Commits message (`chore: scaffold repo` or similar), and wait for the user's explicit yes (rule 25). Never auto-commit.
