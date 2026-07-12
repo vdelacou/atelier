@@ -1,0 +1,64 @@
+[
+  {
+    "query": "review me before i commit, mostly src/use-cases/sync-invoices.ts plus a new infra adapter for the telegram api",
+    "should_trigger": true,
+    "expected_skill": "atelier-review-me"
+  },
+  {
+    "query": "adopt the standard into this repo, it's an older bun codebase with classes everywhere and no hooks",
+    "should_trigger": true,
+    "expected_skill": "atelier-review-me"
+  },
+  {
+    "query": "set up eslint and prettier in this existing project, keep the current style. bun repo",
+    "should_trigger": true,
+    "expected_skill": "atelier"
+  },
+  {
+    "query": "add a csv export use case to our orders CLI. repo uses bun, entry is src/main.ts",
+    "should_trigger": true,
+    "expected_skill": "atelier"
+  },
+  {
+    "query": "add a new feature module to our existing bun repo for csv exports",
+    "should_trigger": true,
+    "expected_skill": "atelier"
+  },
+  {
+    "query": "we keep passing raw strings for userId and email around and bugs slip through. how should we type these properly? bun repo",
+    "should_trigger": true,
+    "expected_skill": "atelier"
+  },
+  {
+    "query": "scaffold a new bun repo for a stripe webhook processor, to the standard, hooks and all",
+    "should_trigger": true,
+    "expected_skill": "atelier-greenfield"
+  },
+  {
+    "query": "bootstrap a new package in our next.js monorepo for the docs site, follow the usual setup",
+    "should_trigger": true,
+    "expected_skill": "atelier-greenfield"
+  },
+  {
+    "query": "grill me on this migration plan before i build it: firebase to postgres, about 40 collections",
+    "should_trigger": true,
+    "expected_skill": "atelier-grill-me"
+  },
+  {
+    "query": "stress-test my design for the multi-tenant billing schema before i commit to it",
+    "should_trigger": true,
+    "expected_skill": "atelier-grill-me"
+  },
+  {
+    "query": "add a dark mode toggle to our vite + react app, state is in zustand, repo uses pnpm workspaces",
+    "should_trigger": false
+  },
+  {
+    "query": "review my resume bullets for a staff engineer role, be brutal",
+    "should_trigger": false
+  },
+  {
+    "query": "write a pytest fixture that spins up a temp postgres for our django app tests",
+    "should_trigger": false
+  }
+]

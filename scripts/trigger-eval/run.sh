@@ -38,10 +38,19 @@ OUT_DIR="$REPO_ROOT/skills/atelier-workspace/trigger-eval-$(date +%F)"
 mkdir -p "$OUT_DIR"
 BASE="$(basename "$SET" .json)-$(basename "$SKILL")"
 
+# Routing mode: TRIGGER_EVAL_SUITE holds comma-separated EXTRA skill dirs
+# (relative to the repo root) to register alongside the primary skill, so a
+# case's expected_skill can assert WHICH suite skill wins the query.
+SUITE_ARG=""
+if [ -n "${TRIGGER_EVAL_SUITE:-}" ]; then
+  SUITE_ARG=$(echo "$TRIGGER_EVAL_SUITE" | tr ',' '\n' | sed "s|^|$REPO_ROOT/|" | paste -sd, -)
+fi
+
 cd "$HERE/$FIXTURE"
 python3 "$HERE/run_eval.py" \
   --eval-set "$SET" \
   --skill-path "$REPO_ROOT/$SKILL" \
+  ${SUITE_ARG:+--suite "$SUITE_ARG"} \
   --runs-per-query "$RUNS" \
   --num-workers 10 \
   --timeout 90 \
@@ -57,6 +66,7 @@ res = d["results"]
 ok = sum(1 for r in res if (r["trigger_rate"] >= 0.5) == r["should_trigger"])
 print(f"{sys.argv[1]}: {ok}/{len(res)} pass")
 for r in res:
-    if (r["trigger_rate"] >= 0.5) != r["should_trigger"]:
-        print(f"  FAIL want={'T' if r['should_trigger'] else 'F'} rate={r['trigger_rate']:.1f} | {r['query'][:90]}")
+    if not r["pass"]:
+        want = r.get("expected_skill") or ("T" if r["should_trigger"] else "F")
+        print(f"  FAIL want={want} rate={r['trigger_rate']:.1f} invoked={r.get('invoked', {})} | {r['query'][:80]}")
 PY

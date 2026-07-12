@@ -63,22 +63,21 @@ def find_project_root() -> Path:
 
 def run_single_query(
     query: str,
-    skill_name: str,
-    skill_description: str,
+    skills: list[tuple[str, str]],
     timeout: int,
     project_root: str,
     model: str | None = None,
-) -> bool:
-    """Run a single query and return whether the skill was triggered.
+) -> str | None:
+    """Run a single query; return the base name of the first suite skill invoked, or None.
 
-    Creates a command file in .claude/commands/ so it appears in Claude's
-    available_skills list, then runs `claude -p` with the raw query.
-    Uses --include-partial-messages to detect triggering early from
-    stream events (content_block_start) rather than waiting for the
-    full assistant message, which only arrives after tool execution.
+    Registers one synthetic command per (base_name, description) pair so they all
+    appear in Claude's available_skills list, then runs `claude -p` with the raw
+    query. With a single-entry list this is the classic does-it-trigger probe;
+    with the full suite it measures ROUTING: which skill wins the query.
+    Uses --include-partial-messages to detect invocation early from stream events.
     """
     unique_id = uuid.uuid4().hex[:8]
-    clean_name = f"{skill_name}-skill-{unique_id}"
+    synthetic = {f"{base}-skill-{unique_id}": base for base, _ in skills}
     # patched: isolate each probe in its own project root. With a shared
     # .claude/commands, concurrent probes see each other's synthetic skill
     # clones, the model picks another probe's copy, and every detector misses.
@@ -93,21 +92,26 @@ def run_single_query(
             shutil.copy2(item, isolated_root / item.name)
     project_root = str(isolated_root)
     project_commands_dir = Path(project_root) / ".claude" / "commands"
-    command_file = project_commands_dir / f"{clean_name}.md"
+
+    def invoked_in(text: str) -> str | None:
+        for full_name, base in synthetic.items():
+            if full_name in text:
+                return base
+        return None
 
     try:
         project_commands_dir.mkdir(parents=True, exist_ok=True)
-        # Use YAML block scalar to avoid breaking on quotes in description
-        indented_desc = "\n  ".join(skill_description.split("\n"))
-        command_content = (
-            f"---\n"
-            f"description: |\n"
-            f"  {indented_desc}\n"
-            f"---\n\n"
-            f"# {skill_name}\n\n"
-            f"This skill handles: {skill_description}\n"
-        )
-        command_file.write_text(command_content)
+        for (base, desc), full_name in zip(skills, synthetic.keys()):
+            # Use YAML block scalar to avoid breaking on quotes in description
+            indented_desc = "\n  ".join(desc.split("\n"))
+            (project_commands_dir / f"{full_name}.md").write_text(
+                f"---\n"
+                f"description: |\n"
+                f"  {indented_desc}\n"
+                f"---\n\n"
+                f"# {base}\n\n"
+                f"This skill handles: {desc}\n"
+            )
 
         cmd = [
             "claude",
@@ -132,7 +136,7 @@ def run_single_query(
             env=env,
         )
 
-        triggered = False
+        invoked: str | None = None
         start_time = time.time()
         buffer = ""
         # Track state for stream event detection
@@ -186,13 +190,15 @@ def run_single_query(
                             delta = se.get("delta", {})
                             if delta.get("type") == "input_json_delta":
                                 accumulated_json += delta.get("partial_json", "")
-                                if clean_name in accumulated_json:
-                                    return True
+                                hit = invoked_in(accumulated_json)
+                                if hit:
+                                    return hit
 
                         elif se_type in ("content_block_stop", "message_stop"):
                             if pending_tool_name:
-                                if clean_name in accumulated_json:
-                                    return True
+                                hit = invoked_in(accumulated_json)
+                                if hit:
+                                    return hit
                                 pending_tool_name = None  # patched: that block was not ours; keep watching
 
                     # Fallback: full assistant message
@@ -203,28 +209,31 @@ def run_single_query(
                                 continue
                             tool_name = content_item.get("name", "")
                             tool_input = content_item.get("input", {})
-                            if tool_name == "Skill" and clean_name in tool_input.get("skill", ""):
-                                return True
-                            if tool_name == "Read" and clean_name in tool_input.get("file_path", ""):
-                                return True
+                            if tool_name == "Skill":
+                                hit = invoked_in(tool_input.get("skill", ""))
+                                if hit:
+                                    return hit
+                            if tool_name == "Read":
+                                hit = invoked_in(tool_input.get("file_path", ""))
+                                if hit:
+                                    return hit
 
                     elif event.get("type") == "result":
-                        return triggered
+                        return invoked
         finally:
             # Clean up process on any exit path (return, exception, timeout)
             if process.poll() is None:
                 process.kill()
                 process.wait()
 
-        return triggered
+        return invoked
     finally:
         shutil.rmtree(isolated_root, ignore_errors=True)
 
 
 def run_eval(
     eval_set: list[dict],
-    skill_name: str,
-    description: str,
+    skills: list[tuple[str, str]],
     num_workers: int,
     timeout: int,
     project_root: Path,
@@ -232,7 +241,14 @@ def run_eval(
     trigger_threshold: float = 0.5,
     model: str | None = None,
 ) -> dict:
-    """Run the full eval set and return results."""
+    """Run the full eval set and return results.
+
+    Case semantics:
+      should_trigger=false          : pass when NO registered skill is invoked.
+      should_trigger=true           : pass when ANY registered skill is invoked.
+      should_trigger=true + expected_skill : pass only when THAT skill wins
+                                     (routing mode; needs the suite registered).
+    """
     results = []
 
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
@@ -242,51 +258,59 @@ def run_eval(
                 future = executor.submit(
                     run_single_query,
                     item["query"],
-                    skill_name,
-                    description,
+                    skills,
                     timeout,
                     str(project_root),
                     model,
                 )
                 future_to_info[future] = (item, run_idx)
 
-        query_triggers: dict[str, list[bool]] = {}
+        query_invocations: dict[str, list[str | None]] = {}
         query_items: dict[str, dict] = {}
         for future in as_completed(future_to_info):
             item, _ = future_to_info[future]
             query = item["query"]
             query_items[query] = item
-            if query not in query_triggers:
-                query_triggers[query] = []
+            if query not in query_invocations:
+                query_invocations[query] = []
             try:
-                query_triggers[query].append(future.result())
+                query_invocations[query].append(future.result())
             except Exception as e:
                 print(f"Warning: query failed: {e}", file=sys.stderr)
-                query_triggers[query].append(False)
+                query_invocations[query].append(None)
 
-    for query, triggers in query_triggers.items():
+    for query, invocations in query_invocations.items():
         item = query_items[query]
-        trigger_rate = sum(triggers) / len(triggers)
         should_trigger = item["should_trigger"]
-        if should_trigger:
-            did_pass = trigger_rate >= trigger_threshold
+        expected = item.get("expected_skill")
+        if expected:
+            hits = sum(1 for inv in invocations if inv == expected)
         else:
-            did_pass = trigger_rate < trigger_threshold
-        results.append({
+            hits = sum(1 for inv in invocations if inv is not None)
+        trigger_rate = hits / len(invocations)
+        did_pass = (trigger_rate >= trigger_threshold) == should_trigger
+        distribution: dict[str, int] = {}
+        for inv in invocations:
+            key = inv or "(none)"
+            distribution[key] = distribution.get(key, 0) + 1
+        result = {
             "query": query,
             "should_trigger": should_trigger,
             "trigger_rate": trigger_rate,
-            "triggers": sum(triggers),
-            "runs": len(triggers),
+            "triggers": hits,
+            "runs": len(invocations),
+            "invoked": distribution,
             "pass": did_pass,
-        })
+        }
+        if expected:
+            result["expected_skill"] = expected
+        results.append(result)
 
     passed = sum(1 for r in results if r["pass"])
     total = len(results)
 
     return {
-        "skill_name": skill_name,
-        "description": description,
+        "skills": [base for base, _ in skills],
         "results": results,
         "summary": {
             "total": total,
@@ -299,8 +323,9 @@ def run_eval(
 def main():
     parser = argparse.ArgumentParser(description="Run trigger evaluation for a skill description")
     parser.add_argument("--eval-set", required=True, help="Path to eval set JSON file")
-    parser.add_argument("--skill-path", required=True, help="Path to skill directory")
-    parser.add_argument("--description", default=None, help="Override description to test")
+    parser.add_argument("--skill-path", required=True, help="Path to the primary skill directory")
+    parser.add_argument("--suite", default=None, help="Comma-separated extra skill dirs to register alongside --skill-path (routing mode)")
+    parser.add_argument("--description", default=None, help="Override the primary skill's description")
     parser.add_argument("--num-workers", type=int, default=10, help="Number of parallel workers")
     parser.add_argument("--timeout", type=int, default=30, help="Timeout per query in seconds")
     parser.add_argument("--runs-per-query", type=int, default=3, help="Number of runs per query")
@@ -318,15 +343,23 @@ def main():
 
     name, original_description, content = parse_skill_md(skill_path)
     description = args.description or original_description
+    skills = [(name, description)]
+    if args.suite:
+        for extra in args.suite.split(","):
+            extra_path = Path(extra.strip())
+            if not (extra_path / "SKILL.md").exists():
+                print(f"Error: No SKILL.md found at {extra_path}", file=sys.stderr)
+                sys.exit(1)
+            extra_name, extra_desc, _ = parse_skill_md(extra_path)
+            skills.append((extra_name, extra_desc))
     project_root = find_project_root()
 
     if args.verbose:
-        print(f"Evaluating: {description}", file=sys.stderr)
+        print(f"Evaluating {len(skills)} skill(s): {', '.join(base for base, _ in skills)}", file=sys.stderr)
 
     output = run_eval(
         eval_set=eval_set,
-        skill_name=name,
-        description=description,
+        skills=skills,
         num_workers=args.num_workers,
         timeout=args.timeout,
         project_root=project_root,
@@ -341,7 +374,8 @@ def main():
         for r in output["results"]:
             status = "PASS" if r["pass"] else "FAIL"
             rate_str = f"{r['triggers']}/{r['runs']}"
-            print(f"  [{status}] rate={rate_str} expected={r['should_trigger']}: {r['query'][:70]}", file=sys.stderr)
+            want = r.get("expected_skill") or r["should_trigger"]
+            print(f"  [{status}] rate={rate_str} expected={want} invoked={r['invoked']}: {r['query'][:60]}", file=sys.stderr)
 
     print(json.dumps(output, indent=2))
 
