@@ -1,143 +1,82 @@
-# PLAN: encode the 18 global-rules pillars into the atelier skill suite + Java variant
+# PLAN: Java smoke test in CI + trigger-eval of the new atelier description
 
-Status: DONE. Completed 2026-07-11. Landed as 12 slices on main (user chose commit only, no push). Kept until the next task overwrites it.
+Status: IN PROGRESS. Started 2026-07-11. Previous task (18 pillars + Java variant) landed as 12 slices, not pushed.
 
 ## Goal
-Make the atelier skill suite the LLM-executable version of the two source articles
-(`~/Downloads/global-rules-every-new-project.md` + `global-rules-dos-and-donts.md`):
-every pillar 1-18 sub-concept is encoded where an agent will act on it (hard rule,
-reference, checklist, red flag, or companion skill). Add a Java (Quarkus-flavoured)
-variant alongside the kept Bun and Next.js variants. Iterate gap-check until no
-sub-concept is unmapped.
+1. Pillar-15 the Java variant: a canonical pom block in java-quarkus.md, a `scripts/smoke-test-java.sh`
+   that scaffolds from it, proves every gate passes on a conforming tree AND blocks each target
+   violation, wired as a CI job. Mirrors smoke-test.sh / smoke-test-next.sh.
+2. Re-run the trigger-eval against the NEW atelier description (Java + production disciplines),
+   using the existing skills/atelier-workspace harness, confirming old prompts still trigger and
+   new prompt classes (Java, privacy, tenancy, reliability) trigger too.
 
 ## Definition of done (whole task)
-- A pillar-by-pillar coverage map (below) shows every sub-concept 1.1-18.4 mapped to
-  a concrete home in the suite; no `MISSING` rows remain.
-- New references exist and are indexed in SKILL.md: privacy, isolation, reliability,
-  observability, delivery, ai, governance, product, java-quarkus.
-- SKILL.md: new hard rules (privacy-in-logs, tenant isolation, deadlines,
-  data lifecycle, no lost updates, AI-as-dependency, rented auth/crypto, no prod
-  data in dev), Java variant detection + matrix column, updated reference index,
-  red flags, checklists. Description <= 1024 chars, mentions Java.
-- Existing references extended without breaking their current content
-  (security.md, workflow.md, architecture.md, result-type.md, testing.md,
-  nextjs-monorepo.md/atomic-design.md for a11y + error copy).
-- Companion skills updated: greenfield (Java bootstrap + golden-path artifacts),
-  review-me (new rule map), grill-me (pillar-18 validate-before-build awareness).
-- README.md reflects the new surface (rules, references, Java variant).
-- `bun run scripts/validate-frontmatter.ts` green; no em dashes in new prose.
-- Final self-review pass re-reads both articles and re-checks the map; repeat
-  until clean.
-- Commit proposed only (rule 25); nothing committed or pushed without user yes.
+- java-quarkus.md carries a complete, pinned, extractable canonical pom.xml; smoke test extracts it
+  (doc drift fails CI, same as the Bun/Next canonical configs).
+- smoke-test-java.sh: green on a conforming scaffold (spotless, verify incl. JaCoCo tiers, PIT,
+  check-pom, full hooked commit) and red on each violation (range, SNAPSHOT dep, oversized commit,
+  junk commit message, misformatted file, warning under -Werror, under-coverage, surviving mutant).
+- ci.yml gains the smoke-java job (JDK 21, Maven cache); README CI section and script list updated.
+- Trigger-eval run on the current description: results recorded in the workspace, old cases hold,
+  new cases added for Java/disciplines; report findings (pass or a proposed description fix).
+- Commits proposed slice-by-slice; nothing committed or pushed without explicit confirmation.
 
 ## Steps
-1. [x] Read both source articles in full.  DoD: all 18 pillars + every Do/Don't sub-concept known. [met]
-2. [x] Recon existing references. DoD met: coverage map evidence-based (greps + reads).
-3. [x] Write the 9 new reference files. DoD met: privacy, isolation, reliability, observability, delivery, ai, governance, product, java-quarkus written, 0 em dashes, cross-linked.
-4. [x] Edit SKILL.md. DoD met: rules 27-34, 4th commitment, Production disciplines section, Java detection + matrix column + reference index, red flags, checklists; validator green, description 1022 chars.
-5. [x] Extend existing references. DoD met: security (auth rented, baseline, supply chain, LLM category, FP nuance, checklist), workflow (verification discipline, CI line), architecture (API shape + 3 model boundaries + gateway, ADR tier, red flags), result-type (jitter + deadline + idempotency), testing (perf, regression, bypass, mistakes rows), complexity (defer the seam), clean-code (Money/UTC), atomic-design (a11y), nextjs-monorepo (catalog/a11y pointers).
-6. [x] Companion skills. DoD met: greenfield Java path + paved-road note; review-me disciplines step + Java mapping; grill-me validate-before-build + ADR/go-no-go output.
-7. [x] README.md. DoD met: intro, use-when, commitments rows, reference list (pipe separators on new entries), greenfield/review-me blurbs, layout tree, variants, credits.
-8. [x] Verify. DoD met: frontmatter 4/4, cross-refs all resolve, authored text em-dash-free, descriptions within limits.
-9. [x] Self-review loop. DoD met: pass 1 found 7 fixes (applied), pass 2 found 3 (one-working-language 12.1, nextjs gateway pointer, applied), passes 3 and 4 clean (frontmatter 4/4, cross-refs resolve, no authored em dashes, no placeholders, no stale rule counts). Every sub-concept 1.1-18.4 mapped; coverage map below is final.
-10. [x] Final report + commit split delivered; user reviewed section by section and confirmed. 12 slices committed to main on explicit confirmation ("commit only, no push"); nothing pushed.
-11. Interactive review round (2026-07-11): user confirmed rules 27-34 tier, Quarkus-only flavour, two-tier ADR scheme; requested metrics.md split out of delivery.md (done, cross-refs moved) and Java gate assets (done: assets/pre-commit-java + assets/check-pom.sh, tested on 4 pom cases, wired into java-quarkus.md, greenfield, README). Declined for now: Java CI smoke test, trigger-eval run, LESSONS.md seed. Working tree: 17 modified + 12 new files, unstaged.
-
-## Coverage map (article sub-concept -> home in the suite)
-Legend: OK existing, NEW planned home, EXT extend existing file.
-
-- 1.1 one committed config          OK SKILL rule 8/15 + workflow.md + bun-typescript.md
-- 1.2 cap complexity/duplication    OK clean-code numbers + Rule of Three
-- 2.1 least that works              OK lazy ladder (BG#2, complexity.md)
-- 2.2 delete before add             OK BG#2
-- 2.3 rule of three                 OK
-- 2.4 defer build, not the seam     EXT complexity.md (name the principle) [verify in recon]
-- 2.5 simplicity is not negligence  OK BG#2
-- 3.1 dependencies inward           OK architecture.md
-- 3.2 everything behind a port      OK rule 13 seams + architecture.md
-- 3.3 design-system seal            OK rules 21-22
-- 3.4 client-agnostic resource API  EXT architecture.md NEW reliability/delivery? -> architecture.md
-- 3.5 frontend against a contract   EXT architecture.md / nextjs-monorepo.md (server-app data gateway)
-- 3.6 internal model owns its shape EXT architecture.md (DTO mapping at gateway/presenter)
-- 3.7 domain model is not DB model  EXT architecture.md (repo maps row->domain)
-- 3.8 boundary testable             OK rule 22 tests + architecture.md
-- 3.9 AI model is a dependency      NEW ai.md + SKILL hard rule
-- 4.1 test in layers                EXT testing.md (unit/integration/e2e/perf taxonomy)
-- 4.2 unit tests in ms              OK testing.md fakes
-- 4.3 bug -> permanent test         EXT testing.md/tdd.md (regression naming)
-- 4.4 mutation as coverage KPI      OK Stryker >=90 + tiers; Java: PIT (NEW java-quarkus.md)
-- 4.5 behavior not internals        OK classicist school
-- 4.6 gate every merge              OK 8 gates + CI
-- 4.7 generated code same bar       EXT SKILL (one line) + workflow.md
-- 4.8 evals for non-determinism     NEW ai.md
-- 5.1 secrets out of codebase       OK gitleaks + config module; EXT security.md (rotation, central mgmt)
-- 5.2 no hand-rolled auth/crypto    NEW SKILL rule + EXT security.md
-- 5.3 control dependencies          OK rule 19 + bun audit; EXT workflow.md (renovate note)
-- 5.4 supply chain (SBOM/signing)   EXT security.md + delivery.md
-- 5.5 validate boundary/authz srv   OK branded types + security.md
-- 5.6 private by network default    NEW delivery.md
-- 5.7 one security baseline         EXT security.md (auth-by-default, rate limit, TLS)
-- 5.8 untrusted content != orders   NEW ai.md + EXT security.md pointer
-- 5.9 spend caps per caller         NEW ai.md
-- 6.1-6.7 privacy pillar            NEW privacy.md + SKILL hard rule (PII in logs/URLs) + rule (no prod data in dev)
-- 7.1-7.6 isolation pillar          NEW isolation.md + SKILL hard rule + cross-tenant test in checklists
-- 8.1 trunk-based small commits     OK workflow step 6 + gate 1
-- 8.2 pipeline/canary/rollback      NEW delivery.md
-- 8.3 IaC                           NEW delivery.md
-- 8.4 vertical slices               OK architecture.md
-- 8.5 expand-contract               NEW reliability.md (+ SKILL data-lifecycle rule)
-- 8.6 ephemeral environments        NEW delivery.md
-- 9.1-9.5 run little yourself       NEW delivery.md (managed, no-SSH, auto TLS, pipeline-only infra, open standards + compose portability gate)
-- 10.1 SLOs                         NEW observability.md
-- 10.2 errors as values             OK result-type.md
-- 10.3 explicit read paths          NEW reliability.md
-- 10.4 keyset pagination/stream     NEW reliability.md
-- 10.5 outbox + idempotency         NEW reliability.md
-- 10.6 restore drills               NEW delivery.md
-- 10.7 stateless scale + cache      NEW reliability.md
-- 10.8 perf targets + load tests    NEW reliability.md (+ testing.md layer)
-- 10.9 soft delete + migrations     NEW reliability.md + SKILL data-lifecycle rule
-- 10.10 blameless postmortems       EXT workflow.md or NEW delivery.md (template; ties to LESSONS.md)
-- 10.11 parse don't validate        OK rule 12 + EXT SKILL value-objects (money integer cents, UTC instants)
-- 10.12 no lost updates             NEW reliability.md + SKILL rule
-- 10.13 deadlines + bounded retry   NEW reliability.md + SKILL rule; EXT result-type.md (retryOnErr cross-ref)
-- 11.1 correlated traces (OTel)     NEW observability.md
-- 11.2 behavior metrics             NEW observability.md
-- 11.3 alert on what matters        NEW observability.md
-- 12.1 README + doc drift defect    OK BG#5
-- 12.2 API docs from contract       NEW governance.md (+ architecture.md pointer)
-- 12.3 ADRs                         NEW governance.md (ties to grill-me decision records)
-- 12.4 institutional memory         OK LESSONS.md + PLAN.md
-- 12.5 live access + numbers        NEW governance.md
-- 12.6 one honest backlog           NEW governance.md
-- 13.1-13.4 ownership pillar        NEW governance.md (CODEOWNERS/RACI, separation of duties, audit trail, safe reporting + owner verification)
-- 14.1 golden paths as artifacts    OK greenfield + assets; EXT greenfield mention of principle
-- 14.2 self-service                 NEW delivery.md (light)
-- 14.3 platform as product          OK repo CI; EXT README/governance light
-- 15.1 executable standard          OK 8 gates
-- 15.2 fail loud (0% discovery)     OK coverage-preload
-- 15.3 no silent opt-out            OK rule 15
-- 15.4 test the bypass              EXT testing.md + security.md (+ isolation.md 7.5)
-- 15.5 compliance is not proof      EXT workflow.md (runnable verification)
-- 15.6 audit seams between systems  EXT security.md/testing.md
-- 15.7 fix the class not instance   EXT workflow.md (grep + CI guard pattern)
-- 15.8 re-checkable proof           EXT workflow.md
-- 15.9 judgment where it counts     OK (machines own gates) + review-me
-- 16.1-16.5 DORA/flow/cost          NEW metrics.md (split out of delivery.md on user review)
-- 17.1 error copy + stable codes    NEW product.md + EXT atomic-design/nextjs (error states)
-- 17.2 earn trust (honest exits)    NEW product.md
-- 17.3 real behavior per market     NEW product.md
-- 17.4 human path                   NEW product.md
-- 17.5 i18n catalog                 OK nextjs-monorepo.md translations [verify]
-- 17.6 accessible by default       EXT atomic-design.md + NEW product.md (axe gate) [verify]
-- 18.1-18.4 validate before build   NEW product.md + EXT grill-me (go/no-go, interviews, flags+adoption)
+1. [x] Recon done (extract_fence mechanism; eval = {query, should_trigger} x 5 runs each).
+2. [x] Canonical pom added to java-quarkus.md. Pins verified against Maven Central 2026-07-11:
+       compiler 3.15.0, surefire 3.5.6, spotless 3.8.0, gjf 1.35.0, jacoco 0.8.15, pitest 1.25.7,
+       junit5-plugin 1.2.3, enforcer 3.6.3, junit-jupiter 5.14.4 (JUnit 6 exists; PIT plugin targets 5.x).
+       requireJavaVersion uses bare `21` (range brackets would trip check-pom). banSnapshots renamed
+       to requireReleaseDeps. .mvn/jvm.config block added (gjf jdk.compiler exports).
+3. [x] smoke-test-java.sh written + green locally (16/16 on JDK 26 + Maven 3.9.16). It caught and
+       we fixed two real asset bugs: check-pom flagged the enforcer <message> mentioning -SNAPSHOT
+       (now matches only <version> elements; also scans untracked poms via ls-files --others), and
+       PIT 1.25 removed free -DwithHistory (flag dropped from pre-commit-java; docs updated in
+       java-quarkus.md + SKILL.md matrix: scope + staged-trigger are the speed levers).
+4. [x] CI job java-smoke-test added (setup-java temurin 21, maven cache); README CI section (4 jobs),
+       script list + layout updated. ci.yml parses.
+5. [x] Trigger-eval DONE (verdict below; three residual misses are eval artifacts or inherent
+       under-trigger, not description defects; "review" restored to the description at 1022 chars): merged set = 20 old + 14 new (8 trigger: quarkus endpoint+tenancy,
+       pom hygiene, PII-in-logs, org isolation, outbox reliability, gemini adapter+pin, no-mockito,
+       a11y+rebrand; 6 near-miss negatives: django pii, rails locking, kotlin mockk, DORA definitions,
+       DPIA doc, express+npm auth). Runner: skill-creator run_eval.py via claude -p, model
+       claude-fable-5, 5 runs/query, 10 workers, cwd = old probe-root (same methodology as
+       2026-07-04). Set + results in skills/atelier-workspace/trigger-eval-2026-07-11/.
+       DoD: results file + verdict; description fix proposed only if cases fail.
+       Run 1 (stock runner, 30s timeout): 16/34, every should-trigger ~0/5, every negative clean.
+       Diagnosed as harness artifacts, not description failure: (a) stock run_eval returns False the
+       instant the FIRST tool call is not Skill/Read, punishing Fable's explore-first behaviour;
+       (b) 30s timeout straddles Fable time-to-first-tool (manual probe: Skill invoked FIRST at
+       18.3s on the same query the eval scored 0/5; a second probe exceeded 30s). No skill-name
+       collision (~/.claude/skills has no atelier). Patched copy run_eval_patched.py (kept in the
+       workspace): watch the whole stream until the result event, conclude only on match/result/
+       timeout; rerun with --timeout 90. Results: eval-current-patched.json = STILL 0.00 everywhere.
+       Root cause #3 (the decisive one): cross-probe contamination. All 10 workers share
+       probe-root/.claude/commands, so each probe's model sees up to 10 uuid-suffixed clones of the
+       skill and almost never invokes the one uuid its own detector greps for (a single manual probe
+       with one file triggers instantly, Skill as the first tool call at 18.3s). Fix: per-probe
+       isolated temp project roots (fixture copied in, exactly one command file each), verified live
+       (10 roots during the run, 1 command file each). Final run: eval-current-isolated.json,
+       3 runs/query, 90s timeout, model claude-fable-5.
+       ISOLATED RESULT: 31/34. Negatives 16/16 clean (mean rate 0.00). Positives 15/18, mostly 3/3.
+       Three misses: (a) "review this diff" 0/3: real regression, "review" was dropped from the task
+       vocabulary while trimming the description to 1024; FIXED (restored "review", trimmed
+       "Maven-wrapper" to "Maven", 1022 chars, validator green), retested at 5 runs (eval-retest.json).
+       (b) coverage-threshold debugging 0/3: model solves it directly; known under-trigger class for
+       directly-solvable queries, not description-fixable. (c) java pom hygiene 0/3: eval artifact,
+       the probe fixture is a Bun repo with no pom.xml; a Java fixture is the proper fix (next run).
+       Retest at 5 runs: review-diff 0/5 (fixture has no diff to review; also maps to
+       atelier-review-me in the real suite, which the synthetic harness cannot register),
+       coverage-threshold 1/5 and pom-hygiene 1/5 (noise level). Description fix kept.
+6. [x] Verified: frontmatter 4/4, authored lines em-dash-free, smoke test 16/16, ci.yml parses.
+       Commits proposed to the user (rule 25); awaiting confirmation.
 
 ## Notes / breadcrumbs
-- Sources: /Users/pa2bra/Downloads/global-rules-every-new-project.md (18 pillars prose),
-  /Users/pa2bra/Downloads/global-rules-dos-and-donts.md (per-sub-concept Do/Don't, TS + Java).
-- Frontmatter limit: description exactly 1024 max; atelier currently AT 1024 -> must trim to add Java.
-- House style: no em dashes in new prose; terse; atelier idiom (const arrows, Result, branded types, ports).
-- Java flavour: mirror the article (Quarkus, JAX-RS, Panache writes/native reads, Flyway, JaCoCo, PIT,
-  REST Assured, records + sealed Result, hand-written fakes, no Mockito). Maven wrapper ./mvnw.
-- New-rule numbering starts at 27 (26 existing).
-- Never commit/push without explicit user confirmation (memory + rule 25).
+- Java smoke scope: proves OUR canonical configs + shipped assets against the toolchain, not Quarkus
+  itself (test the code you own). Plain Maven skeleton with domain/usecases + sealed Result + one
+  use-case; ./mvnw is a thin mvn shim in the scratch repo (the hook needs it; wrapper distribution
+  is not the tested surface, noted in the script header).
+- Negative JaCoCo case: untested domain class. Negative PIT case: covered-but-unasserted method.
+  Negative -Werror case: rawtypes warning.
+- Workspace: skills/atelier-workspace/trigger-opt-2026-07-04/ (trigger-eval.json dataset,
+  eval-current/candidate logs, probe-root, report.html).
