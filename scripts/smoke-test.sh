@@ -264,6 +264,16 @@ git add src/use-cases/leak.ts
 expect_err "pii guard blocks an email in a query string" bash scripts/check-pii-channels.sh
 git reset -q && rm src/use-cases/leak.ts
 
+printf 'export const s = async (u: { email: string }) => fetch(`/search?${new URLSearchParams({ email: u.email })}`);\n' > src/use-cases/leak-params.ts
+git add src/use-cases/leak-params.ts
+expect_err "pii guard blocks email built into a query via URLSearchParams" bash scripts/check-pii-channels.sh
+git reset -q && rm src/use-cases/leak-params.ts
+
+printf 'export const s = async (u: { email: string }) => fetch("/search", { method: "POST", body: JSON.stringify({ email: u.email }) });\n' > src/use-cases/post-body.ts
+git add src/use-cases/post-body.ts
+expect_ok "pii guard passes email carried in a POST body" bash scripts/check-pii-channels.sh
+git reset -q && rm src/use-cases/post-body.ts
+
 printf 'export const f = (): Promise<Response> => fetch("https://svc.test/x");\n' > src/infra/no-deadline.ts
 git add src/infra/no-deadline.ts
 expect_err "deadline guard blocks fetch without a deadline marker" bash scripts/check-io-deadlines.sh

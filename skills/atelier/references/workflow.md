@@ -558,7 +558,7 @@ Four shipped guards move the mechanical slices of the production disciplines int
 
 | Guard | Rule | Blocks |
 |:---|:--:|:---|
-| `assets/check-pii-channels.sh` | 27 | a natural identifier in a query string, a logger message interpolation, a Java `@QueryParam` |
+| `assets/check-pii-channels.sh` | 27 | a natural identifier in a query string (literal or via `new URLSearchParams`), a logger message interpolation, a Java `@QueryParam` |
 | `assets/check-io-deadlines.sh` | 29 | an infra `fetch` / Java `HttpClient` with no deadline marker in the file |
 | `assets/check-data-lifecycle.sh` | 30 | a hard delete in app code (erasure/retention paths exempt); destructive DDL outside a `*contract*` migration |
 | `assets/check-isolation-tests.sh` | 28 | a new route file with no nearby test mentioning 404 (`*public*`/`*health*` exempt) |

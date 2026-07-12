@@ -128,7 +128,7 @@ The assessment is a committed document (like an ADR, `references/governance.md`)
 
 ## Executable tripwire
 
-The mechanical slice of rule 27 ships as a staged-diff gate: `assets/check-pii-channels.sh` blocks a natural identifier in a query string, a logger message interpolation, or a Java `@QueryParam`, on the lines a commit adds (`--all` audits the whole tree). It is a tripwire, not a proof: this checklist remains the review duty; the script just refuses the common concrete leaks. Wire it as a pre-commit pre-flight or CI step wherever the repo holds personal data (`references/workflow.md`, Discipline tripwires).
+The mechanical slice of rule 27 ships as a staged-diff gate: `assets/check-pii-channels.sh` blocks a natural identifier in a query string (written literally or built via `new URLSearchParams`), a logger message interpolation, or a Java `@QueryParam`, on the lines a commit adds (`--all` audits the whole tree). It is a tripwire, not a proof: this checklist remains the review duty; the script just refuses the common concrete leaks. Wire it as a pre-commit pre-flight or CI step wherever the repo holds personal data (`references/workflow.md`, Discipline tripwires).
 
 ## Review checklist (changes touching personal data)
 

@@ -61,9 +61,15 @@ rule 27-30 guards, CLAUDE.md seed, committed trigger-eval harness, CI green at c
 - 3.2 DONE: repo CLAUDE.md dogfooding the seed, adapted to the skill repo (authoring
   conventions: no em dashes, YAML colon-space trap, description ceiling; structure; verify
   commands; plan-first + commit-slicing + confirmation gates; read LESSONS at start).
-- Not yet: 1.3 (multi-model), 2.4 (guard hardening: the check-pii-channels URLSearchParams
-  evasion case; the grade.py generality fix it also listed is now DONE), 4.1 (SonarJS paste:
-  yours). e10-llm conformance DONE on Sonnet; a Fable rerun is optional (next billing month).
+- 2.4 URLSearchParams evasion DONE: check-pii-channels.sh gained a URLSearchParams-construction
+  pattern (`URLSearchParams\([^)]*(email|phone|ssn|token)`), URLSearchParams-specific so a POST
+  body or FormData carrying email is untouched; the incremental `.set`/`.append` form stays a
+  review duty (line-local greps cannot track a variable's type). smoke-test.sh pins both the
+  evasion (blocked) and the POST-body form (allowed); full Bun gate chain green. privacy.md and
+  workflow.md coverage lines updated. The grade.py generality half of 2.4 shipped in 6d44778.
+- Not yet: 1.3 (multi-model), 2.4 residuals (logger metadata keys vs message text, multi-line
+  fetch options), 4.1 (SonarJS paste: yours). e10-llm conformance DONE on Sonnet; a Fable rerun
+  is optional (next billing month).
 
 ## How this plan is ordered
 Phase 1 deepens MEASUREMENT (extends the "will it respect the guidelines" thread: what we
