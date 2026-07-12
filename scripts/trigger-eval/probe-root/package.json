@@ -1,0 +1,1 @@
+{ "name": "orders-cli", "module": "src/main.ts", "type": "module", "scripts": { "lint": "eslint --cache --max-warnings=0", "typecheck": "tsc --noEmit" } }

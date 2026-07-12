@@ -1,0 +1,126 @@
+[
+  {
+    "query": "add a csv export use case to our orders CLI. repo uses bun, entry is src/main.ts, output should land in ./out with a timestamped filename",
+    "should_trigger": true
+  },
+  {
+    "query": "on the landing page (packages/web, next 16) add a pricing section with a monthly/yearly toggle. we already have atoms and molecules under src/components",
+    "should_trigger": true
+  },
+  {
+    "query": "can you refactor user-service.ts? its like 300 lines of classes and getters and i want it cleaner. bun repo",
+    "should_trigger": true
+  },
+  {
+    "query": "the sheets adapter has no tests because it wraps googleapis. how do i test it without mocking the whole module? we're on bun test",
+    "should_trigger": true
+  },
+  {
+    "query": "review this diff before I commit, mostly src/use-cases/sync-invoices.ts plus a new infra adapter for the telegram api",
+    "should_trigger": true
+  },
+  {
+    "query": "hey quick one, need a lil script in this repo that pulls rss feeds adn writes json to disk, we use bun",
+    "should_trigger": true
+  },
+  {
+    "query": "bun test is failing since i added a second adapter, something about the coverage threshold exiting non-zero before the per-file report prints",
+    "should_trigger": true
+  },
+  {
+    "query": "spin up a new bun typescript repo for a firebase admin job that syncs users nightly",
+    "should_trigger": true
+  },
+  {
+    "query": "getUser throws when the row is missing and now the caller has try/catch everywhere. what's the right error pattern here? typescript on bun",
+    "should_trigger": true
+  },
+  {
+    "query": "we keep passing raw strings for userId and email around and bugs keep slipping through. how should we type these properly in our ts codebase (bun)",
+    "should_trigger": true
+  },
+  {
+    "query": "add a dark mode toggle to our vite + react app, state is in zustand, repo uses pnpm workspaces",
+    "should_trigger": false
+  },
+  {
+    "query": "write a pytest fixture that spins up a temp postgres for our django app tests",
+    "should_trigger": false
+  },
+  {
+    "query": "is bun actually faster than node for a basic http server? thinking about migrating some day, just curious what the benchmarks say",
+    "should_trigger": false
+  },
+  {
+    "query": "port this small deno script to the new Deno.serve api, it's about 40 lines",
+    "should_trigger": false
+  },
+  {
+    "query": "our express server (node 20, npm) leaks memory under load, help me profile and fix it",
+    "should_trigger": false
+  },
+  {
+    "query": "explain how bun's lockfile format differs from package-lock.json, someone asked in code review and i had no answer",
+    "should_trigger": false
+  },
+  {
+    "query": "refactor this rust module to use thiserror instead of anyhow, its in src/error.rs",
+    "should_trigger": false
+  },
+  {
+    "query": "compare next.js app router vs pages router for SEO, we're picking one for a new marketing site next quarter",
+    "should_trigger": false
+  },
+  {
+    "query": "write a bash script that bulk renames photos by their exif date, folder is ~/Pictures/import",
+    "should_trigger": false
+  },
+  {
+    "query": "add a swiftui settings screen to our ios app with a toggle for notifications",
+    "should_trigger": false
+  },
+  {
+    "query": "we're logging the whole request body in src/infra/http/server.ts and it has user emails in it, also search terms end up in the url query string. bun repo, winston. fix this properly",
+    "should_trigger": true
+  },
+  {
+    "query": "just realized our invoices route takes orgId straight from the url param. bun + hono + drizzle, jwt auth already set up. make sure org A can never read org B's rows",
+    "should_trigger": true
+  },
+  {
+    "query": "after we save a receipt we send the confirmation email inline in the request and when the pod restarts mid-flight the email is just gone. bun repo, postgres. want this reliable with retries",
+    "should_trigger": true
+  },
+  {
+    "query": "adding a summarize feature with gemini to our bun pipeline. where does the sdk call live, how do i test without hitting the real api, and the model alias keeps changing under us which broke prod once",
+    "should_trigger": true
+  },
+  {
+    "query": "the pricing cards in packages/web are clickable divs and the grey text fails contrast, also marketing wants a rebrand next month so colors need to be swappable. next 16 + tailwind v4",
+    "should_trigger": true
+  },
+  {
+    "query": "our django app logs user emails in plaintext, how do i redact pii in the python logging config",
+    "should_trigger": false
+  },
+  {
+    "query": "add optimistic locking to our rails activerecord models, two admins keep overwriting each other's edits on the same record",
+    "should_trigger": false
+  },
+  {
+    "query": "set up detekt and mockk for our kotlin android project, gradle kts, ci is github actions",
+    "should_trigger": false
+  },
+  {
+    "query": "can you explain the four DORA metrics? i have to present our delivery performance to leadership next week and want to get the definitions right",
+    "should_trigger": false
+  },
+  {
+    "query": "draft a DPIA template for the marketing team's new newsletter signup tool, legal wants it by friday",
+    "should_trigger": false
+  },
+  {
+    "query": "our express api (node 20, npm) needs rate limiting and jwt auth on the admin routes, we use passport already",
+    "should_trigger": false
+  }
+]

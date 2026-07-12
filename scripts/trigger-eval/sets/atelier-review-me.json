@@ -1,0 +1,50 @@
+[
+  {
+    "query": "review me before i commit, mostly src/use-cases/sync-invoices.ts plus a new infra adapter for the telegram api",
+    "should_trigger": true
+  },
+  {
+    "query": "can you check my staged diff against the standard before I land it? bun repo with the atelier hooks",
+    "should_trigger": true
+  },
+  {
+    "query": "review this branch vs origin/main for rule violations, cite the rule numbers like usual",
+    "should_trigger": true
+  },
+  {
+    "query": "adopt the standard into this repo. it's an older bun codebase, classes everywhere, no hooks, coverage unknown",
+    "should_trigger": true
+  },
+  {
+    "query": "bring this repo up to atelier, give me the staged migration plan first",
+    "should_trigger": true
+  },
+  {
+    "query": "did i break any of the hard rules in this diff? i touched the design system and one use-case",
+    "should_trigger": true
+  },
+  {
+    "query": "review this PR for logic bugs, i think the discount math is wrong when the cart is empty",
+    "should_trigger": false
+  },
+  {
+    "query": "review my resume bullets for a staff engineer role, be brutal",
+    "should_trigger": false
+  },
+  {
+    "query": "write code review guidelines for our team wiki, tone should be friendly",
+    "should_trigger": false
+  },
+  {
+    "query": "review the architecture diagram i pasted and suggest improvements for the queue part",
+    "should_trigger": false
+  },
+  {
+    "query": "can you review this SQL query for performance, it does a join on receipts and lines",
+    "should_trigger": false
+  },
+  {
+    "query": "review the marketing landing page copy before we ship it",
+    "should_trigger": false
+  }
+]

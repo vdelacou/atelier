@@ -1,0 +1,14 @@
+[
+  {
+    "query": "add a new feature module to our existing bun repo for csv exports",
+    "should_trigger": false
+  },
+  {
+    "query": "set up eslint and prettier in this existing project, keep the current style",
+    "should_trigger": false
+  },
+  {
+    "query": "create a new github repo and push this existing code to it, private",
+    "should_trigger": false
+  }
+]

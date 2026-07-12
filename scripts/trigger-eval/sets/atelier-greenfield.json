@@ -1,0 +1,30 @@
+[
+  {
+    "query": "scaffold a new bun repo for a stripe webhook processor, to the standard, hooks and all",
+    "should_trigger": true
+  },
+  {
+    "query": "bootstrap a new package in our next.js monorepo for the docs site, follow the usual setup",
+    "should_trigger": true
+  },
+  {
+    "query": "set up a new atelier repo from zero here for a small cli tool",
+    "should_trigger": true
+  },
+  {
+    "query": "spin up a new quarkus service skeleton with the gates wired, java 21",
+    "should_trigger": true
+  },
+  {
+    "query": "this dir is empty, make it a conforming bun project with the walking skeleton and prove the gates pass",
+    "should_trigger": true
+  },
+  {
+    "query": "scaffold a new django project with poetry and a users app",
+    "should_trigger": false
+  },
+  {
+    "query": "scaffold a react native app with expo for the loyalty card",
+    "should_trigger": false
+  }
+]

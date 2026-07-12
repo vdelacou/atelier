@@ -1,0 +1,14 @@
+[
+  {
+    "query": "add a paginated GET /invoices endpoint to our quarkus service (maven, java 21). each org should only see its own invoices, panache + postgres",
+    "should_trigger": true
+  },
+  {
+    "query": "our java service's pom.xml has a couple version ranges and someone committed a -SNAPSHOT dep last week. clean it up and add something to pre-commit so it cant happen again, mvnw is committed",
+    "should_trigger": true
+  },
+  {
+    "query": "new hire added mockito to our quarkus repo and now half the tests are verify() calls that break on every refactor. java 21, want outcome-based tests instead. how do we restructure",
+    "should_trigger": true
+  }
+]

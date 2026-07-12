@@ -1,0 +1,42 @@
+[
+  {
+    "query": "grill me on this migration plan before i build it: firebase to postgres, about 40 collections",
+    "should_trigger": true
+  },
+  {
+    "query": "stress-test my design for the multi-tenant billing schema, i think orgs share a table",
+    "should_trigger": true
+  },
+  {
+    "query": "pressure test this decision with me: sqs vs a postgres outbox for our side effects",
+    "should_trigger": true
+  },
+  {
+    "query": "before we build the referral feature, challenge whether we should build it at all",
+    "should_trigger": true
+  },
+  {
+    "query": "i need to pick between static export and a server app for the new site, interview me until it's settled",
+    "should_trigger": true
+  },
+  {
+    "query": "how do i grill chicken thighs without drying them out",
+    "should_trigger": false
+  },
+  {
+    "query": "quiz me on typescript trivia to prep for an interview tomorrow",
+    "should_trigger": false
+  },
+  {
+    "query": "review my staged diff against the standard",
+    "should_trigger": false
+  },
+  {
+    "query": "help me decide which laptop to buy for development, m4 or m4 pro",
+    "should_trigger": false
+  },
+  {
+    "query": "write up the ADR for the outbox decision we made yesterday, options and reversal included",
+    "should_trigger": false
+  }
+]
