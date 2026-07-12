@@ -79,8 +79,9 @@ rule 27-30 guards, CLAUDE.md seed, committed trigger-eval harness, CI green at c
   work rather than run a context past the wall). Declined to add it as a hard rule (not
   diff-visible) or as full agent-runtime doctrine (harness altitude); the checkpoint/resume core
   was already the plan-first discipline.
-- Not yet: 4.1 (SonarJS paste: yours). e10-llm conformance DONE on Sonnet; a Fable rerun is
-  optional (next billing month). 2.4 fully closed (URLSearchParams shipped, residuals
+- Open items: none on my keyboard. 4.1 DONE (Vincent filed the SonarJS report, 2026-07-12).
+  e10-llm conformance DONE on Sonnet; a Fable rerun is optional (next billing month). 2.4 fully
+  closed (URLSearchParams shipped, residuals
   investigated as non-issues). 1.3 IN PROGRESS (Round 6 below).
 
 ## Round 6 progress (1.3 multi-model robustness, started 2026-07-12)
@@ -269,10 +270,11 @@ atelier itself). Phase 4 tracks EXTERNAL follow-ups. Within a phase, items are i
 
 ## Phase 4: external follow-ups (tracking, mostly not my keyboard)
 
-### 4.1 SonarJS TS-7 report: YOUR paste
-- The draft is now tracked at docs/upstream/sonarjs-ts7.md (moved out of the gitignored
-  workspace); venue is https://community.sonarsource.com/ (Report a Bug). Needs your forum
-  account. Until posted or fixed upstream, the ^5 pin + canary (2.3) cover us.
+### 4.1 SonarJS TS-7 report: FILED 2026-07-12
+- DONE: Vincent filed the bug report to the Sonar Community forum
+  (https://community.sonarsource.com/, Report a Bug). The posted text is docs/upstream/sonarjs-ts7.md.
+  Filing does NOT lift the ^5 pin by itself; the pin lifts only when sonarjs actually supports TS 7
+  (canary 2.3 detects, tracked in 4.3). Keep the draft as the record of what was reported.
 
 ### 4.2 anthropics/claude-code#76818: respond if maintainers engage
 - Offer the patched run_single_query (now public in this repo at scripts/trigger-eval/
