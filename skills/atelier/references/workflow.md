@@ -37,6 +37,8 @@ Status: in progress. Started YYYY-MM-DD.
 
 **On resume.** Start of session, read `.claude/PLAN.md` (alongside the lesson files). If it shows an unfinished task, continue from the first unchecked step rather than re-planning. If the user's new request supersedes the open plan, say so in one sentence and overwrite it.
 
+**Within a long run.** The live plan is also your context-budget checkpoint, not only a crash-recovery file: keeping it current means a long agentic run degrades gracefully instead of hitting a context limit blind, because the next step and its DoD are always on disk. When a task is too large to finish in one context window, decompose it into independently-checkpointed steps (or subagents) rather than driving one context past the wall.
+
 ## The four-check loop (after every change)
 
 ```bash

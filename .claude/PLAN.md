@@ -67,9 +67,21 @@ rule 27-30 guards, CLAUDE.md seed, committed trigger-eval harness, CI green at c
   review duty (line-local greps cannot track a variable's type). smoke-test.sh pins both the
   evasion (blocked) and the POST-body form (allowed); full Bun gate chain green. privacy.md and
   workflow.md coverage lines updated. The grade.py generality half of 2.4 shipped in 6d44778.
-- Not yet: 1.3 (multi-model), 2.4 residuals (logger metadata keys vs message text, multi-line
-  fetch options), 4.1 (SonarJS paste: yours). e10-llm conformance DONE on Sonnet; a Fable rerun
-  is optional (next billing month).
+- 2.4 residuals INVESTIGATED, no change warranted (tested in scratchpad): "logger metadata keys
+  vs message text" is correct by design (the redacting adapter handles meta KEYS, the guard
+  catches the message-text interpolation the redactor cannot see; flagging `{ email }` metadata
+  would false-positive conforming code). "multi-line fetch options" is a non-issue (the deadline
+  guard is file-level, so a signal on any later line passes and a signal-less multi-line fetch
+  blocks). The one real deadline gap (two fetches in a file, only one deadlined, passes file-level)
+  is inherent to a grep tripwire and stays a review duty per the guard's own "tripwire not proof".
+- Meta-Principle (user photo, 2026-07-12): enriched workflow.md durable-plan section with a
+  "Within a long run" note (the plan is also the context-budget checkpoint; decompose oversized
+  work rather than run a context past the wall). Declined to add it as a hard rule (not
+  diff-visible) or as full agent-runtime doctrine (harness altitude); the checkpoint/resume core
+  was already the plan-first discipline.
+- Not yet: 1.3 (multi-model), 4.1 (SonarJS paste: yours). e10-llm conformance DONE on Sonnet; a
+  Fable rerun is optional (next billing month). 2.4 fully closed (URLSearchParams shipped,
+  residuals investigated as non-issues).
 
 ## How this plan is ordered
 Phase 1 deepens MEASUREMENT (extends the "will it respect the guidelines" thread: what we
