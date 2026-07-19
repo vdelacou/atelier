@@ -29,7 +29,7 @@ Greenfield only. For a repo that already has code, the main atelier skill applie
    - Java → the installed `atelier` skill's `references/java-quarkus.md` (§ Bootstrap checklist): Quarkus scaffold with the Maven wrapper, pinned pom with Spotless + JaCoCo tiers + PIT + enforcer, the `domain`/`usecases`/`infra`/`api`/`composition` packages, sealed `Result`, Flyway, and the shipped hook assets (`assets/pre-commit-java`, `assets/check-pom.sh`, the shared `assets/check-commit-size.sh` and `assets/commit-msg`), copied not hand-written.
    Never install both hook mechanisms — eight-gate `.githooks` for Bun-script, `simple-git-hooks` for Next.js; the Java variant reuses `.githooks` with its own gate chain.
 4. **Pin versions properly.** Add every dependency with `bun add` / `bun add -d` so it resolves to a concrete `^X.Y.Z`; never hand-write `"latest"` or `"*"` (rule 19 — gate 2 would reject it). Java: exact versions in the pom, no ranges, no SNAPSHOT deps (the enforcer blocks them).
-5. **Choose the commit identity deliberately.** Before the first commit, decide what identity every commit will carry (rule 26): a neutral repo-local handle (for example `atelier <atelier@users.noreply.github.com>`) if the repo should not be tied to a person, or your own name and email if you want attribution on your work. Set it explicitly with `git config --local` so it is a conscious choice, not whatever the global identity happens to be. Repo birth is the only moment this is free; changing it later means a `git filter-repo` history rewrite and a force-push.
+5. **Keep identity out of file contents (rule 26).** Commit metadata carries your normal identity and needs no action. The scaffolded files carry none of it: no person, employer, or client name in a comment, a LICENSE holder line, a `package.json` author field, or a fixture; use a neutral handle (e.g. `atelier`) where a holder string is structurally required. Scrubbing a mention after a push is a `git filter-repo` history rewrite and a force-push, so catch it here.
 6. **Seed session memory and the standard pointer.** Create `.claude/LESSONS.md` with just its header so the cross-session journal works from commit one, and write a minimal `CLAUDE.md` so the standard rides in deterministic repo context on every future session instead of depending on skill triggering alone:
 
    ```markdown
@@ -49,7 +49,7 @@ Greenfield only. For a repo that already has code, the main atelier skill applie
 
 ## Output
 
-A directory that passes every gate, with a one-screen summary: variant chosen, assets copied (and from where), hooks wired, commit identity chosen, scripts added, the walking skeleton's single scenario, the inner-loop results, and the proposed first-commit message awaiting confirmation.
+A directory that passes every gate, with a one-screen summary: variant chosen, assets copied (and from where), hooks wired, file contents identity-clean (rule 26), scripts added, the walking skeleton's single scenario, the inner-loop results, and the proposed first-commit message awaiting confirmation.
 
 Scaffold the *simplest* conforming repo that runs green — the walking skeleton is one slice, not a feature. Everything past it is built later, test-first, under the main atelier standard. Out of scope here: brownfield adoption of an existing repo, CI/CD, deployment, Docker, and choosing a web framework.
 

@@ -380,7 +380,7 @@ CI runs the identical chain plus the scheduled dependency scan and, where the re
 7. Hooks: copy the four assets as above (`pre-commit-java`, `commit-msg`, `check-commit-size.sh`, `check-pom.sh`); `git config core.hooksPath .githooks`; optional `gitleaks` install. Verify the pom gate once: `bash scripts/check-pom.sh`.
 8. Walking skeleton: one use-case returning `Ok` through its port, its value record, its JUnit test (propose the test first, rule 24), one resource with its REST Assured test including the 401 case.
 9. Verify green: `./mvnw spotless:check verify`, PIT on the skeleton, hooks reject a junk message and an oversized commit.
-10. `.claude/LESSONS.md` header; choose the commit identity (rule 26); stage and propose the first commit (rule 25).
+10. `.claude/LESSONS.md` header; verify no scaffolded file names a person, an employer, or a client (rule 26); stage and propose the first commit (rule 25).
 
 ## Red flags (Java-specific)
 

@@ -1,4 +1,4 @@
-> Status: DRAFT, not yet filed. SonarJS has GitHub issues disabled; venue is the Sonar Community forum (https://community.sonarsource.com/, Report a Bug), which needs Vincent's login. Paste this when ready.
+> Status: FILED 2026-07-12 to the Sonar Community forum (https://community.sonarsource.com/, Report a Bug); SonarJS has GitHub issues disabled. This file is the record of the posted text.
 
 # Draft issue: eslint-plugin-sonarjs (SonarSource/SonarJS or eslint-plugin-sonarjs repo)
 
