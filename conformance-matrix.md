@@ -1,14 +1,16 @@
 # Atelier conformance matrix (Phase 1)
 
 Static audit of the `atelier` Agent Skill against the Global Rules canon. One row per
-sub-concept, verdict with file-level evidence. This is a diagnosis: collisions are resolved
-in Phase 2, not here. Produced by session prompt C1 of the Atelier vs Global Rules
-conformance plan.
+sub-concept, verdict with file-level evidence. Diagnosis first; Phase 2 then resolves each
+collision, and the rows resolved so far carry a resolution note. Produced by session prompt
+C1 of the Atelier vs Global Rules conformance plan.
 
 ## Pinned inputs
 
-- Audit date: 2026-07-19.
-- Skill audited: this repo at commit `430c740` (working tree clean at audit start).
+- Audit date: 2026-07-19 (Phase 1). Phase 2 resolutions applied the same day.
+- Skill audited: this repo at commit `430c740` (Phase 1 baseline). Phase 2 resolved 15.1 and
+  4.6 and opened a P6 revision for 5.3; those three rows and the tally reflect the post-Phase-2
+  state, every other row is as audited at `430c740`.
 - Canon, vendored byte-identical into this repo at `docs/global-rules/` (the drift check in
   Phase 4 runs against these copies):
 
@@ -75,10 +77,12 @@ a fast hook. Verdict CONTRADICTS, on the hook-stays-quick clause. Two qualifiers
 secret-scan clause is satisfied: gate 3 is `gitleaks protect --staged` (assets/pre-commit:40),
 matching the canon's fast-gate list. And 15.3 as its own sub-concept (no line-by-line
 suppressions) is not dragged into the contradiction, because the skill covers it separately
-with a no-inline-ignore discipline; only 15.1 carries the CONTRADICTS. Phase 2 note: the skill
-scopes hook mutation to staged files, so its position (staged-scoped local mutation is worth
-the seconds on a small-commit trunk workflow) is a legitimate candidate for the P6 "is the
-rule too absolute" path rather than a plain skill fix.
+with a no-inline-ignore discipline; only 15.1 carries the CONTRADICTS. Resolved in Phase 2 by amending
+the skill (the canon is right here: the skill's own mutation gate is multi-minute, and a slow
+hook trains bypass). The hook now runs only the five fast gates (commit size, package.json,
+gitleaks protect, staged lint, typecheck), and a shipped CI workflow (assets/ci.yml) runs the
+full suite, coverage, and mutation as the required merge check. This row is now COVERED, and
+4.6 with it.
 
 **2. The logger redacts personal data (6.3, COVERED, tripwire).** Present and precise. Canon
 6.3's Do has three clauses: personal data and free text travel in a POST body, redaction
@@ -125,8 +129,11 @@ clause is covered thinly (Renovate is named, but only in the Java reference, jav
 the Bun side leans on a manual `bun update` cadence and ships no Renovate or dependabot config).
 But the pin clause is contradicted, and CONTRADICTS dominates. The skill's rationale (a
 committed lockfile plus `--frozen-lockfile` makes caret ranges reproducible) is defensible and
-arguably modern consensus, so like 15.1 this is a strong Phase-2 candidate for the "is the rule
-defective" path; for Phase 1 it stands as a contradiction of the letter and the example of 5.3.
+arguably modern consensus. Resolved in Phase 2 as a P6 revision (docs/global-rules/proposed-revisions.md):
+the skill is judged right and the canon's exact-pins mandate defective, because the committed
+lockfile the canon itself requires already delivers the determinism, so the manifest range is
+irrelevant to what installs. The skill's dependency gate is unchanged; the row stays CONTRADICTS
+against the current canon text until the revision is accepted.
 
 **5. The security model and the LLM-injection defense are both present (5.5 and 5.8, COVERED).**
 Canon 5.5's Do is validate every untrusted value at one checkpoint before a query, command, or
@@ -207,7 +214,7 @@ likewise absent) a clear Phase-2 item.
 | 4.3 | Have a testing philosophy | COVERED | testing.md:125-127; SKILL.md:195 | rule | Every fixed bug becomes a permanent reproducing test |
 | 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:19 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:165; testing.md:231 | gate | Mock ban is absolute and lint-enforced, exceeding canon advisory prefer-fakes |
-| 4.6 | Gate every merge | GAP | assets/pre-commit gate 4; governance.md:76 | gate | Partial gap: full suite in local hook plus branch-protection, but no CI workflow asset runs it as merge gate (see 15.1) |
+| 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:76 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on a frozen lockfile as the required merge check |
 | 4.7 | Hold generated code to the same bar | COVERED | workflow.md:614 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-48; SKILL.md:213 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
 
@@ -217,7 +224,7 @@ likewise absent) a clear Phase-2 item.
 |---|---|---|---|---|---|
 | 5.1 | Keep secrets out of the codebase | COVERED | security.md:184; assets/pre-commit gate 3 | gate | Secret manager, rotation, central control; gitleaks gate backs the ban |
 | 5.2 | Do not build authentication or crypto yourself | COVERED | security.md:35-46 | rule | OIDC plus vetted crypto, SSO and MFA on consoles (rule 33) |
-| 5.3 | Control your dependencies | CONTRADICTS | docs/global-rules/global-rules-dos-and-donts.md:933-938; assets/check-package-json.sh:30 | gate | Skill permits and generates caret ranges; canon DON'T is ^4.0.0, DO is exact pins (Watchlist 4) |
+| 5.3 | Control your dependencies | CONTRADICTS | docs/global-rules/global-rules-dos-and-donts.md:933-938; docs/global-rules/proposed-revisions.md | gate | Contradicts current canon (caret vs exact pins); P6 revision proposed, the exact-pins mandate is defective given the lockfile the canon also requires (Watchlist 4) |
 | 5.4 | Secure the supply chain | COVERED | delivery.md:71-73 | doctrine | Immutable digest-addressed artifacts, SBOM, cosign signatures |
 | 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:356 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
 | 5.6 | Expose only what has to be public | COVERED | security.md:218 | doctrine | Datastores, queues, admin panels on a private network only |
@@ -330,7 +337,7 @@ likewise absent) a clear Phase-2 item.
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 15.1 | Make the standard executable | CONTRADICTS | docs/global-rules/global-rules-dos-and-donts.md:2827-2842; assets/pre-commit | gate | Hook runs gates 4-8 (tests, lint:strict, coverage, 1-3min mutation) locally; canon confines slow gates to CI (Watchlist 1) |
+| 15.1 | Make the standard executable | COVERED | assets/pre-commit; assets/ci.yml | gate | Resolved Phase 2: hook restructured to 5 fast gates, full suite/coverage/mutation/strict-lint relocated to CI as the required merge gate (Watchlist 1) |
 | 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:172; assets/check-coverage.ts:137 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
 | 15.3 | No silent opt-out | COVERED | workflow.md:73-82; SKILL.md:167 | gate | Project-level severity change with a reason; inline suppressions banned |
 | 15.4 | Test the bypass, not the happy path | STRICTER | testing.md:522-531; scripts/smoke-test.sh | gate | Tests assert forbidden paths refused, and each shipped gate is proven to fail on its target violation |
@@ -377,25 +384,23 @@ Every CONTRADICTS and GAP row, in rule order. This is the resolve-collisions bac
 
 | ID | Sub-concept | Verdict | What is missing or contradicted |
 |---|---|---|---|
-| 4.6 | Gate every merge | GAP | Partial gap: full suite in local hook plus branch-protection, but no CI workflow asset runs it as merge gate (see 15.1) |
-| 5.3 | Control your dependencies | CONTRADICTS | Skill permits and generates caret ranges; canon DON'T is ^4.0.0, DO is exact pins (Watchlist 4) |
+| 5.3 | Control your dependencies | CONTRADICTS | Contradicts current canon (caret vs exact pins); P6 revision proposed, the exact-pins mandate is defective given the lockfile the canon also requires (Watchlist 4) |
 | 5.10 | One inspectable edge, no reachable origin | GAP | Public filtering edge (WAF) and origin-lock absent; 5.6 private datastores present; canon origin-secret check is code-expressible; family network-edge |
 | 7.7 | No service-token backdoor for bulk reads | GAP | Partial gap: token-per-call covered; the serve-analytics-from-the-data-platform clause absent; ties to 10.14 |
 | 10.14 | Separate the analytical store from the operational one | GAP | Operational and analytical store separation absent; OLTP/OLAP read-split is expressible doctrine, ETL/CDC topology is infra; ties to 7.7 |
 | 12.1 | Document the essentials and treat doc drift as a defect | GAP | Partial gap: drift-as-defect and same-commit-fix covered; the fail-CI-when-README-goes-stale check absent |
-| 15.1 | Make the standard executable | CONTRADICTS | Hook runs gates 4-8 (tests, lint:strict, coverage, 1-3min mutation) locally; canon confines slow gates to CI (Watchlist 1) |
 | 17.7 | Mobile first, and a light interface | GAP | Mobile-first, one-primary-action, progressive-disclosure, bundle budget all absent; only md and lg responsive tooling (Watchlist 6) |
 
 ## Verdict tally
 
 | Verdict | Count |
 |---|---|
-| COVERED | 104 |
+| COVERED | 106 |
 | STRICTER | 3 |
-| GAP | 6 |
-| CONTRADICTS | 2 |
+| GAP | 5 |
+| CONTRADICTS | 1 |
 | OUT-OF-SCOPE | 0 |
 | Total | 115 |
 
-No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. The two contradictions and six gaps are the whole of the divergence; everything else is covered, three of them more strictly than the canon asks.
+No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2, one contradiction and five gaps remain: 15.1 and 4.6 are resolved (the pre-commit hook now runs only the fast gates and a shipped CI workflow, assets/ci.yml, runs the full set as the required merge gate), and 5.3 stands as a contradiction of the current canon text with a P6 revision proposed in docs/global-rules/proposed-revisions.md. Everything else is covered, three of them more strictly than the canon asks.
 

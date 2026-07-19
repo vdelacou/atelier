@@ -2,6 +2,37 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [decision] 2026-07-19 | conformance 15.1 + 4.6: pre-commit hook runs the fast gates, CI runs the full set
+
+Phase 2 resolved the 15.1 contradiction: the hook ran the full test suite, coverage, and
+1-3 min/file Stryker mutation locally, which the canon confines to CI because a multi-minute
+hook trains --no-verify. The canon is right here, so the skill was amended, not the rule.
+`assets/pre-commit` now runs only five fast gates (commit-size, package.json, gitleaks protect,
+lint:staged, typecheck; each O(staged) or O(1), targeting a ~5s budget), and a new asset
+`assets/ci.yml` runs the full set (strict lint, typecheck, test, coverage, mutation
+changed-on-PR / full-on-main, bun audit) on a frozen lockfile as the required merge check,
+which also closes the 4.6 gap (no consumer CI workflow shipped). New helper
+`assets/lint-staged.sh` does the staged eslint. The "eight gates" branding was reframed across
+SKILL.md, workflow.md, greenfield, review-me, bun-typescript.md, nextjs-monorepo.md, commit-msg,
+and README as "fast hook gates plus the full CI set"; smoke-test.sh now runs the fast hook
+end-to-end and the CI gates (mutation included) directly. Measured on a small conforming repo
+the fast gates are all sub-2s and even mutation is ~4s/file, but the documented lint:strict ~25s
+and mutation 1-3 min/file are the realistic-repo numbers, so the split is by gate nature (scales
+with repo size goes to CI), not day-one speed. The Java `pre-commit-java` hook has the same
+shape and is NOT yet split (deferred). See conformance-matrix.md 15.1 and 4.6.
+
+## [decision] 2026-07-19 | conformance 5.3: caret ranges are right, the canon exact-pins mandate is a P6 defect
+
+Phase 2 judged the skill right and the canon defective on 5.3, so a P6 revision row was recorded
+in `docs/global-rules/proposed-revisions.md` and the skill's dependency gate
+(`check-package-json.sh`, which bans `*` / `latest` / dist-tags but permits `^X.Y.Z`) was left
+unchanged. The canon's exact-pins Do brands `^4.0.0` the DON'T ("resolve to unknown code on every
+install") yet its own DO mandates a committed lockfile and `bun install --frozen-lockfile` in CI,
+which fix the install regardless of the manifest range, so the stated anti-caret reason is false
+under the canon's own required conditions. conformance-matrix.md keeps 5.3 as CONTRADICTS against
+the current canon text (honest to the pinned canon) with a pointer to the proposed revision; it
+flips to COVERED only if the revision is accepted. Decided with the user (P6 over amend).
+
 ## [decision] 2026-07-19 | rule 26 final form, identity in commit metadata only, never in file contents
 
 Three same-day iterations converged here. The standard first treated attribution as a leak
