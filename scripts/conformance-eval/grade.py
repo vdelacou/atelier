@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Grade conformance runs: mechanical assertions over the code each run produced.
 
-Reads tasks.json (declarative assertions: regex + present/absent + optional
-exclude paths and extension globs) and applies them to every run directory
-under the given workspace (default: the newest conformance workspace).
+Reads tasks.json (declarative assertions: regex + present/absent + a `rule`, the
+global-rules sub-concept the check proves, + optional exclude paths and extension
+globs) and applies them to every run directory under the given workspace (default:
+the newest conformance workspace). The scorecard reports pass rates per task and
+per rule, so a rule id maps straight to its conformance-matrix.md row.
 
 Usage:
     python3 scripts/conformance-eval/grade.py [runs-dir]
@@ -62,7 +64,7 @@ def grade_run(run_dir: Path, assertions: list[dict]) -> list[tuple[str, bool]]:
         passed = hit if a["mode"] == "present" else (not hit if files else False)
         if not files:
             passed = False  # nothing produced in scope = not conforming
-        marks.append((a["desc"], passed))
+        marks.append((a["desc"], a.get("rule"), passed))
     return marks
 
 
@@ -78,7 +80,7 @@ def selftest() -> None:
         run_dir = Path(tmp) / "fixture-only"
         shutil.copytree(FIXTURE_DIR, run_dir)
         for task in tasks:
-            for desc, passed in grade_run(run_dir, task["assertions"]):
+            for desc, rule, passed in grade_run(run_dir, task["assertions"]):
                 if passed:
                     credited.append(f"{task['id']}: {desc}")
     if credited:
@@ -103,6 +105,8 @@ def main() -> None:
 
     tasks = json.loads((HERE / "tasks.json").read_text())
     grand = {"with_skill": [0, 0], "baseline": [0, 0]}
+    # by_rule[rule][arm] = [passed, total], so the scorecard maps to conformance-matrix rows
+    by_rule: dict[str, dict[str, list[int]]] = {}
     for task in tasks:
         rows = []
         for arm in ("with_skill", "baseline"):
@@ -111,8 +115,14 @@ def main() -> None:
                 rows.append((arm, None))
                 continue
             marks = grade_run(run_dir, task["assertions"])
-            grand[arm][0] += sum(1 for _, p in marks if p)
+            grand[arm][0] += sum(1 for _, _, p in marks if p)
             grand[arm][1] += len(marks)
+            for _, rule, passed in marks:
+                if rule is None:
+                    continue
+                slot = by_rule.setdefault(rule, {"with_skill": [0, 0], "baseline": [0, 0]})
+                slot[arm][0] += 1 if passed else 0
+                slot[arm][1] += 1
             rows.append((arm, marks))
         if all(marks is None for _, marks in rows):
             continue
@@ -121,13 +131,19 @@ def main() -> None:
             if marks is None:
                 print(f"  {arm:<11} (no run)")
                 continue
-            score = sum(1 for _, p in marks if p)
-            detail = "  ".join(("PASS" if p else "fail") + f":{d[:36]}" for d, p in marks)
+            score = sum(1 for _, _, p in marks if p)
+            detail = "  ".join(("PASS" if p else "fail") + f"[{r}]:{d[:30]}" for d, r, p in marks)
             print(f"  {arm:<11} {score}/{len(marks)}  {detail}")
 
     print("\nTOTALS (graded runs only):")
     for arm, (p, t) in grand.items():
         print(f"  {arm:<11} {p}/{t}")
+
+    if by_rule:
+        print("\nBY RULE (the global-rules sub-concept each check proves; with_skill vs baseline):")
+        for rule in sorted(by_rule, key=lambda r: [int(n) for n in r.split(".")]):
+            ws, bl = by_rule[rule]["with_skill"], by_rule[rule]["baseline"]
+            print(f"  {rule:<6} with_skill {ws[0]}/{ws[1]}   baseline {bl[0]}/{bl[1]}")
 
 
 if __name__ == "__main__":

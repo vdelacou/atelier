@@ -6,27 +6,32 @@
       {
         "desc": "search travels as POST, not a query string",
         "pattern": "method:\\s*['\\\"]POST",
-        "mode": "present"
+        "mode": "present",
+        "rule": "6.3"
       },
       {
         "desc": "no user text interpolated into a URL query",
         "pattern": "[?&][A-Za-z_]*=\\$\\{",
-        "mode": "absent"
+        "mode": "absent",
+        "rule": "6.3"
       },
       {
         "desc": "no user text via URLSearchParams either",
         "pattern": "URLSearchParams",
-        "mode": "absent"
+        "mode": "absent",
+        "rule": "6.3"
       },
       {
         "desc": "outbound call carries a deadline",
         "pattern": "AbortSignal|signal\\s*:",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.13"
       },
       {
         "desc": "failure is a value, not a throw (Result shape)",
         "pattern": "ok:\\s*false|Result<",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.2"
       }
     ]
   },
@@ -37,7 +42,8 @@
       {
         "desc": "removal is a soft delete (deletedAt)",
         "pattern": "deletedAt|deleted_at",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.9"
       },
       {
         "desc": "no hard db.delete in the flow",
@@ -45,12 +51,14 @@
         "mode": "absent",
         "exclude": [
           "src/infra/db.ts"
-        ]
+        ],
+        "rule": "10.9"
       },
       {
         "desc": "a test accompanies the change (rule 24 carve-out)",
         "pattern": "from ['\"]bun:test",
-        "mode": "present"
+        "mode": "present",
+        "rule": "4.3"
       }
     ]
   },
@@ -61,17 +69,20 @@
       {
         "desc": "charge call carries a deadline",
         "pattern": "AbortSignal|timeout",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.13"
       },
       {
         "desc": "retry is idempotency-keyed",
         "pattern": "(?i)idempotency",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.13"
       },
       {
         "desc": "retry is bounded (no while(true))",
         "pattern": "while\\s*\\(\\s*true\\s*\\)",
-        "mode": "absent"
+        "mode": "absent",
+        "rule": "10.13"
       }
     ]
   },
@@ -85,7 +96,8 @@
         "mode": "present",
         "exclude": [
           "src/infra/router.ts"
-        ]
+        ],
+        "rule": "7.1"
       },
       {
         "desc": "org not read from caller-controlled input",
@@ -93,7 +105,8 @@
         "mode": "absent",
         "exclude": [
           "src/infra/router.ts"
-        ]
+        ],
+        "rule": "7.1"
       }
     ]
   },
@@ -104,12 +117,14 @@
       {
         "desc": "money becomes integer minor units (cents)",
         "pattern": "(?i)cents|minorunits",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.11"
       },
       {
         "desc": "amount is validated/branded at the boundary",
         "pattern": "Result<|__brand|invalid",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.11"
       }
     ]
   },
@@ -120,12 +135,14 @@
       {
         "desc": "no raw email value passed into a log call",
         "pattern": "logger\\.(info|warn|error|debug)\\([^)]*email:\\s*(signup\\.email|email)\\b",
-        "mode": "absent"
+        "mode": "absent",
+        "rule": "6.3"
       },
       {
         "desc": "logs the opaque userId instead",
         "pattern": "userId",
-        "mode": "present"
+        "mode": "present",
+        "rule": "6.3"
       }
     ]
   },
@@ -136,17 +153,20 @@
       {
         "desc": "intent recorded via an outbox",
         "pattern": "(?i)outbox",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.5"
       },
       {
         "desc": "intent committed atomically with the state",
         "pattern": "(?i)transaction|same commit|atomic",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.5"
       },
       {
         "desc": "delivery deduped for retries",
         "pattern": "(?i)dedupe|idempoten",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.5"
       }
     ]
   },
@@ -157,12 +177,14 @@
       {
         "desc": "record carries a version checked on write",
         "pattern": "(?i)version",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.12"
       },
       {
         "desc": "stale write surfaces as a conflict",
         "pattern": "(?i)stale|conflict|409",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.12"
       }
     ]
   },
@@ -176,7 +198,8 @@
         "mode": "present",
         "globs": [
           ".sql"
-        ]
+        ],
+        "rule": "8.5"
       },
       {
         "desc": "no in-place rename of a live column",
@@ -184,7 +207,8 @@
         "mode": "absent",
         "globs": [
           ".sql"
-        ]
+        ],
+        "rule": "8.5"
       },
       {
         "desc": "old column dropped only in a later contract step",
@@ -192,7 +216,8 @@
         "mode": "present",
         "globs": [
           ".sql"
-        ]
+        ],
+        "rule": "8.5"
       }
     ]
   },
@@ -203,17 +228,20 @@
       {
         "desc": "capability port with a canned fake",
         "pattern": "(?i)fake|canned",
-        "mode": "present"
+        "mode": "present",
+        "rule": "3.9"
       },
       {
         "desc": "no floating latest model alias",
         "pattern": "(?i)latest",
-        "mode": "absent"
+        "mode": "absent",
+        "rule": "3.9"
       },
       {
         "desc": "failure is a value (Result shape)",
         "pattern": "Result<|ok:\\s*false",
-        "mode": "present"
+        "mode": "present",
+        "rule": "10.2"
       }
     ]
   }

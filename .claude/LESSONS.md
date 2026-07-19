@@ -2,6 +2,17 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [decision] 2026-07-19 | conformance-eval checks are now rule-id tagged; the scorecard is per-rule
+
+Phase 3 step: every assertion in scripts/conformance-eval/tasks.json carries the global-rules
+sub-concept id it proves (its `rule`), and grade.py prints a BY RULE scorecard (with_skill vs
+baseline per rule) alongside the per-task and TOTALS lines, so an eval result maps straight to its
+conformance-matrix.md row. 28 assertions across 11 rules (3.9, 4.3, 6.3, 7.1, 8.5, 10.2, 10.5, 10.9,
+10.11, 10.12, 10.13); grade.py --selftest still green and a synthetic run confirms the rendering.
+This is what Phase 4's CI eval-threshold gate reads. The runner (run.sh, `claude -p` per task per
+arm) and the 10 discipline tasks (e1-e10) are unchanged; the plan's architecture-focused tasks and a
+fresh baseline run are the remaining Phase 3 work.
+
 ## [decision] 2026-07-19 | conformance: the five remaining gaps closed as doctrine (5.10, 7.7, 10.14, 12.1, 17.7)
 
 Phase 2 finished by closing the last five matrix work-list gaps, each an added doctrine section
