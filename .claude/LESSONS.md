@@ -2,17 +2,32 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
-## [decision] 2026-07-19 | commit identity is Vincent's work email, deliberately; public push approved
+## [decision] 2026-07-19 | rule 26 final form, identity in commit metadata only, never in file contents
+
+Three same-day iterations converged here. The standard first treated attribution as a leak
+(pre-publish identity audits, an identity red flag), then flipped to "identity is normal,
+anonymity is an up-front opt-in", then dropped the opt-in too. The final rule splits by
+location: contributor identity in commit metadata is normal, public by design, and never a
+finding, an audit item, or a publish blocker; file contents are the opposite, no tracked
+file ever names a person, an employer, or a client (neutral handles like `atelier` where a
+holder string is required; CODEOWNERS and .mailmap exempt as metadata in file form). There
+is no per-repo identity decision left to make. Enforcement moment is review (review-me's
+universal checks); scrubbing after a push stays a gated filter-repo rewrite that leaves
+cached commits exposed. Supersedes the entry below, whose own naming of the contributor
+showed the problem: the acceptance it records stands for commit metadata, and its wording
+is redacted at tip to conform (pushed history keeps the original, accepted as exposed).
+
+## [decision] 2026-07-19 | commit identity is the contributor's work email, deliberately; public push approved
 
 Rule 26 separates accidental identity leaks from a conscious choice of attribution. For this
-repo the choice is now recorded: all history is authored as
-vincent.delacourt@adama-development.com and Vincent explicitly accepts that a public push
-exposes that address (decided 2026-07-19, after the question had been re-raised and re-answered
-across several sessions because it was never written down). This satisfies rule 26's
-"your own identity when you deliberately want attribution" arm; no filter-repo rewrite is
-wanted. Publish and push audits must not raise the email exposure as a blocker again. The
-rule 25 gate is untouched: each commit and push still needs explicit confirmation, but for
-the act itself, not for re-litigating the identity.
+repo the choice is now recorded: all history is authored under the contributor's own work
+email, and the contributor explicitly accepts that a public push exposes that address
+(decided 2026-07-19, after the question had been re-raised and re-answered across several
+sessions because it was never written down). This satisfies rule 26's "your own identity
+when you deliberately want attribution" arm; no filter-repo rewrite is wanted. Publish and
+push audits must not raise the email exposure as a blocker again. The rule 25 gate is
+untouched: each commit and push still needs explicit confirmation, but for the act itself,
+not for re-litigating the identity.
 
 ## [gotcha] 2026-07-12 | PIT 1.25.7 needs a history plugin for ALL incremental; the smoke test beats the docs
 
