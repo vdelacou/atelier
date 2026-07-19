@@ -2,6 +2,18 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [decision] 2026-07-19 | conformance-eval credible baseline: with_skill 82/84 vs baseline 62/84 (+23.8 pts) on sonnet-5
+
+After fixing the skill-injection bug, the 3-pass replication (60 runs, claude-sonnet-5, 0 failures)
+gives the real delta: with_skill 82/84 (97.6%) vs baseline 62/84 (73.8%), +23.8 points, recorded in
+scripts/conformance-eval/baseline.md. The skill's wins concentrate on the disciplines a capable base
+model forgets unaided: 4.3 test-first (3/3 vs 0/3), 10.9 soft-delete (5/6 vs 0/6), 6.3 PII channels
+(15/15 vs 10/15), 10.13 deadlines (12/12 vs 9/12), 10.5 outbox dedup (9/9 vs 7/9), 3.9 AI port (5/6
+vs 3/6). Parity on 7.1, 8.5, 10.2, 10.11, 10.12 (both perfect): the base model handles those unaided.
+with_skill is near-perfect and stable across passes, baseline lower and flakier. This is the Phase 3
+deliverable and Phase 4's gate reference (proposed threshold: with_skill >= 80/84 and beats baseline
+by >= 15 pts). Re-baseline when tasks.json or the skill changes materially.
+
 ## [gotcha] 2026-07-19 | conformance-eval with_skill arm ran skill-less: nested claude -p sandboxes reads to the run dir
 
 The eval's with_skill prompt told the agent to read SKILL.md at an ABSOLUTE path
