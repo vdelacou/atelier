@@ -1,47 +1,36 @@
-# PLAN: Phase 2 resolve conformance collisions (contradictions + CI asset)
+# PLAN: Phase 2 finish, close the five conformance gaps
 
-Resolve the Phase 1 work list. This session (user decision): the two contradictions plus
-the interlocked CI-asset gap. The other five gaps (5.10, 7.7, 10.14, 12.1, 17.7) are a
-follow-on session.
+Close the remaining matrix work-list GAPs by adding faithful doctrine to the reference files
+(doctrine counts as COVERED per the matrix convention, consistent with the org-pillar rows).
+Each cites its rule id. 5.3 stays CONTRADICTS (P6 filed, awaiting canon maintainer, not mine
+to close). Pinned: atelier HEAD b0d801a.
 
-Direction of authority: rules are canon, the skill amends, UNLESS the skill exposes a rule
-defect (P6 revision row instead). Every item cites its rule id in the commit. No item closes
-as "both fine".
-
-Dispositions (fixed):
-- 5.3 -> P6 revision row (user decision). The skill's caret + committed lockfile + frozen-lockfile
-  CI gives the determinism the canon's exact-pins mandate seeks; the canon's stated reason
-  ("caret ranges resolve to unknown code on every install") is false once a lockfile is
-  committed, which the canon ALSO requires. So the rule's absolute is defective, not the skill.
-  Skill dependency gate UNCHANGED; record the P6 row + a LESSONS decision; annotate matrix 5.3.
-- 15.1 -> amend skill (canon is right: multi-minute hooks train --no-verify; skill's own mutation
-  gate is 1-3 min/file). Restructure the hook to fast gates only; relocate the slow gates to CI.
-- 4.6 -> amend skill (interlocks with 15.1): ship a consumer CI workflow asset running the full
-  gate set as the authoritative merge gate, giving the relocated slow gates a home.
-
-Fix shape (15.1 + 4.6), informed by measurement (step 1):
-- Hook keeps the FAST gates: commit-size, package.json, gitleaks protect --staged, staged-scoped
-  lint, and typecheck if measured fast. Stated budget in the hook header (target a few seconds).
-- Move to CI: full bun test, coverage, and Stryker mutation (the canon's "full suite, coverage,
-  and slow scans run in CI only").
-- New asset assets/ci.yml: bun install --frozen-lockfile then the full gate set (lint:strict,
-  typecheck, test, coverage, mutation changed-on-PR/full-on-main, gitleaks detect, package.json,
-  bun audit). This is 4.6's authoritative merge gate.
-- Reframe the "eight gates" branding (27 refs across 7 files) as "the fast pre-commit gates" plus
-  "the full CI gate set", preserving each gate's identity, not deleting gates.
+Gaps -> fix (all reach COVERED as doctrine):
+- 5.10 -> security.md, new section after 5.6: single filtering edge (WAF) inspects/rate-limits/blocks
+  before code; origin locked to the edge only (private, never public); x-edge-secret header as
+  defense-in-depth (return 404 on mismatch). Cite 5.10.
+- 7.7 -> isolation.md, new section after 7.6: every API call carries the user/tenant token; no
+  anonymous service-key route returning everyone's rows (the /internal/all-orders anti-pattern);
+  bulk/analytical volume comes from the data platform (10.14), never the user API. Cite 7.7.
+- 10.14 -> reliability.md, new section at end: OLTP for the live app; ETL/CDC copy to a warehouse/lake
+  for reads at volume; no reporting/exports against production; the pipeline is the one sanctioned
+  bulk reader (narrow db grant, not the user API); the copy inherits erasure (pillar 6). Cite 10.14.
+- 12.1 -> governance.md, extend the doc-drift doctrine: a docs-check CI job that runs the README's
+  documented commands so drift fails the build; the atelier smoke-test.sh (follows the README install
+  steps) is the exemplar. Cite 12.1.
+- 17.7 -> product.md new section + atomic-design.md note: design the smallest screen first, one clear
+  primary action per view, only the controls that view needs (overflow menu / progressive disclosure),
+  ~44px tap targets, primary action in thumb reach; plus a bundle weight budget the pipeline enforces
+  (size-limit or Lighthouse CI, on a throttled mid-range profile). Cite 17.7.
 
 Steps:
-0. [x] Decisions (5.3 P6, scope = contradictions + CI), chapter, bun 1.3.14, ripple scoped  DONE
-1. [x] Measured gate timings on a scaffolded 8-file repo: typecheck 1s, lint 2s, test/coverage <1s, mutation 4s/1 file. Split by gate NATURE (scales-with-repo goes CI), not day-1 speed (lint:strict ~25s, mutation 1-3min/file are the real-repo numbers)  DONE
-2. [x] 5.3 P6 row: docs/global-rules/proposed-revisions.md + LESSONS [decision] + matrix 5.3 annotation; skill gate untouched  DONE
-3. [x] 15.1+4.6: rewrote assets/pre-commit (5 fast gates + ~5s budget); added assets/ci.yml (full set, frozen lockfile) + assets/lint-staged.sh; workflow.md gate table -> hook table + CI section; lint:staged wired  DONE
-4. [x] Reframed eight-gates refs across SKILL.md, workflow.md, greenfield, review-me, bun-typescript.md, nextjs-monorepo.md, commit-msg, README; em-dashes on all touched lines neutralized (diff dash count 0)  DONE
-5. [x] Updated smoke-test.sh: fast hook end-to-end + CI gates (mutation, ci.yml presence/wiring) run directly  DONE (running to confirm green)
-6. [x] conformance-matrix.md: 15.1 + 4.6 -> COVERED, 5.3 CONTRADICTS + P6 pointer; tally COVERED 106 / STRICTER 3 / GAP 5 / CONTRADICTS 1; self-check 9-green  DONE
-7. [x] Verify: frontmatter valid (4/4); em-dash diff 0; matrix self-check 9-green; smoke-test all checks passed (fast hook end-to-end + CI gates direct, 0 failures)  DONE
-8. [ ] Commit per item citing rule ids (commit1 5.3 P6; commit2 15.1+4.6 skill restructure); ask before commit (rule 25)  DoD: nothing committed without confirmation
+0. [x] Canon bodies read (5.10, 7.7, 10.14, 12.1, 17.7), chapter marked  DONE
+1. [x] Added five doctrine sections (security.md 5.10, isolation.md 7.7, reliability.md 10.14, governance.md 12.1, product.md + atomic-design.md 17.7)  DONE
+2. [x] conformance-matrix.md: five rows GAP -> COVERED (doctrine); tally COVERED 111 / STRICTER 3 / CONTRADICTS 1 / GAP 0; work list just 5.3; self-check 9-green  DONE
+3. [x] LESSONS [decision] entry for the five-gap closure  DONE
+4. [x] Verify: frontmatter 4/4; em-dash diff 0; cross-refs resolve; self-check green  DONE
+5. [ ] Commit (one commit: 6 reference files + matrix + lessons + plan = 9 files), cite rule ids; ask before commit (rule 25)  DoD: nothing committed without confirmation
 
-Java pre-commit-java has the same 15.1 shape and is deferred (needs its own Java CI asset). Remaining gaps 5.10, 7.7, 10.14, 12.1, 17.7 deferred to the next session.
-
-Pinned: atelier HEAD 8d319dd (Phase 1 committed). Canon unchanged (docs/global-rules/, sha256 as Phase 1).
-Deferred to next session: gaps 5.10, 7.7, 10.14, 12.1, 17.7.
+Deferred (flag, do not auto-expand): the Java pre-commit-java hook has the same 15.1 slow-gate shape
+(needs its own Java CI asset); shipping fixture-tested gates for 12.1 (docs-check) and 17.7 (bundle
+budget) would strengthen those from doctrine to gate. Phases 3-5 unchanged.

@@ -8,9 +8,9 @@ C1 of the Atelier vs Global Rules conformance plan.
 ## Pinned inputs
 
 - Audit date: 2026-07-19 (Phase 1). Phase 2 resolutions applied the same day.
-- Skill audited: this repo at commit `430c740` (Phase 1 baseline). Phase 2 resolved 15.1 and
-  4.6 and opened a P6 revision for 5.3; those three rows and the tally reflect the post-Phase-2
-  state, every other row is as audited at `430c740`.
+- Skill audited: this repo at commit `430c740` (Phase 1 baseline). Phase 2 resolved 15.1, 4.6,
+  and the five gaps 5.10, 7.7, 10.14, 12.1, 17.7, and opened a P6 revision for 5.3; those rows
+  and the tally reflect the post-Phase-2 state, every other row is as audited at `430c740`.
 - Canon, vendored byte-identical into this repo at `docs/global-rules/` (the drift check in
   Phase 4 runs against these copies):
 
@@ -167,8 +167,9 @@ needs", and none of those three clauses appears anywhere in the skill: greps acr
 tree for mobile-first, smallest-screen, one-primary-action, and progressive-disclosure return
 nothing on point, and the only responsive material is Tailwind `md:*`/`lg:*` shift tooling
 (atomic-design.md:206), which is direction-agnostic and not a mobile-first default. 17.7 is a
-GAP, and (matching the pillar-17 prose on a light interface and a bundle budget, which are
-likewise absent) a clear Phase-2 item.
+GAP. Resolved in Phase 2: product.md now carries the mobile-first, one-primary-action, and
+progressive-disclosure doctrine plus a bundle-budget gate prescription, and atomic-design.md
+states that breakpoints scale up from the smallest screen; this row is now COVERED.
 
 
 ## Pillar tables
@@ -231,7 +232,7 @@ likewise absent) a clear Phase-2 item.
 | 5.7 | One security baseline everywhere | COVERED | security.md:213-217 | rule | Auth, TLS, rate limits, allow/deny default on every route (rule 33) |
 | 5.8 | Untrusted content is not instructions | COVERED | ai.md:60; SKILL.md:213 | rule | Model input untrusted, every action authorized server-side (rule 32) (Watchlist 5) |
 | 5.9 | Cap what a caller can spend | COVERED | SKILL.md:213; ai.md:74 | rule | Per-caller spend budget before the call, refuse over bill (rule 32) |
-| 5.10 | One inspectable edge, no reachable origin | GAP |  | none | Public filtering edge (WAF) and origin-lock absent; 5.6 private datastores present; canon origin-secret check is code-expressible; family network-edge |
+| 5.10 | One inspectable edge, no reachable origin | COVERED | security.md; delivery.md | doctrine | Resolved Phase 2: single filtering edge plus origin-lock doctrine, with the x-edge-secret origin check as defense in depth |
 
 ### Pillar 6: Private by default
 
@@ -255,7 +256,7 @@ likewise absent) a clear Phase-2 item.
 | 7.4 | Shrink the blast radius | COVERED | isolation.md:65-72 | doctrine | Narrowest runtime role; NOBYPASSRLS scoped grants |
 | 7.5 | Prove isolation per endpoint | STRICTER | isolation.md:82-94; SKILL.md:205 | tripwire | Cross-tenant 404 test per endpoint plus a forged-trust-header edge test; check-isolation-tests.sh gates it |
 | 7.6 | Make identifiers unguessable, and never the authorization | COVERED | isolation.md:106-108 | doctrine | UUIDv7, keys internal, id is defense-in-depth never authorization |
-| 7.7 | No service-token backdoor for bulk reads | GAP | SKILL.md:205 | rule | Partial gap: token-per-call covered; the serve-analytics-from-the-data-platform clause absent; ties to 10.14 |
+| 7.7 | No service-token backdoor for bulk reads | COVERED | isolation.md; SKILL.md:205 | doctrine | Resolved Phase 2: no service-key bulk route, analytical volume served from the data platform (ties 10.14) |
 
 ### Pillar 8: Delivery should be boring
 
@@ -295,7 +296,7 @@ likewise absent) a clear Phase-2 item.
 | 10.11 | Parse, don't validate | COVERED | reliability.md:130-133; SKILL.md:283 | rule | Parse at the boundary into branded types; money cents, instants UTC (rule 12) |
 | 10.12 | No lost updates | COVERED | reliability.md:82; SKILL.md:211 | rule | Version on read, required on write, stale write is a 409 (rule 31) |
 | 10.13 | Every network call has a deadline | COVERED | reliability.md:9-11; assets/check-io-deadlines.sh | tripwire | Deadline on every outbound call, bounded jittered retries; check-io-deadlines.sh (rule 29) |
-| 10.14 | Separate the analytical store from the operational one | GAP |  | none | Operational and analytical store separation absent; OLTP/OLAP read-split is expressible doctrine, ETL/CDC topology is infra; ties to 7.7 |
+| 10.14 | Separate the analytical store from the operational one | COVERED | reliability.md | doctrine | Resolved Phase 2: OLTP/OLAP separation doctrine, ETL/CDC copy, the pipeline as the one sanctioned bulk reader (ties 7.7) |
 
 ### Pillar 11: Make it observable
 
@@ -309,7 +310,7 @@ likewise absent) a clear Phase-2 item.
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 12.1 | Document the essentials and treat doc drift as a defect | GAP | workflow.md:640; governance.md:5 | rule | Partial gap: drift-as-defect and same-commit-fix covered; the fail-CI-when-README-goes-stale check absent |
+| 12.1 | Document the essentials and treat doc drift as a defect | COVERED | governance.md; scripts/smoke-test.sh | doctrine | Resolved Phase 2: docs-check CI doctrine (extract README commands and run them); smoke-test.sh is the exemplar |
 | 12.2 | Generate API docs from the contract | COVERED | governance.md:32 | doctrine | API docs derived from the validating schema, example per endpoint, published |
 | 12.3 | Record decisions where they cannot drift | COVERED | governance.md:9-25 | doctrine | ADR committed with the code, options rejected and reversal recorded |
 | 12.4 | Build institutional memory | COVERED | workflow.md:5-7; lessons.md:177 | doctrine | Durable PLAN.md plus append-only LESSONS.md outlive the people |
@@ -367,7 +368,7 @@ likewise absent) a clear Phase-2 item.
 | 17.4 | Let technology serve the person, not replace them | COVERED | product.md:47-48 | doctrine | Automation removes friction; the human path stays visible |
 | 17.5 | Speak the user's language | COVERED | product.md:51-52; nextjs-monorepo.md:655 | rule | Every string in a meaning-keyed catalog; localization is a data change |
 | 17.6 | Accessible by default | COVERED | atomic-design.md:234-239; nextjs-monorepo.md:297 | gate | Semantic, keyboard, token contrast; jsx-a11y error-level gate; axe optional (Watchlist 6) |
-| 17.7 | Mobile first, and a light interface | GAP |  | none | Mobile-first, one-primary-action, progressive-disclosure, bundle budget all absent; only md and lg responsive tooling (Watchlist 6) |
+| 17.7 | Mobile first, and a light interface | COVERED | product.md; atomic-design.md:206 | doctrine | Resolved Phase 2: smallest-screen-first, one-primary-action, progressive-disclosure, bundle-budget doctrine (Watchlist 6) |
 
 ### Pillar 18: Validate before you build
 
@@ -385,22 +386,17 @@ Every CONTRADICTS and GAP row, in rule order. This is the resolve-collisions bac
 | ID | Sub-concept | Verdict | What is missing or contradicted |
 |---|---|---|---|
 | 5.3 | Control your dependencies | CONTRADICTS | Contradicts current canon (caret vs exact pins); P6 revision proposed, the exact-pins mandate is defective given the lockfile the canon also requires (Watchlist 4) |
-| 5.10 | One inspectable edge, no reachable origin | GAP | Public filtering edge (WAF) and origin-lock absent; 5.6 private datastores present; canon origin-secret check is code-expressible; family network-edge |
-| 7.7 | No service-token backdoor for bulk reads | GAP | Partial gap: token-per-call covered; the serve-analytics-from-the-data-platform clause absent; ties to 10.14 |
-| 10.14 | Separate the analytical store from the operational one | GAP | Operational and analytical store separation absent; OLTP/OLAP read-split is expressible doctrine, ETL/CDC topology is infra; ties to 7.7 |
-| 12.1 | Document the essentials and treat doc drift as a defect | GAP | Partial gap: drift-as-defect and same-commit-fix covered; the fail-CI-when-README-goes-stale check absent |
-| 17.7 | Mobile first, and a light interface | GAP | Mobile-first, one-primary-action, progressive-disclosure, bundle budget all absent; only md and lg responsive tooling (Watchlist 6) |
 
 ## Verdict tally
 
 | Verdict | Count |
 |---|---|
-| COVERED | 106 |
+| COVERED | 111 |
 | STRICTER | 3 |
-| GAP | 5 |
+| GAP | 0 |
 | CONTRADICTS | 1 |
 | OUT-OF-SCOPE | 0 |
 | Total | 115 |
 
-No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2, one contradiction and five gaps remain: 15.1 and 4.6 are resolved (the pre-commit hook now runs only the fast gates and a shipped CI workflow, assets/ci.yml, runs the full set as the required merge gate), and 5.3 stands as a contradiction of the current canon text with a P6 revision proposed in docs/global-rules/proposed-revisions.md. Everything else is covered, three of them more strictly than the canon asks.
+No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2, only one row diverges: 5.3 stands as a contradiction of the current canon text with a P6 revision proposed in docs/global-rules/proposed-revisions.md. 15.1 and 4.6 were resolved by splitting the hook (fast gates) from CI (the full set, assets/ci.yml), and the five gaps 5.10, 7.7, 10.14, 12.1, 17.7 by adding the missing doctrine. Everything else is covered, three of them more strictly than the canon asks.
 

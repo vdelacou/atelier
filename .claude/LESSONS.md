@@ -2,6 +2,21 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [decision] 2026-07-19 | conformance: the five remaining gaps closed as doctrine (5.10, 7.7, 10.14, 12.1, 17.7)
+
+Phase 2 finished by closing the last five matrix work-list gaps, each an added doctrine section
+citing its rule id (doctrine counts as COVERED per the matrix convention, as for the org-pillar
+rows). 5.10 -> security.md: single filtering edge plus origin-lock, with the x-edge-secret origin
+check. 7.7 -> isolation.md: no anonymous service-key bulk route, analytical volume from the data
+platform. 10.14 -> reliability.md: OLTP/OLAP separation, ETL/CDC copy, the pipeline as the one
+sanctioned bulk reader. 12.1 -> governance.md: a docs-check CI job that runs the README's documented
+commands, with scripts/smoke-test.sh as the exemplar. 17.7 -> product.md (mobile-first,
+one-primary-action, progressive-disclosure, bundle budget) plus an atomic-design.md note that
+breakpoints scale up from the smallest screen. Matrix tally now COVERED 111, STRICTER 3, CONTRADICTS
+1 (only 5.3, P6 pending), GAP 0. 12.1 and 17.7 are covered as doctrine that prescribes a gate
+(docs-check, bundle budget); shipping those as fixture-tested gates, and splitting the Java
+pre-commit-java hook (same 15.1 shape), are the remaining strengthenings.
+
 ## [decision] 2026-07-19 | conformance 15.1 + 4.6: pre-commit hook runs the fast gates, CI runs the full set
 
 Phase 2 resolved the 15.1 contradiction: the hook ran the full test suite, coverage, and

@@ -132,6 +132,19 @@ Parse, don't validate (rule 12): validate once at the boundary, then carry the f
 - **Money is integer minor units** (`cents`) behind a branded type or value record, never a float: `0.1 + 0.2 !== 0.3`, and the rounding error lands on an invoice.
 - **Instants are UTC** behind a type; a timezone is a display concern applied at the presentation edge, never stored in the domain value.
 
+## Separate the analytical store from the operational one (10.14)
+
+The transactional database serves the running application only. Anything that reads at volume (reporting, dashboards, bulk export, data science) reads a **separate analytical copy** (a warehouse or lake) fed by ETL or change-data-capture, never the production store directly. A heavy scan on the primary competes with real users and couples every report to the app's private schema.
+
+```text
+[ app + users ] --user-scoped (7.1)--> [ PRIMARY OLTP ]
+                                              | CDC / nightly ETL (one direction: out)
+                                              v
+                                       [ WAREHOUSE / LAKE ]  <-- BI, exports, ML read here
+```
+
+Writes stay on the transactional path, done by a user; reads at scale move to the copy, so the app database is tuned for the transaction and the warehouse for the scan, and neither fights the other. The pipeline is the **one sanctioned bulk reader**: its own narrowly granted job at the database layer (`references/isolation.md`, Shrink the blast radius), never the user-facing API (`references/isolation.md`, No service-token backdoor). The analytical copy inherits pillar 6, so subject erasure and the retention sweep propagate to it, and the platform is chosen under the open-interface rule (`references/delivery.md`) or its lock-in taken deliberately behind a port.
+
 ## Executable tripwires
 
 The mechanical slices of rules 29 and 30 ship as staged-diff gates (`references/workflow.md`, Discipline tripwires): `assets/check-io-deadlines.sh` blocks an infra file that calls `fetch` (or opens a Java `HttpClient`) with no deadline marker, and `assets/check-data-lifecycle.sh` blocks a hard delete in application code and destructive DDL in a non-contract migration. Exceptions ride on path conventions, never inline suppressions: erasure/retention/prune/sweep paths for the sanctioned hard deletes, a `*contract*` filename for the deliberate contract-step migration. Tripwires, not proofs; the checklist below stays the review duty.
