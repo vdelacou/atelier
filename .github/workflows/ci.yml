@@ -66,3 +66,16 @@ jobs:
       # file (src/domain/result.ts) drifting back into scope and silently
       # satisfying present-mode assertions for both arms.
       - run: python3 scripts/conformance-eval/grade.py --selftest
+
+  matrix-drift:
+    name: conformance-matrix drift gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # conformance-matrix.md must stay true to the vendored canon: 115 rows with
+      # the canonical per-pillar counts, every id+title verbatim from the index
+      # (rule 12.1), and the canon sha256 pins in the matrix header intact, so
+      # bumping the canon without re-auditing the matrix fails here. --selftest
+      # first proves the gate can fail on a retitled row or a corrupted pin.
+      - run: python3 scripts/check-matrix-drift.py --selftest
+      - run: python3 scripts/check-matrix-drift.py
