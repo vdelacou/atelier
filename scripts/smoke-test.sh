@@ -8,8 +8,8 @@
 # installs the current toolchain UNPINNED (so a new ESLint/TS/Stryker major
 # that breaks an asset is caught here first), then proves:
 #
-#   - every gate passes on a conforming tree (including the full 8-gate
-#     pre-commit hook, with Stryker mutation on the staged domain file)
+#   - every gate passes on a conforming tree (the fast pre-commit hook run
+#     end-to-end, plus the CI gates run directly, Stryker included)
 #   - every gate FAILS on the violation it exists to block (untested infra
 #     file, stale preload, oversized commit, "latest" version, junk commit
 #     message)
@@ -62,10 +62,13 @@ git init -q
 # --- README install steps, verbatim ---
 cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-package-json.sh" \
    "$SKILL/assets/check-coverage.ts" "$SKILL/assets/regenerate-coverage-preload.ts" \
-   "$SKILL/assets/mutate-staged.sh" "$SKILL/assets/mutate-changed.sh" scripts/
+   "$SKILL/assets/mutate-staged.sh" "$SKILL/assets/mutate-changed.sh" \
+   "$SKILL/assets/lint-staged.sh" scripts/
 cp "$SKILL/assets/fetch-mock.ts" "$SKILL/assets/capture-rejection.ts" src/test-helpers/
 cp "$SKILL/assets/format-error.ts" "$SKILL/assets/format-error.test.ts" src/domain/utilities/
 cp "$SKILL/assets/pre-commit" "$SKILL/assets/commit-msg" .githooks/
+mkdir -p .github/workflows
+cp "$SKILL/assets/ci.yml" .github/workflows/ci.yml
 cp "$SKILL/assets/stryker.conf.json" ./
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh scripts/check-coverage.ts scripts/regenerate-coverage-preload.ts
 git config core.hooksPath .githooks
@@ -84,6 +87,7 @@ cat > package.json <<'EOF'
   "type": "module",
   "scripts": {
     "lint": "eslint --cache --max-warnings=0",
+    "lint:staged": "bash scripts/lint-staged.sh",
     "lint:strict": "LINT_STRICT=1 eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "coverage": "bun run scripts/check-coverage.ts",
@@ -296,9 +300,15 @@ git add src/infra/http/invoices.test.ts
 expect_ok "isolation guard passes once the 404 test is staged" bash scripts/check-isolation-tests.sh
 git reset -q && rm -rf src/infra/http
 
-echo "== full 8-gate pre-commit hook (includes Stryker on the staged domain file) =="
+echo "== fast pre-commit hook end-to-end (the 5 fast gates: size, package.json, gitleaks, lint:staged, typecheck) =="
 git add package.json src/domain/greeting.ts src/domain/greeting.test.ts
-expect_ok "8-gate pre-commit hook end-to-end" bash .githooks/pre-commit
+expect_ok "fast pre-commit hook end-to-end" bash .githooks/pre-commit
+
+echo "== CI-only gates run directly (the full suite, coverage, and mutation are CI's job, not the hook's) =="
+expect_ok "mutation gate (Stryker on the staged domain file)" bun run mutate:staged
+expect_ok "ci.yml asset is present" test -f .github/workflows/ci.yml
+expect_ok "ci.yml wires the package.json gate" grep -q "check-package-json.sh" .github/workflows/ci.yml
+expect_ok "ci.yml runs the full suite, coverage, and mutation" bash -c 'grep -q "bun test" .github/workflows/ci.yml && grep -q "bun run coverage" .github/workflows/ci.yml && grep -q "mutate" .github/workflows/ci.yml'
 
 echo
 if [ "$FAILURES" -gt 0 ]; then

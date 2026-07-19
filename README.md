@@ -36,7 +36,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 | Error handling | Every IO port returns `Result<T, PortError>` with a discriminated-union error; use-cases return `Result<Summary, StepError>`; `try/catch` quarantined to `infra/`, `main.ts`, and pure-domain native-API fallbacks |
 | Design | SOLID expressed through typed records and arrow functions, object calisthenics |
 | Complexity | YAGNI, KISS, DRY after Rule of Three, Tell-Don't-Ask, Law of Demeter |
-| Toolchain discipline | `bun run lint` must be 0 errors AND 0 warnings; no inline ignores of any tool ever; inner-loop checks (`bun test` + `lint` + `typecheck` + `coverage`) after every change; coverage gates 100% on `domain` + `use-cases`, 80% on `composition` + `infra` + `presenter`; Stryker mutation testing with ≥90% break threshold; no `"latest"` or `"*"` in `package.json` (use `bun add` / `bun update`); eight-gate pre-commit hook (commit-size ≤10 files / ≤300 lines, package.json check, gitleaks `protect --staged`, tests, lint:strict, typecheck, coverage, mutate:staged) |
+| Toolchain discipline | `bun run lint` must be 0 errors AND 0 warnings; no inline ignores of any tool ever; inner-loop checks (`bun test` + `lint` + `typecheck` + `coverage`) after every change; coverage gates 100% on `domain` + `use-cases`, 80% on `composition` + `infra` + `presenter`; Stryker mutation testing with ≥90% break threshold; no `"latest"` or `"*"` in `package.json` (use `bun add` / `bun update`); fast pre-commit hook (commit-size ≤10 files / ≤300 lines, package.json check, gitleaks `protect --staged`, staged lint, typecheck) plus a CI gate set (`.github/workflows/ci.yml`) that runs strict lint, tests, coverage, and mutation on a frozen lockfile as the required merge check |
 | Security | Source-to-sink threat model, branded types at trust boundaries (`SafeUrl`, `SanitizedHtml`, `EnvVar`, `SafePath`), strict false-positive filter when reviewing |
 | Commits | Conventional Commits enforced by a `commit-msg` hook (rule 23) — `type(scope)!: subject`; the Bun-script variant ships a zero-dependency validator, the Next.js variant uses `@commitlint/config-conventional`. Same grammar both ways. The agent never commits or pushes without explicit user confirmation (rule 25) |
 | Identity | Contributor identity in commit metadata is normal (rule 26), never a finding or a publish blocker. File contents are the opposite: no tracked file names a person, an employer, or a client. Scrubbing a mention from pushed history is a gated `git filter-repo` rewrite plus a force-push (treating cached commits as still exposed) |
@@ -82,7 +82,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 - `tdd.md` — Outside-in classicist TDD (Ian Cooper), primary-port SUT, real-domain + faked-secondary-ports rule, Red-Green-Refactor, Three Laws, triangulation
 - `testing.md` — primary-port unit tests, the test-the-code-you-own principle (trust your dependencies), fakes with `errors` knob, regression + bypass + performance layers, test doubles catalogue, test builders, contract tests
 - `testing-infra.md` — three patterns for infra-adapter tests (custom-fetch DI / two-constructor / sync-builder export), production-wiring smoke test, `installFetchMock`, global-swap pattern, FS chmod tricks, ordering gotchas
-- `workflow.md` — four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, trunk-based development, eight-gate pre-commit hook, dependency CVE scanning in CI (`bun audit`), verification discipline (test the bypass, fix the class, compliance is not proof), Conventional Commits `commit-msg` hook, README consistency check
+- `workflow.md`: four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, trunk-based development, fast pre-commit hook plus the full CI gate set, dependency CVE scanning in CI (`bun audit`), verification discipline (test the bypass, fix the class, compliance is not proof), Conventional Commits `commit-msg` hook, README consistency check
 
 ### atelier-greenfield
 
@@ -128,7 +128,7 @@ The skill becomes available automatically the next time Claude Code starts. Veri
 
 ### 2. Install the gate scripts (Bun-script repos)
 
-The skill ships executable assets in [`skills/atelier/assets/`](skills/atelier/assets/) implementing the eight-gate pre-commit pipeline for the **Bun-script variant**. Next.js monorepos use `simple-git-hooks` (test + lint + commitlint) instead — see `references/nextjs-monorepo.md`; never install both hook mechanisms. For a Bun-script repo, copy the scripts and wire the hook:
+The skill ships executable assets in [`skills/atelier/assets/`](skills/atelier/assets/) implementing the fast pre-commit hook and the full CI gate set (`ci.yml`) for the **Bun-script variant**. Next.js monorepos use `simple-git-hooks` (test + lint + commitlint) instead, see `references/nextjs-monorepo.md`; never install both hook mechanisms. For a Bun-script repo, copy the scripts and wire the hook:
 
 ```bash
 SKILL=~/.claude/skills/atelier   # or wherever you cloned the skill
@@ -141,7 +141,12 @@ cp $SKILL/assets/check-coverage.ts                scripts/
 cp $SKILL/assets/regenerate-coverage-preload.ts   scripts/
 cp $SKILL/assets/mutate-staged.sh                 scripts/
 cp $SKILL/assets/mutate-changed.sh                scripts/
+cp $SKILL/assets/lint-staged.sh                   scripts/
 cp $SKILL/assets/stryker.conf.json                ./
+
+# The CI workflow (the authoritative gate set: full suite, coverage, mutation)
+mkdir -p .github/workflows
+cp $SKILL/assets/ci.yml                           .github/workflows/ci.yml
 
 # Stryker must be a local devDependency — without it, `bunx stryker` resolves
 # the deprecated npm package named "stryker" instead of @stryker-mutator/core
@@ -156,19 +161,19 @@ cp $SKILL/assets/fetch-mock.ts          src/test-helpers/
 cp $SKILL/assets/capture-rejection.ts   src/test-helpers/
 
 # formatError is production code (every catch block in src/infra/** uses it).
-# It lives in src/domain/**, so the mutation gate covers it — copy its test too.
+# It lives in src/domain/**, so the mutation gate covers it, copy its test too.
 mkdir -p src/domain/utilities
 cp $SKILL/assets/format-error.ts        src/domain/utilities/
 cp $SKILL/assets/format-error.test.ts   src/domain/utilities/
 
-# Install the git hooks: eight-gate pre-commit + Conventional Commits commit-msg
+# Install the git hooks: fast-gate pre-commit + Conventional Commits commit-msg
 cp $SKILL/assets/pre-commit             .githooks/pre-commit
 cp $SKILL/assets/commit-msg             .githooks/commit-msg
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh scripts/check-coverage.ts scripts/regenerate-coverage-preload.ts
 git config core.hooksPath .githooks   # picks up both hooks
 ```
 
-The `commit-msg` hook enforces [Conventional Commits](https://www.conventionalcommits.org) (`type(scope)!: subject`) with zero dependencies — see `references/workflow.md` (Commit message format).
+The `commit-msg` hook enforces [Conventional Commits](https://www.conventionalcommits.org) (`type(scope)!: subject`) with zero dependencies, see `references/workflow.md` (Commit message format).
 
 Add the matching scripts to `package.json`:
 
@@ -176,6 +181,7 @@ Add the matching scripts to `package.json`:
 {
   "scripts": {
     "lint":           "eslint --cache --max-warnings=0",
+    "lint:staged":    "bash scripts/lint-staged.sh",
     "lint:strict":    "LINT_STRICT=1 eslint --max-warnings=0",
     "typecheck":      "tsc --noEmit",
     "coverage":       "bun run scripts/check-coverage.ts",
@@ -190,7 +196,7 @@ Add the matching scripts to `package.json`:
 
 Optional: install `gitleaks` (`brew install gitleaks`) for the secret-scan gate. The hook degrades gracefully if it's missing.
 
-For a **Java (Quarkus) repo**, the equivalent install copies `assets/pre-commit-java`, `assets/check-pom.sh`, the shared `assets/check-commit-size.sh`, and the same `assets/commit-msg` — see `references/java-quarkus.md` (§ Gates and hooks) for the copy block and the pom-side configuration (Spotless, JaCoCo tiers, PIT).
+For a **Java (Quarkus) repo**, the equivalent install copies `assets/pre-commit-java`, `assets/check-pom.sh`, the shared `assets/check-commit-size.sh`, and the same `assets/commit-msg`, see `references/java-quarkus.md` (§ Gates and hooks) for the copy block and the pom-side configuration (Spotless, JaCoCo tiers, PIT).
 
 ## Usage
 
@@ -231,21 +237,23 @@ atelier/
     │   ├── assets/            # Copyable artefacts — install with the steps above
     │   │   ├── capture-rejection.ts            # rejection-assertion helper (SonarJS S4123)
     │   │   ├── check-commit-size.sh            # block commits over 10 files / 300 lines (gate 1; shared with the Java hook)
-    │   │   ├── check-coverage.ts               # per-tier coverage gate (gate 7)
+    │   │   ├── check-coverage.ts               # per-tier coverage gate (runs in CI)
     │   │   ├── check-data-lifecycle.sh         # rule-30 tripwire: hard deletes + destructive DDL in the staged diff
     │   │   ├── check-io-deadlines.sh           # rule-29 tripwire: infra fetch/HttpClient without a deadline marker
     │   │   ├── check-isolation-tests.sh        # rule-28 tripwire: new route files without a nearby 404 test
     │   │   ├── check-package-json.sh           # block "latest" / "*" / dist-tag version strings (gate 2)
     │   │   ├── check-pii-channels.sh           # rule-27 tripwire: PII in query strings, log messages, @QueryParam
     │   │   ├── check-pom.sh                    # Java: block version ranges + -SNAPSHOT deps in pom.xml (rule 19)
+    │   │   ├── ci.yml                          # GitHub Actions CI: the full gate set on a frozen lockfile (rules 4.6, 15.1)
     │   │   ├── commit-msg                       # git commit-msg hook: enforce Conventional Commits (rule 23, all variants)
     │   │   ├── fetch-mock.ts                   # installFetchMock for infra adapter tests
     │   │   ├── format-error.ts                 # safe catch-block formatter (SonarJS S6551)
     │   │   ├── format-error.test.ts            # its test (format-error is in the mutation scope)
     │   │   ├── java/                           # Java variant exemplars: sealed Result/Ok/Err + the Email value-record
+    │   │   ├── lint-staged.sh                  # fast staged-file ESLint for the pre-commit hook
     │   │   ├── mutate-changed.sh               # Stryker mutation on files changed vs origin/main
-    │   │   ├── mutate-staged.sh                # Stryker mutation on staged files (gate 8)
-    │   │   ├── pre-commit                      # git pre-commit hook running 8 gates (Bun variant)
+    │   │   ├── mutate-staged.sh                # Stryker mutation on staged files (optional local; CI enforces mutation)
+    │   │   ├── pre-commit                      # git pre-commit hook running the fast gates (Bun variant)
     │   │   ├── pre-commit-java                 # git pre-commit hook running 6 gates (Java variant)
     │   │   ├── regenerate-coverage-preload.ts  # auto-glob src/{infra,composition,presenter} → coverage-preload.ts
     │   │   └── stryker.conf.json               # Stryker config (mutation scope, 90% break threshold)
@@ -292,7 +300,7 @@ atelier/
 Every push and pull request runs four GitHub Actions jobs, each guarding against the same failure mode — a toolchain major or a doc edit silently breaking what the skill ships:
 
 - **frontmatter validator** — every `SKILL.md` opens with a valid `name`/`description` within the skill-loader limits.
-- **`scripts/smoke-test.sh` (Bun variant)** — follows this README's install steps into a scratch Bun repo, extracts the canonical `tsconfig.json` / `eslint.config.js` from `references/bun-typescript.md`, installs the **current unpinned** toolchain, and proves every gate both passes on a conforming tree and blocks its target violation (25 checks, including the full 8-gate pre-commit hook with Stryker).
+- **`scripts/smoke-test.sh` (Bun variant)**: follows this README's install steps into a scratch Bun repo, extracts the canonical `tsconfig.json` / `eslint.config.js` from `references/bun-typescript.md`, installs the **current unpinned** toolchain, and proves every gate both passes on a conforming tree and blocks its target violation (the fast pre-commit hook run end-to-end, plus the CI gates run directly, Stryker included).
 - **`scripts/smoke-test-next.sh` (Next.js variant)** — scaffolds a Next.js package from the canonical configs in `references/nextjs-monorepo.md`, builds a conforming design system + page shell + static export, and asserts the design-system lint block catches its target violations: rule 21 (a hook / `next/*` import / `'use client'` / app-code import inside a component) and rule 22 (a `className` / `class` / `style` attribute outside `src/components/**`).
 - **`scripts/smoke-test-java.sh` (Java variant)** | scaffolds a Maven repo from the canonical `pom.xml` in `references/java-quarkus.md` plus the shipped hook assets, proves the gates pass on a conforming skeleton (spotless, `verify` with the JaCoCo tiers, PIT, a real hooked commit through `pre-commit-java`), and that each gate blocks its target violation (a version range, a `-SNAPSHOT` dependency, an oversized commit, a junk commit message, a misformatted file, a warning under `-Werror`, an untested domain class, a covered-but-unasserted mutant survivor).
 
