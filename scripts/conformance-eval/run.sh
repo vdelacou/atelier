@@ -50,11 +50,19 @@ run_one() { # $1 = task id, $2 = arm
   local id="$1" arm="$2"
   local dir="$OUT/$id-$arm"
   rm -rf "$dir" && mkdir -p "$dir" && cp -r "$HERE/fixture/." "$dir/"
+  # with_skill: copy the skill INTO the run dir. A nested `claude -p` sandboxes
+  # file reads to its own working directory, so an absolute path to the skill
+  # OUTSIDE the run dir cannot be read, and a with_skill run would then execute
+  # skill-less (measuring baseline vs baseline). grade.py excludes the skills/
+  # subtree, so these injected files are never counted as the agent's output.
+  if [ "$arm" = "with_skill" ]; then
+    mkdir -p "$dir/skills" && cp -r "$SKILL_PATH" "$dir/skills/"
+  fi
   local task
   task=$(task_prompt "$id")
   local prompt
   if [ "$arm" = "with_skill" ]; then
-    prompt="You are executing a coding task in the repo at $dir. This repo follows the coding standard defined by the skill at $SKILL_PATH: read that skill's SKILL.md FIRST and follow it exactly, consulting files under its references/ directory where the SKILL.md directs you to. Then implement the task. Work only inside the repo directory named above. Do not run git. Do not install packages. Task: $task When done, reply with only the list of files you created or changed, one relative path per line."
+    prompt="You are executing a coding task in the repo at $dir. This repo follows the coding standard defined by the atelier skill, copied into this repo at ./skills/atelier. Read ./skills/atelier/SKILL.md FIRST and follow it exactly, consulting files under ./skills/atelier/references/ where the SKILL.md directs you to. Then implement the task. Work only inside the repo directory named above; the ./skills/atelier tree is read-only reference, so do not edit it or count it as your output. Do not run git. Do not install packages. Task: $task When done, reply with only the list of files you created or changed, one relative path per line."
   else
     prompt="You are a senior engineer executing a coding task in the repo at $dir. It is a small Bun/TypeScript repo. Implement the task well, using your own judgment. Work only inside the repo directory named above. Do not run git. Do not install packages. Task: $task When done, reply with only the list of files you created or changed, one relative path per line."
   fi

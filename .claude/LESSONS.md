@@ -2,6 +2,24 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [gotcha] 2026-07-19 | conformance-eval with_skill arm ran skill-less: nested claude -p sandboxes reads to the run dir
+
+The eval's with_skill prompt told the agent to read SKILL.md at an ABSOLUTE path
+($REPO/skills/atelier), but a nested `claude -p` sandboxes Read and Bash to its own working
+directory, so that path is unreadable ("permission to read ... was requested but not granted",
+confirmed empirically and in the agent's own result.txt). The Skill tool has no atelier entry in
+that session either. Net: every with_skill run executed with ZERO skill content, baseline vs
+baseline, which is exactly why the first pass showed parity (single run with_skill 23/28 vs baseline
+25/28) instead of the skill helping. Both the single run and the 3x sonnet-5 replication
+(runs-claude-sonnet-5-r1..r3) are INVALID as skill measurements; discard them. Fix (run.sh): copy the
+skill INTO the run dir ($dir/skills/atelier) for the with_skill arm and point the prompt at the
+relative ./skills/atelier/SKILL.md; grade.py already excludes the skills/ subtree so injected files
+are never graded. Verified: e2-removal-with_skill went 1/3 -> 3/3 (hard db.delete became a rule-30
+soft-delete via deletedAt with a test), the agent citing "Rule 30" explicitly. Rule for next time:
+an eval that depends on the agent READING a file must inject that file into the sandboxed working
+directory, never reference an absolute path outside it, and verify skill loading (does the output
+change) before trusting any with_skill vs baseline delta.
+
 ## [decision] 2026-07-19 | conformance-eval checks are now rule-id tagged; the scorecard is per-rule
 
 Phase 3 step: every assertion in scripts/conformance-eval/tasks.json carries the global-rules
