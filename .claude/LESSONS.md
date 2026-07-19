@@ -2,6 +2,18 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [decision] 2026-07-19 | commit identity is Vincent's work email, deliberately; public push approved
+
+Rule 26 separates accidental identity leaks from a conscious choice of attribution. For this
+repo the choice is now recorded: all history is authored as
+vincent.delacourt@adama-development.com and Vincent explicitly accepts that a public push
+exposes that address (decided 2026-07-19, after the question had been re-raised and re-answered
+across several sessions because it was never written down). This satisfies rule 26's
+"your own identity when you deliberately want attribution" arm; no filter-repo rewrite is
+wanted. Publish and push audits must not raise the email exposure as a blocker again. The
+rule 25 gate is untouched: each commit and push still needs explicit confirmation, but for
+the act itself, not for re-litigating the identity.
+
 ## [gotcha] 2026-07-12 | PIT 1.25.7 needs a history plugin for ALL incremental; the smoke test beats the docs
 
 Prompted to correct the 2026-07-11 PIT entry, I trusted pitest.org docs (via ctx7) that present withHistory and historyInputFile/historyOutputFile as free, live parameters, and enabled withHistory in the pom. smoke-test-java then failed TWICE: both withHistory=true AND explicit historyInputFile/historyOutputFile error "History has been enabled but no history plugin has been installed/activated" (pointing at Arcmutate's +arcmutate_history). So in PIT 1.25.7 with the base pitest-maven + junit5 plugins, incremental history of ANY kind is gated behind Arcmutate's commercial history plugin; the 2026-07-11 entry was RIGHT. The free speed levers are the narrow scope (targetClasses/targetTests), parallel threads (now added to the pom, a lever the earlier note missed), and staged-file gating; incremental speed at scale means Arcmutate, a licence decision not a library swap. Reverted the withHistory change. Lesson: for toolchain BEHAVIOR, not just API shape, the smoke test is ground truth over the docs; run it before overturning a hard-won gotcha. The challenge to the claim was still worth it, because it forced the empirical check that upgraded the original from asserted to verified and pinned the exact gate (Arcmutate's history plugin, not merely a vague "commercial add-on").
