@@ -48,8 +48,12 @@ errors-as-values (10.2), branded money (10.11), and optimistic locking (10.12): 
 base model handles without help. Per-task, `with_skill` is near-perfect and stable across the
 three passes while `baseline` is both lower and flakier.
 
-## Threshold (Phase 4 gate, proposed)
+## Threshold (Phase 4 gate, wired)
 
-For the eval-threshold CI gate on skill-touching PRs: `with_skill` holds at least 80/84 AND beats
-`baseline` by at least 15 points. Re-baseline whenever `tasks.json` or the skill changes
-materially; the run dirs are gitignored, this scorecard is the committed reference.
+The eval-threshold gate is wired in `.github/workflows/eval.yml`: on a skill-touching PR it runs one
+eval pass and calls `grade.py --min-with-skill 24 --min-delta 4` (a single-pass floor, conservative
+against this 3-pass baseline of 82/84 and +23.8). It needs the `ANTHROPIC_API_KEY` secret; without it
+the job skips rather than blocking. The always-on cheap companion is the `matrix-drift` gate in
+`ci.yml` (`scripts/check-matrix-drift.py`), which holds the matrix to the vendored canon. Re-baseline
+whenever `tasks.json` or the skill changes materially; the run dirs are gitignored, this scorecard is
+the committed reference.

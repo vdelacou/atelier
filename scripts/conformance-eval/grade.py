@@ -91,12 +91,26 @@ def selftest() -> None:
     print("selftest OK: a pristine fixture copy scores 0 (grader credits only the agent's diff)")
 
 
+def _flag_val(args: list[str], name: str) -> int | None:
+    """Read --name=N or --name N as an int, or None if absent."""
+    for i, a in enumerate(args):
+        if a == name and i + 1 < len(args):
+            return int(args[i + 1])
+        if a.startswith(name + "="):
+            return int(a.split("=", 1)[1])
+    return None
+
+
 def main() -> None:
     args = sys.argv[1:]
     if "--selftest" in args:
         selftest()
         return
-    runs_dir = Path(args[0]) if args else None
+    # Phase 4 eval gate: block below the recorded baseline (scripts/conformance-eval/baseline.md).
+    min_ws = _flag_val(args, "--min-with-skill")
+    min_delta = _flag_val(args, "--min-delta")
+    positional = [a for a in args if not a.startswith("--") and not a.lstrip("-").isdigit()]
+    runs_dir = Path(positional[0]) if positional else None
     if runs_dir is None:
         workspaces = sorted(Path("skills/atelier-workspace").glob("conformance-*/runs"))
         if not workspaces:
@@ -144,6 +158,22 @@ def main() -> None:
         for rule in sorted(by_rule, key=lambda r: [int(n) for n in r.split(".")]):
             ws, bl = by_rule[rule]["with_skill"], by_rule[rule]["baseline"]
             print(f"  {rule:<6} with_skill {ws[0]}/{ws[1]}   baseline {bl[0]}/{bl[1]}")
+
+    # Phase 4 eval gate: exit non-zero below the recorded baseline (see baseline.md).
+    if min_ws is not None or min_delta is not None:
+        ws_p, bl_p = grand["with_skill"][0], grand["baseline"][0]
+        delta = ws_p - bl_p
+        fails = []
+        if min_ws is not None and ws_p < min_ws:
+            fails.append(f"with_skill {ws_p} < required {min_ws}")
+        if min_delta is not None and delta < min_delta:
+            fails.append(f"delta +{delta} < required +{min_delta}")
+        if fails:
+            print("\nEVAL GATE FAILED:")
+            for f in fails:
+                print(f"  {f}")
+            sys.exit(1)
+        print(f"\nEVAL GATE OK: with_skill {ws_p}, delta +{delta}")
 
 
 if __name__ == "__main__":

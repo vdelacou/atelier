@@ -2,6 +2,19 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [decision] 2026-07-20 | Phase 4 wired: matrix-drift CI gate (always) + eval-threshold gate (skill PRs)
+
+Two gates close the drift loop. (1) scripts/check-matrix-drift.py holds conformance-matrix.md to the
+vendored canon: 115 rows with the canonical per-pillar counts, every id+title verbatim from the index
+(rule 12.1), and the canon sha256 pins in the matrix header intact (so changing docs/global-rules/
+without re-auditing the matrix fails). Wired as the always-on `matrix-drift` job in ci.yml, with a
+--selftest that proves it rejects a retitled row and a corrupted pin. (2) grade.py gained
+--min-with-skill / --min-delta (exit non-zero below the baseline), and .github/workflows/eval.yml runs
+one eval pass on skill-touching PRs and gates on it (single-pass floor with_skill >= 24/28, delta >=
++4, conservative vs the 3-pass baseline 82/84 +23.8). eval.yml needs the ANTHROPIC_API_KEY secret and
+the claude CLI; without the secret it SKIPS rather than blocking, so it is inert until enabled. This is
+rule 4.8 applied to the skill itself: a skill edit ships on its eval score.
+
 ## [decision] 2026-07-19 | conformance-eval credible baseline: with_skill 82/84 vs baseline 62/84 (+23.8 pts) on sonnet-5
 
 After fixing the skill-injection bug, the 3-pass replication (60 runs, claude-sonnet-5, 0 failures)

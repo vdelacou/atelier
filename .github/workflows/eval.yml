@@ -1,0 +1,56 @@
+name: conformance-eval
+
+# The behavioral gate (rule 4.8): a change to the skill ships on its eval score, not
+# on how one generation looked. On a PR that touches the skill, run one eval pass and
+# block below the recorded baseline (scripts/conformance-eval/baseline.md).
+#
+# This job spawns nested `claude -p` agents, so it REQUIRES the ANTHROPIC_API_KEY secret
+# and the claude CLI. Without the secret the job skips (it does not block), so the gate
+# is inert until someone adds the secret to enable it. It is heavy (a per-task, per-arm
+# agent run); the always-on cheap gate for the matrix itself is `matrix-drift` in ci.yml.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'skills/atelier/SKILL.md'
+      - 'skills/atelier/references/**'
+      - 'skills/atelier/assets/**'
+
+permissions:
+  contents: read
+
+jobs:
+  eval:
+    name: eval score vs baseline
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - name: guard on the API key (skip, do not block, when absent)
+        id: guard
+        env:
+          KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "ANTHROPIC_API_KEY not set; skipping the eval gate. Add the secret to enable it." >&2
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: install the claude CLI
+        if: steps.guard.outputs.run == 'true'
+        run: npm install -g @anthropic-ai/claude-code
+      - name: run one eval pass and gate on the baseline
+        if: steps.guard.outputs.run == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CONFORMANCE_MODEL: claude-sonnet-5
+          CONFORMANCE_TAG: ci
+        run: |
+          bash scripts/conformance-eval/run.sh
+          runs=$(ls -d skills/atelier-workspace/conformance-*/runs-claude-sonnet-5-ci | tail -1)
+          # Single-pass floor, conservative against the 3-pass baseline (with_skill
+          # 82/84, +23.8). One pass of the 28-check suite: require most checks and a
+          # clear positive delta, loose enough to absorb single-run variance.
+          python3 scripts/conformance-eval/grade.py "$runs" --min-with-skill 24 --min-delta 4
