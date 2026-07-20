@@ -260,6 +260,12 @@ expect_ok "eslint (design system + shell clean)" bun run lint
 expect_ok "tsc --noEmit" bun run typecheck
 expect_ok "next build (static export)" env NODE_ENV=production bun run build
 
+echo "== rule 17.7: the bundle-weight budget passes under budget and fails over, on the real export =="
+expect_ok "bundle budget passes under a generous ceiling" \
+  env BUDGET_KB=2000 bash "$REPO_ROOT/skills/atelier/assets/check-bundle-size.sh" out
+expect_err "bundle budget fails when over the ceiling" \
+  env BUDGET_KB=0 bash "$REPO_ROOT/skills/atelier/assets/check-bundle-size.sh" out
+
 echo "== negative path: rule 21 — the design-system block rejects app knowledge in a component =="
 cat > src/components/atoms/bad-widget.tsx <<'EOF'
 'use client';

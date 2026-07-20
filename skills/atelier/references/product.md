@@ -83,7 +83,7 @@ Design the **smallest screen first** with **one clear primary action per view**,
 </div>
 ```
 
-The small screen is the default case, not the exception: breakpoints scale **up** (`md:` / `lg:`) from the base layout, tap targets are finger-sized (~44px), the primary action sits in thumb reach, and the form asks the fewest fields it can (rule 2.6). A light interface is a light payload too, so make weight a number the pipeline enforces: a bundle budget (`size-limit` or Lighthouse CI budgets) that fails the build when the entry route's gzipped JS crosses its ceiling, measured on a throttled mid-range profile, not a developer laptop (pillar 12, and rule 15.1 for the gate).
+The small screen is the default case, not the exception: breakpoints scale **up** (`md:` / `lg:`) from the base layout, tap targets are finger-sized (~44px), the primary action sits in thumb reach, and the form asks the fewest fields it can (rule 2.6). A light interface is a light payload too, so make weight a number the pipeline enforces: the shipped `assets/check-bundle-size.sh` (or `size-limit` / Lighthouse CI budgets) fails the build when the built JS crosses its gzipped ceiling, measured on the shipped bundle, not a developer laptop, and a bump is a deliberate reviewed change (pillar 12, and rule 15.1 for the gate).
 
 ## Validate before you build
 
