@@ -63,7 +63,7 @@ git init -q
 cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-package-json.sh" \
    "$SKILL/assets/check-coverage.ts" "$SKILL/assets/regenerate-coverage-preload.ts" \
    "$SKILL/assets/mutate-staged.sh" "$SKILL/assets/mutate-changed.sh" \
-   "$SKILL/assets/lint-staged.sh" scripts/
+   "$SKILL/assets/lint-staged.sh" "$SKILL/assets/check-docs.sh" scripts/
 cp "$SKILL/assets/fetch-mock.ts" "$SKILL/assets/capture-rejection.ts" src/test-helpers/
 cp "$SKILL/assets/format-error.ts" "$SKILL/assets/format-error.test.ts" src/domain/utilities/
 cp "$SKILL/assets/pre-commit" "$SKILL/assets/commit-msg" .githooks/
@@ -299,6 +299,13 @@ printf 'import { test, expect } from "bun:test";\ntest("cross-tenant read is not
 git add src/infra/http/invoices.test.ts
 expect_ok "isolation guard passes once the 404 test is staged" bash scripts/check-isolation-tests.sh
 git reset -q && rm -rf src/infra/http
+
+echo "== docs-check (rule 12.1): the README Verify block runs, and a broken one fails =="
+printf '# fixture\n\n## Verify\n```bash\ntest -f package.json\n```\n' > README.md
+expect_ok "docs-check passes when the README Verify command works" bash scripts/check-docs.sh README.md
+printf '# fixture\n\n## Verify\n```bash\ntest -f a-path-the-readme-claims-but-is-gone.ts\n```\n' > README.md
+expect_err "docs-check fails when a documented command breaks" bash scripts/check-docs.sh README.md
+rm -f README.md
 
 echo "== fast pre-commit hook end-to-end (the 5 fast gates: size, package.json, gitleaks, lint:staged, typecheck) =="
 git add package.json src/domain/greeting.ts src/domain/greeting.test.ts
