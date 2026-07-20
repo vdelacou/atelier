@@ -9,6 +9,9 @@ single run is too noisy for a verdict (see `.claude/LESSONS.md`).
 - Date: 2026-07-19
 - Model (pinned): `claude-sonnet-5`
 - Passes: 3, aggregated. 10 tasks (e1-e10), both arms, per pass, so 60 runs, 0 failures.
+- Task set: 4 architecture tasks (a1-usecase-port, a2-branded-id, a3-http-adapter, a4-tdd-feature;
+  pillar 3 boundaries, branded types, TDD) were added AFTER this baseline and are not in the totals
+  below; a full re-baseline including them is pending.
 - Harness: `scripts/conformance-eval/run.sh` copies the skill into each `with_skill` run dir
   (a nested `claude -p` cannot read a path outside its sandbox), graded by `grade.py`
   (diff-only, the `skills/` subtree excluded), each assertion tagged with the global-rules

@@ -2,6 +2,22 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [decision] 2026-07-20 | optional strengthenings: Java hook split, docs-check + bundle gates, architecture eval tasks
+
+Four strengthenings, each a shipped gate that proves it can fail via the matching smoke test:
+- Java hook split (rule 15.1, mirrors the Bun fix): assets/pre-commit-java is now the 4 fast gates
+  (size, pom, gitleaks, spotless:check); `./mvnw verify` + PIT moved to a new assets/ci-java.yml.
+  Reframed java-quarkus.md + the SKILL variant matrix; smoke-test-java green (fast hook end-to-end,
+  verify + PIT still proven directly).
+- 12.1 docs-check as a gate: assets/check-docs.sh runs the README's `## Verify` bash block; smoke-test.sh
+  proves it passes on a working block and fails on a broken one; governance.md points at it.
+- 17.7 bundle budget as a gate: assets/check-bundle-size.sh (gzipped built JS vs BUDGET_KB); smoke-test-next.sh
+  proves it on the real static export (under a generous ceiling passes, BUDGET_KB=0 fails); product.md points at it.
+- Architecture eval tasks a1-a4 (pillar 3 ports/fakes, branded types, TDD) added to tasks.json, rule-tagged;
+  1-pass sonnet-5 validation with_skill 8/9 vs baseline 6/9, skill ahead on 3.2 (port+fake) and 10.13
+  (deadline). Full 3-pass re-baseline including them is pending (baseline.md notes it).
+Remaining: enable eval.yml with the ANTHROPIC_API_KEY secret; Phase 5 field test.
+
 ## [decision] 2026-07-20 | Phase 4 wired: matrix-drift CI gate (always) + eval-threshold gate (skill PRs)
 
 Two gates close the drift loop. (1) scripts/check-matrix-drift.py holds conformance-matrix.md to the

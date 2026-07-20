@@ -1,24 +1,21 @@
-# PLAN: Atelier vs Global Rules conformance (Phases 1-4 done)
+# PLAN: optional conformance strengthenings (all four DONE, uncommitted)
 
-The 5-phase plan to make the atelier skill provably conform to the Global Rules canon.
-Pinned: atelier HEAD 8e49556 (baseline commit); Phase 4 uncommitted below.
+Four independent strengthenings, one coherent commit each, each new gate proven to fail via the
+matching smoke test. Pinned: atelier HEAD e61f754.
 
-- Phase 1 DONE: conformance-matrix.md (115 rows), canon vendored to docs/global-rules/, sha256-pinned.
-- Phase 2 DONE: two contradictions (5.3 P6 revision; 15.1+4.6 hook/CI split) + five gaps closed as
-  doctrine. Matrix COVERED 111, STRICTER 3, CONTRADICTS 1 (only 5.3, P6-pending), GAP 0.
-- Phase 3 DONE: rule-tagged eval checker + per-rule scorecard; harness skill-injection bug found and
-  fixed; credible baseline (3x sonnet-5, 60 runs) with_skill 82/84 vs baseline 62/84, +23.8 pts,
-  recorded in scripts/conformance-eval/baseline.md.
-- Phase 4 DONE (this session, uncommitted): two CI gates.
-  - Always-on: scripts/check-matrix-drift.py (matrix vs vendored canon: 115 rows, id+title verbatim,
-    canon sha256 pins intact), wired as the matrix-drift job in ci.yml, with a fail-proving --selftest.
-  - Skill PRs: grade.py --min-with-skill/--min-delta gate + .github/workflows/eval.yml (one eval pass,
-    single-pass floor 24/28 and +4; needs ANTHROPIC_API_KEY, skips without it).
+1. [x] Java hook split (rule 15.1): pre-commit-java -> 4 fast gates; verify + PIT to new ci-java.yml;
+   java-quarkus.md + SKILL matrix reframed; smoke-test-java GREEN (fast hook + verify/PIT direct).
+2. [x] 12.1 docs-check gate: assets/check-docs.sh runs the README ## Verify block; smoke-test.sh
+   proves pass-and-fail; governance.md + README point at it. GREEN.
+3. [x] 17.7 bundle-budget gate: assets/check-bundle-size.sh (gzipped JS vs BUDGET_KB); smoke-test-next.sh
+   proves pass-and-fail on the real export; product.md + README point at it. GREEN.
+4. [x] Architecture eval tasks a1-a4 (3.2/10.2/10.11/10.13/4.3) in tasks.json, rule-tagged; grader
+   selftest green; 1-pass validation with_skill 8/9 vs baseline 6/9 (skill ahead on 3.2, 10.13).
 
-Pending:
-- Phase 5: field scorecard on the next real repo built with the skill (P4/P5 field-test prompts).
-- Optional strengthenings: architecture-focused eval tasks (widen into pillar 3); ship 12.1 docs-check
-  and 17.7 bundle-budget as fixture-tested gates; split the Java pre-commit-java hook (same 15.1 shape);
-  enable eval.yml by adding the ANTHROPIC_API_KEY secret.
-- Open: 5.3 flips to COVERED only if the canon maintainer accepts the P6 revision
-  (docs/global-rules/proposed-revisions.md).
+Verified: all shell/YAML/JSON parse; 0 em dashes in the diff; three smoke tests green; grader selftest green.
+
+Commit slicing (independent, cite the rule): (1) Java split, (2) docs-check, (3) bundle budget,
+(4) architecture eval tasks + baseline note. LESSONS + PLAN ride with the last.
+
+Deferred (user action): enable eval.yml by adding the ANTHROPIC_API_KEY secret; a full 3-pass re-baseline
+including a1-a4. Phase 5: field scorecard on the next real repo. Open: 5.3 P6 awaiting the canon maintainer.

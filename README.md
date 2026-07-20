@@ -196,7 +196,7 @@ Add the matching scripts to `package.json`:
 
 Optional: install `gitleaks` (`brew install gitleaks`) for the secret-scan gate. The hook degrades gracefully if it's missing.
 
-For a **Java (Quarkus) repo**, the equivalent install copies `assets/pre-commit-java`, `assets/check-pom.sh`, the shared `assets/check-commit-size.sh`, and the same `assets/commit-msg`, see `references/java-quarkus.md` (§ Gates and hooks) for the copy block and the pom-side configuration (Spotless, JaCoCo tiers, PIT).
+For a **Java (Quarkus) repo**, the equivalent install copies `assets/pre-commit-java`, `assets/ci-java.yml`, `assets/check-pom.sh`, the shared `assets/check-commit-size.sh`, and the same `assets/commit-msg`, see `references/java-quarkus.md` (§ Gates and hooks) for the copy block and the pom-side configuration (Spotless, JaCoCo tiers, PIT).
 
 ## Usage
 
@@ -239,6 +239,8 @@ atelier/
     │   │   ├── check-commit-size.sh            # block commits over 10 files / 300 lines (gate 1; shared with the Java hook)
     │   │   ├── check-coverage.ts               # per-tier coverage gate (runs in CI)
     │   │   ├── check-data-lifecycle.sh         # rule-30 tripwire: hard deletes + destructive DDL in the staged diff
+    │   │   ├── check-bundle-size.sh            # rule-17.7 bundle-weight budget (gzipped JS vs a ceiling)
+    │   │   ├── check-docs.sh                    # rule-12.1 docs-check: run the README's ## Verify commands
     │   │   ├── check-io-deadlines.sh           # rule-29 tripwire: infra fetch/HttpClient without a deadline marker
     │   │   ├── check-isolation-tests.sh        # rule-28 tripwire: new route files without a nearby 404 test
     │   │   ├── check-package-json.sh           # block "latest" / "*" / dist-tag version strings (gate 2)
@@ -254,7 +256,8 @@ atelier/
     │   │   ├── mutate-changed.sh               # Stryker mutation on files changed vs origin/main
     │   │   ├── mutate-staged.sh                # Stryker mutation on staged files (optional local; CI enforces mutation)
     │   │   ├── pre-commit                      # git pre-commit hook running the fast gates (Bun variant)
-    │   │   ├── pre-commit-java                 # git pre-commit hook running 6 gates (Java variant)
+    │   │   ├── pre-commit-java                 # git pre-commit hook running the fast gates (Java variant)
+    │   │   ├── ci-java.yml                     # GitHub Actions CI: the full Java gate set (verify, JaCoCo, PIT)
     │   │   ├── regenerate-coverage-preload.ts  # auto-glob src/{infra,composition,presenter} → coverage-preload.ts
     │   │   └── stryker.conf.json               # Stryker config (mutation scope, 90% break threshold)
     │   └── references/        # Supporting documentation

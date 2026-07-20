@@ -244,5 +244,83 @@
         "rule": "10.2"
       }
     ]
+  },
+  {
+    "id": "a1-usecase-port",
+    "prompt": "Add a 'cancel membership' feature: a use-case that cancels a member's active membership, reaching the membership store through a port that also has an in-memory fake for tests. Put each part where it belongs in src/.",
+    "assertions": [
+      {
+        "desc": "use-case returns a Result, not a throw",
+        "pattern": "Result<",
+        "mode": "present",
+        "rule": "10.2"
+      },
+      {
+        "desc": "the port has an in-memory fake",
+        "pattern": "[Ff]ake",
+        "mode": "present",
+        "rule": "3.2"
+      }
+    ]
+  },
+  {
+    "id": "a2-branded-id",
+    "prompt": "We pass membership ids around as plain strings. Introduce a branded MembershipId type with a validating factory, and use it in a lookup function that finds a membership by its id. Put each part where it belongs in src/.",
+    "assertions": [
+      {
+        "desc": "id is a branded type, not a raw string",
+        "pattern": "__brand",
+        "mode": "present",
+        "rule": "10.11"
+      },
+      {
+        "desc": "the factory validates and returns a Result",
+        "pattern": "Result<",
+        "mode": "present",
+        "rule": "10.11"
+      }
+    ]
+  },
+  {
+    "id": "a3-http-adapter",
+    "prompt": "Add an outbound HTTP adapter that fetches a member's current plan from our billing service over HTTP. Put it where it belongs in src/.",
+    "assertions": [
+      {
+        "desc": "outbound call carries a deadline",
+        "pattern": "AbortSignal|signal\\s*:|timeout",
+        "mode": "present",
+        "rule": "10.13"
+      },
+      {
+        "desc": "failure is a value (Result shape)",
+        "pattern": "ok:\\s*false|Result<",
+        "mode": "present",
+        "rule": "10.2"
+      },
+      {
+        "desc": "the adapter sits behind a port with a fake",
+        "pattern": "[Ff]ake",
+        "mode": "present",
+        "rule": "3.2"
+      }
+    ]
+  },
+  {
+    "id": "a4-tdd-feature",
+    "prompt": "Implement, test-first, a function that computes a prorated refund for a mid-cycle cancellation: the unused days over the cycle length, times the amount paid. Put it and its test where they belong in src/.",
+    "assertions": [
+      {
+        "desc": "a test accompanies the change",
+        "pattern": "expect\\(",
+        "mode": "present",
+        "rule": "4.3"
+      },
+      {
+        "desc": "money is integer minor units, not a float",
+        "pattern": "[Cc]ents|minorUnits|Math\\.round",
+        "mode": "present",
+        "rule": "10.11"
+      }
+    ]
   }
 ]
