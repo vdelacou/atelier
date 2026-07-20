@@ -11,13 +11,14 @@ C1 of the Atelier vs Global Rules conformance plan.
 - Skill audited: this repo at commit `430c740` (Phase 1 baseline). Phase 2 resolved 15.1, 4.6,
   and the five gaps 5.10, 7.7, 10.14, 12.1, 17.7, and opened a P6 revision for 5.3; those rows
   and the tally reflect the post-Phase-2 state, every other row is as audited at `430c740`.
-- Canon, vendored byte-identical into this repo at `docs/global-rules/` (the drift check in
-  Phase 4 runs against these copies):
+- Canon, vendored into this repo at `docs/global-rules/`. The dos-and-donts and pillar-prose docs
+  carry the accepted 5.3 P6 revision (2026-07-20; see proposed-revisions.md), differing from the
+  original source only there. The drift check pins the hashes below and runs against these copies:
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 5d9eb10cf96a776a3f1e12c81fe62bd29d69fb7ee3183785c576174320962a6c | 3403 |
-| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 63f7b8d844495cbf272ad90fc35ca52293e3013efe06c17329ef679932c10daa | 283 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 3d84cf690889de1deac890a6d5f12e9afb0107cd1f6b2c17b056f58096ced095 | 3403 |
+| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 1487a91a2060e150adbbae7e9719fb063a8121edf5d575f135c288ad389a3d21 | 283 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
 
 - IDs and titles are imported verbatim from the "Every sub-concept" index of the
@@ -113,7 +114,7 @@ and drags the number down", 15.2 Do; workflow.md:170-197). Both verdicts COVERED
 the coverage and mutation gates; the per-file tightening is noted but not scored as STRICTER
 because the canon's clauses are all met rather than exceeded in kind.
 
-**4. Dependency versions are caret ranges, which the canon forbids (5.3, CONTRADICTS).** This
+**4. Dependency pins: caret plus committed lockfile, reconciled by the accepted P6 revision (5.3, COVERED).** This
 one flipped on a close read. Canon 5.3's Do is "Pin every dependency to a fixed version, scan
 continuously for known vulnerabilities, and let automated updates keep you current", and its
 TypeScript example is unambiguous: the Don't is `{ "dependencies": { "hono": "^4.0.0", "zod":
@@ -132,8 +133,10 @@ committed lockfile plus `--frozen-lockfile` makes caret ranges reproducible) is 
 arguably modern consensus. Resolved in Phase 2 as a P6 revision (docs/global-rules/proposed-revisions.md):
 the skill is judged right and the canon's exact-pins mandate defective, because the committed
 lockfile the canon itself requires already delivers the determinism, so the manifest range is
-irrelevant to what installs. The skill's dependency gate is unchanged; the row stays CONTRADICTS
-against the current canon text until the revision is accepted.
+irrelevant to what installs. Accepted 2026-07-20: the vendored canon 5.3 now allows a constrained range
+plus a committed lockfile and a frozen-lockfile CI install, exactly what the skill's gate enforces, so the
+row is COVERED and this matrix pins the revised canon hash. The finding above is kept as the record of
+what the collision was.
 
 **5. The security model and the LLM-injection defense are both present (5.5 and 5.8, COVERED).**
 Canon 5.5's Do is validate every untrusted value at one checkpoint before a query, command, or
@@ -225,7 +228,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 5.1 | Keep secrets out of the codebase | COVERED | security.md:184; assets/pre-commit gate 3 | gate | Secret manager, rotation, central control; gitleaks gate backs the ban |
 | 5.2 | Do not build authentication or crypto yourself | COVERED | security.md:35-46 | rule | OIDC plus vetted crypto, SSO and MFA on consoles (rule 33) |
-| 5.3 | Control your dependencies | CONTRADICTS | docs/global-rules/global-rules-dos-and-donts.md:933-938; docs/global-rules/proposed-revisions.md | gate | Contradicts current canon (caret vs exact pins); P6 revision proposed, the exact-pins mandate is defective given the lockfile the canon also requires (Watchlist 4) |
+| 5.3 | Control your dependencies | COVERED | assets/check-package-json.sh:30; docs/global-rules/proposed-revisions.md | gate | P6 revision ACCEPTED 2026-07-20: canon 5.3 now allows a constrained range plus a committed lockfile, which check-package-json.sh enforces (Watchlist 4) |
 | 5.4 | Secure the supply chain | COVERED | delivery.md:71-73 | doctrine | Immutable digest-addressed artifacts, SBOM, cosign signatures |
 | 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:356 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
 | 5.6 | Expose only what has to be public | COVERED | security.md:218 | doctrine | Datastores, queues, admin panels on a private network only |
@@ -381,22 +384,19 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 ## Work list (Phase 2 input)
 
-Every CONTRADICTS and GAP row, in rule order. This is the resolve-collisions backlog: each item either amends the skill citing the rule id, or (for a defensible collision) opens a P6 rule-revision row.
+None. Every one of the 115 sub-concepts is COVERED or STRICTER, so there is no CONTRADICTS or GAP row left to resolve. The collisions this list once held (5.3, 15.1, 4.6) and the gaps (5.10, 7.7, 10.14, 12.1, 17.7) were all closed; see the resolution notes in their rows and watchlist paragraphs.
 
-| ID | Sub-concept | Verdict | What is missing or contradicted |
-|---|---|---|---|
-| 5.3 | Control your dependencies | CONTRADICTS | Contradicts current canon (caret vs exact pins); P6 revision proposed, the exact-pins mandate is defective given the lockfile the canon also requires (Watchlist 4) |
 
 ## Verdict tally
 
 | Verdict | Count |
 |---|---|
-| COVERED | 111 |
+| COVERED | 112 |
 | STRICTER | 3 |
 | GAP | 0 |
-| CONTRADICTS | 1 |
+| CONTRADICTS | 0 |
 | OUT-OF-SCOPE | 0 |
 | Total | 115 |
 
-No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2, only one row diverges: 5.3 stands as a contradiction of the current canon text with a P6 revision proposed in docs/global-rules/proposed-revisions.md. 15.1 and 4.6 were resolved by splitting the hook (fast gates) from CI (the full set, assets/ci.yml), and the five gaps 5.10, 7.7, 10.14, 12.1, 17.7 by adding the missing doctrine. Everything else is covered, three of them more strictly than the canon asks.
+No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2 and the accepted 5.3 P6 revision, no row diverges: every sub-concept is covered, three of them more strictly than the canon asks. The last contradiction (5.3) closed when the canon accepted that a constrained range plus a committed lockfile satisfies the pin requirement (docs/global-rules/proposed-revisions.md); 15.1 and 4.6 were resolved by splitting the hook from CI (assets/ci.yml), and the five gaps by adding the missing doctrine.
 

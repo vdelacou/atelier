@@ -2,6 +2,18 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [decision] 2026-07-20 | 5.3 P6 revision ACCEPTED: canon allows caret + committed lockfile; matrix now 115/115 covered
+
+The canon maintainer accepted the 5.3 P6 revision, so the vendored canon changed. dos-and-donts 5.3 (Do,
+Don't, TS example) and the pillar-prose companion now allow a constrained range (caret or tilde) plus a
+committed lockfile and a frozen-lockfile CI install, instead of mandating exact pins. Canon hashes changed
+(dos-and-donts 5d9eb10c -> 3d84cf69, every-new-project 63f7b8d8 -> 1487a91a); conformance-matrix.md pins
+the new hashes, flips 5.3 CONTRADICTS -> COVERED, and check-matrix-drift.py passes. Tally now COVERED 112,
+STRICTER 3, GAP 0, CONTRADICTS 0 (115/115), work list empty. The skill's dependency gate was UNCHANGED
+(check-package-json.sh already permitted caret + lockfile). proposed-revisions.md 5.3 marked ACCEPTED. The
+P6 loop closed: the skill exposed a rule defect, the fix went back to the canon, not the skill. When you
+edit the vendored canon, update the matrix header pins in the same change or the drift gate fails (by design).
+
 ## [decision] 2026-07-20 | optional strengthenings: Java hook split, docs-check + bundle gates, architecture eval tasks
 
 Four strengthenings, each a shipped gate that proves it can fail via the matching smoke test:

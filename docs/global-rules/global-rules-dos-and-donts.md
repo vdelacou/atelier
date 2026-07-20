@@ -925,17 +925,17 @@ await login();                 // server responds Set-Cookie: session=...; HttpO
 ```
 
 ### 5.3 Control your dependencies
-**Do:** Pin every dependency to a fixed version, scan continuously for known vulnerabilities, and let automated updates keep you current.
-**Don't:** Float on version ranges, or leave advisories unread until an incident.
+**Do:** Make every install deterministic with a committed lockfile and a frozen-lockfile install in CI, keep version declarations constrained (a caret or tilde range, or an exact pin, never `*` or `latest`), scan continuously for known vulnerabilities, and let automated updates keep you current.
+**Don't:** Declare `*`, `latest`, or a bare dist-tag, leave the lockfile uncommitted, or install without `--frozen-lockfile` in CI, so an install can silently drift; or leave advisories unread until an incident.
 
 TypeScript:
 ```ts
-// DON'T: caret ranges resolve to unknown code on every install
+// DON'T: an unconstrained version, and no lockfile to pin what actually installs
 // package.json
-{ "dependencies": { "hono": "^4.0.0", "zod": "*" } }
-// DO: exact pins, a committed lockfile, and a scanner in CI
+{ "dependencies": { "zod": "*" } }
+// DO: a constrained range, a committed lockfile, and a scanner in CI
 // package.json  (bun install --frozen-lockfile in CI, Renovate opens update PRs)
-{ "dependencies": { "hono": "4.6.14", "zod": "3.24.1" } }
+{ "dependencies": { "hono": "^4.0.0", "zod": "^3.24.1" } }
 // .github/workflows/ci.yml runs: bun audit  (fails the build on a known CVE)
 ```
 

@@ -13,7 +13,7 @@ byte-identical to their audited source so `conformance-matrix.md` stays reproduc
 
 ---
 
-## 5.3 Control your dependencies (proposed 2026-07-19, status: proposed)
+## 5.3 Control your dependencies (proposed 2026-07-19, status: ACCEPTED 2026-07-20)
 
 **Current canon** (global-rules-dos-and-donts.md:928-938):
 - Do: "Pin every dependency to a fixed version, scan continuously for known
@@ -55,7 +55,9 @@ resolution; a caret backed by a committed lockfile is not one of them.
 commit; `references/security.md:66` requires `bun install --frozen-lockfile` in CI. This is
 the more precise expression of the rule's real goal, so the skill is not amended.
 
-**Matrix disposition.** `conformance-matrix.md` keeps 5.3 as CONTRADICTS against the current
-canon text (the audit is honest about the letter of the pinned canon), annotated that a P6
-revision is proposed here. The verdict flips to COVERED only if and when the canon accepts
-this revision.
+**Matrix disposition.** Accepted 2026-07-20. The vendored canon 5.3 (both the dos-and-donts Do,
+Don't, and TS example, and the pillar-prose sentence) now carries this revision; the proposed text
+above is the text that landed. `conformance-matrix.md` pins the revised canon hashes and records
+5.3 as COVERED, and the skill's dependency gate (`check-package-json.sh`, which already permits a
+constrained range plus a committed lockfile) needs no change. The finding text in the matrix
+watchlist is kept as the record of what the collision was before it closed.
