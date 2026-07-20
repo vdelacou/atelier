@@ -13,13 +13,14 @@ C1 of the Atelier vs Global Rules conformance plan.
   and the tally reflect the post-Phase-2 state, every other row is as audited at `430c740`.
 - Canon, vendored into this repo at `docs/global-rules/`. The dos-and-donts and pillar-prose docs
   carry the accepted P6 revisions (2026-07-20; see proposed-revisions.md): 5.3 in both the dos-and-donts
-  and the pillar prose, and 10.3 and 15.5 in the dos-and-donts only. They differ from the original source
-  only in those rows. The drift check pins the hashes below and runs against these copies:
+  and the pillar prose; 11.3 in the pillar prose; and 10.3, 12.7, and 15.5 in the dos-and-donts. 12.7 is a
+  new sub-concept, so the canonical count is now 116. They differ from the original source only in those
+  rows. The drift check pins the hashes below and runs against these copies:
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 5ff047c207a72895966b1feecb59fe58c6c133afd4169296bc4ef8d729be2b4f | 3409 |
-| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 1487a91a2060e150adbbae7e9719fb063a8121edf5d575f135c288ad389a3d21 | 283 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 37b5963262bc9d8c98d344330d1b73fc196290116ad9cf497bf49559ce5a910a | 3423 |
+| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 5b337353b1e5128d84e95ed12e935006c255c44af8d45dfd3848919ab69b62e1 | 283 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
 
 - IDs and titles are imported verbatim from the "Every sub-concept" index of the
@@ -320,6 +321,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 12.4 | Build institutional memory | COVERED | workflow.md:5-7; lessons.md:177 | doctrine | Durable PLAN.md plus append-only LESSONS.md outlive the people |
 | 12.5 | Give real-time access and commit to measurable thresholds | COVERED | governance.md:51; observability.md:18 | doctrine | Stakeholder live access; targets as metric, number, window |
 | 12.6 | Run one visible, honest backlog | COVERED | governance.md:55-56 | doctrine | One visible tracker as source of truth, bugs first-class, no shadow list |
+| 12.7 | One working language | COVERED | governance.md:5 | doctrine | One working language for docs, comments, commit messages, identifiers, chosen once and kept everywhere. P6 ACCEPTED 2026-07-20 (Option A, new sub-concept; count 115 to 116) |
 
 ### Pillar 13: Clear ownership
 
@@ -385,19 +387,19 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 ## Work list (Phase 2 input)
 
-None. Every one of the 115 sub-concepts is COVERED or STRICTER, so there is no CONTRADICTS or GAP row left to resolve. The collisions this list once held (5.3, 15.1, 4.6) and the gaps (5.10, 7.7, 10.14, 12.1, 17.7) were all closed; see the resolution notes in their rows and watchlist paragraphs.
+None. Every one of the 116 sub-concepts is COVERED or STRICTER, so there is no CONTRADICTS or GAP row left to resolve. The collisions this list once held (5.3, 15.1, 4.6) and the gaps (5.10, 7.7, 10.14, 12.1, 17.7) were all closed; see the resolution notes in their rows and watchlist paragraphs.
 
 
 ## Verdict tally
 
 | Verdict | Count |
 |---|---|
-| COVERED | 112 |
+| COVERED | 113 |
 | STRICTER | 3 |
 | GAP | 0 |
 | CONTRADICTS | 0 |
 | OUT-OF-SCOPE | 0 |
-| Total | 115 |
+| Total | 116 |
 
 No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2 and the accepted 5.3 P6 revision, no row diverges: every sub-concept is covered, three of them more strictly than the canon asks. The last contradiction (5.3) closed when the canon accepted that a constrained range plus a committed lockfile satisfies the pin requirement (docs/global-rules/proposed-revisions.md); 15.1 and 4.6 were resolved by splitting the hook from CI (assets/ci.yml), and the five gaps by adding the missing doctrine.
 

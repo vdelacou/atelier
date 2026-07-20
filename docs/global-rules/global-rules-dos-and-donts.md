@@ -67,7 +67,7 @@ These numbers and titles are the canonical rule identifiers. External checklists
 
 **11 Make it observable:** [11.1 Instrument everything with correlated traces](#111-instrument-everything-with-correlated-traces) · [11.2 Watch behavior, not just health](#112-watch-behavior-not-just-health) · [11.3 Alert on what matters](#113-alert-on-what-matters)
 
-**12 No black boxes:** [12.1 Document the essentials and treat doc drift as a defect](#121-document-the-essentials-and-treat-doc-drift-as-a-defect) · [12.2 Generate API docs from the contract](#122-generate-api-docs-from-the-contract) · [12.3 Record decisions where they cannot drift](#123-record-decisions-where-they-cannot-drift) · [12.4 Build institutional memory](#124-build-institutional-memory) · [12.5 Give real-time access and commit to measurable thresholds](#125-give-real-time-access-and-commit-to-measurable-thresholds) · [12.6 Run one visible, honest backlog](#126-run-one-visible-honest-backlog)
+**12 No black boxes:** [12.1 Document the essentials and treat doc drift as a defect](#121-document-the-essentials-and-treat-doc-drift-as-a-defect) · [12.2 Generate API docs from the contract](#122-generate-api-docs-from-the-contract) · [12.3 Record decisions where they cannot drift](#123-record-decisions-where-they-cannot-drift) · [12.4 Build institutional memory](#124-build-institutional-memory) · [12.5 Give real-time access and commit to measurable thresholds](#125-give-real-time-access-and-commit-to-measurable-thresholds) · [12.6 Run one visible, honest backlog](#126-run-one-visible-honest-backlog) · [12.7 One working language](#127-one-working-language)
 
 **13 Clear ownership:** [13.1 Make ownership explicit](#131-make-ownership-explicit) · [13.2 Separate duties](#132-separate-duties) · [13.3 Keep an audit trail](#133-keep-an-audit-trail) · [13.4 Make finding problems safe and let the accountable verify](#134-make-finding-problems-safe-and-let-the-accountable-verify)
 
@@ -2646,6 +2646,20 @@ Stack-agnostic (the artifact is the board configuration and a single-source rule
 - Bugs are first-class issues, not a hand-maintained "known issues" page that drifts from reality.
 - Priorities are visible, including the things deliberately deferred and why, not only the work in flight.
 - Status is honest: "blocked, waiting on X" beats "in progress" that has not moved in a week.
+```
+
+### 12.7 One working language
+**Do:** Pick one working language for the project's docs, comments, commit messages, and identifiers, chosen once and kept everywhere, so any reader moves through the whole repo in a single context.
+**Don't:** Let a repo drift into a mix of languages that taxes every reader and fragments search, so a lookup for a term misses half its hits.
+
+Stack-agnostic (the artifact is a stated convention enforced in review, not app code):
+```md
+<!-- CONTRIBUTING.md -- DON'T: "write docs in whatever language you think in", so the repo ends up half
+     in one language and half in another, and a grep for a term silently misses half its hits. -->
+<!-- DO: one working language, stated once and applied to everything a reader touches -->
+# Contributing
+- Working language: English. Docs, code comments, commit messages, identifiers, and issue titles are all English.
+- Not about fluency, about one searchable single-context repo: a mixed-language codebase taxes every reader.
 ```
 
 ## Pillar 13: Clear ownership

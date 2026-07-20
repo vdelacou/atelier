@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      # conformance-matrix.md must stay true to the vendored canon: 115 rows with
+      # conformance-matrix.md must stay true to the vendored canon: 116 rows with
       # the canonical per-pillar counts, every id+title verbatim from the index
       # (rule 12.1), and the canon sha256 pins in the matrix header intact, so
       # bumping the canon without re-auditing the matrix fails here. --selftest

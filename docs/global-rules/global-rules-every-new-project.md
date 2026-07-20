@@ -181,7 +181,7 @@ A running system should explain itself. In production the question is never simp
 
 - Instrument everything. Logs, metrics, and traces across the application, the infrastructure, and the data layer, so that a single request can be followed from end to end. Prefer an open, vendor-neutral telemetry standard so you are not locked to one tool.
 - Watch behavior, not just health. Track how the product is actually used, including call volumes, latencies, and where users drop off, because that same data serves both reliability and product decisions.
-- Alert on what matters. Monitor error rates and latency percentiles (P95 and P99, since averages hide the worst experiences), and alert on anomalies rather than only fixed thresholds, so the system tells you about a problem before your users do. Keep only alerts that are actionable: anything that pages twice without prompting a fix gets automated away or deleted. And after an incident slips through, fix what actually broke, not just the reason the alert did not fire.
+- Alert on what matters. Monitor error rates and latency percentiles (P95 and P99, since averages hide the worst experiences), and alert on symptom-based signals tied to a user-visible budget (error-budget burn), not raw static resource thresholds, so the system tells you about a real problem before your users do. Keep only alerts that are actionable: anything that pages twice without prompting a fix gets automated away or deleted. And after an incident slips through, fix what actually broke, not just the reason the alert did not fire.
 
 What good looks like: when something breaks, you find the cause in minutes from a dashboard, not in hours of guessing.
 

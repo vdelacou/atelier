@@ -102,7 +102,7 @@ DO example variant was left for a later change to keep this commit tight.
 
 ---
 
-## 11.3 Alert on what matters (proposed 2026-07-20, status: proposed)
+## 11.3 Alert on what matters (proposed 2026-07-20, status: ACCEPTED 2026-07-20)
 
 **Current canon** (global-rules-dos-and-donts.md:2450-2451): the Do alerts on "error rate and p95/p99 latency crossing a user-visible budget", pages only when a human must act, and retires alerts that page twice without a fix. The Don't forbids "noisy static-threshold alerts that fire nightly".
 
@@ -112,23 +112,21 @@ DO example variant was left for a later change to keep this commit tight.
 - Do: add anomaly alerting alongside the budget thresholds, for example "Alert on error rate and p95/p99 latency crossing a user-visible budget, AND on anomalies (a clear deviation from the normal baseline) so a novel problem surfaces before users notice; page only when a human must act ..." (the rest unchanged).
 - Example: optionally add a second alert that is anomaly-based (a burn-rate or baseline-deviation rule) next to the static budget-burn one.
 
-**Skill note.** The skill's `references/observability.md` already alerts on symptom-based SLO burn; if 11.3 gains the anomaly clause, add an anomaly-alert line there so the skill still matches.
+**Skill note.** The skill's `references/observability.md` already alerts on symptom-based SLO burn, which is exactly what the softened prose now endorses, so no skill change is needed.
 
-**Matrix disposition.** 11.3 is COVERED today and stays so; this closes a prose-vs-sub drift inside the canon.
+**Matrix disposition.** Accepted 2026-07-20 by softening the prose, not the sub. The pillar-11 prose (every-new-project.md) now alerts on symptom-based signals tied to a user-visible budget (error-budget burn) rather than "anomalies rather than only fixed thresholds", matching sub 11.3 and the skill's observability.md burn-rate alerting. The sub and the skill are unchanged and 11.3 stays COVERED; the every-new-project.md hash is re-pinned in this change. Rationale: burn-rate alerting is the actionable, lower-noise practice, so the drift closed toward the sub rather than loading anomaly detection onto the checklist.
 
 ---
 
-## 12.7 One working language (proposed 2026-07-20, status: proposed)
+## 12.7 One working language (proposed 2026-07-20, status: ACCEPTED 2026-07-20, Option A)
 
 **Current canon.** The pillar-12 prose (every-new-project.md:192) states "Pick one working language for the whole project and keep everything in it." No sub-concept carries this rule: zero matches for "working language" across the 115 sub-concepts.
 
 **Defect (internal drift).** A distinct pillar-12 rule has no entry in the sub-concept checklist, so a reader following only the 115 sub-concepts never meets it. The skill's `references/governance.md` already states it, so the skill is ahead of the canon's own checklist here.
 
-**Proposed revision (two options, maintainer's choice).**
-- Option A (cleanest topically): add a new sub-concept 12.7 "One working language", Do "Pick one working language for docs, comments, commit messages, and identifiers, and keep everything in it", Don't "Let a repo drift into a mix of languages that taxes every reader". NOTE: this raises the sub-concept count from 115 to 116, which cascades to conformance-matrix.md (a new row), the canonical index, and check-matrix-drift.py's per-pillar counts (pillar 12 goes 6 to 7); update them together.
-- Option B (no renumbering): fold the rule into 12.1's Do ("... and keep the project in one working language"). Cheaper structurally, but 12.1 is about README freshness so the topical fit is looser.
+**Proposed revision (Option A, as landed).** Added a new sub-concept 12.7 "One working language" to the canon: Do "Pick one working language for the project's docs, comments, commit messages, and identifiers, chosen once and kept everywhere ...", Don't "Let a repo drift into a mix of languages that taxes every reader and fragments search ...", with a stack-agnostic CONTRIBUTING.md example. Option B (fold the rule into 12.1) was declined in favor of a first-class, checkable rule. The count moved from 115 to 116, cascading as noted to the canonical index (dos-and-donts), a new conformance-matrix.md row, and check-matrix-drift.py (pillar 12 count 6 to 7, total 116); all were updated together in this change.
 
-**Matrix disposition.** Not a matrix row today (a canon-internal gap, not a skill gap; the skill covers it). Option A adds a 116th sub-concept and a matrix row; Option B leaves the count at 115.
+**Matrix disposition.** Accepted 2026-07-20 (Option A). 12.7 is now a matrix row, COVERED via `references/governance.md:5` (the skill already states one working language for docs, comments, commit messages, and identifiers, chosen once and kept everywhere). Verdict tally COVERED 112 to 113, Total 115 to 116; the dos-and-donts hash is re-pinned in this change.
 
 ---
 
