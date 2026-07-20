@@ -12,12 +12,13 @@ C1 of the Atelier vs Global Rules conformance plan.
   and the five gaps 5.10, 7.7, 10.14, 12.1, 17.7, and opened a P6 revision for 5.3; those rows
   and the tally reflect the post-Phase-2 state, every other row is as audited at `430c740`.
 - Canon, vendored into this repo at `docs/global-rules/`. The dos-and-donts and pillar-prose docs
-  carry the accepted 5.3 P6 revision (2026-07-20; see proposed-revisions.md), differing from the
-  original source only there. The drift check pins the hashes below and runs against these copies:
+  carry the accepted P6 revisions (2026-07-20; see proposed-revisions.md): 5.3 in both the dos-and-donts
+  and the pillar prose, and 10.3 and 15.5 in the dos-and-donts only. They differ from the original source
+  only in those rows. The drift check pins the hashes below and runs against these copies:
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 3d84cf690889de1deac890a6d5f12e9afb0107cd1f6b2c17b056f58096ced095 | 3403 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 5ff047c207a72895966b1feecb59fe58c6c133afd4169296bc4ef8d729be2b4f | 3409 |
 | Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 1487a91a2060e150adbbae7e9719fb063a8121edf5d575f135c288ad389a3d21 | 283 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
 
@@ -288,7 +289,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 10.1 | Set explicit reliability targets | COVERED | observability.md:7-15 | doctrine | SLO-as-code: availability, latency, error-rate targets with windows |
 | 10.2 | Errors as values, not exceptions | COVERED | result-type.md:3; SKILL.md:168 | rule | Every IO port and use-case returns Result; exceptions for bugs (rule 16) |
-| 10.3 | Keep read paths explicit | COVERED | reliability.md:30 | doctrine | Hand-write hot-path reads; the ORM owns writes |
+| 10.3 | Keep read paths explicit | COVERED | reliability.md:30 | doctrine | Explicit, tunable hot-path reads (hand SQL or a visible-SQL query builder); the ORM owns writes. P6 ACCEPTED 2026-07-20, widened to match the canon's own 10.4 builder DO |
 | 10.4 | Keep reads fast as the table grows | COVERED | reliability.md:49-50 | doctrine | Keyset cursor with composite index, never OFFSET; stream large sets |
 | 10.5 | Do not fire and forget | COVERED | reliability.md:66-68 | doctrine | Transactional outbox, retrying worker, idempotent on a dedupe key |
 | 10.6 | Keep backups you have actually restored | COVERED | delivery.md:79 | doctrine | Quarterly restore drill into a scratch DB, timed |

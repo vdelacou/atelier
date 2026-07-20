@@ -65,7 +65,7 @@ watchlist is kept as the record of what the collision was before it closed.
 
 ---
 
-## 10.3 Keep read paths explicit (proposed 2026-07-20, status: proposed)
+## 10.3 Keep read paths explicit (proposed 2026-07-20, status: ACCEPTED 2026-07-20)
 
 **Current canon** (global-rules-dos-and-donts.md:1991-1992):
 - Do: "Write reads as hand-authored SQL you can see and tune, and let the ORM own writes."
@@ -94,10 +94,11 @@ on. That makes this closer to a real defect than a pure judgment call, though mi
 canon's hand-written-SQL framing. If this revision is accepted, that reference gains the query-builder
 allowance in the same change, so the skill still matches the canon.
 
-**Matrix disposition.** 10.3 is COVERED in `conformance-matrix.md` today (the skill follows the canon's
-current letter). This revision does not change that verdict; it widens what an "explicit read" admits. If
-accepted, apply it to the vendored canon and update the reliability.md framing together, then re-pin the
-canon hash.
+**Matrix disposition.** Accepted 2026-07-20. The vendored canon 10.3 Do now admits a typed query builder
+that emits visible SQL alongside hand-authored SQL, removing the contradiction with the canon's own 10.4
+builder DO; `references/reliability.md` gained the same allowance in the same change. 10.3 stays COVERED and
+`conformance-matrix.md` pins the revised canon hash. The Don't is unchanged, and the optional query-builder
+DO example variant was left for a later change to keep this commit tight.
 
 ---
 
@@ -131,21 +132,30 @@ canon hash.
 
 ---
 
-## 15.5 Compliance is not proof (proposed 2026-07-20, status: proposed)
+## 15.5 Compliance is not proof (proposed 2026-07-20, status: ACCEPTED 2026-07-20)
 
 **Current canon** (global-rules-dos-and-donts.md:2954-2959): the "DO" TLS check probes only `-tls1_1`, then prints `OK: $host refuses TLS < 1.2`.
 
 **Defect (a bug in the canon's own example).** The script tests a single sub-1.2 protocol (TLS 1.1) but concludes the endpoint "refuses TLS < 1.2". A server still accepting TLS 1.0 or SSLv3 passes this check and prints OK, so the proof overclaims what it verifies. That is self-undermining inside a rule whose whole point is that a proof must actually check what it asserts.
 
-**Proposed revision.** Probe every protocol below TLS 1.2 and fail if any is accepted:
+**Proposed revision (as landed).** Probe every protocol below TLS 1.2 and fail if any is accepted. The
+landed form keys on openssl's EXIT CODE (a forced-protocol handshake that completes means the server
+accepted that protocol), not on grepping the `Protocol:` line. An earlier draft grepped
+`Protocol.*:.*\(SSL\|TLS\)`, but that false-FAILs: openssl prints its session default (for example
+`Protocol: TLSv1.3`) even when the forced old protocol was refused, so the grep matches on a refusal.
+Verified live against OpenSSL 3.6 on 2026-07-20 (a refused `-tls1`/`-tls1_1` still printed `Protocol: TLSv1.3`
+yet exited non-zero; an accepted `-tls1_2` exited zero). The OK line claims only what this build can probe,
+since a modern openssl cannot offer `-ssl3` and simply skips that leg:
 ```bash
 for proto in ssl3 tls1 tls1_1; do
-  if openssl s_client -connect "$host:443" "-$proto" </dev/null 2>/dev/null | grep -qi "Protocol.*:.*\(SSL\|TLS\)"; then
-    echo "FAIL: $host accepted $proto" >&2; exit 1
+  if openssl s_client -connect "$host:443" "-$proto" </dev/null >/dev/null 2>&1; then
+    echo "FAIL: $host accepted $proto" >&2
+    exit 1
   fi
 done
-echo "OK: $host refuses every protocol below TLS 1.2"
+echo "OK: $host refuses every sub-TLS-1.2 protocol this openssl can probe"
 ```
-Some `openssl` builds drop `-ssl3`; skip it there. The point is to test the whole sub-1.2 range, not one protocol.
 
-**Matrix disposition.** No matrix impact; the skill does not vendor this script, and 15.5 is COVERED via the skill's own re-runnable-proof discipline. This fixes a defect in the canon's illustrative example.
+**Matrix disposition.** Accepted 2026-07-20; the vendored canon carries the corrected script. No matrix-row
+impact: the skill does not vendor this script, and 15.5 stays COVERED via the skill's own re-runnable-proof
+discipline. The re-pinned dos-and-donts hash reflects this fix and the 10.3 widening together.

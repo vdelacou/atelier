@@ -1,18 +1,25 @@
-# PLAN: canon internal-consistency pass + P6 rows (DONE, uncommitted)
+# PLAN: apply P6 rows 15.5 and 10.3 to the canon (DONE, uncommitted)
 
-Both tasks the user asked for are done. Pinned: atelier HEAD 777f221.
+User accepted 15.5 and 10.3; both applied. Held: 11.3 (direction call), 12.7 (option choice).
+One coherent commit pending confirm.
 
-- [x] Canon internal-consistency pass: 6 agents over 18 pillars + values (prose vs sub-concepts).
-  13 pillars + values mapping consistent. 4 real issues found, 6 minor left as noted.
-- [x] 4 P6 rows drafted (proposed, none applied) in docs/global-rules/proposed-revisions.md:
-  - 10.3 (Do "hand-authored SQL" contradicts the canon's own 10.4 query-builder example)
-  - 11.3 (prose requires anomaly alerting; sub has only fixed budget thresholds)
-  - 12.7 (prose's "one working language" has no sub-concept; skill's governance.md covers it)
-  - 15.5 (TLS-probe example tests only TLS 1.1 while claiming to prove >= 1.2, a bug)
-- [x] Verified: drift gate green (canon unchanged this turn), 0 em dashes, LESSONS + this PLAN updated.
+- [x] 15.5: TLS DO script in dos-and-donts.md replaced with the EXIT-CODE form (loop over
+      ssl3/tls1/tls1_1, accepted = handshake completes = openssl exits 0). NOT the drafted grep:
+      proved live it false-FAILs (openssl prints `Protocol: TLSv1.3` even on a REFUSED old
+      protocol). OK line claims only what this openssl can probe (ssl3 unprobeable on OpenSSL 3.x).
+- [x] 10.3: Do line widened to admit a typed query builder that emits visible SQL, removing the
+      contradiction with 10.4's own builder DO. Don't unchanged. Optional example add deferred.
+- [x] reliability.md:30 widened to match (hand SQL or a visible-SQL query builder).
+- [x] proposed-revisions.md: 10.3 and 15.5 marked ACCEPTED 2026-07-20; 15.5 records the exit-code
+      form as landed and why the grep was dropped.
+- [x] conformance-matrix.md: re-pinned dos-and-donts hash (5ff047..b4f) + lines (3403 to 3409);
+      header bullet now names 5.3/10.3/15.5; row 10.3 Note updated. Row 15.5 unchanged (no matrix impact).
+- [x] Verified: drift gate green + selftest green; `bash -n` on the new TLS script OK; the diff has no
+      em dash (the one grep hit was this file quoting the check command, now reworded); LESSONS + PLAN updated.
 
-Change set: proposed-revisions.md (4 P6 rows + intro fix), LESSONS.md, PLAN.md. One coherent commit.
+Change set: dos-and-donts.md, reliability.md, proposed-revisions.md, conformance-matrix.md, LESSONS.md,
+PLAN.md. One commit.
 
-Pending the user's judgment (the 5.3 flow): accept any of the 4 rows and I apply it to the canon and
-re-pin. 12.7 needs an Option A (new sub-concept, count 115 -> 116, cascades) vs Option B (fold into 12.1)
-choice at acceptance. Nothing applied without acceptance. Phase 5 field test still the only external item.
+Next: confirm commit. Still open from the prior turn: 11.3 (pick direction, bring the sub up to the prose's
+anomaly ask, or soften the prose toward the sub's burn-rate stance) and 12.7 (Option A new 12.7 with the
+115 to 116 cascade, or Option B fold into 12.1). Phase 5 field test remains the only external item.

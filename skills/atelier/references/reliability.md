@@ -27,7 +27,7 @@ Java: `HttpClient.newBuilder().connectTimeout(...)` plus a per-request `.timeout
 
 ## Reads are explicit; writes go through the mapper
 
-An ORM or query builder is welcome on the write path, where its mapping and safety are what you want. On the **hot read path**, write the query by hand so you can see it, EXPLAIN it, and tune it. A lazy relation walk fires a cascade of hidden queries (the N+1) that is invisible until it is slow.
+An ORM or query builder is welcome on the write path, where its mapping and safety are what you want. On the **hot read path**, keep the query explicit and tunable, hand-written SQL or a typed query builder that emits visible SQL, so you can see it, EXPLAIN it, and tune it. A lazy relation walk fires a cascade of hidden queries (the N+1) that is invisible until it is slow.
 
 ```ts
 // BAD: relation walk; one hidden SELECT per row, nothing to EXPLAIN

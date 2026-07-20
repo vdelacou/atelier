@@ -2,6 +2,10 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [gotcha] 2026-07-20 | openssl prints a Protocol line even on a REFUSED handshake, so grepping it false-FAILs
+
+Applying P6 row 15.5 (the canon's TLS "compliance is not proof" example probed only TLS 1.1 yet concluded the endpoint "refuses TLS < 1.2"). The drafted fix looped over ssl3/tls1/tls1_1 but detected acceptance with `grep -qi "Protocol.*:.*\(SSL\|TLS\)"`. Verified live against OpenSSL 3.6: forcing `-tls1` or `-tls1_1` at an endpoint that REFUSES them still prints `Protocol: TLSv1.3` in the SSL-Session summary (the session default, not a negotiated version), so the grep matches on a refusal and prints FAIL for a server that is actually fine. The robust signal is the EXIT CODE: a forced-protocol `openssl s_client ... </dev/null >/dev/null 2>&1` exits 0 only when the handshake COMPLETES (the server accepted that protocol), non-zero when refused. Second trap: OpenSSL 3.x dropped `-ssl3`, so that leg is unprobeable on a modern build (the flag errors, exits non-zero, reads as not-accepted); the OK line must therefore claim only what this openssl can probe, never a blanket "refuses everything below 1.2". Landed the exit-code form. Rule for next time: for a shell proof, key on the tool's exit status, not on grepping human-readable output that carries defaults even on failure; and a proof's success message must claim exactly the range it actually tested. This same self-undermining pattern (a proof that overclaims what it checked) is what 15.5 exists to forbid, so the fix had to not reproduce it.
+
 ## [decision] 2026-07-20 | canon internal-consistency pass: 4 P6 rows drafted (10.3, 11.3, 12.7, 15.5)
 
 Ran a canon-vs-canon consistency pass (6 read-only agents over the 18 pillars plus the values doc, pillar

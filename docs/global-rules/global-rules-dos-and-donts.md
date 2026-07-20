@@ -1988,7 +1988,7 @@ return <OrderList orders={res.value} />;
 ```
 
 ### 10.3 Keep read paths explicit
-**Do:** Write reads as hand-authored SQL you can see and tune, and let the ORM own writes.
+**Do:** Write reads as explicit, tunable queries you can see and EXPLAIN (hand-authored SQL, or a typed query builder that emits visible SQL), and let the ORM own writes.
 **Don't:** Let an ORM generate opaque queries on your hot read path (a lazy N+1 or a hidden relation cascade) that you cannot see or tune.
 
 TypeScript:
@@ -2950,13 +2950,19 @@ Stack-agnostic (the artifact is a runnable verification script, not app code):
 # DO: assert the property against the live endpoint, so the proof re-runs on demand.
 set -euo pipefail
 host="api.example.com"
-# fail if the server negotiates anything below TLS 1.2
-if openssl s_client -connect "$host:443" -tls1_1 </dev/null 2>/dev/null \
-     | grep -q "Protocol.*TLSv1.1"; then
-  echo "FAIL: $host accepted TLS 1.1" >&2
-  exit 1
-fi
-echo "OK: $host refuses TLS < 1.2"  # anyone can run this and get the same answer
+# fail if the server negotiates ANY protocol below TLS 1.2. Test the whole sub-1.2 range,
+# not one protocol: a forced-protocol handshake that completes (openssl exits 0) means the
+# server accepted it. Do not grep the "Protocol:" line; openssl prints its session default
+# (e.g. TLSv1.3) even when the forced old protocol was refused, which would false-FAIL.
+for proto in ssl3 tls1 tls1_1; do
+  if openssl s_client -connect "$host:443" "-$proto" </dev/null >/dev/null 2>&1; then
+    echo "FAIL: $host accepted $proto" >&2
+    exit 1
+  fi
+done
+# a modern openssl cannot offer ssl3, so on such a build that leg is unprobeable, not proven;
+# run on a legacy openssl to cover SSLv3 too. The OK line claims exactly what was tested.
+echo "OK: $host refuses every sub-TLS-1.2 protocol this openssl can probe"  # re-runs on demand
 ```
 
 ### 15.6 Audit the gaps between systems
