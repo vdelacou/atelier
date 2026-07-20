@@ -2,6 +2,21 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [decision] 2026-07-20 | canon internal-consistency pass: 4 P6 rows drafted (10.3, 11.3, 12.7, 15.5)
+
+Ran a canon-vs-canon consistency pass (6 read-only agents over the 18 pillars plus the values doc, pillar
+PROSE in every-new-project.md vs SUB-CONCEPTS in dos-and-donts.md). 13 pillars and the values-to-pillars
+mapping are consistent. Four real issues, drafted as proposed P6 rows in docs/global-rules/proposed-revisions.md:
+10.3 (Do says "hand-authored SQL" but the canon's own 10.4 example uses a query builder, db.select().from()...,
+an internal contradiction), 11.3 (prose requires alerting on anomalies not only fixed thresholds; the sub has
+only budget-tied static thresholds), 12.7 (the prose's "one working language for the whole project" has no
+sub-concept; the skill's governance.md already covers it), 15.5 (the TLS-probe example tests only TLS 1.1 while
+printing "refuses TLS < 1.2", a real bug). Minor and left as noted: 1.1 naming/logging, 3.8 swap-proofs, 10.6
+quarterly floor, 13.4 route-the-fix, 18.1 interview-count (the sub is stricter, not a defect), 12.1b meta. All
+four rows are status: proposed, none applied; the matrix is unaffected (all four COVERED today, these are
+canon-internal fixes not skill gaps). 12.7 Option A (a new sub-concept) would make the count 116 and cascade to
+the matrix/index/drift-gate per-pillar counts.
+
 ## [decision] 2026-07-20 | 5.3 P6 revision ACCEPTED: canon allows caret + committed lockfile; matrix now 115/115 covered
 
 The canon maintainer accepted the 5.3 P6 revision, so the vendored canon changed. dos-and-donts 5.3 (Do,

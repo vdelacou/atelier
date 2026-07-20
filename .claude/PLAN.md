@@ -1,21 +1,18 @@
-# PLAN: optional conformance strengthenings (all four DONE, uncommitted)
+# PLAN: canon internal-consistency pass + P6 rows (DONE, uncommitted)
 
-Four independent strengthenings, one coherent commit each, each new gate proven to fail via the
-matching smoke test. Pinned: atelier HEAD e61f754.
+Both tasks the user asked for are done. Pinned: atelier HEAD 777f221.
 
-1. [x] Java hook split (rule 15.1): pre-commit-java -> 4 fast gates; verify + PIT to new ci-java.yml;
-   java-quarkus.md + SKILL matrix reframed; smoke-test-java GREEN (fast hook + verify/PIT direct).
-2. [x] 12.1 docs-check gate: assets/check-docs.sh runs the README ## Verify block; smoke-test.sh
-   proves pass-and-fail; governance.md + README point at it. GREEN.
-3. [x] 17.7 bundle-budget gate: assets/check-bundle-size.sh (gzipped JS vs BUDGET_KB); smoke-test-next.sh
-   proves pass-and-fail on the real export; product.md + README point at it. GREEN.
-4. [x] Architecture eval tasks a1-a4 (3.2/10.2/10.11/10.13/4.3) in tasks.json, rule-tagged; grader
-   selftest green; 1-pass validation with_skill 8/9 vs baseline 6/9 (skill ahead on 3.2, 10.13).
+- [x] Canon internal-consistency pass: 6 agents over 18 pillars + values (prose vs sub-concepts).
+  13 pillars + values mapping consistent. 4 real issues found, 6 minor left as noted.
+- [x] 4 P6 rows drafted (proposed, none applied) in docs/global-rules/proposed-revisions.md:
+  - 10.3 (Do "hand-authored SQL" contradicts the canon's own 10.4 query-builder example)
+  - 11.3 (prose requires anomaly alerting; sub has only fixed budget thresholds)
+  - 12.7 (prose's "one working language" has no sub-concept; skill's governance.md covers it)
+  - 15.5 (TLS-probe example tests only TLS 1.1 while claiming to prove >= 1.2, a bug)
+- [x] Verified: drift gate green (canon unchanged this turn), 0 em dashes, LESSONS + this PLAN updated.
 
-Verified: all shell/YAML/JSON parse; 0 em dashes in the diff; three smoke tests green; grader selftest green.
+Change set: proposed-revisions.md (4 P6 rows + intro fix), LESSONS.md, PLAN.md. One coherent commit.
 
-Commit slicing (independent, cite the rule): (1) Java split, (2) docs-check, (3) bundle budget,
-(4) architecture eval tasks + baseline note. LESSONS + PLAN ride with the last.
-
-Deferred (user action): enable eval.yml by adding the ANTHROPIC_API_KEY secret; a full 3-pass re-baseline
-including a1-a4. Phase 5: field scorecard on the next real repo. Open: 5.3 P6 awaiting the canon maintainer.
+Pending the user's judgment (the 5.3 flow): accept any of the 4 rows and I apply it to the canon and
+re-pin. 12.7 needs an Option A (new sub-concept, count 115 -> 116, cascades) vs Option B (fold into 12.1)
+choice at acceptance. Nothing applied without acceptance. Phase 5 field test still the only external item.
