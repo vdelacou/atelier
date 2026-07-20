@@ -8,9 +8,9 @@
 # use-case with a hand-written fake), copies the shipped hook assets, then
 # proves:
 #
-#   - every gate passes on a conforming tree, including a real hooked commit
-#     through pre-commit-java (size, pom sanity, spotless, verify with the
-#     JaCoCo tiers, PIT) and commit-msg
+#   - every gate passes on a conforming tree: the fast pre-commit-java hook
+#     (size, pom sanity, gitleaks, spotless) as a real hooked commit, plus the
+#     CI gates (verify with the JaCoCo tiers, PIT) run directly, and commit-msg
 #   - every gate FAILS on the violation it exists to block: a version range,
 #     a -SNAPSHOT dependency, an oversized commit, a junk commit message, a
 #     misformatted file, a warning under -Werror, an untested domain class
@@ -243,7 +243,7 @@ expect_ok "commit-msg accepts a Conventional Commit (rule 23)" \
 git add -A
 git commit -q --no-verify -m "chore(smoke): initial scaffold (size-gate bypass: initial scaffold)"
 
-# A real hooked commit: a small green slice through all six gates end to end.
+# A real hooked commit: a small green slice through the fast hook end to end.
 cat > src/main/java/com/example/app/domain/Discount.java <<'EOF'
 package com.example.app.domain;
 
@@ -269,7 +269,7 @@ class DiscountTest {
 EOF
 ./mvnw -q spotless:apply >/dev/null 2>&1
 git add src/main/java/com/example/app/domain/Discount.java src/test/java/com/example/app/domain/DiscountTest.java
-expect_ok "a small conforming commit passes the full 6-gate hook + commit-msg" \
+expect_ok "a small conforming commit passes the fast pre-commit hook + commit-msg" \
   git commit -q -m "feat(domain): premium discount rule"
 
 echo

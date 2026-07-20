@@ -348,21 +348,24 @@ Quarkus ships OpenTelemetry: enable it, add `@WithSpan` on application services 
 
 ## Gates and hooks
 
-Same two git hooks as the Bun variant, shell only, wired with `git config core.hooksPath .githooks`. All four artifacts ship in the skill's `assets/`; copy them, never hand-write:
+Same git hooks as the Bun variant, shell only, wired with `git config core.hooksPath .githooks`, plus the CI workflow. All five artifacts ship in the skill's `assets/`; copy them, never hand-write:
 
 - `assets/commit-msg`: the shipped Conventional Commits validator, unchanged (rule 23; it is dependency-free shell).
-- `assets/pre-commit-java`: six gates, cost-ascending like the Bun hook's eight: commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>`; the project's own dev version may be a SNAPSHOT) → `gitleaks protect --staged` → `./mvnw -q spotless:check` → `./mvnw -q verify` (compile with `-Werror`, unit + integration tests, JaCoCo tier check) → PIT with history, run only when staged files touch the `domain`/`usecases` mutation scope.
+- `assets/pre-commit-java`: the fast gates only, commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>`; the project's own dev version may be a SNAPSHOT) → `gitleaks protect --staged` → `./mvnw -q spotless:check`. A multi-minute hook trains `--no-verify` (rule 15.1, and 15.3), so `./mvnw verify` and PIT do not live here.
+- `assets/ci-java.yml`: the authoritative gate set, run on every push and pull request as the required merge check, the fast gates plus `./mvnw verify` (compile with `-Werror`, unit + integration tests, JaCoCo tier check), PIT mutation (≥90 on `domain`/`usecases`), and the OWASP dependency scan.
 
 ```bash
 cp <skill>/assets/pre-commit-java        .githooks/pre-commit
 cp <skill>/assets/commit-msg             .githooks/commit-msg
 cp <skill>/assets/check-commit-size.sh   scripts/check-commit-size.sh
 cp <skill>/assets/check-pom.sh           scripts/check-pom.sh
+mkdir -p .github/workflows
+cp <skill>/assets/ci-java.yml            .github/workflows/ci.yml
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh
 git config core.hooksPath .githooks
 ```
 
-CI runs the identical chain plus the scheduled dependency scan and, where the repo deploys, the compose portability gate and deployment events (`references/delivery.md`).
+CI (`assets/ci-java.yml`) runs the full chain, the fast gates plus `./mvnw verify`, PIT, and the dependency scan, and where the repo deploys, the compose portability gate and deployment events (`references/delivery.md`).
 
 ## Bootstrap checklist (fresh Java repo)
 
