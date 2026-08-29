@@ -1,0 +1,7 @@
+{
+  "name": "conformance-fixture",
+  "module": "src/main.ts",
+  "type": "module",
+  "scripts": { "test": "bun test" },
+  "dependencies": { "csv-stringify": "latest" }
+}
