@@ -69,7 +69,7 @@ These numbers and titles are the canonical rule identifiers. External checklists
 
 **12 No black boxes:** [12.1 Document the essentials and treat doc drift as a defect](#121-document-the-essentials-and-treat-doc-drift-as-a-defect) · [12.2 Generate API docs from the contract](#122-generate-api-docs-from-the-contract) · [12.3 Record decisions where they cannot drift](#123-record-decisions-where-they-cannot-drift) · [12.4 Build institutional memory](#124-build-institutional-memory) · [12.5 Give real-time access and commit to measurable thresholds](#125-give-real-time-access-and-commit-to-measurable-thresholds) · [12.6 Run one visible, honest backlog](#126-run-one-visible-honest-backlog) · [12.7 One working language](#127-one-working-language)
 
-**13 Clear ownership:** [13.1 Make ownership explicit](#131-make-ownership-explicit) · [13.2 Separate duties](#132-separate-duties) · [13.3 Keep an audit trail](#133-keep-an-audit-trail) · [13.4 Make finding problems safe and let the accountable verify](#134-make-finding-problems-safe-and-let-the-accountable-verify)
+**13 Clear ownership:** [13.1 Make ownership explicit](#131-make-ownership-explicit) · [13.2 Separate duties](#132-separate-duties) · [13.3 Keep an audit trail](#133-keep-an-audit-trail) · [13.4 Make finding problems safe and let the accountable verify](#134-make-finding-problems-safe-and-let-the-accountable-verify) · [13.5 The agent proposes, the human disposes](#135-the-agent-proposes-the-human-disposes)
 
 **14 Pave the road:** [14.1 Provide golden paths as real artifacts](#141-provide-golden-paths-as-real-artifacts) · [14.2 Make it self-service](#142-make-it-self-service) · [14.3 Treat the platform as a product](#143-treat-the-platform-as-a-product)
 
@@ -2797,6 +2797,18 @@ public Verification verifyFix(String owner) {
     RegressionResult r = regression.run("leak-2026-06-14");
     return new Verification(r.ok(), r.reportUrl(), owner);
 }
+```
+
+### 13.5 The agent proposes, the human disposes
+**Do:** Give every AI agent in the development loop a standing working agreement: tests and the safety net are confirmation-gated (an agent proposes a new or changed test and waits for an explicit yes), landing is human (no commit, push, publish, or deploy on the agent's own initiative), and artifacts stay identity-clean (a person's name, employer, or client appears in commit metadata where attribution is deliberate, never in file contents). The agent's change reaches main through the same separated duties as any author's (13.2).
+**Don't:** Let an agent silently weaken a failing test to green, land its own work, or bake personal identity into files, and then call the result reviewed because a human once approved the session.
+
+Stack-agnostic (the artifact is the agent's standing instructions, e.g. the repo's agent context file):
+```md
+<!-- CLAUDE.md / AGENTS.md -- the working agreement rides in repo context, not in goodwill -->
+- Tests are confirmation-gated: propose the test or the change to one, wait for an explicit yes.
+- Never commit, push, publish, or deploy on your own initiative; staging is yours, landing is mine.
+- No person, employer, or client named in file contents; attribution lives in commit metadata.
 ```
 
 ## Pillar 14: Pave the road

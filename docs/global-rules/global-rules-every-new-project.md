@@ -207,6 +207,7 @@ Every part of the system, and every rule on this list, needs someone accountable
 - Separate duties where it matters. Whoever requests a sensitive change should not be the only one who approves it, and access to production should follow least privilege and pass through review.
 - Keep an audit trail. Approvals, exceptions, and emergency access should leave a record, so accountability is real rather than nominal.
 - Make finding problems safe, not costly. If whoever spots an issue is saddled with owning it, people quietly stop looking, so reward detection and route the fix deliberately. And whoever is accountable for something must have the access to verify it themselves, because "done" reported by someone who cannot check it is not done.
+- The agent proposes, the human disposes. An AI agent in the development loop works under a standing agreement: it proposes tests and changes to them and waits for an explicit yes, it never lands its own work (commit, push, publish, deploy), and it keeps personal identity out of file contents. An agent that weakens a failing test or merges its own change is an author approving their own work, the exact move separated duties exist to prevent.
 
 What good looks like: for anything that can break, you can name its owner in seconds, and no task, environment, or risk sits forgotten in the gap between two teams.
 

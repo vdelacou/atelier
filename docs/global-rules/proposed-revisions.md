@@ -191,3 +191,51 @@ hook's `max_len`, rule 23's text, and the smoke tests' >100-char case.
 100-char comment and the dos-and-donts hash is re-pinned in the same change. No skill change: the
 `commit-msg` hook and rule 23 already cap at 100, so 1.3 stays COVERED with no divergence left.
 
+---
+
+## 13.5 The agent proposes, the human disposes (proposed 2026-08-30, status: ACCEPTED 2026-08-30)
+
+**Current canon.** Nothing. The reverse audit of the atelier profile (reverse-matrix.md,
+2026-08-30) mapped all 34 of its hard rules into the canon and found exactly one category with
+no counterpart that is not a deliberate stack binding: the agent-discipline rules. Atelier 24
+(never create, edit, or delete a test without explicit human confirmation), 25 (never commit or
+push on the agent's own initiative), and 26 (the author's identity lives in commit metadata,
+never in file contents) are stack-agnostic working agreements for AI-assisted development, and
+today they exist only inside one stack profile. A team adopting the canon without that profile
+gets no guidance on them at all.
+
+**Defect (a scope gap, not a contradiction).** The canon governs the codebase and the
+organization; since 5.8 it also governs how software treats model OUTPUT (untrusted content is
+not instructions). It says nothing about the model as an ACTOR in the development loop, and
+that gap sits exactly where 13.2 already operates: separation of duties. An agent that rewrites
+a failing test, lands its own commit, or stamps a person's name into an artifact is an author
+approving their own change, the move 13.2 exists to prevent, but 13.2's text only imagines
+human authors.
+
+**Proposed revision.** One new sub-concept, 13.5, under pillar 13 (Clear ownership), not a 19th
+pillar: three rules do not justify a pillar, the concern IS duty separation, and the 12.7
+precedent (a new sub-concept for a cross-cutting working-language rule) fits. Draft:
+
+```md
+### 13.5 The agent proposes, the human disposes
+**Do:** Give every AI agent in the development loop a standing working agreement: tests and
+the safety net are confirmation-gated (an agent proposes a new or changed test and waits for
+an explicit yes), landing is human (no commit, push, publish, or deploy on the agent's own
+initiative), and artifacts stay identity-clean (a person's name, employer, or client appears
+in commit metadata where attribution is deliberate, never in file contents). The agent's
+change reaches main through the same separated duties as any author's (13.2).
+**Don't:** Let an agent silently weaken a failing test to green, land its own work, or bake
+personal identity into files, and then call the result reviewed because a human once approved
+the session.
+```
+
+Cascade if accepted: index line for pillar 13, canonical count 117 to 118, both matrix files
+(a 13.5 row in the forward matrix, likely COVERED by atelier 24-26 verbatim; the reverse
+matrix rows for 24-26 flip from NO-COUNTERPART to CANON-ROW 13.5), the drift checker's
+PER_PILLAR pillar-13 count 4 to 5, and both dos-and-donts hash pins.
+
+**Ruling.** ACCEPTED as drafted by the canon owner, same day; the cascade below is applied. The rejected homes stay recorded: The alternative homes considered: a 19th pillar
+(rejected: too small, and it would fragment duty-separation doctrine across two pillars) and
+pillar 15 (rejected: 15 is about enforcement machinery, and these rules bind before any gate
+runs). Cascade applied in the same change: canon section and index, pillar prose bullet, count 117 to 118, forward matrix row (COVERED), reverse matrix rows 24-26 flipped to CANON-ROW 13.5, drift checker counts, both pins.
+

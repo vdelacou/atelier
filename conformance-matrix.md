@@ -18,13 +18,14 @@ C1 of the Atelier vs Global Rules conformance plan.
   rows. Canon revised again 2026-08-30 by the rules owner, adding sub-concept 1.3 One grammar for the
   history to pillar 1 in both documents, so the canonical count is now 117 and both hashes are re-pinned.
   P6 row 1.3 was then accepted the same day, setting that row's subject limit to 100 to agree with the
-  commitlint config it prescribes.
+  commitlint config it prescribes. P6 row 13.5 (agent working agreements, from the reverse-matrix
+  audit) was accepted 2026-08-30 as well, so the canonical count is 118 and both pins moved again.
   The drift check pins the hashes below and runs against these copies:
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 19eb37f8efb3144cde79ab1ddcb78f47090a2da1b6537073b36ce3a0b5dbceaa | 3452 |
-| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 1e5c46888e5ccf52f4090875f7c3483a2f03e5265d1232cb56123b026e2b00c7 | 284 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 7ee5df78d71843baafeabad97c3d17135090371f825fd63a970ad9b38f3feeb5 | 3464 |
+| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | fea974156af8f85e0920410c817673e640a5998ef30786972b6e5366e47bee2a | 285 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
 
 - IDs and titles are imported verbatim from the "Every sub-concept" index of the
@@ -336,6 +337,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 13.2 | Separate duties | COVERED | governance.md:75-77 | doctrine | Requester never sole approver; no self-merge |
 | 13.3 | Keep an audit trail | COVERED | governance.md:85-92 | doctrine | Approvals and emergency access leave a durable audit-log insert |
 | 13.4 | Make finding problems safe and let the accountable verify | COVERED | governance.md:98-99 | doctrine | Reward detection; the accountable owner verifies via a re-runnable check |
+| 13.5 | The agent proposes, the human disposes | COVERED | SKILL.md:195; SKILL.md:197; SKILL.md:199 | rule | Atelier hard rules 24-26 verbatim: confirmation-gated tests, no unconfirmed landings, identity in metadata only. P6 ACCEPTED 2026-08-30 (origin: the reverse-matrix audit; the skill had the rules before the canon had the row) |
 
 ### Pillar 14: Pave the road
 
@@ -399,12 +401,12 @@ None. Every one of the 116 sub-concepts is COVERED or STRICTER, so there is no C
 
 | Verdict | Count |
 |---|---|
-| COVERED | 114 |
+| COVERED | 115 |
 | STRICTER | 3 |
 | GAP | 0 |
 | CONTRADICTS | 0 |
 | OUT-OF-SCOPE | 0 |
-| Total | 117 |
+| Total | 118 |
 
 No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2 and the accepted 5.3 P6 revision, no row diverges: every sub-concept is covered, three of them more strictly than the canon asks. The last contradiction (5.3) closed when the canon accepted that a constrained range plus a committed lockfile satisfies the pin requirement (docs/global-rules/proposed-revisions.md); 15.1 and 4.6 were resolved by splitting the hook from CI (assets/ci.yml), and the five gaps by adding the missing doctrine. The 2026-08-30 canon addition, 1.3, landed COVERED: the grammar and its hook were already rule 23, and the CI re-check the row asks for shipped with it (assets/check-commit-messages.sh, proven both ways in both smoke tests).
 
