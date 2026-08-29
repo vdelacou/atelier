@@ -1,0 +1,11 @@
+[
+  { "id": "jv-mockito",   "file": "src/test/java/com/example/app/usecases/CancelMembershipTest.java", "rule": 13, "evidence": "(?i)mockito|\\bmock\\b|hand-written fake",            "desc": "Mockito mock instead of a hand-written fake" },
+  { "id": "jv-suppress",  "file": "src/main/java/com/example/app/usecases/CancelMembership.java",     "rule": 15, "evidence": "(?i)@?SuppressWarnings|inline ignore|suppress",       "desc": "@SuppressWarnings inline ignore" },
+  { "id": "jv-sysout",    "file": "src/main/java/com/example/app/usecases/CancelMembership.java",     "rule": 4,  "evidence": "(?i)System\\.out|println|logger port|injected logger", "desc": "System.out.println instead of an injected Logger" },
+  { "id": "jv-exception", "file": "src/main/java/com/example/app/usecases/RefundDeclinedException.java", "rule": 10, "evidence": "(?i)exception|\\bErr\\b|Result",                   "desc": "bespoke business exception instead of an Err value" },
+  { "id": "jv-range",     "file": "pom.xml",                                                          "rule": 19, "evidence": "(?i)range|\\[5\\.0|exact version|pin",                "desc": "version range [5.0,) instead of an exact pin" },
+  { "id": "jv-weakened",  "file": "src/test/java/com/example/app/domain/RefundTest.java",             "rule": 24, "evidence": "(?i)weaken|expected value|existing test|without .*(confirmation|sign-off)|8000|7000", "desc": "existing test's expected value changed without sign-off" },
+  { "id": "jv-pii-log",   "file": "src/main/java/com/example/app/infra/CrmSync.java",                 "rule": 27, "evidence": "(?i)\\bpii\\b|personal data|email.{0,60}\\blog|\\blog.{0,60}email", "desc": "email written to a log line" },
+  { "id": "jv-notimeout", "file": "src/main/java/com/example/app/infra/CrmSync.java",                 "rule": 29, "evidence": "(?i)deadline|timeout|connectTimeout",                  "desc": "HttpClient call with no timeout" },
+  { "id": "jv-harddelete","file": "src/main/java/com/example/app/infra/OrdersDb.java",                "rule": 30, "evidence": "(?i)hard.?delete|soft.?delete|DELETE FROM|deleted_at", "desc": "hard SQL DELETE instead of soft delete" }
+]
