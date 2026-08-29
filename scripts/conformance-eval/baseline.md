@@ -15,6 +15,10 @@ single run is too noisy for a verdict (see `.claude/LESSONS.md`).
 - Assertions: 37 per pass. Two were corrected in this re-baseline after all three passes showed
   them measuring the wrong thing (see Corrected checks below), so scores before and after that fix
   are not comparable.
+- Grader hardened 2026-08-30, same day, selftest-first: comments are stripped before matching
+  (prose about a discipline is not its implementation) and file paths join the matchable corpus
+  (a `003_contract_*.sql` filename IS the contract-step evidence). The numbers below are from the
+  hardened grader; with_skill was unchanged by it, baseline lost 3 comment-credited points.
 - Harness: `scripts/conformance-eval/run.sh` copies the skill into each `with_skill` run dir
   (a nested `claude -p` cannot read a path outside its sandbox), graded by `grade.py`
   (diff-only, the `skills/` subtree excluded), each assertion tagged with the global-rules
@@ -27,16 +31,19 @@ single run is too noisy for a verdict (see `.claude/LESSONS.md`).
 | Arm | Score | |
 |---|---|---|
 | with_skill | 111/111 | 100% |
-| baseline | 84/111 | 75.7% |
-| **delta** | **+24.3 pts** | |
+| baseline | 81/111 | 73.0% |
+| **delta** | **+27.0 pts** | |
 
-Per pass, `with_skill` was 37/37 three times out of three; `baseline` ran 27, 28, 29.
+Per pass, `with_skill` was 37/37 three times out of three; `baseline` ran 27, 26, 28.
+Under the pre-hardening grader the same runs read 111/111 vs 84/111 (+24.3): the three points
+baseline lost were TODO-comment claims of a port, a fake, and branded money, credited as if
+implemented.
 
 ## By rule (global-rules sub-concept; summed over 3 passes)
 
 | Rule | with_skill | baseline | Note |
 |---|---|---|---|
-| 3.2 Depend on interfaces, not implementations | 6/6 | 2/6 | skill ahead; baseline puts the adapter in front of no port |
+| 3.2 Depend on interfaces, not implementations | 6/6 | 0/6 | skill ahead; baseline never builds the port (two prior credits were TODO comments) |
 | 3.9 The AI model is a dependency | 6/6 | 1/6 | skill ahead; baseline ships an unpinned model |
 | 4.3 Have a testing philosophy | 6/6 | 3/6 | skill ahead; baseline writes the test half the time |
 | 6.3 Keep personal data out of logs and URLs | 15/15 | 12/15 | skill ahead |
@@ -45,7 +52,7 @@ Per pass, `with_skill` was 37/37 three times out of three; `baseline` ran 27, 28
 | 10.2 Errors as values | 12/12 | 12/12 | parity |
 | 10.5 Do not fire and forget | 9/9 | 9/9 | parity |
 | 10.9 Treat data as sacred (soft delete) | 6/6 | 0/6 | skill ahead; baseline never soft-deletes |
-| 10.11 Parse, don't validate | 15/15 | 12/15 | skill ahead |
+| 10.11 Parse, don't validate | 15/15 | 11/15 | skill ahead |
 | 10.12 No lost updates | 6/6 | 6/6 | parity |
 | 10.13 Every network call has a deadline | 15/15 | 15/15 | parity |
 
@@ -73,6 +80,10 @@ migration (8.5), branded types (10.11), and keeping PII out of logs and query st
 two arms are at parity on org-from-claims (7.1), errors-as-values (10.2), outbox dedup (10.5),
 optimistic locking (10.12), and outbound deadlines (10.13): disciplines opus handles without help,
 and two of those (10.5, 10.13) were skill-ahead on sonnet, so the base model has closed ground.
+The 10.13 parity is measured at the frontier the doctrine actually mandates: e3 asserts the full
+rule-29 triad (deadline, idempotency-keyed retry, bounded, no while(true)) because payments retry;
+a3 and e1 assert only the deadline because rule 29 mandates retries be bounded and jittered WHERE
+PRESENT, not that every read call retry. No a3 run in either arm adds retry, conformantly.
 Per-task, `with_skill` was perfect and identical across all three passes while `baseline` moved
 between 27 and 29, both lower and flakier.
 

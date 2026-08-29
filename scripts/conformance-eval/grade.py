@@ -36,6 +36,24 @@ FIXTURE_BASELINE = {
 }
 
 
+COMMENT_PATTERNS = {
+    # Strip comments before matching, so prose about a discipline is never
+    # credited as its implementation. The line-comment pattern requires the //
+    # not be preceded by ':' so URL literals (https://...) survive; a block
+    # comment is removed wherever it spans. .sql uses -- to end of line.
+    ".ts": (re.compile(r"/\*.*?\*/", re.DOTALL), re.compile(r"(?<!:)//[^\n]*")),
+    ".tsx": (re.compile(r"/\*.*?\*/", re.DOTALL), re.compile(r"(?<!:)//[^\n]*")),
+    ".java": (re.compile(r"/\*.*?\*/", re.DOTALL), re.compile(r"(?<!:)//[^\n]*")),
+    ".sql": (re.compile(r"/\*.*?\*/", re.DOTALL), re.compile(r"--[^\n]*")),
+}
+
+
+def strip_comments(text: str, suffix: str) -> str:
+    for pattern in COMMENT_PATTERNS.get(suffix, ()):
+        text = pattern.sub("", text)
+    return text
+
+
 def read_sources(run_dir: Path, exts: tuple[str, ...], exclude: set[str]) -> dict[str, str]:
     out = {}
     for p in run_dir.rglob("*"):
@@ -49,7 +67,10 @@ def read_sources(run_dir: Path, exts: tuple[str, ...], exclude: set[str]) -> dic
         text = p.read_text(errors="replace")
         if FIXTURE_BASELINE.get(rel) == text:
             continue  # unmodified scaffolding, not the agent's work
-        out[rel] = text
+        # The path is part of the artifact (a 003_contract_*.sql filename IS the
+        # contract-phase evidence), so it joins the matchable corpus; comments
+        # do not, so prose about a discipline is never credited as code.
+        out[rel] = rel + "\n" + strip_comments(text, p.suffix)
     return out
 
 
@@ -88,7 +109,57 @@ def selftest() -> None:
         for c in credited:
             print(f"  {c}")
         sys.exit(1)
-    print("selftest OK: a pristine fixture copy scores 0 (grader credits only the agent's diff)")
+
+    # Second scenario: prose in comments must not satisfy code assertions. An
+    # agent file whose only assertion-matching text lives in comments (a TODO
+    # naming AbortSignal, a commented-out ok: false) describes the discipline
+    # without implementing it; matching raw text credits it. Also pins that a
+    # URL's // survives stripping and real code on such a line still matches.
+    a3 = next(task for task in tasks if task["id"] == "a3-http-adapter")
+    with tempfile.TemporaryDirectory() as tmp:
+        run_dir = Path(tmp) / "comment-only"
+        shutil.copytree(FIXTURE_DIR, run_dir)
+        agent_file = run_dir / "src" / "infra" / "billing-http.ts"
+        agent_file.parent.mkdir(parents=True, exist_ok=True)
+        agent_file.write_text(
+            "// TODO: add AbortSignal.timeout and return ok: false via Result<PlanTier, E>\n"
+            "/* the adapter should sit behind ports/billing.ts with a Fake */\n"
+            "export const placeholder = 1;\n"
+        )
+        comment_credited = [d for d, _r, passed in grade_run(run_dir, a3["assertions"]) if passed]
+        if comment_credited:
+            print("SELFTEST FAILED: comment-only content was credited as implementation:")
+            for c in comment_credited:
+                print(f"  {c}")
+            sys.exit(1)
+        agent_file.write_text(
+            "const DOCS = 'https://example.com/api'; // per the vendor docs\n"
+            "export const fetchPlan = async (s: AbortSignal): Promise<Result<PlanTier, E>> =>\n"
+            "  fetch(DOCS, { signal: AbortSignal.timeout(5000) }).then((r) => ({ ok: false as const, error: r.status }));\n"
+        )
+        code_hits = [d for d, _r, passed in grade_run(run_dir, a3["assertions"]) if passed]
+        if len(code_hits) < 2:
+            print(f"SELFTEST FAILED: real code on a line carrying a URL // stopped matching: {code_hits}")
+            sys.exit(1)
+
+    # Third scenario: a file's PATH is part of the produced artifact. A staged
+    # migration says "contract phase" through its filename (003_contract_*.sql);
+    # after comment stripping that is the only honest evidence left, so the
+    # matcher must see path + content, not content alone.
+    e9 = next(task for task in tasks if task["id"] == "e9-migration")
+    contract = next(a for a in e9["assertions"] if "contract" in a["pattern"])
+    with tempfile.TemporaryDirectory() as tmp:
+        run_dir = Path(tmp) / "path-evidence"
+        shutil.copytree(FIXTURE_DIR, run_dir)
+        mig = run_dir / "db" / "migrations" / "003_contract_receipts_drop_amount.sql"
+        mig.parent.mkdir(parents=True, exist_ok=True)
+        mig.write_text("ALTER TABLE receipts DROP COLUMN amount;\n")
+        marks = {d: passed for d, _r, passed in grade_run(run_dir, [contract])}
+        if not all(marks.values()):
+            print(f"SELFTEST FAILED: a 003_contract_* migration filename was not accepted as contract-step evidence: {marks}")
+            sys.exit(1)
+
+    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence")
 
 
 def _flag_val(args: list[str], name: str) -> int | None:
