@@ -1,25 +1,48 @@
-# PLAN: accept P6 rows 11.3 and 12.7 (DONE, uncommitted)
+# PLAN: harden the mutation gate assets (untracked scope, loud base failure, ref refresh, --force)
 
-User's calls applied: 11.3 = softened the pillar-11 prose toward symptom/burn-rate alerting (sub
-unchanged); 12.7 = new sub-concept "One working language" (Option A, count 115 -> 116, full cascade).
-One coherent commit pending confirm.
+Four verified traps in `skills/atelier/assets/mutate-changed.sh` (untouched since 13d62a8,
+2026-07-04): (1) untracked files are invisible to the three ACMR diffs, so a brand-new domain
+file passes unmutated with exit 0; (2) an unknown BASE ref dies inside the command substitution,
+the `|| true` eats it, and the run goes green having measured nothing; (3) a stale `origin/main`
+widens scope and misreads as unpushed work; (4) `rm -f reports/stryker-incremental.json`
+hardcodes a path that `stryker.conf.json` owns via `incrementalFile`, and destroys the cache
+before the run. Same `rm -f` also in `mutate-staged.sh`. Consumer-repo sync (the "five drifted
+assets") is OUT OF SCOPE, that repo is not mounted here.
 
-- [x] 11.3: every-new-project.md pillar-11 prose reworded from "alert on anomalies rather than only
-      fixed thresholds" to symptom-based/error-budget-burn alerting, matching sub 11.3 and the skill's
-      observability.md. No skill change (sub + skill already burn-rate). Row stays COVERED.
-- [x] 12.7: new `### 12.7 One working language` (Do/Don't + CONTRIBUTING.md example) in dos-and-donts;
-      added to the "Every sub-concept" index; matrix row (COVERED, governance.md:5); tally COVERED
-      112 -> 113, Total 116; work-list + ci.yml comment -> 116; check-matrix-drift.py `!= 116` and
-      PER_PILLAR pillar-12 6 -> 7 (sum 116).
-- [x] proposed-revisions.md: 11.3 and 12.7 marked ACCEPTED; 12.7 records Option A as landed and B declined.
-- [x] Re-pinned BOTH canon hashes: dos-and-donts 37b596..910a (3423 lines), every-new-project 5b3373..2e1
-      (283); header bullet now names 5.3/10.3/11.3/12.7/15.5 and which doc carries each; count now 116.
-- [x] Verified: drift gate green (116 rows, per-pillar + hashes intact) + selftest green; both live hashes
-      match pins; `git diff` added lines have no em dash; LESSONS + PLAN updated.
+- [x] 1. `assets/mutate-changed.sh`: fetch guard (only when BASE is `origin/*`, opt-out
+      `MUTATE_NO_FETCH=1`); `git rev-parse --verify` or exit 1; resolved-base print (short SHA,
+      relative date, ahead count); `git ls-files --others --exclude-standard` unioned into scope;
+      `bunx stryker run --force` replaces the `rm -f`.
+      DONE: `bash -n` clean; smoke test proves unknown BASE exits 1 and an untracked
+      `src/domain/*.ts` enters scope; no em dash in added lines.
+- [x] 2. `assets/mutate-staged.sh`: `rm -f` becomes `--force` (comment rewritten, em dashes
+      dropped). No untracked union, staged-only IS the gate-8 contract. `bash -n` clean.
+- [x] 3. `--force` verified against the real installed Stryker: both `mutate:staged` and the new
+      `mutate:changed` smoke runs pass, and an unknown option would have failed them.
+- [x] 4. `scripts/smoke-test.sh`: three new checks after the ci.yml greps. All three green:
+      "fails loudly when the base ref does not resolve" (expect_err, fixture has no remote),
+      "scores an untracked new domain file" (BASE=HEAD after committing src/domain, so the new
+      `eligibility.ts` is the only in-scope file), "prints the resolved base and pulls the
+      untracked file into scope" (greps the base line and "testing 1 file(s)").
+- [x] 5. `references/workflow.md` (Mutation testing): the mutate:changed bullet now says
+      untracked files are in scope, plus a guarantees block (untracked, loud base failure,
+      refresh + print, --force freshness, greenfield pre-remote case) and the un-encodable rule
+      (fetch before reading origin/main-relative output as push scope; confirm with
+      `git log --oneline origin/main..HEAD`).
+- [x] 6. LESSONS.md `[gotcha]` entry: all four traps, why `--force` over `rm`, why untracked is
+      changed-only, and the deliberate greenfield exit-1 behaviour change.
+- [ ] 7. Land: one commit, `fix(atelier): ...`, 6 files. AWAITING CONFIRM. Push is a separate
+      confirm.
 
-Change set: dos-and-donts.md, every-new-project.md, proposed-revisions.md, conformance-matrix.md,
-check-matrix-drift.py, ci.yml, LESSONS.md, PLAN.md. One commit.
+Verification: `bash scripts/smoke-test.sh` runs 3 new checks, all ok. The run reports 1 FAILED,
+`lint:strict (type-aware)`, which is PRE-EXISTING and unrelated: a clean `git worktree` of HEAD
+(17a6e78, none of this change) fails identically. Cause is the deliberate unpinned-toolchain
+canary firing: eslint-plugin-sonarjs 4.2.0 (2026-07-14) flags the fixture's own canonical
+branded type (`sonarjs/no-useless-intersection` on `string & { readonly __brand }`) and
+`sonarjs/null-dereference` in greeting.ts and fetch-greeting.test.ts. Separate task, listed as a
+next step, NOT fixed here (out of scope). Also green: `bun run scripts/validate-frontmatter.ts`
+(4/4), added-lines em-dash grep empty.
 
-Next: confirm commit, then push. All five drafted P6 rows (5.3, 10.3, 11.3, 12.7, 15.5) are now ACCEPTED
-and applied; the canon internal-consistency pass is fully resolved. Phase 5 field test remains the only
-external item.
+Named assumptions: a repo with no `origin/main` (greenfield pre-push) now exits 1 loudly instead
+of silently passing, handled in docs not special-cased in the script; auto-refresh covers only
+the `origin` remote.

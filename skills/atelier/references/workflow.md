@@ -490,8 +490,18 @@ There is no first-party `@stryker-mutator` Bun runner today (community plugins e
 **Three commands, three scopes:**
 
 - **`bun run mutate`** — full run on `src/domain/**` + `src/use-cases/**`. Slow (1–2 hr on ~150 files). Periodic audit.
-- **`bun run mutate:changed`** — files differing from `origin/main` plus uncommitted edits. Run during iteration. Override base ref with `BASE=HEAD~3 bun run mutate:changed`.
+- **`bun run mutate:changed`**: files differing from `origin/main`, plus uncommitted edits, plus **untracked files**. Run during iteration. Override the base ref with `BASE=HEAD~3 bun run mutate:changed`.
 - **`bun run mutate:staged`**: files staged for the next commit. An optional local pre-push check; CI is the enforcing home, running `mutate:changed` on a pull request and `mutate` on main. Skips with exit 0 when no relevant files are staged, so commits to docs, tests, or scripts are unaffected.
+
+**What `mutate:changed` guarantees, and the one thing it cannot.** Each guarantee exists because its absence produced a green run over unmeasured code:
+
+- **Untracked files are in scope.** A brand-new `src/domain/order.ts` that was never `git add`-ed appears in no diff, so a scope built from diffs alone reports "nothing changed" and exits 0. The script unions in `git ls-files --others --exclude-standard`. (`mutate:staged` deliberately does not: a file must be staged to be committed, so gate 8 has no equivalent hole.)
+- **An unresolvable base ref fails loudly.** `BASE` that does not exist makes every diff fail, and the `|| true` guarding the scope pipeline turns that into "no files changed" plus exit 0. The script now resolves `BASE` up front and exits 1. In CI this matters more than locally: `assets/ci.yml` checks out with `fetch-depth: 0`, but a consumer repo on a shallow checkout has no `origin/main` and would otherwise get a vacuously passing mutation gate on every pull request.
+- **The base ref is refreshed and printed.** `origin/main` is a *local cache* of the remote, moved only by a fetch. Against a stale one, `$BASE...HEAD` still contains long-pushed commits, so the scope fills with files nobody touched. The script fetches when `BASE` is a remote-tracking ref (`|| true`, so offline degrades gracefully; `MUTATE_NO_FETCH=1` opts out) and prints the resolved base as short SHA, relative date, and ahead count, which is what makes staleness visible when you override `BASE` or opt out.
+- **Verdicts are fresh.** The run passes `--force`. Stryker's incremental cache keys on source-file hashes, so a test-only change (a stronger assertion, same source) replays a stale score. Prefer `--force` to deleting the incremental file: `incrementalFile` is owned by `stryker.conf.json`, so a config change would silently turn a hardcoded `rm -f reports/stryker-incremental.json` into a no-op.
+- **Greenfield, before the first push:** there is no `origin/main` yet, so pass a local base (`BASE=$(git rev-list --max-parents=0 HEAD)`) or skip the command until the remote exists. Failing loudly is the point; do not paper over it by restoring a silent exit 0.
+
+**The part no script can encode:** `mutate:changed` output is only a statement about push scope if the ref behind it is current. Fetch before reading any `origin/main`-relative output that way, and confirm what is actually unpushed with `git log --oneline origin/main..HEAD` rather than inferring it from a file list.
 
 **Mutation scope is exactly `src/domain/**` + `src/use-cases/**`, with only two structural exclusions:**
 

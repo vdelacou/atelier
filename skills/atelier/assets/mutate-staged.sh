@@ -32,9 +32,10 @@ mutate_arg=$(echo "$files" | paste -sd, -)
 
 # Run the GATE fresh. Stryker's incremental cache (incremental:true in the
 # config, kept for fast dev `bun run mutate`) keys on source-file hashes, so a
-# test-only change — strengthening an assertion without touching the source —
+# test-only change, strengthening an assertion without touching the source,
 # does not invalidate it and the score reports stale. A commit gate must judge
-# the current tree, so clear the cache before the staged run.
-rm -f reports/stryker-incremental.json
-
-bunx stryker run --mutate "$mutate_arg"
+# the current tree, so --force ignores cached statuses. Prefer it to deleting
+# reports/stryker-incremental.json: that path is owned by stryker.conf.json
+# via `incrementalFile`, so a config change silently turns the delete into a
+# no-op and the stale-score trap returns.
+bunx stryker run --force --mutate "$mutate_arg"

@@ -317,6 +317,43 @@ expect_ok "ci.yml asset is present" test -f .github/workflows/ci.yml
 expect_ok "ci.yml wires the package.json gate" grep -q "check-package-json.sh" .github/workflows/ci.yml
 expect_ok "ci.yml runs the full suite, coverage, and mutation" bash -c 'grep -q "bun test" .github/workflows/ci.yml && grep -q "bun run coverage" .github/workflows/ci.yml && grep -q "mutate" .github/workflows/ci.yml'
 
+echo "== mutate:changed (the base ref must resolve, and untracked files are in scope) =="
+# This fixture has no remote, so the default BASE=origin/main cannot resolve.
+# The failed diff used to be swallowed by the pipeline's `|| true`, printing
+# "no files in mutation scope changed" and exiting 0: a green run that measured
+# nothing. A consumer repo on a shallow checkout hits exactly this.
+expect_err "mutate:changed fails loudly when the base ref does not resolve" bun run mutate:changed
+
+# Commit the in-scope tree so the only file left under src/domain is brand new
+# and never git-added. Such a file is in NO diff, so before the fix the gate
+# reported a pass over code it never mutated. Hooks are proven above; this is
+# fixture setup, hence --no-verify.
+git config user.email 'atelier@example.invalid'
+git config user.name 'atelier'
+git add src/domain
+git commit -q --no-verify -m 'test: fixture baseline for mutate:changed'
+cat > src/domain/eligibility.ts <<'EOF'
+export const isEligible = (age: number): boolean => age >= 18;
+EOF
+cat > src/domain/eligibility.test.ts <<'EOF'
+import { expect, test } from 'bun:test';
+import { isEligible } from './eligibility.ts';
+
+test('someone at the age boundary is eligible', () => {
+  expect(isEligible(18)).toBe(true);
+});
+
+test('someone below the boundary is not', () => {
+  expect(isEligible(17)).toBe(false);
+});
+EOF
+# Also proves `--force` is a real flag on the installed (unpinned) Stryker: an
+# unknown option would fail the run, so a major that drops it is caught here.
+expect_ok "mutate:changed scores an untracked new domain file" \
+  bash -c 'BASE=HEAD bash scripts/mutate-changed.sh > mutate-changed.out 2>&1'
+expect_ok "mutate:changed prints the resolved base and pulls the untracked file into scope" \
+  bash -c 'grep -q "mutate:changed: base HEAD" mutate-changed.out && grep -q "testing 1 file(s)" mutate-changed.out'
+
 echo
 if [ "$FAILURES" -gt 0 ]; then
   echo "smoke-test: $FAILURES check(s) FAILED"
