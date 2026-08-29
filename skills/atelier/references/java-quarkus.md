@@ -276,9 +276,12 @@ The compact constructor is the guard (constructing an invalid instance is a bug,
 
 ```java
 public record Email(String value) {
-  public Email { if (!value.matches("^[^@\\s]+@[^@\\s]+$")) throw new IllegalArgumentException("email"); }
+  private static final Pattern SHAPE = Pattern.compile("^[^@\\s]+@[^@\\s]+$");
+
+  public Email { if (!SHAPE.matcher(value).matches()) throw new IllegalArgumentException("email"); }
+
   public static Result<Email, String> parse(String raw) {
-    return raw.matches("^[^@\\s]+@[^@\\s]+$") ? new Ok<>(new Email(raw)) : new Err<>("invalid_email");
+    return SHAPE.matcher(raw).matches() ? new Ok<>(new Email(raw)) : new Err<>("invalid_email");
   }
 }
 
