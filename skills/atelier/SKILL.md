@@ -240,6 +240,8 @@ Red-Green-Refactor is the only loop — with the test boundary confirmation-gate
 
 **Test structure.** Arrange-Act-Assert. When stuck, write backwards: Assert first, then Act, then Arrange.
 
+**A bug is a missing test.** When a bug surfaces, mid-implementation, in review, or from production, the first act is a failing regression test that reproduces it: propose it, get the confirmation rule 24 requires, write it, and watch it fail for the bug's reason before touching production code. Then fix to green and refactor. Never patch first and backfill the test; an untested fix is the same class of unverified change that let the bug in, and the red run is the only proof the test actually captures it. If a live incident forces a mitigation before the test, the regression test is the first act of the follow-up, and the mitigation commit says so.
+
 When the user asks for a feature without mentioning tests, still go test-first — but propose the test and get confirmation before writing it (rule 24), stating briefly that you are doing so. If they ask you to skip tests, do not comply silently. Ask why, and offer to proceed with TDD or at minimum add the characterisation tests that pin current behaviour. Modifying or deleting an existing test is never silent — show the change and wait for an explicit yes.
 
 **Next.js variant scope.** The loop applies to logic — `src/lib/**` and `src/config/**` (path helpers, i18n, SEO builders, config factories, hook internals extracted as pure functions). Design-system components contain nothing unit-testable by design (rule 21 makes them prop→JSX maps); they are verified by the design-system lint block and review, not by tests. See the variant matrix below and `references/nextjs-monorepo.md` (Testing).
