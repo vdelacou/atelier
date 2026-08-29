@@ -368,7 +368,7 @@ This is the **Bun-script variant's** mechanism. The Next.js monorepo uses `simpl
 
 Every gate here is O(staged files) or O(1). Typecheck is the one that grows with the whole codebase; if it exceeds the hook budget on your repo, move it to CI too. Never add the test suite, coverage, or mutation to the hook.
 
-**CI (`assets/ci.yml`, the authoritative merge gate):** install on a frozen lockfile, then `check-package-json.sh`, `gitleaks detect` (full history), `lint:strict` (type-aware, zero warnings, ~25s), `typecheck`, `bun test` (the whole suite), `bun run coverage` (per-tier), `bun run mutate:changed` on a pull request or `bun run mutate` on main (1-3 min per file), and `bun audit`. Make it a required status check in branch protection (rule 13.2) so a bypassed hook is still caught.
+**CI (`assets/ci.yml`, the authoritative merge gate):** install on a frozen lockfile, then `check-commit-messages.sh`, `check-package-json.sh`, `gitleaks detect` (full history), `lint:strict` (type-aware, zero warnings, ~25s), `typecheck`, `bun test` (the whole suite), `bun run coverage` (per-tier), `bun run mutate:changed` on a pull request or `bun run mutate` on main (1-3 min per file), and `bun audit`. Make it a required status check in branch protection (rule 13.2) so a bypassed hook is still caught.
 
 A ready-to-copy hook lives in the skill at `assets/pre-commit`, the CI workflow at `assets/ci.yml`, and the staged-lint helper at `assets/lint-staged.sh`. The companion scripts (`check-commit-size.sh`, `check-package-json.sh`, `mutate-staged.sh`, `mutate-changed.sh`, `regenerate-coverage-preload.ts`) live alongside, plus `assets/commit-msg`, a separate git hook documented under *Commit message format* below.
 
@@ -382,6 +382,7 @@ cp <skill>/assets/ci.yml .github/workflows/ci.yml
 cp <skill>/assets/lint-staged.sh scripts/lint-staged.sh
 cp <skill>/assets/check-commit-size.sh scripts/check-commit-size.sh
 cp <skill>/assets/check-package-json.sh scripts/check-package-json.sh
+cp <skill>/assets/check-commit-messages.sh scripts/check-commit-messages.sh
 cp <skill>/assets/check-coverage.ts scripts/check-coverage.ts
 cp <skill>/assets/regenerate-coverage-preload.ts scripts/regenerate-coverage-preload.ts
 cp <skill>/assets/mutate-staged.sh scripts/mutate-staged.sh
@@ -536,6 +537,14 @@ type(optional-scope)!: subject
 Why a hook and not just a guideline: the commit log is the project's changelog and `git bisect` surface. A machine-readable `type`/`scope` lets tooling derive release notes, group history, and flag breaking changes. A soft "please use Conventional Commits" drifts within a week; the hook keeps every commit on `main` honest and rejects `wip:`, `update stuff`, `Fix: thing`, and the like. git-generated `Merge`/`Revert`/`fixup!`/`squash!` headers are passed through untouched.
 
 The shipped `assets/commit-msg` is a **dependency-free shell validator** — it matches the hand-rolled style of the other gate scripts and adds nothing to `package.json`. The Next.js monorepo variant enforces the identical grammar through `@commitlint/config-conventional` (already in its root toolchain) wired as a `simple-git-hooks` `commit-msg` step; see `references/nextjs-monorepo.md`. Either way the grammar is the same — only the validator differs.
+
+**The hook is the first line, CI is the one that cannot be skipped.** `git commit --no-verify`
+walks straight past the hook, so `assets/check-commit-messages.sh` re-runs the identical grammar
+in CI over every commit in the pushed range (the PR's base branch by default, `HEAD~1..HEAD` when
+that ref does not resolve, never the whole history, so a repo adopting the standard is not failed
+on commits nobody can rewrite). It delegates to the hook script rather than restating the pattern,
+so local and CI cannot drift apart. Merge commits are excluded; the hook's own Revert / fixup! /
+squash! / amend! exemptions still apply.
 
 For Husky, copy `assets/commit-msg`'s body into `.husky/commit-msg`.
 
@@ -710,7 +719,7 @@ After the change, restart the TS server in VS Code (Cmd/Ctrl + Shift + P → "Ty
 - **Zero warnings, zero inline ignores.** Refactor or change severity at the project level; never suppress per-line.
 - **Coverage gates per-tier:** 100% on `domain` + `use-cases`, 80% on `composition` + `infra` + `presenter`, skip `test-helpers` and `main.ts` only. `build-deps.ts` is now in scope (testable via optional config DI).
 - **SonarLint parity at lint time** via `eslint-plugin-sonarjs` + type-aware `@typescript-eslint` rules.
-- **Pre-commit hook runs the fast gates** (commit size, package.json, gitleaks protect, lint:staged, typecheck); **CI (`assets/ci.yml`) runs the full set** and is the required merge check: strict lint, typecheck, the whole test suite, coverage, and mutation, on a frozen lockfile, plus `bun audit`.
+- **Pre-commit hook runs the fast gates** (commit size, package.json, gitleaks protect, lint:staged, typecheck); **CI (`assets/ci.yml`) runs the full set** and is the required merge check: commit messages over the pushed range, strict lint, typecheck, the whole test suite, coverage, and mutation, on a frozen lockfile, plus `bun audit`.
 - **Commit identity** (rule 26): contributor identity in commit metadata is normal and never a finding; file contents never name a person, an employer, or a client. Scrubbing a mention from pushed history takes a gated `git filter-repo` rewrite plus a force-push, and the host may keep the old commits cached.
 - **Dependency CVE scanning lives in CI, not the gate** (`bun audit --audit-level=high`): a daily scheduled watchdog for new CVEs in untouched deps, plus a PR run scoped to `package.json` / `bun.lock` for deliberately-introduced ones.
 - **Mutation testing on staged files** (Stryker, ≥90% break threshold) makes "tests don't actually pin behaviour" findable in CI.

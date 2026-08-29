@@ -77,7 +77,7 @@ git config user.email "atelier-smoke@users.noreply.github.com"
 # --- shipped assets, per references/java-quarkus.md (Gates and hooks) ---
 cp "$SKILL/assets/pre-commit-java" .githooks/pre-commit
 cp "$SKILL/assets/commit-msg" .githooks/commit-msg
-cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" scripts/
+cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/assets/check-commit-messages.sh" scripts/
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh
 git config core.hooksPath .githooks
 
@@ -271,6 +271,8 @@ EOF
 git add src/main/java/com/example/app/domain/Discount.java src/test/java/com/example/app/domain/DiscountTest.java
 expect_ok "a small conforming commit passes the fast pre-commit hook + commit-msg" \
   git commit -q -m "feat(domain): premium discount rule"
+expect_ok "check-commit-messages.sh passes on a conventional history" \
+  bash scripts/check-commit-messages.sh
 
 echo
 echo "== each gate blocks its target violation =="
@@ -296,6 +298,12 @@ git reset -q oversized.txt && rm oversized.txt
 expect_err "commit-msg rejects a junk message" \
   bash -c 'printf "wip stuff\n" > .msg && .githooks/commit-msg .msg'
 rm -f .msg
+
+# 4b. check-commit-messages.sh catches what --no-verify let through.
+git commit -q --no-verify --allow-empty -m "wip stuff"
+expect_err "check-commit-messages.sh catches a --no-verify bypass" \
+  bash scripts/check-commit-messages.sh
+git reset -q --soft HEAD~1
 
 # 5. spotless:check fails on a misformatted file.
 printf 'package com.example.app.domain;\n\npublic class Ugly{public static int x(){return 1;}}\n' \

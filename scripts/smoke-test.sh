@@ -66,6 +66,7 @@ cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-package-json.sh" \
    "$SKILL/assets/lint-staged.sh" "$SKILL/assets/check-docs.sh" scripts/
 cp "$SKILL/assets/fetch-mock.ts" "$SKILL/assets/capture-rejection.ts" src/test-helpers/
 cp "$SKILL/assets/format-error.ts" "$SKILL/assets/format-error.test.ts" src/domain/utilities/
+cp "$SKILL/assets/check-commit-messages.sh" scripts/
 cp "$SKILL/assets/pre-commit" "$SKILL/assets/commit-msg" .githooks/
 mkdir -p .github/workflows
 cp "$SKILL/assets/ci.yml" .github/workflows/ci.yml
@@ -352,6 +353,16 @@ git config user.email 'atelier@example.invalid'
 git config user.name 'atelier'
 git add src/domain
 git commit -q --no-verify -m 'test: fixture baseline for mutate:changed'
+
+# The commit-message CI gate (rule 23, canon 1.3). The hook is local and
+# --no-verify skips it, so CI re-runs the same validator over the pushed range.
+# Proven both ways: green on the conventional history, red on a bypassed message.
+expect_ok  "check-commit-messages.sh passes on a conventional history" \
+  bash scripts/check-commit-messages.sh
+git commit -q --no-verify --allow-empty -m 'wip: bypassed the hook'
+expect_err "check-commit-messages.sh catches a --no-verify bypass" \
+  bash scripts/check-commit-messages.sh
+git reset -q --soft HEAD~1
 cat > src/domain/eligibility.ts <<'EOF'
 export const isEligible = (age: number): boolean => age >= 18;
 EOF
