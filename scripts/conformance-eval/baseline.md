@@ -51,12 +51,25 @@ errors-as-values (10.2), branded money (10.11), and optimistic locking (10.12): 
 base model handles without help. Per-task, `with_skill` is near-perfect and stable across the
 three passes while `baseline` is both lower and flakier.
 
-## Threshold (Phase 4 gate, wired)
+## Threshold (Phase 4 gate, run locally)
 
-The eval-threshold gate is wired in `.github/workflows/eval.yml`: on a skill-touching PR it runs one
-eval pass and calls `grade.py --min-with-skill 24 --min-delta 4` (a single-pass floor, conservative
-against this 3-pass baseline of 82/84 and +23.8). It needs the `ANTHROPIC_API_KEY` secret; without it
-the job skips rather than blocking. The always-on cheap companion is the `matrix-drift` gate in
-`ci.yml` (`scripts/check-matrix-drift.py`), which holds the matrix to the vendored canon. Re-baseline
-whenever `tasks.json` or the skill changes materially; the run dirs are gitignored, this scorecard is
-the committed reference.
+The eval runs on this machine, not in CI. A skill-touching change runs one pass and calls
+`grade.py <runs-dir> --min-with-skill 24 --min-delta 4`, a single-pass floor kept conservative
+against this 3-pass baseline of 82/84 and +23.8:
+
+```bash
+CONFORMANCE_MODEL=claude-opus-5 CONFORMANCE_TAG=preland bash scripts/conformance-eval/run.sh
+python3 scripts/conformance-eval/grade.py \
+  skills/atelier-workspace/conformance-*/runs-claude-opus-5-preland --min-with-skill 24 --min-delta 4
+```
+
+There is deliberately no CI job for it. The gate spawns a nested `claude -p` per task per arm, which
+on GitHub Actions means an `ANTHROPIC_API_KEY` secret and a metered bill for something the local
+`claude` session already covers, so the eval is a pre-land step the author runs and reports rather
+than a status check. The trade is real and worth naming: the eval now depends on the author running
+it, where a CI job could not be forgotten.
+
+The always-on cheap companion stays in CI: the `matrix-drift` gate in `ci.yml`
+(`scripts/check-matrix-drift.py`), which holds the matrix to the vendored canon on every push.
+Re-baseline whenever `tasks.json` or the skill changes materially; the run dirs are gitignored, this
+scorecard is the committed reference.
