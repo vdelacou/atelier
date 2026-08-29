@@ -17,11 +17,13 @@ C1 of the Atelier vs Global Rules conformance plan.
   new sub-concept, so the canonical count is now 116. They differ from the original source only in those
   rows. Canon revised again 2026-08-30 by the rules owner, adding sub-concept 1.3 One grammar for the
   history to pillar 1 in both documents, so the canonical count is now 117 and both hashes are re-pinned.
+  P6 row 1.3 was then accepted the same day, setting that row's subject limit to 100 to agree with the
+  commitlint config it prescribes.
   The drift check pins the hashes below and runs against these copies:
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | d949b360a627f0291267ed3dba3db2623da5e7617c9c059c90462af254dfab0f | 3451 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 19eb37f8efb3144cde79ab1ddcb78f47090a2da1b6537073b36ce3a0b5dbceaa | 3452 |
 | Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 1e5c46888e5ccf52f4090875f7c3483a2f03e5265d1232cb56123b026e2b00c7 | 284 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
 
@@ -187,7 +189,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 1.1 | One committed config for style | COVERED | workflow.md:66; assets/pre-commit gate 5 | gate | One flat eslint.config.js embeds prettier; lint:strict is gate 5 |
 | 1.2 | Cap complexity and duplication | COVERED | SKILL.md:271; SKILL.md:324 | rule | Size caps and Rule-of-Three are generation-time rules; sonarjs complexity rule deliberately off |
-| 1.3 | One grammar for the history | COVERED | SKILL.md:193; assets/commit-msg; assets/check-commit-messages.sh | gate | Conventional Commits grammar enforced by the commit-msg hook and re-checked in CI over the pushed range, so a --no-verify bypass is still caught (gate added 2026-08-30 with the canon row). One divergence, P6 opened: the canon asks for 72-char subjects while atelier caps at 100, the documented default of @commitlint/config-conventional, which the canon row's own gate snippet prescribes |
+| 1.3 | One grammar for the history | COVERED | SKILL.md:193; assets/commit-msg; assets/check-commit-messages.sh | gate | Conventional Commits grammar enforced by the commit-msg hook and re-checked in CI over the pushed range, so a --no-verify bypass is still caught (gate added 2026-08-30 with the canon row). The 72-vs-100 divergence closed the same day: P6 1.3 ACCEPTED 2026-08-30, canon now states 100, the documented default of @commitlint/config-conventional, which the row's own gate snippet prescribes |
 
 ### Pillar 2: Simplicity by default
 

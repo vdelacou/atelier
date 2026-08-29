@@ -164,7 +164,8 @@ Update UserService.java and also fixed the thing from yesterday
 feat(expenses): add receipt OCR intake
 fix(auth): refuse expired refresh tokens
 refactor(orders): extract keyset pagination helper
-# type(scope): imperative subject, 72 chars max; the body explains why, the diff already shows what
+# type(scope): imperative subject, 100 chars max (config-conventional's header-max-length default);
+# the body explains why, the diff already shows what
 ```
 
 The gate (commitlint runs in milliseconds, so it belongs in the fast hook per 15.1):
