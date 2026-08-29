@@ -58,7 +58,7 @@ matching fixed it. A second hazard, a line reference like `orders-db.ts:30` coun
 citation, was designed out up front. Both cases are pinned in `grade.py --selftest`, which CI
 runs (`review-eval grader selftest`).
 
-## Java variant (added 2026-08-30, same day)
+## Java variant (added 2026-08-30, same day; fixture v4)
 
 Same protocol, `REVIEW_VARIANT=java`: a self-contained Maven fixture (`base-java/`, the sealed
 `Result` trio from `assets/java`, a `Refund` record with its three-scenario JUnit test, an
@@ -66,28 +66,46 @@ Same protocol, `REVIEW_VARIANT=java`: a self-contained Maven fixture (`base-java
 test (13), `@SuppressWarnings` (15), `System.out.println` (4), a bespoke business exception
 thrown from a use case (10), a `[5.0,)` version range in the pom (19), the existing test's
 expected value silently changed (24), an email in a log line (27), `HttpClient` with no
-timeout (29), a hard SQL `DELETE` (30). Three passes on `claude-opus-5`, both arms, 6 runs,
-0 failures.
+timeout (29), a hard SQL `DELETE` (30). Numbers below are fixture v4, three passes on
+`claude-opus-5`, both arms, 6 runs, 0 failures.
 
 | Metric | with_skill | baseline |
 |---|---|---|
-| caught | 27/27 (100%) | 19/27 (70.4%) |
-| rule-cited | 27/27 | 1/27 |
+| caught | 27/27 (100%) | 15/27 (55.6%) |
+| rule-cited | 26/27 | 1/27 |
 | false positives on clean files | 0 | 0 |
 
-Per pass, with_skill caught 9/9 three times out of three; baseline ran 5, 7, 7. The baseline
-misses rhyme with the Bun run: jv-harddelete 0/3 (a working hard delete looks finished),
-jv-weakened 1/3 (the silently changed expectation slips past), and once each the PII log line,
-the missing timeout, and the exception-instead-of-Err. What it does catch unaided: Mockito,
-`@SuppressWarnings`, `System.out`, the version range, the generic reviewer's home turf.
+Per pass, with_skill caught 9/9 three times out of three; baseline ran 6, 2, 7, wider variance
+than any other measurement in this file (the 2/9 pass is a real run, not a harness fault, and
+is why single-pass review verdicts are worthless). jv-harddelete was missed by baseline in all
+three passes, jv-weakened and jv-mockito in two; earlier fixture rounds (v1-v3, 9 baseline
+runs total) show the same shape: the hard delete was caught unaided in NONE of the twelve
+baseline runs across all fixture versions. The one rule-cited gap in with_skill (v4r1) was a
+citation landing outside the finding's paragraph, a formatting wobble, not a recall miss.
 
-Two design notes, recorded for honesty. The TS-inversion trap did not fire: a new port
-`interface` was planted as a clean file expecting a TS-minded reviewer to flag it (rule 3
-inverts in Java), and neither arm did in any pass. And that same file was then reclassified
-OUT of the clean list: the with_skill review accused it under rules 12 and 16 (raw `String`
-params, `Result<Void, String>` instead of a sealed error union), a defensible strict reading
-of the standard's own text, so it is not the indisputable sentinel a false-positive lens
-needs. The clean list for Java is the conforming `Refund` edit alone; the reclassification
-removed the only FP in the six runs, and it was charged against the fixture design, not the
-review.
+## The sentinel iterations (v1 to v4), kept for what they proved
 
+The false-positive lens needs clean files a strict reviewer has nothing to say about, and
+finding them took four rounds, because the with_skill reviewer kept issuing CORRECT findings
+against my candidates while the baseline arm never noticed any of them:
+
+- v1: the new `Notifier` port used `Result<Void, String>` and raw params; the review demanded
+  the doctrine's sealed per-port error union and branded ids (rules 12, 16). Right. Hardened.
+- v2: hardened `MemberId` shipped without a test; flagged under rule 11 with the note that the
+  file was "otherwise exactly the rule 12 exemplar". Right. `MemberIdTest` added.
+- v3: `MemberId` duplicated its regex and recompiled per call, an ergonomics nit inherited
+  from the shipped `Email.java` exemplar itself, which the finding thereby exposed (fixed
+  upstream in the asset and its doc fence, verified by the java smoke test); and the diff
+  shipped the port with no implementation while `CrmSync` declared a same-named incompatible
+  method, incoherence the review caught across files. Both right.
+- v4: `MemberIdTest` flagged under rule 14 in all three passes, correctly: the standard runs
+  value objects real inside primary-port tests, and the reviews noted the base `RefundTest`
+  precedent honestly rather than blaming the diff.
+
+Final sentinel set: `Refund.java` (a conforming edit, unflagged in all 12 with_skill runs) and
+`MemberId.java` (exemplar-shaped, unflagged once its test existed and its pattern was hoisted).
+`Notifier` and `MemberIdTest` remain in the diff, deliberately unlisted: reviewable, not
+sentinels. The design rule this bought: a sentinel must be a file the doctrine has nothing to
+say about, which in practice means conforming edits to existing files and exemplar-shaped
+records, never a new unwired port and never a new standalone value-object test. The planted
+TS-inversion trap (a Java `interface` flagged as illegal) never fired in any of the 24 runs.

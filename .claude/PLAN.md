@@ -139,3 +139,53 @@ baseline.md.
       review's rules-12/16 accusation is a defensible strict reading, so the sentinel was
       arguable, a fixture-design error charged to the fixture, not the review. The intended
       TS-inversion trap (flagging `interface` in Java) never fired in either arm.
+
+- [x] 16. Sentinel hardening (user: "oky for the java"): MemberId.java added (Email.java
+      exemplar shape) and Notifier.java rebuilt to the doctrine's InvoiceRepo shape (nested
+      sealed NotifyError, MemberId + Refund params); clean list back to 3 sentinels. The
+      prior 3 passes reviewed the OLD Notifier, so their FP metric does not transfer:
+      v2 passes (v2r1-v2r3) RUNNING against the hardened fixture, both arms, opus.
+      DoD: 6 runs 0 failures; baseline.md java section updated to fixture v2 numbers with
+      the v1-to-v2 note kept for honesty; land + push on confirm.
+
+## Continuation: reverse matrix + agent-pillar P6 (user-directed)
+
+- [x] 17. reverse-matrix.md at repo root: one row per atelier hard rule 1-34, verdict
+      CANON-ROW (cites the sub-concept) / STRICTER-THAN (cites it, names the excess) /
+      NO-COUNTERPART (names the category: stack binding vs agent discipline vs process
+      artifact). Evidence per row: SKILL.md line for the rule, canon id or absence.
+      Method: read each rule's actual text, not the memory of it; the 116-row matrix is
+      the crosswalk for the canon side. DoD: 34 rows, tallied, drift-checkable statement
+      of what NO-COUNTERPART means (deliberate for stack bindings, gap candidate for
+      agent discipline).
+- [x] 18. P6 row in docs/global-rules/proposed-revisions.md for the agent-discipline gap,
+      status OPEN with a recommendation, not pre-accepted; the canon owner decides. The
+      analysis in 17 feeds the option choice (19th pillar vs pillar-13 extension).
+- [x] 19. Wire the reverse matrix into check-matrix-drift.py? NO, deliberately: it maps
+      skill rules to canon ids; the forward drift gate already pins the canon side, and
+      the reverse matrix cites SKILL.md rule numbers that the frontmatter validator
+      cannot see. A stale-reference risk is accepted and noted in the file header.
+      Revisit only if it bites.
+- [ ] 20. Land + push on confirm. v3 java eval finishes in parallel; its scorecard lands
+      separately.
+      Result of 17: 16 CANON-ROW, 6 STRICTER-THAN, 9 stack bindings, 3 agent-discipline
+      (24, 25, 26), total 34. Result of 18: P6 13.5 "The agent proposes, the human disposes"
+      drafted OPEN with full canon Do/Don't text and the acceptance cascade named (117 to
+      118, PER_PILLAR[12] 4 to 5, both matrices, both pins). Recommendation: accept as a
+      pillar-13 sub-concept, not a 19th pillar.
+
+- [x] 16b-16d. Sentinel iterations v2-v4 (each review finding against a candidate was CORRECT:
+      rule-11 no-test on MemberId, DRY nit inherited from the Email.java exemplar (fixed
+      upstream, asset + doc fence, java smoke green), rule-14 standalone-VO-test on
+      MemberIdTest). Final clean list: Refund + MemberId; Notifier and MemberIdTest unlisted.
+      v4: with_skill 27/27 caught / 26/27 cited / 0 FP; baseline 15/27 (6, 2, 7) / 1 cited.
+      Scorecard carries the full iteration history and the sentinel design rule.
+- [x] 20a. 13.5 ACCEPTED by owner and cascade applied: canon (section, index, prose bullet),
+      118, forward matrix +row/tally/pins, reverse matrix 24-26 flipped (19/6/9/34), drift
+      checker 118 + PER_PILLAR[12]=5, P6 row marked ACCEPTED. Drift gate + selftest green.
+- [ ] 20b. Land 3 slices + push, AWAITING CONFIRM:
+      A docs(atelier): 13.5 cascade + reverse-matrix.md (6 files).
+      B fix(atelier): Email exemplar Pattern hoist, asset + doc fence, java smoke verified
+        (2 files).
+      C test(atelier): java fixture v2-v4 + scorecard + PLAN (6 files).
+

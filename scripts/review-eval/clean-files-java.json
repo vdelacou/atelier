@@ -1,1 +1,4 @@
-["src/main/java/com/example/app/domain/Refund.java"]
+[
+  "src/main/java/com/example/app/domain/Refund.java",
+  "src/main/java/com/example/app/domain/MemberId.java"
+]
