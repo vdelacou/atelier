@@ -207,6 +207,26 @@ expect_ok "preload --check in sync" bun run scripts/regenerate-coverage-preload.
 expect_ok "bun test" bun test
 expect_ok "lint (fast)" bun run lint
 expect_ok "lint:strict (type-aware)" bun run lint:strict
+
+# Weekly re-probe of the two sonarjs rules the canonical config turns off
+# (no-useless-intersection reports every branded type, null-dereference reports
+# non-nullable values; both dated 2026-08-29 against sonarjs 4.2.0). `--rule`
+# overrides flat config, so this needs no shipped-config env branch. Purely
+# informational: it is EXPECTED to fail until upstream fixes them, so it never
+# touches FAILURES. Set by .github/workflows/canary.yml.
+if [ -n "${SMOKE_SONARJS_PROBE:-}" ]; then
+  if LINT_STRICT=1 bunx eslint --max-warnings=0 \
+       --rule '{"sonarjs/no-useless-intersection":"error","sonarjs/null-dereference":"error"}' \
+       >"$LOG" 2>&1; then
+    echo "  PROBE: sonarjs no longer flags the branded-type idiom."
+    echo "         Re-enable both rules in references/bun-typescript.md and drop this probe."
+  else
+    echo "  probe: sonarjs still flags conforming code, both rules stay off:"
+    # `|| true`: if the run failed for some OTHER reason the grep matches nothing,
+    # and under `set -e` a non-zero grep here would abort the whole smoke test.
+    grep -E 'sonarjs/(no-useless-intersection|null-dereference)' "$LOG" | sed 's/^/         /' || true
+  fi
+fi
 expect_ok "typecheck" bun run typecheck
 expect_ok "coverage gate" bun run coverage
 

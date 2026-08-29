@@ -1,10 +1,16 @@
-name: ts-pin-lift-canary
+name: toolchain-canary
 
-# The Bun smoke test pins typescript@^5 because eslint-plugin-sonarjs crashes
-# under TypeScript 7 (see .claude/LESSONS.md, 2026-07-12). This weekly canary
-# runs the same smoke test UNPINNED, so the week sonarjs ships TS 7 support the
-# job turns green and the pin can be lifted. It never blocks anything; check
-# the Actions page (or the badge) when curious.
+# Two weekly probes of deliberate toolchain concessions. Neither blocks
+# anything; check the Actions page (or the badge) when curious.
+#
+# 1. The Bun smoke test pins typescript@^5 because eslint-plugin-sonarjs crashes
+#    under TypeScript 7 (see .claude/LESSONS.md, 2026-07-12). unpinned-typescript
+#    runs the same smoke test UNPINNED, so the week sonarjs ships TS 7 support
+#    the job turns green and the pin can be lifted.
+# 2. The canonical eslint config turns off sonarjs/no-useless-intersection and
+#    sonarjs/null-dereference, which flag conforming code (see LESSONS.md,
+#    2026-08-29). sonarjs-rule-probe turns them back on and reports whether
+#    upstream has fixed the false positives.
 
 on:
   schedule:
@@ -22,3 +28,15 @@ jobs:
         run: SMOKE_TS_SPEC=typescript bash scripts/smoke-test.sh
       - name: green means the pin can be lifted
         run: echo "typescript unpinned passes; lift the ^5 pin in scripts/smoke-test.sh and bun-typescript.md, and update the LESSONS entry"
+
+  sonarjs-rule-probe:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      # The probe re-enables both disabled rules and prints its verdict in the
+      # smoke-test output. Read the "PROBE:" line: it says whether they can go
+      # back on. The job itself stays green either way.
+      - name: smoke test with the disabled sonarjs rules re-enabled
+        run: SMOKE_SONARJS_PROBE=1 bash scripts/smoke-test.sh

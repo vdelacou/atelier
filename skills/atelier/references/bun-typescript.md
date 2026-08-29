@@ -209,6 +209,16 @@ export default [
       'sonarjs/no-unused-vars': 'off',          // duplicates @typescript-eslint/no-unused-vars
       'sonarjs/no-empty-test-file': 'off',      // false positives on `describe` test layout
       'sonarjs/cognitive-complexity': 'off',    // we already cap function size; this is noise
+      // 2026-08-29, sonarjs 4.2.0: flags the PRIMITIVE side of every branded type
+      // (`string & { __brand }` reported at the `string`, same for `number`), which is
+      // hard rule 12. Object-object intersections are unaffected, so the rule is only
+      // wrong about the nominal-typing idiom. Re-probed weekly by canary.yml.
+      'sonarjs/no-useless-intersection': 'off',
+      // 2026-08-29, sonarjs 4.2.0: its flow analysis ignores declared types AND explicit
+      // narrowing, reporting `(v: string) => v.trim()` and even
+      // `v === undefined ? 0 : v.trim()`. No correct code satisfies it, and `strict: true`
+      // already owns this bug class at typecheck. Re-probed weekly by canary.yml.
+      'sonarjs/null-dereference': 'off',
     },
   },
   // Non-source paths must not be linted: Stryker copies the tree into .stryker-tmp/
@@ -225,7 +235,7 @@ export default [
 Notes on the config:
 
 - **One config file, two modes.** Both scripts carry `--max-warnings=0`, so warnings fail either run (the zero-warning rule, hard rule 15) — the modes differ only in depth. The inner-loop `bun run lint` runs the fast non-type-aware rules (~2 s cached / ~7 s cold); `bun run lint:strict` sets `LINT_STRICT=1` and the conditional block adds `parserOptions.projectService: true` plus the type-aware `@typescript-eslint` rules (~25 s on a full repo). Pre-commit gate 5 runs the strict version. There is no separate `eslint.strict.config.js` — keeping one config eliminates drift.
-- **`sonarjsPlugin.configs.recommended`** catches SonarLint findings at lint time so they no longer escape the IDE. See `references/workflow.md` for the common ones (S4325, S6594, S4123, S6551, S6671). Three rules are turned off as always-on noise: `sonarjs/no-unused-vars` (duplicate), `sonarjs/no-empty-test-file` (false-positive on `describe` blocks), `sonarjs/cognitive-complexity` (we already cap function size).
+- **`sonarjsPlugin.configs.recommended`** catches SonarLint findings at lint time so they no longer escape the IDE. See `references/workflow.md` for the common ones (S4325, S6594, S4123, S6551, S6671). Five rules are turned off, each justified in a comment beside it: `sonarjs/no-unused-vars` (duplicate), `sonarjs/no-empty-test-file` (false-positive on `describe` blocks), `sonarjs/cognitive-complexity` (we already cap function size), and two that fire only in the type-aware lane and contradict the standard itself, `sonarjs/no-useless-intersection` (reports every branded type, i.e. hard rule 12) and `sonarjs/null-dereference` (reports non-nullable and explicitly narrowed values, a class `strict: true` already owns). The last two are dated 2026-08-29 against sonarjs 4.2.0 and re-probed weekly by `canary.yml`, which turns them back on and reports if upstream has fixed them. Holding sonarjs at an older version is not an option: 4.1.0 does not load under ESLint 10 at all.
 - **`no-console` is `error`** under `src/**`. Always use the logger port (see below), never `console.*`. The one carve-out is `scripts/**` — the gate scripts shipped in `assets/` are terminal tools whose output *is* their interface; the config turns the rule off there at the project level rather than sprinkling inline ignores (rule 15).
 - **`security/detect-object-injection`, `detect-unsafe-regex`, and `detect-non-literal-fs-filename`** are disabled at the project level because they only false-positive on this codebase's idioms (branded-type `Record<K, V>` lookups, bounded regexes, `chmodSync(mkdtempSync(...))` in tests). Comments in the config explain why each is off. Never inline-ignore them per-line.
 - **`no-restricted-imports`** blocks `mock` from `bun:test` (the entire namespace) — see hard rule 13.

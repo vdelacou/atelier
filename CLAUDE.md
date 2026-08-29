@@ -31,7 +31,8 @@ tree. What binds work HERE is the authoring and process discipline below.
 - `bash scripts/trigger-eval/run.sh <set> <skill-dir> [fixture] [runs]` after any SKILL.md
   description edit (a description is a triggering contract).
 - CI (`.github/workflows/ci.yml`) runs the four gates on every push; `canary.yml` weekly-probes
-  whether the typescript pin can lift.
+  the two deliberate toolchain concessions (whether the typescript pin can lift, and whether the
+  two disabled sonarjs rules can go back on).
 
 ## Process
 - **Plan-first**: before multi-step work, write the plan and a per-step definition of done to
