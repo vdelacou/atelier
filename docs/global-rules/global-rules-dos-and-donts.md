@@ -45,7 +45,7 @@ record Err<T>(String error) implements Result<T> {}
 
 These numbers and titles are the canonical rule identifiers. External checklists and scorecards import them verbatim; a renumbered or retitled copy is doc drift under 12.1, and a defect.
 
-**1 Consistency:** [1.1 One committed config for style](#11-one-committed-config-for-style) · [1.2 Cap complexity and duplication](#12-cap-complexity-and-duplication)
+**1 Consistency:** [1.1 One committed config for style](#11-one-committed-config-for-style) · [1.2 Cap complexity and duplication](#12-cap-complexity-and-duplication) · [1.3 One grammar for the history](#13-one-grammar-for-the-history)
 
 **2 Simplicity by default:** [2.1 Do the least that works](#21-do-the-least-that-works) · [2.2 Delete before you add](#22-delete-before-you-add) · [2.3 Earn abstractions with the Rule of Three](#23-earn-abstractions-with-the-rule-of-three) · [2.4 Defer the build, not the seam](#24-defer-the-build-not-the-seam) · [2.5 Simplicity is not negligence](#25-simplicity-is-not-negligence) · [2.6 Every field must earn its place](#26-every-field-must-earn-its-place)
 
@@ -146,6 +146,34 @@ double net(Order o) {
   if (o.tier != Tier.PREMIUM) return o.subtotal;
   return o.subtotal * 0.8;
 }
+```
+
+### 1.3 One grammar for the history
+**Do:** Write every commit as type(scope): imperative summary (Conventional Commits), enforced by a message linter in the fast hook.
+**Don't:** Let "fix stuff", "wip", and paragraph subjects make the log unsearchable and automation impossible.
+
+Stack-agnostic (the artifact is the commit grammar and its gate):
+```text
+# DON'T: the history as a diary; nothing can parse it, nobody can search it
+fix stuff
+wip
+final final v2
+Update UserService.java and also fixed the thing from yesterday
+
+# DO: one grammar for every commit
+feat(expenses): add receipt OCR intake
+fix(auth): refuse expired refresh tokens
+refactor(orders): extract keyset pagination helper
+# type(scope): imperative subject, 72 chars max; the body explains why, the diff already shows what
+```
+
+The gate (commitlint runs in milliseconds, so it belongs in the fast hook per 15.1):
+```yaml
+# commitlint.config: extends @commitlint/config-conventional; wired as a commit-msg hook, re-checked in CI
+# pair the gate with a guided prompt (commitizen / cz commit) so the format is written for you, not memorized
+extends: ["@commitlint/config-conventional"]
+# the payoff is automation: changelogs and version bumps generated from the types (8.5 for the contract side),
+# reverts traceable by scope, and a history that reads as if one person wrote it, which is this pillar's point
 ```
 
 ## Pillar 2: Simplicity by default

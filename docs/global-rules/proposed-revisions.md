@@ -157,3 +157,42 @@ echo "OK: $host refuses every sub-TLS-1.2 protocol this openssl can probe"
 **Matrix disposition.** Accepted 2026-07-20; the vendored canon carries the corrected script. No matrix-row
 impact: the skill does not vendor this script, and 15.5 stays COVERED via the skill's own re-runnable-proof
 discipline. The re-pinned dos-and-donts hash reflects this fix and the 10.3 widening together.
+
+---
+
+## 1.3 One grammar for the history (proposed 2026-08-30, status: OPEN)
+
+**Current canon** (global-rules-dos-and-donts.md:151-177, the comment at :167): the DO example block ends with the
+comment "type(scope): imperative subject, 72 chars max; the body explains why, the diff already
+shows what", and seven lines later (:174) the gate block prescribes
+`extends: ["@commitlint/config-conventional"]`.
+
+**Defect (the row contradicts the gate it prescribes).** `@commitlint/config-conventional` ships
+`header-max-length` at 100, not 72, so a repo that installs exactly what 1.3 asks for accepts a
+90-character subject the same row calls too long. The prose limit is unenforceable by the named
+config, and a reader who trusts the prose has to override a rule the canon did not mention. Two
+numbers for one limit is the drift 12.1 exists to prevent.
+
+**Proposed revision.** Either drop the count and defer to the gate ("type(scope): imperative
+subject, within your commitlint header limit"), or state 100 to match
+`@commitlint/config-conventional`'s documented default. Preference is 100, because a concrete
+number is more useful than a pointer and the default is what the gate will actually enforce:
+
+```text
+# type(scope): imperative subject, 100 chars max (config-conventional's header-max-length default);
+# the body explains why, the diff already shows what
+```
+
+If the intent really is 72, the gate block needs the override alongside it, so the two halves of
+the row agree:
+
+```yaml
+extends: ["@commitlint/config-conventional"]
+rules: { header-max-length: [2, "always", 72] }
+```
+
+**Matrix disposition.** 1.3 is COVERED either way. atelier's `commit-msg` hook and rule 23 cap the
+header at 100, matching config-conventional; if the canon settles on 72 with the override, the skill
+amends the hook's `max_len` and rule 23 in the same change, and the smoke tests' >100-char case
+becomes a >72-char case. Held open rather than closed as "both fine", per the conformance plan.
+

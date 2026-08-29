@@ -15,12 +15,14 @@ C1 of the Atelier vs Global Rules conformance plan.
   carry the accepted P6 revisions (2026-07-20; see proposed-revisions.md): 5.3 in both the dos-and-donts
   and the pillar prose; 11.3 in the pillar prose; and 10.3, 12.7, and 15.5 in the dos-and-donts. 12.7 is a
   new sub-concept, so the canonical count is now 116. They differ from the original source only in those
-  rows. The drift check pins the hashes below and runs against these copies:
+  rows. Canon revised again 2026-08-30 by the rules owner, adding sub-concept 1.3 One grammar for the
+  history to pillar 1 in both documents, so the canonical count is now 117 and both hashes are re-pinned.
+  The drift check pins the hashes below and runs against these copies:
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 37b5963262bc9d8c98d344330d1b73fc196290116ad9cf497bf49559ce5a910a | 3423 |
-| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 5b337353b1e5128d84e95ed12e935006c255c44af8d45dfd3848919ab69b62e1 | 283 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | d949b360a627f0291267ed3dba3db2623da5e7617c9c059c90462af254dfab0f | 3451 |
+| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 1e5c46888e5ccf52f4090875f7c3483a2f03e5265d1232cb56123b026e2b00c7 | 284 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
 
 - IDs and titles are imported verbatim from the "Every sub-concept" index of the
@@ -185,6 +187,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 1.1 | One committed config for style | COVERED | workflow.md:66; assets/pre-commit gate 5 | gate | One flat eslint.config.js embeds prettier; lint:strict is gate 5 |
 | 1.2 | Cap complexity and duplication | COVERED | SKILL.md:271; SKILL.md:324 | rule | Size caps and Rule-of-Three are generation-time rules; sonarjs complexity rule deliberately off |
+| 1.3 | One grammar for the history | COVERED | SKILL.md:193; assets/commit-msg; assets/check-commit-messages.sh | gate | Conventional Commits grammar enforced by the commit-msg hook and re-checked in CI over the pushed range, so a --no-verify bypass is still caught (gate added 2026-08-30 with the canon row). One divergence, P6 opened: the canon asks for 72-char subjects while atelier caps at 100, the documented default of @commitlint/config-conventional, which the canon row's own gate snippet prescribes |
 
 ### Pillar 2: Simplicity by default
 
@@ -394,12 +397,12 @@ None. Every one of the 116 sub-concepts is COVERED or STRICTER, so there is no C
 
 | Verdict | Count |
 |---|---|
-| COVERED | 113 |
+| COVERED | 114 |
 | STRICTER | 3 |
 | GAP | 0 |
 | CONTRADICTS | 0 |
 | OUT-OF-SCOPE | 0 |
-| Total | 116 |
+| Total | 117 |
 
-No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2 and the accepted 5.3 P6 revision, no row diverges: every sub-concept is covered, three of them more strictly than the canon asks. The last contradiction (5.3) closed when the canon accepted that a constrained range plus a committed lockfile satisfies the pin requirement (docs/global-rules/proposed-revisions.md); 15.1 and 4.6 were resolved by splitting the hook from CI (assets/ci.yml), and the five gaps by adding the missing doctrine.
+No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2 and the accepted 5.3 P6 revision, no row diverges: every sub-concept is covered, three of them more strictly than the canon asks. The last contradiction (5.3) closed when the canon accepted that a constrained range plus a committed lockfile satisfies the pin requirement (docs/global-rules/proposed-revisions.md); 15.1 and 4.6 were resolved by splitting the hook from CI (assets/ci.yml), and the five gaps by adding the missing doctrine. The 2026-08-30 canon addition, 1.3, landed COVERED: the grammar and its hook were already rule 23, and the CI re-check the row asks for shipped with it (assets/check-commit-messages.sh, proven both ways in both smoke tests).
 

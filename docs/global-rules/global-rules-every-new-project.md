@@ -39,6 +39,7 @@ So make consistency automatic, not a matter of discipline:
 
 - Define formatting, linting, naming, and logging conventions once, in a single committed configuration (the same rule set in two places will quietly drift), and enforce it with tooling. Reviewers should never spend attention on style, because a machine already did.
 - Put a ceiling on complexity and duplication. Keep units small enough to read at a glance, favor early returns over deep nesting, and treat copy-pasted logic as the exception you notice, not the norm you tolerate.
+- One grammar for the history. Commit messages follow one machine-readable convention, type(scope): imperative summary, enforced by a message linter in the fast hook, because the history is part of the codebase and should read as if one person wrote it too. The payoff is automation: changelogs and version numbers generated from the types, reverts traceable by scope, and a log you can actually search. "Fix stuff" tells the future nothing.
 
 What good looks like: a new contributor's first commit is indistinguishable from a veteran's, and no one argues about spacing in review.
 

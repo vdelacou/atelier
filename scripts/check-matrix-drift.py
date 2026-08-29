@@ -2,7 +2,7 @@
 """Phase 4 drift gate: conformance-matrix.md must stay true to the vendored canon.
 
 Three checks, any failure exits non-zero (a CI gate):
-  1. The matrix has exactly 116 rows, with the canonical per-pillar counts.
+  1. The matrix has exactly 117 rows, with the canonical per-pillar counts.
   2. Every matrix (id, sub-concept) equals the canonical index verbatim (12.1: a
      renumbered or retitled copy is doc drift and a defect).
   3. Each vendored canon file's SHA-256 equals the hash the matrix header pins, so
@@ -19,7 +19,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 MATRIX = REPO / "conformance-matrix.md"
 CANON = REPO / "docs/global-rules/global-rules-dos-and-donts.md"
-PER_PILLAR = [2, 6, 9, 8, 10, 7, 7, 6, 5, 14, 3, 7, 4, 3, 9, 5, 7, 4]
+PER_PILLAR = [3, 6, 9, 8, 10, 7, 7, 6, 5, 14, 3, 7, 4, 3, 9, 5, 7, 4]
 
 
 def canonical_index(canon_text: str) -> list[tuple[str, str]]:
@@ -55,8 +55,8 @@ def check(matrix_text: str, canon_text: str) -> list[str]:
     rows = matrix_rows(matrix_text)
 
     # 1. row count + per-pillar
-    if len(rows) != 116:
-        errors.append(f"row count is {len(rows)}, expected 116")
+    if len(rows) != 117:
+        errors.append(f"row count is {len(rows)}, expected 117")
     per = [sum(1 for i, _ in rows if i.split(".")[0] == str(p)) for p in range(1, 19)]
     if per != PER_PILLAR:
         errors.append(f"per-pillar counts {per} != canonical {PER_PILLAR}")
@@ -117,7 +117,7 @@ def main() -> None:
         for e in errors:
             print(f"  {e}")
         sys.exit(1)
-    print("conformance-matrix.md: 116 rows, ids+titles verbatim, canon sha256 pins intact")
+    print("conformance-matrix.md: 117 rows, ids+titles verbatim, canon sha256 pins intact")
 
 
 if __name__ == "__main__":
