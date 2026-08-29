@@ -77,3 +77,28 @@ Named assumptions:
   1 class, 3 interface, 4 console, 13 mock, 17 try/catch, 19 latest, 20 node:fs, 24 test
   integrity, 27 PII, 29 deadline, 30 soft delete).
 - No SKILL.md description changes anywhere, so no trigger eval is owed this session.
+
+
+## Continuation, same session: the three remaining improvement candidates (user picked "1 and 2")
+
+Push of the 8 done, CI green on 77c77fd (7 jobs, review-eval selftest included).
+
+- [x] 7. Conformance grader hardened, both fixes selftest-first with a recorded RED:
+      (a) comments stripped before matching (a TODO naming AbortSignal credited 3 a3
+      assertions; red, then strip with a URL-safe (?<!:)// pattern); (b) file paths join
+      the corpus (003_contract_*.sql IS the contract evidence; red, then rel+text).
+      Re-grade of the committed runs: with_skill 111/111 unchanged, baseline 84 to 81
+      (three TODO-comment credits gone), delta +24.3 to +27.0. baseline.md updated.
+- [x] 8. Rule-29 triad: NOT added to a3/e1, deliberately. SKILL.md rule 29 mandates the
+      deadline per call and constrains retries WHERE PRESENT; no a3 run in either arm
+      retries, conformantly. e3 already carries the full triad. The real defect was
+      review-me summarizing 29 as a triad mandate on every call; corrected to match the
+      doctrine. baseline.md documents the frontier reasoning.
+- [ ] 9. Description ceiling: trimmed the main description 1023 to 960 chars by cutting
+      the "Backed by pre-commit gates, coverage tiers, mutation testing." tail (stance,
+      not trigger). A/B RUNNING on opus: HEAD vs trimmed on atelier-bun (31q x3 each),
+      plus suite-routing with the trimmed arm registered. Keep iff no regression:
+      trimmed >= HEAD on bun set, routing >= 11/13. Revert on any regression.
+- [ ] 10. Land after the A/B: grader hardening + scorecard (test), review-me 29 fix
+      (docs or fold), description trim iff kept (docs, trigger-eval evidence in the
+      message). AWAITING CONFIRM; push separate.
