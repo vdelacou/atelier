@@ -1,8 +1,8 @@
 # Atelier reverse matrix (skill rules into canon)
 
 The forward audit (`conformance-matrix.md`) proves every canon sub-concept has a home in the
-skill, 117/117. This is the other direction: one row per atelier hard rule 1-34, asking whether
-the canon carries the rule's substance. Audited against the 117-row canon; 13.5's acceptance moved three rows the same day. Three verdicts:
+skill. This is the other direction: one row per atelier hard rule 1-34, asking whether
+the canon carries the rule's substance. Audited against the 117-row canon; 13.5's acceptance moved three rows the same day, and the 10.2 strengthening (accepted 2026-08-30) moved row 17. Three verdicts:
 
 - **CANON-ROW**: a canon sub-concept carries the substance at comparable strength.
 - **STRICTER-THAN**: the canon carries the concern; atelier exceeds or quantifies it.
@@ -21,7 +21,7 @@ re-audit when the hard-rule list changes.
 
 - Skill: `skills/atelier/SKILL.md`, hard rules at lines 153-217, audited 2026-08-30.
 - Canon: the vendored `docs/global-rules/` at the hashes pinned in `conformance-matrix.md`
-  (118 sub-concepts after 1.3 and 13.5, both accepted 2026-08-30).
+  (119 sub-concepts after 1.3, 13.5, 15.10, and the 10.2 strengthening, all accepted 2026-08-30).
 
 ## Rows
 
@@ -43,7 +43,7 @@ re-audit when the hard-rule list changes.
 | 14 | Primary-port SUT, outside-in classicist | CANON-ROW | 4.5, 4.1 | Behavior-not-internals plus layered testing |
 | 15 | Zero warnings, no inline ignores | CANON-ROW | 15.3, 15.1 | No-silent-opt-out made executable |
 | 16 | `Result<T, E>` at IO boundaries | CANON-ROW | 10.2 | Errors as values |
-| 17 | `try/catch` quarantined to infra | STRICTER-THAN | 10.2, 3.1 | The canon says errors are values; atelier adds WHERE catching may happen |
+| 17 | `try/catch` quarantined to infra | CANON-ROW | 10.2, 3.1 | Was STRICTER-THAN at audit time; the 10.2 strengthening (accepted 2026-08-30, from this audit) fixes the catch's place at the boundary |
 | 18 | No curried arrow chains | NO-COUNTERPART | nearest 1.1, 1.2 | Stack binding |
 | 19 | No `latest`/`*`; constrained versions | CANON-ROW | 5.3 | Post-P6 5.3 says exactly this: constrained range plus committed lockfile |
 | 20 | `Bun.file` in production, `node:fs` at edges | NO-COUNTERPART | nearest 3.1 | Stack binding |
@@ -66,18 +66,18 @@ re-audit when the hard-rule list changes.
 
 | Verdict | Count | Rules |
 |---|---|---|
-| CANON-ROW | 19 | 8, 10, 11, 12, 14, 15, 16, 19, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34 |
-| STRICTER-THAN | 6 | 4, 13, 17, 21, 22, 28 |
+| CANON-ROW | 20 | 8, 10, 11, 12, 14, 15, 16, 17, 19, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34 |
+| STRICTER-THAN | 5 | 4, 13, 21, 22, 28 |
 | NO-COUNTERPART, stack binding | 9 | 1, 2, 3, 5, 6, 7, 9, 18, 20 |
 | Total | 34 | |
 
-Counting plainly: 19 covered, 6 stricter, 9 stack bindings. The stack bindings are the point of
+Counting plainly: 20 covered, 5 stricter, 9 stack bindings. The stack bindings are the point of
 a profile and propose nothing back to the canon. The audit's one actionable finding, three
 agent-discipline rules (24-26) with no canon home, became P6 row 13.5 and was ACCEPTED the same
 day, which is why those rows read CANON-ROW with an at-audit-time note: this file caused the
-row it now cites. The canon count is 118 from that acceptance.
+row it now cites. The canon count is 119 after the 2026-08-30 acceptances of 13.5 and 15.10. Row 17 later flipped the same way: the 10.2 catch-placement strengthening, proposed from its stricter-than delta, was accepted 2026-08-30.
 
 Outside the 34: the skill's process artifacts already have canon homes. The append-only
 LESSONS journal is 12.4 (institutional memory) and 10.10 (learn from every failure); PLAN.md
 with a per-step definition of done is 12.3-adjacent (decisions recorded where they cannot
-drift). No proposal needed there.
+drift). No proposal needed there. The repo's gate discipline (every new gate ships a violation fixture proving it can fail, a process rule here and the smoke tests' design) had no canon home; it became 15.10, accepted 2026-08-30.

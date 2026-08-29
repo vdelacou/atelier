@@ -19,13 +19,15 @@ C1 of the Atelier vs Global Rules conformance plan.
   history to pillar 1 in both documents, so the canonical count is now 117 and both hashes are re-pinned.
   P6 row 1.3 was then accepted the same day, setting that row's subject limit to 100 to agree with the
   commitlint config it prescribes. P6 row 13.5 (agent working agreements, from the reverse-matrix
-  audit) was accepted 2026-08-30 as well, so the canonical count is 118 and both pins moved again.
+  audit) was accepted 2026-08-30 as well, so the canonical count is 118 and both pins moved again. P6 rows 15.10 (Prove the gate can fail, distilled from this repo's own
+  smoke-test discipline) and the 10.2 catch-placement strengthening were accepted 2026-08-30 too,
+  taking the count to 119.
   The drift check pins the hashes below and runs against these copies:
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 7ee5df78d71843baafeabad97c3d17135090371f825fd63a970ad9b38f3feeb5 | 3464 |
-| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | fea974156af8f85e0920410c817673e640a5998ef30786972b6e5366e47bee2a | 285 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 5189a5e2addce92bfef7db64bc55753dd51395e054e1b40f120be3cb84cb9678 | 3483 |
+| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | c55e40d40fdbbe23e7ef0a6fdec74b3122b550261f804c502f039c276be55bb0 | 285 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
 
 - IDs and titles are imported verbatim from the "Every sub-concept" index of the
@@ -295,7 +297,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 10.1 | Set explicit reliability targets | COVERED | observability.md:7-15 | doctrine | SLO-as-code: availability, latency, error-rate targets with windows |
-| 10.2 | Errors as values, not exceptions | COVERED | result-type.md:3; SKILL.md:168 | rule | Every IO port and use-case returns Result; exceptions for bugs (rule 16) |
+| 10.2 | Errors as values, not exceptions | COVERED | result-type.md:3; SKILL.md:168-169 | rule | Every IO port and use-case returns Result; exceptions for bugs (rule 16); the 2026-08-30 catch-placement strengthening was already rule 17, catch quarantined to infra adapters |
 | 10.3 | Keep read paths explicit | COVERED | reliability.md:30 | doctrine | Explicit, tunable hot-path reads (hand SQL or a visible-SQL query builder); the ORM owns writes. P6 ACCEPTED 2026-07-20, widened to match the canon's own 10.4 builder DO |
 | 10.4 | Keep reads fast as the table grows | COVERED | reliability.md:49-50 | doctrine | Keyset cursor with composite index, never OFFSET; stream large sets |
 | 10.5 | Do not fire and forget | COVERED | reliability.md:66-68 | doctrine | Transactional outbox, retrying worker, idempotent on a dedupe key |
@@ -354,12 +356,13 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 15.1 | Make the standard executable | COVERED | assets/pre-commit; assets/ci.yml | gate | Resolved Phase 2: hook restructured to 5 fast gates, full suite/coverage/mutation/strict-lint relocated to CI as the required merge gate (Watchlist 1) |
 | 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:172; assets/check-coverage.ts:137 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
 | 15.3 | No silent opt-out | COVERED | workflow.md:73-82; SKILL.md:167 | gate | Project-level severity change with a reason; inline suppressions banned |
-| 15.4 | Test the bypass, not the happy path | STRICTER | testing.md:522-531; scripts/smoke-test.sh | gate | Tests assert forbidden paths refused, and each shipped gate is proven to fail on its target violation |
+| 15.4 | Test the bypass, not the happy path | COVERED | testing.md:522-531 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
 | 15.5 | Compliance is not proof | COVERED | workflow.md:613; governance.md:99 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
 | 15.6 | Audit the gaps between systems | COVERED | workflow.md:605; testing.md:536 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
 | 15.7 | Fix the class, not the instance | COVERED | workflow.md:606-610 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
 | 15.8 | Make proof re-checkable | COVERED | governance.md:51-99; workflow.md:613 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
 | 15.9 | Spend human judgment where it counts | COVERED | workflow.md:662; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
+| 15.10 | Prove the gate can fail | COVERED | SKILL.md:433; scripts/smoke-test.sh | gate | Doctrine after the variant gate table, every gate lands with a violation fixture it must reject; the repo smoke tests are the reference implementation |
 
 ### Pillar 16: Measure whether you are improving
 
@@ -394,19 +397,19 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 ## Work list (Phase 2 input)
 
-None. Every one of the 116 sub-concepts is COVERED or STRICTER, so there is no CONTRADICTS or GAP row left to resolve. The collisions this list once held (5.3, 15.1, 4.6) and the gaps (5.10, 7.7, 10.14, 12.1, 17.7) were all closed; see the resolution notes in their rows and watchlist paragraphs.
+None. Every sub-concept is COVERED or STRICTER, so there is no CONTRADICTS or GAP row left to resolve. The collisions this list once held (5.3, 15.1, 4.6) and the gaps (5.10, 7.7, 10.14, 12.1, 17.7) were all closed; see the resolution notes in their rows and watchlist paragraphs.
 
 
 ## Verdict tally
 
 | Verdict | Count |
 |---|---|
-| COVERED | 115 |
-| STRICTER | 3 |
+| COVERED | 117 |
+| STRICTER | 2 |
 | GAP | 0 |
 | CONTRADICTS | 0 |
 | OUT-OF-SCOPE | 0 |
-| Total | 118 |
+| Total | 119 |
 
-No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2 and the accepted 5.3 P6 revision, no row diverges: every sub-concept is covered, three of them more strictly than the canon asks. The last contradiction (5.3) closed when the canon accepted that a constrained range plus a committed lockfile satisfies the pin requirement (docs/global-rules/proposed-revisions.md); 15.1 and 4.6 were resolved by splitting the hook from CI (assets/ci.yml), and the five gaps by adding the missing doctrine. The 2026-08-30 canon addition, 1.3, landed COVERED: the grammar and its hook were already rule 23, and the CI re-check the row asks for shipped with it (assets/check-commit-messages.sh, proven both ways in both smoke tests).
+No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2 and the accepted 5.3 P6 revision, no row diverges: every sub-concept is covered, two of them more strictly than the canon asks. The last contradiction (5.3) closed when the canon accepted that a constrained range plus a committed lockfile satisfies the pin requirement (docs/global-rules/proposed-revisions.md); 15.1 and 4.6 were resolved by splitting the hook from CI (assets/ci.yml), and the five gaps by adding the missing doctrine. The 2026-08-30 canon addition, 1.3, landed COVERED: the grammar and its hook were already rule 23, and the CI re-check the row asks for shipped with it (assets/check-commit-messages.sh, proven both ways in both smoke tests). The same day, P6 rows 15.10 (Prove the gate can fail) and the 10.2 catch-placement strengthening were accepted: 15.10 lands COVERED via the new doctrine paragraph after the variant gate table (SKILL.md:433), which also slims 15.4 back to COVERED because its surplus was exactly this discipline, and 10.2 was already rule 17. The canonical count is 119 and both pins moved again.
 

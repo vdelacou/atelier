@@ -430,6 +430,8 @@ The hard rules are universal unless this table says otherwise. Gates and tooling
 | Rules 21–22 (design system, styling seal) | n/a (no UI) | Mandatory, lint-enforced (design-system ESLint block) | n/a (no UI) |
 | Rules 27–34 (production disciplines) | Apply when the concern exists | Apply when the concern exists | Apply when the concern exists (Java expressions in `references/java-quarkus.md`) |
 
+Whatever the variant, **every gate proves it can fail**: when you add or change a gate (a lint rule, a coverage tier, a hook, a CI check), land a violation fixture the gate must reject and keep it re-running, so a toolchain upgrade that silently disables the gate turns CI red instead of quiet. A gate only ever seen green is a hypothesis. The skill repo's own smoke tests are the reference implementation: each proves its gates pass on compliant code AND block their target violation.
+
 ## Reference files
 
 Toolchain:

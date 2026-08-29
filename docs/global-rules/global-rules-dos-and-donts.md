@@ -73,7 +73,7 @@ These numbers and titles are the canonical rule identifiers. External checklists
 
 **14 Pave the road:** [14.1 Provide golden paths as real artifacts](#141-provide-golden-paths-as-real-artifacts) · [14.2 Make it self-service](#142-make-it-self-service) · [14.3 Treat the platform as a product](#143-treat-the-platform-as-a-product)
 
-**15 Enforce and verify:** [15.1 Make the standard executable](#151-make-the-standard-executable) · [15.2 Prefer failing loud to passing quietly](#152-prefer-failing-loud-to-passing-quietly) · [15.3 No silent opt-out](#153-no-silent-opt-out) · [15.4 Test the bypass, not the happy path](#154-test-the-bypass-not-the-happy-path) · [15.5 Compliance is not proof](#155-compliance-is-not-proof) · [15.6 Audit the gaps between systems](#156-audit-the-gaps-between-systems) · [15.7 Fix the class, not the instance](#157-fix-the-class-not-the-instance) · [15.8 Make proof re-checkable](#158-make-proof-re-checkable) · [15.9 Spend human judgment where it counts](#159-spend-human-judgment-where-it-counts)
+**15 Enforce and verify:** [15.1 Make the standard executable](#151-make-the-standard-executable) · [15.2 Prefer failing loud to passing quietly](#152-prefer-failing-loud-to-passing-quietly) · [15.3 No silent opt-out](#153-no-silent-opt-out) · [15.4 Test the bypass, not the happy path](#154-test-the-bypass-not-the-happy-path) · [15.5 Compliance is not proof](#155-compliance-is-not-proof) · [15.6 Audit the gaps between systems](#156-audit-the-gaps-between-systems) · [15.7 Fix the class, not the instance](#157-fix-the-class-not-the-instance) · [15.8 Make proof re-checkable](#158-make-proof-re-checkable) · [15.9 Spend human judgment where it counts](#159-spend-human-judgment-where-it-counts) · [15.10 Prove the gate can fail](#1510-prove-the-gate-can-fail)
 
 **16 Measure whether you are improving:** [16.1 Track the four DORA metrics](#161-track-the-four-dora-metrics) · [16.2 Pair delivery metrics with flow metrics](#162-pair-delivery-metrics-with-flow-metrics) · [16.3 Treat them as system metrics, not a stick for individuals](#163-treat-them-as-system-metrics-not-a-stick-for-individuals) · [16.4 Watch the trend, not the snapshot](#164-watch-the-trend-not-the-snapshot) · [16.5 Treat cost as a first-class metric](#165-treat-cost-as-a-first-class-metric)
 
@@ -1980,8 +1980,8 @@ alerting:
 ```
 
 ### 10.2 Errors as values, not exceptions
-**Do:** Return a typed success-or-failure value from anything that can fail; reserve exceptions for genuine bugs.
-**Don't:** Throw for an expected business outcome and hope a caller catches it.
+**Do:** Return a typed success-or-failure value from anything that can fail; reserve exceptions for genuine bugs. Where foreign code throws, catch it once, in the adapter that owns the call, and translate to the value there; domain and application code neither throw nor catch expected outcomes.
+**Don't:** Throw for an expected business outcome and hope a caller catches it, or scatter try/catch through business logic when one boundary adapter should quarantine it.
 
 TypeScript:
 ```ts
@@ -3108,6 +3108,25 @@ Java:
 //   Spotless and the compiler catch both; the comment adds no judgment
 // DO (a review comment): "ExpenseService reaches into the repository twice for the
 //   same row. is a single load clearer, and does this belong in the domain at all?"
+```
+
+### 15.10 Prove the gate can fail
+**Do:** Land every gate with its red path demonstrated: a violation fixture the gate must reject, kept in the suite and re-run on every change, so an upgrade that silently disables the gate turns the pipeline red. A gate is proven by the change it blocks, not by the green runs it decorates.
+**Don't:** Wire a check into CI, watch it pass on compliant code, and call that enforcement; a gate nobody has ever seen red may already be off.
+
+Stack-agnostic (the shape of a gate's self-test, whatever the gate):
+
+```sh
+# DON'T: the lint gate is trusted because it has always passed on compliant code.
+#   a toolchain major, a renamed config key, or a flipped plugin default can turn
+#   the rule off, and the pipeline stays green while enforcing nothing
+lint src/
+# DO: the suite also feeds the gate a known violation and demands rejection,
+#   so the day the gate stops firing, CI goes red instead of quiet
+echo 'forbidden_construct' > fixtures/violation.src
+if lint fixtures/violation.src; then echo "gate is silently off"; exit 1; fi
+# the same move as a backup you have actually restored (10.6) and a test proven
+# to kill mutants (4.4), applied to the enforcement layer itself
 ```
 
 ## Pillar 16: Measure whether you are improving

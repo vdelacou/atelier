@@ -239,3 +239,115 @@ PER_PILLAR pillar-13 count 4 to 5, and both dos-and-donts hash pins.
 pillar 15 (rejected: 15 is about enforcement machinery, and these rules bind before any gate
 runs). Cascade applied in the same change: canon section and index, pillar prose bullet, count 117 to 118, forward matrix row (COVERED), reverse matrix rows 24-26 flipped to CANON-ROW 13.5, drift checker counts, both pins.
 
+
+---
+
+## 15.10 Prove the gate can fail (proposed 2026-08-30, status: ACCEPTED 2026-08-30)
+
+**Current canon.** Pillar 15 carries nine sub-concepts (global-rules-dos-and-donts.md:76):
+the standard is executable (15.1), fails loud (15.2), has no silent opt-out (15.3), the
+product's guards are tested from the bypass side (15.4), proof is re-checkable (15.8). The
+nearest statement of this row is an aside inside 15.2's example comment (:2925), "a gate
+that cannot fail is worse than no gate: it lies", said there about one failure mode only,
+coverage denominators that hide untested files. The pillar prose carries a second aside
+(every-new-project.md's failing-loud bullet, "make sure each gate can actually fail on the
+thing it exists to catch"), also without the mechanism that would make it checkable.
+
+**Defect (a stated principle with no operational rule).** The canon demands proof-of-failure
+from every layer except its own enforcement machinery. 10.6 accepts only backups you have
+actually restored, 4.4 accepts only tests proven able to kill mutants, 7.5 proves isolation
+per endpoint, 15.4 proves the guard refuses the forged request. The gates themselves get no
+such demand: a check wired into CI and only ever seen green is a hypothesis, and it fails in
+exactly the way 15.2 warns about, silently, because a toolchain major, a renamed config key,
+or a flipped plugin default can turn the rule off while the pipeline stays green. Not
+theoretical: the atelier profile's smoke tests exist because a sonarjs upgrade silently
+changed what a rule flagged, and that repo now lands every gate beside a violation fixture
+its suite proves is rejected. The canon states the insight in a comment and operationalizes
+it nowhere.
+
+**Proposed revision.** One new sub-concept, 15.10, under pillar 15. Draft:
+
+```md
+### 15.10 Prove the gate can fail
+**Do:** Land every gate with its red path demonstrated: a violation fixture the gate must
+reject, kept in the suite and re-run on every change, so an upgrade that silently disables
+the gate turns the pipeline red. A gate is proven by the change it blocks, not by the green
+runs it decorates.
+**Don't:** Wire a check into CI, watch it pass on compliant code, and call that enforcement;
+a gate nobody has ever seen red may already be off.
+```
+
+plus a stack-agnostic example block in the file's idiom:
+
+```sh
+# DON'T: the lint gate is trusted because it has always passed
+lint src/
+# DO: the suite also feeds the gate a known violation and demands rejection
+echo 'forbidden_construct' > fixtures/violation.src
+if lint fixtures/violation.src; then echo "gate is silently off"; exit 1; fi
+```
+
+Cascade if accepted: canon section after 15.9, pillar-15 index line (:76), a prose bullet in
+every-new-project.md's pillar 15; canonical count 118 to 119; drift checker TOTAL and
+PER_PILLAR (pillar 15, 9 to 10); a 15.10 row in the forward matrix, and honestly earning it
+requires a skill amendment in the same change, because today the discipline binds only the
+skill repo itself (its CLAUDE.md process rule and three smoke tests), not the repos the
+skill produces; one doctrine sentence in SKILL.md's gate section or
+references/governance.md closes that. The reverse matrix rows are untouched (this is not
+one of the 34) but its "Outside the 34" paragraph gains a line. Both hash pins re-pin.
+
+**Ruling.** ACCEPTED as drafted by the canon owner, 2026-08-30. Cascade applied in the same
+change: canon section after 15.9 plus index entry; the pillar prose extends its existing
+failing-loud bullet with the fixture mechanism rather than adding a redundant one; count 118
+to 119; drift checker TOTAL and pillar-15 count 9 to 10; forward matrix row 15.10 (COVERED
+via the new doctrine paragraph after SKILL.md's variant gate table). One knock-on the draft
+did not foresee: forward row 15.4 slims from STRICTER back to COVERED, because its recorded
+surplus ("each shipped gate is proven to fail on its target violation") is exactly the
+discipline that is now canon row 15.10. Reverse matrix "Outside the 34" notes the origin.
+Both pins re-pinned.
+
+---
+
+## 10.2 Errors as values, not exceptions (proposed 2026-08-30, status: ACCEPTED 2026-08-30)
+
+**Current canon** (global-rules-dos-and-donts.md:1982-1984):
+- Do: "Return a typed success-or-failure value from anything that can fail; reserve
+  exceptions for genuine bugs."
+- Don't: "Throw for an expected business outcome and hope a caller catches it."
+The three example blocks all show the error's type moving into the return value; none shows
+where a try/catch may live. The pillar-10 prose bullet
+(global-rules-every-new-project.md:163) paraphrases the same two clauses.
+
+**Defect (the rule fixes the error's type but not the catch's place).** Foreign code throws:
+drivers, SDKs, the standard library, the runtime. So every real codebase contains try/catch
+somewhere, and the canon never says where. A codebase can comply with 10.2 as written while
+scattering try/catch through business logic, each catch dutifully converting to a value, and
+the harm 10.2 targets survives: handling smeared across layers, and jumps a signature does
+not show. The placement rule that closes the gap is stack-agnostic and proven in two
+languages by the atelier profile (hard rule 17 and its Java translation): thrown-to-value
+translation happens once, in the adapter that owns the foreign call, and domain and
+application code neither throw nor catch expected outcomes. Placement is also what makes the
+rule mechanically checkable, a linter can ban `try` under `src/domain/`; no tool can check
+"reserved for genuine bugs".
+
+**Proposed revision.** Strengthen the two lines; the examples stand as-is:
+
+```md
+**Do:** Return a typed success-or-failure value from anything that can fail; reserve
+exceptions for genuine bugs. Where foreign code throws, catch it once, in the adapter that
+owns the call, and translate to the value there; domain and application code neither throw
+nor catch expected outcomes.
+**Don't:** Throw for an expected business outcome and hope a caller catches it, or scatter
+try/catch through business logic when one boundary adapter should quarantine it.
+```
+
+Cascade if accepted: the two lines at :1983-1984; the pillar-10 bullet in
+every-new-project.md gains the placement clause; no count change, drift checker untouched;
+forward matrix row 10.2 evidence gains rule 17; reverse matrix row 17 flips STRICTER-THAN to
+CANON-ROW 10.2 (tally becomes 20 canon, 5 stricter, 9 stack). Both hash pins re-pin.
+
+**Ruling.** ACCEPTED as drafted by the canon owner, 2026-08-30. Cascade applied in the same
+change: the two Do/Don't lines strengthened, the pillar-10 bullet gains the placement clause,
+forward matrix 10.2 evidence now cites rules 16 and 17 (SKILL.md:168-169), reverse matrix row
+17 flipped with the tally, both pins re-pinned. No skill change needed: rule 17 already says
+where the catch lives, which is what made this a canon defect rather than a skill one.
