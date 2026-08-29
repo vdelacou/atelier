@@ -198,6 +198,25 @@ Optional: install `gitleaks` (`brew install gitleaks`) for the secret-scan gate.
 
 For a **Java (Quarkus) repo**, the equivalent install copies `assets/pre-commit-java`, `assets/ci-java.yml`, `assets/check-pom.sh`, the shared `assets/check-commit-size.sh`, and the same `assets/commit-msg`, see `references/java-quarkus.md` (§ Gates and hooks) for the copy block and the pom-side configuration (Spotless, JaCoCo tiers, PIT).
 
+## Carry the standard in the repo, not only in the skill
+
+Skill triggering is probabilistic: it depends on a prompt matching a description, and smaller
+model tiers under-invoke. The deterministic path is a pointer block at the top of the consumer
+repo's `CLAUDE.md`, which every session loads as context regardless of what the user types. Treat
+the block as the primary distribution mechanism and skill triggering as the fallback.
+
+```bash
+SKILL=~/.claude/skills/atelier
+printf '# CLAUDE.md\n\n' > CLAUDE.md
+cat "$SKILL/assets/claude-md-pointer.md" >> CLAUDE.md
+```
+
+The canonical text lives in [`assets/claude-md-pointer.md`](skills/atelier/assets/claude-md-pointer.md);
+copy it rather than retyping it, so every repo carries the same block and an upstream wording change
+propagates by re-copy. `atelier-greenfield` seeds it at repo birth (step 6) and `atelier-review-me`
+adopt mode seeds it in the first migration slice; this section is for an already-conforming repo
+that predates the block. Extend `CLAUDE.md` freely below it; the block stays at the top.
+
 ## Usage
 
 Once installed, the agent consults `atelier` on every code task in a Bun/TypeScript, Next.js, or Java project — you do not need to mention it by name. It will:

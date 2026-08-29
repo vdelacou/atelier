@@ -483,6 +483,7 @@ Process:
 5. Refactor. Apply object calisthenics. Promote primitives to branded types. Extract on Rule of Three. (The hard rules bind throughout — no banned syntax, deps via `bun add`, logging via the `Logger` port, Conventional Commits.)
 6. Work trunk-based: commit to `main` in small green increments (≤10 files / ≤300 lines per gate 1), not onto long-lived feature branches. Every commit keeps `main` releasable — that is what the pre-commit gates guarantee. Hide unfinished work behind a flag, not a branch. This is the default and overrides any "branch first" habit. See `references/workflow.md` (Trunk-based development).
 7. If legacy code in the repo uses a forbidden pattern, match the local style in that file only. Flag the drift once and offer to refactor.
+7b. If the repo follows the standard but its `CLAUDE.md` carries no atelier pointer block, offer once to add it (copy `assets/claude-md-pointer.md`; atelier-greenfield § step 6). Deterministic repo context beats probabilistic skill triggering: with the block in place every future session carries the standard even when no description matches the prompt.
 8. At session wrap-up, update `.claude/PLAN.md` to reflect the final state (all DoD ticked, or what remains for next time), and scan for `[mistake]`, `[decision]`, `[gotcha]` entries worth capturing. Propose a candidate list and append on approval. See `references/lessons.md`.
 
 ## Pre-code checklist

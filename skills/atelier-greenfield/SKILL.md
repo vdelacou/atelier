@@ -30,19 +30,14 @@ Greenfield only. For a repo that already has code, the main atelier skill applie
    Never install both hook mechanisms: the `.githooks` fast-gate hook for Bun-script, `simple-git-hooks` for Next.js; the Java variant reuses `.githooks` with its own gate chain.
 4. **Pin versions properly.** Add every dependency with `bun add` / `bun add -d` so it resolves to a concrete `^X.Y.Z`; never hand-write `"latest"` or `"*"` (rule 19 — gate 2 would reject it). Java: exact versions in the pom, no ranges, no SNAPSHOT deps (the enforcer blocks them).
 5. **Keep identity out of file contents (rule 26).** Commit metadata carries your normal identity and needs no action. The scaffolded files carry none of it: no person, employer, or client name in a comment, a LICENSE holder line, a `package.json` author field, or a fixture; use a neutral handle (e.g. `atelier`) where a holder string is structurally required. Scrubbing a mention after a push is a `git filter-repo` history rewrite and a force-push, so catch it here.
-6. **Seed session memory and the standard pointer.** Create `.claude/LESSONS.md` with just its header so the cross-session journal works from commit one, and write a minimal `CLAUDE.md` so the standard rides in deterministic repo context on every future session instead of depending on skill triggering alone:
+6. **Seed session memory and the standard pointer.** Create `.claude/LESSONS.md` with just its header so the cross-session journal works from commit one, and write the repo's `CLAUDE.md` from the canonical block the main skill ships, so the standard rides in deterministic repo context on every future session; skill triggering is the fallback, not the mechanism. This is the primary distribution step, not a nicety: a session that never triggers the skill still carries the standard.
 
-   ```markdown
-   # CLAUDE.md
-
-   This repo follows the atelier coding standard. Consult the `atelier` skill for every
-   code task here; its hard rules 1-34 bind (TDD with hand-written fakes, `Result` at IO
-   boundaries, branded types at trust boundaries, and the production disciplines: privacy,
-   isolation, reliability, observability). Run the `atelier-review-me` skill before landing
-   changes. Journals: `.claude/LESSONS.md` (append-only memory), `.claude/PLAN.md` (current plan).
+   ```bash
+   printf '# CLAUDE.md\n\n' > CLAUDE.md
+   cat <skill>/assets/claude-md-pointer.md >> CLAUDE.md
    ```
 
-   Offer `/init` afterwards to extend it with codebase-specific documentation; the pointer block above stays at the top.
+   The block's text lives only in `assets/claude-md-pointer.md`; copy it, never retype it (two copies drift, the same argument as rule 23's hook). Offer `/init` afterwards to extend the file with codebase-specific documentation; the pointer block stays at the top.
 7. **Lay a minimal walking skeleton.** The thinnest end-to-end slice that touches every layer (see the installed `atelier` skill's `references/architecture.md` § The walking skeleton): for a Bun-script repo, one use-case returning `Result.ok` through its primary port, its branded input, and its confirmed test (rule 24 — propose the test, get the yes, then write it); for Next.js, one `src/lib` pure function with a test wired into a page shell that renders a single atom; for Java, one application service returning `Ok` through its port with its JUnit test, plus one resource with its REST Assured test including the 401 refusal. This is not speculative code — it is what makes coverage and mutation pass for real and demonstrates the TDD loop in place. Keep it to the absolute minimum, and offer to skip it for a bare scaffold.
 8. **Prove green.** Run the inner loop and confirm each is clean — `bun test`, `bun run lint`, `bun run typecheck`, `bun run coverage`, and for the Bun-script variant `bun run mutate`; for Java, `./mvnw spotless:check verify` plus PIT on the skeleton. Confirm the `commit-msg` hook rejects a junk message. A bootstrap that does not end green has not finished.
 9. **Stop before the first commit.** Stage the tree, propose the Conventional-Commits message (`chore: scaffold repo` or similar), and wait for the user's explicit yes (rule 25). Never auto-commit.
