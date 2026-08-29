@@ -67,14 +67,24 @@ jobs:
       # satisfying present-mode assertions for both arms.
       - run: python3 scripts/conformance-eval/grade.py --selftest
 
+  review-grader-selftest:
+    name: review-eval grader selftest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Proves the review-recall grader can fail: it must catch evidence without
+      # requiring a rule number (arm-neutral), must NOT count a line reference
+      # like orders-db.ts:30 as citing rule 30, must flag a rule asserted against
+      # a clean file, and must score an empty review 0.
+      - run: python3 scripts/review-eval/grade.py --selftest
   matrix-drift:
     name: conformance-matrix drift gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      # conformance-matrix.md must stay true to the vendored canon: 116 rows with
-      # the canonical per-pillar counts, every id+title verbatim from the index
-      # (rule 12.1), and the canon sha256 pins in the matrix header intact, so
+      # conformance-matrix.md must stay true to the vendored canon: the full row
+      # count with the canonical per-pillar counts, every id+title verbatim
+      # from the index (rule 12.1), and the canon sha256 pins intact, so
       # bumping the canon without re-auditing the matrix fails here. --selftest
       # first proves the gate can fail on a retitled row or a corrupted pin.
       - run: python3 scripts/check-matrix-drift.py --selftest

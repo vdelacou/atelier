@@ -22,7 +22,8 @@ tree. What binds work HERE is the authoring and process discipline below.
 - `scripts/` holds the CI harnesses: three `smoke-test*.sh` (Bun/Next/Java, each proving the
   gates pass AND block their target violation), `trigger-eval/` (does the skill load; suite
   mode measures which skill wins a query), `conformance-eval/` (does produced code follow the
-  rules, with-skill vs baseline).
+  rules, with-skill vs baseline), `review-eval/` (does atelier-review-me catch planted
+  violations in a diff, recall + rule-citation + false-positives vs a skill-less reviewer).
 
 ## Verify commands
 - `bun run scripts/validate-frontmatter.ts` (fast; the CI frontmatter gate).
@@ -30,6 +31,8 @@ tree. What binds work HERE is the authoring and process discipline below.
   Java needs JDK 21+ and mvn; each takes minutes on first run for dependency downloads).
 - `bash scripts/trigger-eval/run.sh <set> <skill-dir> [fixture] [runs]` after any SKILL.md
   description edit (a description is a triggering contract).
+- `python3 scripts/review-eval/grade.py --selftest` (fast; the CI review-grader gate). The full
+  eval: `bash scripts/review-eval/run.sh`, then grade the printed runs dir.
 - CI (`.github/workflows/ci.yml`) runs the four gates on every push; `canary.yml` weekly-probes
   the two deliberate toolchain concessions (whether the typescript pin can lift, and whether the
   two disabled sonarjs rules can go back on).
