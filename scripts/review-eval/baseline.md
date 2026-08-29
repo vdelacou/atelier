@@ -57,3 +57,37 @@ a false positive, which inflated the with_skill FP count to 1 in two passes; sen
 matching fixed it. A second hazard, a line reference like `orders-db.ts:30` counting as a rule-30
 citation, was designed out up front. Both cases are pinned in `grade.py --selftest`, which CI
 runs (`review-eval grader selftest`).
+
+## Java variant (added 2026-08-30, same day)
+
+Same protocol, `REVIEW_VARIANT=java`: a self-contained Maven fixture (`base-java/`, the sealed
+`Result` trio from `assets/java`, a `Refund` record with its three-scenario JUnit test, an
+`Orders` port) and a 9-violation diff (`changed-java/`, `violations-java.json`): Mockito in a
+test (13), `@SuppressWarnings` (15), `System.out.println` (4), a bespoke business exception
+thrown from a use case (10), a `[5.0,)` version range in the pom (19), the existing test's
+expected value silently changed (24), an email in a log line (27), `HttpClient` with no
+timeout (29), a hard SQL `DELETE` (30). Three passes on `claude-opus-5`, both arms, 6 runs,
+0 failures.
+
+| Metric | with_skill | baseline |
+|---|---|---|
+| caught | 27/27 (100%) | 19/27 (70.4%) |
+| rule-cited | 27/27 | 1/27 |
+| false positives on clean files | 0 | 0 |
+
+Per pass, with_skill caught 9/9 three times out of three; baseline ran 5, 7, 7. The baseline
+misses rhyme with the Bun run: jv-harddelete 0/3 (a working hard delete looks finished),
+jv-weakened 1/3 (the silently changed expectation slips past), and once each the PII log line,
+the missing timeout, and the exception-instead-of-Err. What it does catch unaided: Mockito,
+`@SuppressWarnings`, `System.out`, the version range, the generic reviewer's home turf.
+
+Two design notes, recorded for honesty. The TS-inversion trap did not fire: a new port
+`interface` was planted as a clean file expecting a TS-minded reviewer to flag it (rule 3
+inverts in Java), and neither arm did in any pass. And that same file was then reclassified
+OUT of the clean list: the with_skill review accused it under rules 12 and 16 (raw `String`
+params, `Result<Void, String>` instead of a sealed error union), a defensible strict reading
+of the standard's own text, so it is not the indisputable sentinel a false-positive lens
+needs. The clean list for Java is the conforming `Refund` edit alone; the reclassification
+removed the only FP in the six runs, and it was charged against the fixture design, not the
+review.
+

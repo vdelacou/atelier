@@ -102,3 +102,40 @@ Push of the 8 done, CI green on 77c77fd (7 jobs, review-eval selftest included).
 - [ ] 10. Land after the A/B: grader hardening + scorecard (test), review-me 29 fix
       (docs or fold), description trim iff kept (docs, trigger-eval evidence in the
       message). AWAITING CONFIRM; push separate.
+
+
+## Continuation: Java review fixture (user said "build it")
+
+Goal: the review-recall eval covers the Java variant, the same measurement the Bun side got
+this morning. The grader is language-agnostic; the work is a Java fixture pair, per-variant
+manifests, a variant switch in run.sh/grade.py, 3x2 opus runs, and a Java section in
+baseline.md.
+
+- [x] 11. base-java/: a minimal self-contained Java tree (no shared fixture exists to reuse):
+      conforming pom (exact pins, junit only), the sealed Result/Ok/Err trio (from
+      assets/java), domain/Refund record + RefundTest (the test the diff later weakens),
+      usecases/ports/Orders interface. DoD: coherent, compilable-looking; <=10 files.
+- [x] 12. changed-java/ + violations-java.json + clean-files-java.json: 9 planted violations
+      in the Java translations: Mockito in a test (13), @SuppressWarnings (15), a version
+      range in the pom (19), a bespoke business exception thrown from usecases (10),
+      System.out.println (4), a hard SQL DELETE (30), HttpClient with no timeout (29), an
+      email in a log line (27), the existing RefundTest expected value changed (24).
+      Clean files: a conforming Refund edit and a NEW PORT INTERFACE, deliberately, because
+      rule 3 inverts in Java (interfaces ARE the port mechanism) and a TS-minded reviewer
+      flagging it is exactly what the FP lens should catch. DoD: manifests parse; evidence
+      regexes are arm-neutral.
+- [x] 13. Harness: REVIEW_VARIANT=java switches run.sh to the java fixture pair (no
+      conformance-fixture underlay) and adapts the baseline-arm prompt wording; grade.py
+      gains --variant java to read the java manifests. DoD: both selftests still green;
+      a Bun run still works unchanged (variant defaults to bun).
+- [x] 14. Run 3 passes x 2 arms on claude-opus-5, grade, extend
+      scripts/review-eval/baseline.md with the Java section. DoD: 6 runs, 0 failures,
+      recall/rule-cited/FP per arm recorded.
+- [ ] 15. Land in slices (base+manifests / changed / harness+scorecard+docs), each <=10
+      files. AWAITING CONFIRM; push separate.
+      Results: with_skill 27/27 caught + 27/27 rule-cited + 0 FP; baseline 19/27 (5/7/7),
+      1 rule citation, 0 FP. jv-harddelete missed by baseline in all 3 passes, jv-weakened
+      in 2. The Notifier port sentinel was reclassified out of the clean list: the with_skill
+      review's rules-12/16 accusation is a defensible strict reading, so the sentinel was
+      arguable, a fixture-design error charged to the fixture, not the review. The intended
+      TS-inversion trap (flagging `interface` in Java) never fired in either arm.

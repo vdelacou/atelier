@@ -15,8 +15,9 @@ Scoring, per violation, at paragraph granularity (blank-line separated):
 False positive: a SENTENCE that names a clean file's basename and asserts a
 rule number against it (paragraph granularity miscounts exonerations).
 
-    python3 scripts/review-eval/grade.py <runs-dir>     # grades every */-arm dir
-    python3 scripts/review-eval/grade.py --selftest     # prove the grader can fail
+    python3 scripts/review-eval/grade.py <runs-dir>                  # bun manifests
+    python3 scripts/review-eval/grade.py <runs-dir> --variant java   # java manifests
+    python3 scripts/review-eval/grade.py --selftest                  # prove the grader can fail
 
 The selftest is wired into CI (`review-eval grader selftest`), the same pattern
 as the conformance grader: a grader that cannot fail proves nothing.
@@ -140,11 +141,19 @@ def main() -> None:
     if "--selftest" in args:
         selftest()
         return
+    variant = "bun"
+    if "--variant" in args:
+        i = args.index("--variant")
+        variant = args[i + 1]
+        del args[i : i + 2]
+    if variant not in ("bun", "java"):
+        sys.exit(f"unknown --variant {variant} (bun|java)")
+    suffix = "" if variant == "bun" else "-java"
     if not args:
-        sys.exit("usage: grade.py <runs-dir> | --selftest")
+        sys.exit("usage: grade.py <runs-dir> [--variant bun|java] | --selftest")
     runs_dir = Path(args[0])
-    violations = json.loads((HERE / "violations.json").read_text())
-    clean_files = json.loads((HERE / "clean-files.json").read_text())
+    violations = json.loads((HERE / f"violations{suffix}.json").read_text())
+    clean_files = json.loads((HERE / f"clean-files{suffix}.json").read_text())
     total = len(violations)
     for run in sorted(p for p in runs_dir.iterdir() if p.is_dir()):
         review_file = run / ".review.txt"
