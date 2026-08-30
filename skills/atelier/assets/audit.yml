@@ -10,6 +10,7 @@ on:
     paths:                      # PR run fires only when deps actually change
       - package.json
       - bun.lock
+      - .claude/skills/**        # a re-sync of the standard is a dependency change
 jobs:
   audit:
     runs-on: ubuntu-latest
@@ -18,5 +19,10 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile   # also fails on lockfile drift, a supply-chain check in itself
       - run: bun audit --audit-level=high
+      # A vendored standard is a dependency too (references/governance.md): it
+      # goes stale silently while every other gate stays green. Scheduled, not
+      # a commit gate, for the same reason as the CVE scan above.
+      - name: vendored standard is current
+        run: bash scripts/check-skill-pin.sh
       # An advisory with no upstream fix is allow-listed here, project-level, with a reason:
       # - run: bun audit --audit-level=high --ignore GHSA-xxxx-xxxx-xxxx  # no patched release as of YYYY-MM-DD; tracking <link>

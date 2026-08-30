@@ -38,6 +38,12 @@ version and current, then bring the gates and their prose across in one commit, 
 doctrine and the assets that enforce it move together. Vendor it ONCE per repo: two copies
 of the standard in one tree is 12.1 drift with extra steps.
 
+The re-check is mechanical, not a memory exercise: `assets/check-skill-pin.sh` compares the
+vendored `SKILL.md` against upstream and fails when it has fallen behind, and it rides in
+`assets/audit.yml` beside the CVE scan rather than blocking commits, because upstream doctrine
+changes independently of your diff. It degrades when it cannot reach upstream, and says so:
+unverified is not the same as current.
+
 ## Decision records (why is it like this)
 
 Two tiers, one rule: the record changes in the same commit as the code it explains, so it cannot drift.

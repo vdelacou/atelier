@@ -228,7 +228,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.3 | Have a testing philosophy | COVERED | testing.md:125-127; SKILL.md:195 | rule | Every fixed bug becomes a permanent reproducing test |
 | 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:165; testing.md:231 | gate | Mock ban is absolute and lint-enforced, exceeding canon advisory prefer-fakes |
-| 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:111 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on a frozen lockfile as the required merge check |
+| 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:117 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on a frozen lockfile as the required merge check |
 | 4.7 | Hold generated code to the same bar | COVERED | workflow.md:637 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-48; SKILL.md:213 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
 
@@ -324,21 +324,21 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 12.1 | Document the essentials and treat doc drift as a defect | COVERED | governance.md; scripts/smoke-test.sh | doctrine | Resolved Phase 2: docs-check CI doctrine (extract README commands and run them); smoke-test.sh is the exemplar |
-| 12.2 | Generate API docs from the contract | COVERED | governance.md:66 | doctrine | API docs derived from the validating schema, example per endpoint, published |
-| 12.3 | Record decisions where they cannot drift | COVERED | governance.md:43-59 | doctrine | ADR committed with the code, options rejected and reversal recorded |
+| 12.2 | Generate API docs from the contract | COVERED | governance.md:72 | doctrine | API docs derived from the validating schema, example per endpoint, published |
+| 12.3 | Record decisions where they cannot drift | COVERED | governance.md:49-65 | doctrine | ADR committed with the code, options rejected and reversal recorded |
 | 12.4 | Build institutional memory | COVERED | workflow.md:5-7; lessons.md:177 | doctrine | Durable PLAN.md plus append-only LESSONS.md outlive the people |
-| 12.5 | Give real-time access and commit to measurable thresholds | COVERED | governance.md:85; observability.md:18 | doctrine | Stakeholder live access; targets as metric, number, window |
-| 12.6 | Run one visible, honest backlog | COVERED | governance.md:89-90 | doctrine | One visible tracker as source of truth, bugs first-class, no shadow list |
+| 12.5 | Give real-time access and commit to measurable thresholds | COVERED | governance.md:91; observability.md:18 | doctrine | Stakeholder live access; targets as metric, number, window |
+| 12.6 | Run one visible, honest backlog | COVERED | governance.md:95-96 | doctrine | One visible tracker as source of truth, bugs first-class, no shadow list |
 | 12.7 | One working language | COVERED | governance.md:5 | doctrine | One working language for docs, comments, commit messages, identifiers, chosen once and kept everywhere. P6 ACCEPTED 2026-07-20 (Option A, new sub-concept; count 115 to 116) |
 
 ### Pillar 13: Clear ownership
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 13.1 | Make ownership explicit | COVERED | governance.md:99-105 | doctrine | CODEOWNERS maps every path; RACI note, one Accountable |
-| 13.2 | Separate duties | COVERED | governance.md:109-111 | doctrine | Requester never sole approver; no self-merge |
-| 13.3 | Keep an audit trail | COVERED | governance.md:119-126 | doctrine | Approvals and emergency access leave a durable audit-log insert |
-| 13.4 | Make finding problems safe and let the accountable verify | COVERED | governance.md:132-133 | doctrine | Reward detection; the accountable owner verifies via a re-runnable check |
+| 13.1 | Make ownership explicit | COVERED | governance.md:105-111 | doctrine | CODEOWNERS maps every path; RACI note, one Accountable |
+| 13.2 | Separate duties | COVERED | governance.md:115-117 | doctrine | Requester never sole approver; no self-merge |
+| 13.3 | Keep an audit trail | COVERED | governance.md:125-132 | doctrine | Approvals and emergency access leave a durable audit-log insert |
+| 13.4 | Make finding problems safe and let the accountable verify | COVERED | governance.md:138-139 | doctrine | Reward detection; the accountable owner verifies via a re-runnable check |
 | 13.5 | The agent proposes, the human disposes | COVERED | SKILL.md:195; SKILL.md:197; SKILL.md:199 | rule | Atelier hard rules 24-26 verbatim: confirmation-gated tests, no unconfirmed landings, identity in metadata only. P6 ACCEPTED 2026-08-30 (origin: the reverse-matrix audit; the skill had the rules before the canon had the row) |
 
 ### Pillar 14: Pave the road
@@ -347,7 +347,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 14.1 | Provide golden paths as real artifacts | COVERED | atelier-greenfield/SKILL.md:8; skills/atelier/assets | rule | Greenfield scaffold starts green; assets ship real hooks, scripts, configs not docs |
 | 14.2 | Make it self-service | COVERED | delivery.md:105 | doctrine | Provision env or pipeline via a declarative request the team owns, not a ticket |
-| 14.3 | Treat the platform as a product | COVERED | delivery.md:105; governance.md:137 | doctrine | Platform is a product: owned, versioned, documented, with a feedback loop |
+| 14.3 | Treat the platform as a product | COVERED | delivery.md:105; governance.md:143 | doctrine | Platform is a product: owned, versioned, documented, with a feedback loop |
 
 ### Pillar 15: Enforce and verify
 
@@ -357,10 +357,10 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:170; assets/check-coverage.ts:137 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
 | 15.3 | No silent opt-out | COVERED | workflow.md:73-82; SKILL.md:167 | gate | Project-level severity change with a reason; inline suppressions banned |
 | 15.4 | Test the bypass, not the happy path | COVERED | testing.md:522-531 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
-| 15.5 | Compliance is not proof | COVERED | workflow.md:636; governance.md:133 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
+| 15.5 | Compliance is not proof | COVERED | workflow.md:636; governance.md:139 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
 | 15.6 | Audit the gaps between systems | COVERED | workflow.md:628; testing.md:536 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
 | 15.7 | Fix the class, not the instance | COVERED | workflow.md:629-633 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
-| 15.8 | Make proof re-checkable | COVERED | governance.md:85-133; workflow.md:636 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
+| 15.8 | Make proof re-checkable | COVERED | governance.md:91-139; workflow.md:636 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
 | 15.9 | Spend human judgment where it counts | COVERED | workflow.md:685; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
 | 15.10 | Prove the gate can fail | COVERED | SKILL.md:433; scripts/smoke-test.sh | gate | Doctrine after the variant gate table, every gate lands with a violation fixture it must reject; the repo smoke tests are the reference implementation |
 

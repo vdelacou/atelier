@@ -1,17 +1,23 @@
-# Plan: Phase 5 follow-up (2026-08-30)
+# Plan: Phase 5 follow-ups 1-3 (2026-08-30)
 
-Field test on a real consumer repo found 4 atelier defects. Fix each; the gate change
-ships a violation fixture first (canon 15.10). Scorecard lands anonymized.
+Order: atelier gates first (2, 3), then the consumer catch-up (1) so it re-syncs onto
+finished doctrine. Every gate ships red-proven (canon 15.10). Kuitto changes stop before
+commit (rule 25); nothing is committed there without explicit confirmation.
 
-1. [x] check-package-json.sh walks every workspace manifest (adopt the consumer's fix).
-   RED FIRST: smoke-test.sh case planting "latest" in packages/x/package.json must fail
-   before the gate change and pass after. DoD: both smoke cases green, gate red on fixture.
-2. [x] ADR guidance vs rule 26: governance.md warns the MADR Deciders field must carry a
-   role or handle, never a person; authorship lives in commit metadata.
-3. [x] Skeleton defines "test": "bun test" (consumers invented one, with a flag that made
-   the gate unable to fail). DoD: bun-typescript.md skeleton + step 2 script list.
-4. [x] Vendored-standard staleness: doctrine that a pinned skill copy is a dependency and
-   goes stale like one; name the re-sync ritual. DoD: governance.md + pointer block line.
-5. [x] field-test.md (anonymized: "a real Bun monorepo consumer", no product name/domain),
-   sibling to conformance-matrix.md and reverse-matrix.md; LESSONS entry.
-6. [ ] Gates: frontmatter, drift, citations, workflow-assets, bun smoke. Land on confirmation.
+2. [x] Adopt the per-commit range size check (from the field-test consumer).
+   - assets/check-commit-range.sh: every commit in a pushed range vs the <=10 files /
+     <=300 lines cap; the CI counterpart to the staged-diff hook gate, same shape as
+     check-commit-messages.sh vs commit-msg.
+   - Wire: assets/ci.yml (PR only), bootstrap copy lists (bun + java), workflow.md gate
+     table. RED FIRST in smoke-test.sh: an oversized commit in the range must fail.
+3. [x] Make skill staleness mechanical, not doctrinal.
+   - assets/check-skill-pin.sh: compares the vendored SKILL.md against upstream, fails
+     when behind; degrades gracefully offline; SKILL_PIN_UPSTREAM override for tests.
+   - Home: assets/audit.yml (a vendored standard is a dependency, so it belongs with the
+     other independently-changing dependency check), not a commit gate.
+   - --selftest with both fixtures. Bootstrap copy list + governance.md pointer.
+1. [x] Consumer catch-up in /Users/pa2bra/Documents/CODE/Kuitto (READ-WRITE, no commits):
+   re-sync the vendored skills, split the 8-gate hook to the 5 fast gates with the rest in
+   CI, wire the commit-message re-check, drop --pass-with-no-tests, fix 8 ADR bylines.
+   Verify its gates still run. Leave a staged summary for the user to commit.
+4. [x] Atelier gates green, then propose slices. Land on confirmation only.
