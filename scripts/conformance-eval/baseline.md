@@ -137,6 +137,32 @@ had pinned), `with_skill` both sides, three tasks, both orders.
 came back 1 and 2 rather than a wall of 3s, and no pair flipped with position. That is what a
 measurement at the frontier looks like, and it is the ceiling breaking.
 
+**Multi-generation follow-up, and the answer.** That single reading could not separate doctrine
+from dice, so the comparison was re-run with three independent generations per side on the two
+tasks whose verdicts had split (h5, h7): 12 generations, 6 pairs, 12 comparisons.
+
+| Pair | h5-isolation-full | h7-reliability-full |
+|---|---|---|
+| generation 1 | current | current |
+| generation 2 | current | july |
+| generation 3 | july | inconsistent |
+
+Totals: current 3, july 2, inconsistent 1. Pooled with the earlier one-generation reading the
+score is roughly even. **The 2-1 that started this was noise, and the finding is that on these
+tasks the doctrine delta sits below the generator's run-to-run variance.** The judge's own
+reasons say why: across generations it turns on whether a particular run shipped `FORCE ROW
+LEVEL SECURITY` or a plain policy, whether the migration was versioned, whether three adapters
+arrived with no tests, and in one case whether the code compiled at all. Those are properties of
+a sample, not of a standard.
+
+Two things this bought beyond the null result. It measured the judge's reliability where the
+comparison is genuinely hard: 1 inconsistent pair in 6, against 0 in 7 when the sides were
+skill versus no-skill, so consistency tracks how far apart the submissions are, and a
+near-tie is where position bias lives. And it sets the power bar honestly: detecting a
+doctrine change on this fixture needs either many more generations than three or a doctrine
+delta far larger than 49 days of drift. An ablation, one rule's text removed and measured on
+the task that rule governs, is the cheaper experiment and the one worth running next.
+
 The result is NOT evidence that the July doctrine writes better code, and reading it that way
 would be the mistake this file exists to prevent. Three tasks, one generation per side, and the
 generator is stochastic: the same skill produces materially different code run to run, so what

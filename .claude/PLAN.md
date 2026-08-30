@@ -1,14 +1,20 @@
-# Plan: doctrine A/B + consumer re-sync + field pass (2026-08-30)
+# Plan: multi-generation doctrine A/B (2026-08-30)
 
-1. [ ] Make the judge's stated purpose executable.
-   - run.sh: CONFORMANCE_SKILL_PATH override (arms are already parameterised).
-   - judge.py: pair the SAME task across two run dirs with custom arm labels, so
-     two skill VERSIONS can be compared, not just skill vs no-skill.
-   - Test-first: selftest cases for custom labels and cross-dir pairing, red first.
-   - Validate live: current skill vs the 2026-07-12 skill (the version the field-test
-     consumer pinned) on two tasks, judged both orders. A real doctrine A/B.
-2. [ ] Consumer re-sync: six pushes have landed since the last one, so the pin gate
-   now reports behind. Re-sync both vendored trees, re-verify, leave uncommitted.
-   Propose *.tfplan for their .gitignore (plan files can carry resolved secrets).
-3. [ ] Phase 5 second field pass over the caught-up tree, read-only, short delta report.
-4. [ ] Gates, then propose slices. Land on confirmation only.
+Question the last reading left open: was current 1 / july 2 a doctrine difference or
+generator noise? One generation per side cannot tell. Three can start to.
+
+Design: same two doctrines (current skill vs 2026-07-12), same arm (with_skill), the two
+tasks whose verdicts split (h5-isolation-full, h7-reliability-full), 3 independent
+generations per side. Judge pairs generation i against generation i, both orders, blind.
+9 outcomes per task-side pairing at most; read the DISTRIBUTION, not a single verdict.
+
+Honest bar set before the run, so the result cannot be rationalised after it:
+- A doctrine claim needs the same winner in most pairs AND low inconsistency.
+- A split across generations means the generator's variance dominates the doctrine
+  difference on these tasks, which is a real finding and gets recorded as one.
+- Either way the sample is 2 tasks; this bounds noise, it does not settle doctrine.
+
+1. [ ] Generate 3x per side (12 runs total, sequential per side).
+2. [ ] Judge g1-vs-g1, g2-vs-g2, g3-vs-g3 (6 pairs, 12 comparisons).
+3. [ ] Aggregate; report distribution and inconsistency rate; record in baseline.md.
+4. [ ] Land on confirmation.
