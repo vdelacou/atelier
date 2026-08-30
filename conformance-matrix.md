@@ -26,8 +26,8 @@ C1 of the Atelier vs Global Rules conformance plan.
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | d7ab4ba9fd1998c5c80a284f3bc8e3f89d0d75488be47e1317637f9e4aa2eb57 | 3483 |
-| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | c55e40d40fdbbe23e7ef0a6fdec74b3122b550261f804c502f039c276be55bb0 | 285 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 95d3e94c0a21e2f9ec851d4cbfb2709897621870a01d2021398513e66fe2e92f | 3483 |
+| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | f989426937980ad9c44d87516f86bdf278c756f539256f381147820b07dc078b | 285 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
 
 - IDs and titles are imported verbatim from the "Every sub-concept" index of the
@@ -384,7 +384,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 17.4 | Let technology serve the person, not replace them | COVERED | product.md:47-48 | doctrine | Automation removes friction; the human path stays visible |
 | 17.5 | Speak the user's language | COVERED | product.md:51-52; nextjs-monorepo.md:655 | rule | Every string in a meaning-keyed catalog; localization is a data change |
 | 17.6 | Accessible by default | COVERED | atomic-design.md:234-239; nextjs-monorepo.md:297 | gate | Semantic, keyboard, token contrast; jsx-a11y error-level gate; axe optional (Watchlist 6) |
-| 17.7 | Mobile first, and a light interface | COVERED | product.md; atomic-design.md:206 | doctrine | Resolved Phase 2: smallest-screen-first, one-primary-action, progressive-disclosure, bundle-budget doctrine (Watchlist 6) |
+| 17.7 | Mobile first, and a light interface | COVERED | product.md:86; assets/check-bundle-size.sh; atomic-design.md:206 | gate | Resolved Phase 2: smallest-screen-first, one-primary-action, progressive-disclosure; the bundle budget is a shipped gate. P6 ACCEPTED 2026-08-30, canon 17.7 gained the budget clause the pillar prose already asked for (Watchlist 6) |
 
 ### Pillar 18: Validate before you build
 

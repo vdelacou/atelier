@@ -3359,8 +3359,8 @@ TypeScript (React):
 ```
 
 ### 17.7 Mobile first, and a light interface
-**Do:** Design the smallest screen first with one clear primary action per view, and let each screen carry only the controls that view needs.
-**Don't:** Crowd every screen with buttons, options, and panels, or build for a wide desktop and shrink it afterward so a phone gets a dense mess in a thumb's reach.
+**Do:** Design the smallest screen first with one clear primary action per view, let each screen carry only the controls that view needs, and hold the shipped bundle to a weight budget the pipeline enforces, because a light interface should be a light payload too.
+**Don't:** Crowd every screen with buttons, options, and panels, build for a wide desktop and shrink it afterward so a phone gets a dense mess in a thumb's reach, or let the bundle grow unmeasured until a mid-range phone pays for it.
 
 TypeScript (React):
 ```tsx

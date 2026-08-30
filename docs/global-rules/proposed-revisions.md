@@ -58,7 +58,8 @@ the more precise expression of the rule's real goal, so the skill is not amended
 
 **Matrix disposition.** Accepted 2026-07-20. The vendored canon 5.3 (both the dos-and-donts Do,
 Don't, and TS example, and the pillar-prose sentence) now carries this revision; the proposed text
-above is the text that landed. `conformance-matrix.md` pins the revised canon hashes and records
+above is what landed, with one addition made at acceptance: the Do's parenthetical also admits an
+exact pin, which is constrained in exactly the way a caret or tilde range is. `conformance-matrix.md` pins the revised canon hashes and records
 5.3 as COVERED, and the skill's dependency gate (`check-package-json.sh`, which already permits a
 constrained range plus a committed lockfile) needs no change. The finding text in the matrix
 watchlist is kept as the record of what the collision was before it closed.
@@ -382,3 +383,94 @@ re-pin, citations-lock re-locked. No skill change: nothing here alters what any 
 
 **Ruling.** ACCEPTED as drafted by the canon owner, 2026-08-30, same day; all six edits applied
 and the dos-and-donts pin re-pinned in the same change.
+
+---
+
+## Cascade repairs, 10.3 prose leg (proposed 2026-08-30, status: ACCEPTED 2026-08-30)
+
+Two mechanical defects found by a prose-vs-sub sweep of all 18 pillars, run after the same day's
+acceptances. No rule substance changes; each edit aligns a record with a ruling already made.
+Batched as one row because each alone is below the P6 grain, following the cross-reference-repairs
+precedent above.
+
+1. **10.3's prose leg never cascaded** (every-new-project.md:164). The 10.3 revision (ACCEPTED
+   2026-07-20) widened the sub's Do to admit "a typed query builder that emits visible SQL", and
+   `references/reliability.md:30` moved with it, but the pillar-10 prose bullet still read "Write
+   read queries by hand so you can see and tune exactly what runs", forbidding what the sub now
+   allows. A reader of the prose alone builds to the pre-revision rule, and the canon's own 10.4
+   DO (a query builder) stays inconsistent with it. Same drift class the 11.3 row closed, prose
+   against sub. Fix: "Write read queries so you can see and tune exactly what runs, by hand or
+   through a typed query builder that emits visible SQL, because ...".
+2. **5.3's disposition overstates fidelity** (this file, the 5.3 row). It claimed "the proposed
+   text above is the text that landed", but the landed Do reads "(a caret or tilde range, or an
+   exact pin, never `*` or `latest`)" where the proposal read "(a caret or tilde range, never `*`
+   or `latest`)". The addition is right on the merits, an exact pin is constrained in the same way
+   a range is, but this log is the record of what landed and has to say so. Fix: state the
+   addition in the disposition.
+
+**Sweep result** (every pillar prose bullet read against the sub Do/Don't it governs, 18 pillars,
+119 subs). One contradiction, item 1, and it is the only one. No sub-concept is missing from the
+prose. Three prose-only obligations carry no sub, which is the 12.7 class rather than this one and
+is left as a finding for the canon owner rather than repaired here: pillar 17's bundle budget
+("hold the bundle to a budget the pipeline enforces and measure it on a real phone",
+every-new-project.md:259, absent from 17.7), pillar 18's exemption from the go/no-go for a build
+whose product is the practice itself (:269, absent from 18.3), and pillar 4's PR-scoped mutation
+runs (:80, absent from 4.4). The rest of the prose surplus is detail that narrows nothing (10.4's
+composite index, 10.6's quarterly cadence, 10.13's circuit-breaker restraint, 7.5's real engine)
+and needs no row.
+
+Cascade if accepted: one line edit in every-new-project.md and one in this file, no count change,
+no index change, no skill change (`references/reliability.md` already carries the widened rule,
+which is what makes this a missed cascade rather than a divergence). The every-new-project hash
+re-pins in `conformance-matrix.md`; citations-lock scans only the two matrices, so it re-locks
+only if a citation pinned the edited line.
+
+**Ruling.** ACCEPTED as drafted by the canon owner, 2026-08-30, same day; both edits applied and
+the every-new-project pin re-pinned in the same change.
+
+---
+
+## 17.7 Mobile first, and a light interface (proposed 2026-08-30, status: ACCEPTED 2026-08-30)
+
+**Current canon** (global-rules-dos-and-donts.md:3362-3363): the Do designs the smallest screen
+first, asks for one clear primary action per view, and keeps each screen to the controls it needs.
+The Don't forbids the crowded screen and the shrunk-desktop layout. Neither line mentions payload
+weight. The pillar-17 prose (every-new-project.md:259) does: "hold the bundle to a budget the
+pipeline enforces and measure it on a real phone", closing with the observation that most people
+meet the product on a mid-range phone.
+
+**Defect (internal drift, the 12.7 class).** A pillar-17 obligation has no clause in the
+sub-concept checklist, so a reader following only the 119 subs never meets it. It is not a
+paraphrase gap: the prose asks for a CI gate with a number, and 17.7 as written is satisfied by a
+lean-looking screen that ships megabytes of JavaScript. The same shape as 12.7 (one working
+language), found by the 2026-08-30 prose-vs-sub sweep recorded in the cascade-repairs row above.
+
+**Proposed revision (as landed).** Strengthen the two lines rather than add a sub, since the
+concern IS 17.7's lightness and a new row would split one rule across two. The 10.2 precedent
+(strengthen the clause, no count change) applies:
+
+```md
+**Do:** Design the smallest screen first with one clear primary action per view, let each screen
+carry only the controls that view needs, and hold the shipped bundle to a weight budget the
+pipeline enforces, because a light interface should be a light payload too.
+**Don't:** Crowd every screen with buttons, options, and panels, build for a wide desktop and
+shrink it afterward so a phone gets a dense mess in a thumb's reach, or let the bundle grow
+unmeasured until a mid-range phone pays for it.
+```
+
+The two options declined: a new sub 17.8 (rejected, it fragments one rule and moves the count off
+119 for a clause), and leaving the obligation in prose only (rejected, that is the drift 12.7
+exists to prevent). The prose's "measure it on a real phone" stays prose: the sub keeps the
+checkable half, the gate and its number, and the React example block is left as-is, the way 10.3's
+optional example variant was deferred.
+
+**Skill evidence (unchanged, correct).** `references/product.md:86` already makes weight a number
+the pipeline enforces, and `assets/check-bundle-size.sh` is the shipped gate that fails the build
+when the gzipped bundle crosses its ceiling. The skill was ahead of the canon's checklist here,
+which is what made this a canon defect rather than a skill one.
+
+**Matrix disposition.** Accepted 2026-08-30 by the canon owner. Cascade applied in the same
+change: the two lines at :3362-3363, no count change and no index change (the title is untouched),
+forward matrix row 17.7 evidence now cites `product.md:86` and the shipped gate and stays COVERED,
+reverse matrix untouched (no hard rule maps to bundle weight), and the dos-and-donts hash re-pinned
+with the citations lock re-locked for the new anchored citation.
