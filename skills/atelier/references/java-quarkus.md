@@ -363,6 +363,7 @@ cp <skill>/assets/commit-msg             .githooks/commit-msg
 cp <skill>/assets/check-commit-size.sh   scripts/check-commit-size.sh
 cp <skill>/assets/check-pom.sh           scripts/check-pom.sh
 cp <skill>/assets/check-commit-messages.sh scripts/check-commit-messages.sh
+cp <skill>/assets/check-commit-range.sh    scripts/check-commit-range.sh
 mkdir -p .github/workflows
 cp <skill>/assets/ci-java.yml            .github/workflows/ci.yml
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh
@@ -384,7 +385,7 @@ CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the fu
 4. `application.properties`: authenticated-by-default policy, OIDC config placeholders, OTel enabled, JSON logging with the redaction filter, datasource for the constrained runtime role.
 5. Flyway: `src/main/resources/db/migration/V1__init.sql`; dev services or Testcontainers for the integration ring.
 6. Test support: `testsupport` package with the first hand-written fakes (logger recorder, clock); **no Mockito in the pom**.
-7. Hooks and CI scripts: copy the five assets as above (`pre-commit-java`, `commit-msg`, `check-commit-size.sh`, `check-pom.sh`, `check-commit-messages.sh`); `git config core.hooksPath .githooks`; optional local `gitleaks` install (CI installs its own). Verify the pom gate once: `bash scripts/check-pom.sh`.
+7. Hooks and CI scripts: copy the six assets as above (`pre-commit-java`, `commit-msg`, `check-commit-size.sh`, `check-pom.sh`, `check-commit-messages.sh`, `check-commit-range.sh`); `git config core.hooksPath .githooks`; optional local `gitleaks` install (CI installs its own). Verify the pom gate once: `bash scripts/check-pom.sh`.
 8. Walking skeleton: one use-case returning `Ok` through its port, its value record, its JUnit test (propose the test first, rule 24), one resource with its REST Assured test including the 401 case.
 9. Verify green: `./mvnw spotless:check verify`, PIT on the skeleton, hooks reject a junk message and an oversized commit.
 10. `.claude/LESSONS.md` header; verify no scaffolded file names a person, an employer, or a client (rule 26); stage and propose the first commit (rule 25).

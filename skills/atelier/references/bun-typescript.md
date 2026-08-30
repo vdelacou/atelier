@@ -448,9 +448,11 @@ The shared `formatError(err: unknown): string` helper lives in `src/domain/utili
     - `mkdir -p .githooks`
     - `cp <skill-path>/assets/lint-staged.sh scripts/lint-staged.sh` (hook gate 4 runs it via the `lint:staged` script)
     - `cp <skill-path>/assets/check-commit-messages.sh scripts/check-commit-messages.sh` (CI re-runs the message check over the pushed range, so `--no-verify` cannot slip one past)
+    - `cp <skill-path>/assets/check-commit-range.sh scripts/check-commit-range.sh` (the same for commit SIZE: the hook sees one staged diff, CI walks every commit in the range)
     - `chmod +x scripts/lint-staged.sh scripts/check-commit-messages.sh`
     - `mkdir -p .github/workflows && cp <skill-path>/assets/ci.yml .github/workflows/ci.yml` (the authoritative gate set: strict lint, tests, coverage, mutation, secret scan on a frozen lockfile)
     - `cp <skill-path>/assets/audit.yml .github/workflows/audit.yml` (the CVE watchdog: daily schedule plus dependency-scoped PR runs; deliberately not a gate on unrelated commits)
+    - `cp <skill-path>/assets/check-skill-pin.sh scripts/check-skill-pin.sh` (only if this repo vendors or pins the skill: the audit workflow uses it to fail when the vendored standard falls behind upstream)
     - `cp <skill-path>/assets/pre-commit .githooks/pre-commit`
     - `cp <skill-path>/assets/commit-msg .githooks/commit-msg` (Conventional Commits validator, hard rule 23 — dependency-free, no `package.json` change)
     - `chmod +x .githooks/pre-commit .githooks/commit-msg`

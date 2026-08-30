@@ -77,7 +77,7 @@ git config user.email "atelier-smoke@users.noreply.github.com"
 # --- shipped assets, per references/java-quarkus.md (Gates and hooks) ---
 cp "$SKILL/assets/pre-commit-java" .githooks/pre-commit
 cp "$SKILL/assets/commit-msg" .githooks/commit-msg
-cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/assets/check-commit-messages.sh" scripts/
+cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/assets/check-commit-messages.sh" "$SKILL/assets/check-commit-range.sh" scripts/
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh
 git config core.hooksPath .githooks
 
@@ -304,6 +304,21 @@ git commit -q --no-verify --allow-empty -m "wip stuff"
 expect_err "check-commit-messages.sh catches a --no-verify bypass" \
   bash scripts/check-commit-messages.sh
 git reset -q --soft HEAD~1
+
+# 4c. check-commit-range.sh: the CI half of the commit-size gate (canon 8.1).
+expect_ok "check-commit-range.sh passes on small commits" \
+  bash scripts/check-commit-range.sh HEAD~1 HEAD
+python3 - <<'PYEOF2'
+import pathlib
+for i in range(12):
+    pathlib.Path(f'oversized{i}.txt').write_text('x\n' * 40)
+PYEOF2
+git add oversized*.txt
+git commit -q --no-verify -m 'chore: oversized commit that bypassed the hook'
+expect_err "check-commit-range.sh catches an oversized commit in the range" \
+  bash scripts/check-commit-range.sh HEAD~1 HEAD
+git reset -q --mixed HEAD~1   # keeps every other untracked file the later scenarios need
+rm -f oversized*.txt
 
 # 5. spotless:check fails on a misformatted file.
 printf 'package com.example.app.domain;\n\npublic class Ugly{public static int x(){return 1;}}\n' \

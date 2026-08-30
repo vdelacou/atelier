@@ -25,6 +25,8 @@ jobs:
           fetch-depth: 0 # full history for gitleaks detect and mutate:changed
       - name: commit messages (Conventional Commits, rule 23 / canon 1.3)
         run: bash scripts/check-commit-messages.sh
+      - name: commit size per commit in the range (gate 1 / canon 8.1)
+        run: bash scripts/check-commit-range.sh
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile # lockfile drift fails here (rule 5.3)
       - name: package.json (no latest / * / bare dist-tag)

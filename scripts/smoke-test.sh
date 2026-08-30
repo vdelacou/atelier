@@ -66,7 +66,7 @@ cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-package-json.sh" \
    "$SKILL/assets/lint-staged.sh" "$SKILL/assets/check-docs.sh" scripts/
 cp "$SKILL/assets/fetch-mock.ts" "$SKILL/assets/capture-rejection.ts" src/test-helpers/
 cp "$SKILL/assets/format-error.ts" "$SKILL/assets/format-error.test.ts" src/domain/utilities/
-cp "$SKILL/assets/check-commit-messages.sh" scripts/
+cp "$SKILL/assets/check-commit-messages.sh" "$SKILL/assets/check-commit-range.sh" scripts/
 cp "$SKILL/assets/pre-commit" "$SKILL/assets/commit-msg" .githooks/
 mkdir -p .github/workflows
 cp "$SKILL/assets/ci.yml" .github/workflows/ci.yml
@@ -378,6 +378,23 @@ git commit -q --no-verify --allow-empty -m 'wip: bypassed the hook'
 expect_err "check-commit-messages.sh catches a --no-verify bypass" \
   bash scripts/check-commit-messages.sh
 git reset -q --soft HEAD~1
+
+# The commit-SIZE CI gate (pre-commit gate 1, canon 8.1). Same split as the
+# message gate: the hook sees one staged diff, CI walks every commit in the
+# range, so a bypassed oversized commit is still caught. Proven both ways.
+expect_ok "check-commit-range.sh passes on small commits" \
+  bash scripts/check-commit-range.sh HEAD~1 HEAD
+python3 - <<'PYEOF2'
+import pathlib
+for i in range(12):
+    pathlib.Path(f'oversized{i}.txt').write_text('x\n' * 40)
+PYEOF2
+git add oversized*.txt
+git commit -q --no-verify -m 'chore: oversized commit that bypassed the hook'
+expect_err "check-commit-range.sh catches an oversized commit in the range" \
+  bash scripts/check-commit-range.sh HEAD~1 HEAD
+git reset -q --mixed HEAD~1   # keeps every other untracked file the later scenarios need
+rm -f oversized*.txt
 cat > src/domain/eligibility.ts <<'EOF'
 export const isEligible = (age: number): boolean => age >= 18;
 EOF
