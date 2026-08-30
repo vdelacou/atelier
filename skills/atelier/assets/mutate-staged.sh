@@ -3,7 +3,9 @@
 # Run Stryker mutation testing on STAGED files in the mutation scope
 # (src/domain/** and src/use-cases/**, excluding tests and ports).
 #
-# Used by the pre-commit hook (gate 8). Skips with exit 0 when no relevant
+# An optional local pre-check (`bun run mutate:staged`); the enforcing home is
+# CI (`mutate:changed` on pull requests, full `mutate` on main). Never wired
+# into the hook. Skips with exit 0 when no relevant
 # files are staged, so commits that touch only docs, tests, or scripts are
 # unaffected.
 #
