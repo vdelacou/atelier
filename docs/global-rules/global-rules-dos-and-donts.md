@@ -164,7 +164,7 @@ Update UserService.java and also fixed the thing from yesterday
 feat(expenses): add receipt OCR intake
 fix(auth): refuse expired refresh tokens
 refactor(orders): extract keyset pagination helper
-# type(scope): imperative subject, 100 chars max (config-conventional's header-max-length default);
+# type(scope): imperative summary, 100 chars max (config-conventional's header-max-length default);
 # the body explains why, the diff already shows what
 ```
 
@@ -341,7 +341,7 @@ users(id, email, name,
       company_size,     # "sales asked, maybe"              <- unowned guess
       referral_source)  # collected, never queried
 
-# DO: the fields a current requirement names, and nothing else; the empty column is the cheap one to add later (2.2)
+# DO: the fields a current requirement names, and nothing else (2.2); the empty column is the cheap one to add later
 users(id, email, name)
 #   the test for each field: name the feature that reads it now. no reader, no field.
 #   a nullable column added when the need is real is a one-line migration; unwinding a speculative one is not.
@@ -856,7 +856,7 @@ Stack-agnostic (provenance is not proof; the change proves itself through the ga
 #   git commit --no-verify; reviewer rubber-stamps "AI-generated, looks fine"
 # DO: generated code is a draft until the suite and a human say otherwise
 #   lint + tests + typecheck run on it like any other change;
-#   the reviewer reads the diff, not the attribution
+#   the reviewer reads the diff, not the attribution (13.5)
 ```
 
 ### 4.8 Gate non-determinism behind evals
@@ -1200,7 +1200,7 @@ TypeScript (the origin rejecting anything that did not come through the edge, de
 app.get('/v1/invoices', (c) => c.json(listInvoices()));
 // DO: verify the edge secret at the origin too, so a network misconfiguration is not a full exposure
 app.use('*', (c, next) => {
-  if (c.req.header('x-edge-secret') !== env.EDGE_SECRET) return c.text('not found', 404); // 7.1: unreachable looks absent
+  if (c.req.header('x-edge-secret') !== env.EDGE_SECRET) return c.text('not found', 404); // 7.5: unreachable looks absent
   return next();
 });
 // the header is belt-and-braces behind the security group (5.6): the network blocks first, the app refuses second
@@ -1652,7 +1652,7 @@ git checkout -b feature/big-rewrite
 git merge main            # days of conflict resolution, nobody can review this
 # DO: short-lived branch, one focused change, rebased and merged the same day
 git checkout -b add-receipt-total-field
-git commit -m "Add total_cents column to receipts (expand step)"
+git commit -m "feat(receipts): add total_cents column (expand step)"
 git rebase main           # stay current with trunk continuously
 git push --set-upstream origin add-receipt-total-field
 # open a small PR, review in minutes, merge, delete the branch same day
@@ -2922,7 +2922,7 @@ Stack-agnostic (this is a coverage tool configuration, not app code):
 # bunfig.toml (TS) / jacoco config (Java) -- the failure mode is the whole point
 # DON'T: coverage measured only over files that happen to be imported by a test.
 #   a brand-new untested module is simply not counted, so the percentage stays green
-#   and the gap is silent. a gate that cannot fail is worse than no gate: it lies.
+#   and the gap is silent. a gate that cannot fail is worse than no gate: it lies (15.10).
 # DO: force full discovery so an untested file is present in the denominator at 0 percent.
 [test.coverage]
 coverageThreshold = { line = 0.80, function = 0.80 }

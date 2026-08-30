@@ -52,7 +52,7 @@ resolution; a caret backed by a committed lockfile is not one of them.
 
 **Skill evidence (unchanged, correct).** `assets/check-package-json.sh:31` bans exactly
 `*`, `latest`, and bare dist-tags while permitting `^X.Y.Z` / `~X.Y.Z` / `>=X.Y.Z`;
-`references/workflow.md:427-437` requires a committed lockfile and `bun update` in the same
+`references/workflow.md:432-444` requires a committed lockfile and `bun update` in the same
 commit; `references/security.md:66` requires `bun install --frozen-lockfile` in CI. This is
 the more precise expression of the rule's real goal, so the skill is not amended.
 
@@ -351,3 +351,34 @@ change: the two Do/Don't lines strengthened, the pillar-10 bullet gains the plac
 forward matrix 10.2 evidence now cites rules 16 and 17 (SKILL.md:168-169), reverse matrix row
 17 flipped with the tally, both pins re-pinned. No skill change needed: rule 17 already says
 where the catch lives, which is what made this a canon defect rather than a skill one.
+
+---
+
+## Cross-reference repairs, 1.3 cascade completion (proposed 2026-08-30, status: ACCEPTED 2026-08-30)
+
+Six mechanical defects found by the 2026-08-30 full-repo audit's canon internal-consistency
+pass. No rule substance changes; every edit aligns an example, a tag, or a word with a row
+that already governs it. Batched as one row because each alone is below the P6 grain.
+
+1. **8.1 exemplar violates 1.3** (dos-and-donts.md:1655). The trunk-based DO block commits
+   `"Add total_cents column to receipts (expand step)"`, which the commitlint gate 1.3
+   mandates would reject. Left behind by the 1.3 addition. Fix: `"feat(receipts): add
+   total_cents column (expand step)"`.
+2. **Misattributed tag** (:1203). `// 7.1: unreachable looks absent` credits 7.1, which says
+   nothing about 404-as-absence; that convention is 7.5's. Fix: `7.5:`.
+3. **15.2 aside now duplicates 15.10** (:2925). "a gate that cannot fail is worse than no
+   gate: it lies" is 15.10's thesis; the canon annotates such pairs elsewhere (4.4/15.2).
+   Fix: append `(15.10)`.
+4. **4.7 aside half-duplicates 13.5** (:859). "the reviewer reads the diff, not the
+   attribution" is 13.5's Don't in miniature. Fix: append `(13.5)`.
+5. **Misplaced 2.2 tag** (:344). The tag annotates "the empty column is the cheap one to add
+   later", a claim 2.2 does not make; it belongs on the delete-bias clause "and nothing
+   else". Fix: move the tag.
+6. **1.3 wording drift** (:167). The Do and the pillar prose say "imperative summary"; the
+   example comment says "imperative subject". Fix: "summary".
+
+Cascade if accepted: the six line edits, no count change, no index change, both hash pins
+re-pin, citations-lock re-locked. No skill change: nothing here alters what any rule asks.
+
+**Ruling.** ACCEPTED as drafted by the canon owner, 2026-08-30, same day; all six edits applied
+and the dos-and-donts pin re-pinned in the same change.

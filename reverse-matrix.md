@@ -6,7 +6,7 @@ the canon carries the rule's substance. Audited against the 117-row canon; 13.5'
 
 - **CANON-ROW**: a canon sub-concept carries the substance at comparable strength.
 - **STRICTER-THAN**: the canon carries the concern; atelier exceeds or quantifies it.
-- **NO-COUNTERPART**: nothing in the 117 sub-concepts carries it. The category column says
+- **NO-COUNTERPART**: nothing in the canon carries it. The category column says
   why, and the two categories mean opposite things: a *stack binding* is the deliberate
   division of labor (the canon fixes THAT a choice is made and machine-enforced, the profile
   fixes WHICH; nearest canon row named for the umbrella), while *agent discipline* is a

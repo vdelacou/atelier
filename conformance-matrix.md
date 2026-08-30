@@ -26,7 +26,7 @@ C1 of the Atelier vs Global Rules conformance plan.
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 5189a5e2addce92bfef7db64bc55753dd51395e054e1b40f120be3cb84cb9678 | 3483 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | d7ab4ba9fd1998c5c80a284f3bc8e3f89d0d75488be47e1317637f9e4aa2eb57 | 3483 |
 | Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | c55e40d40fdbbe23e7ef0a6fdec74b3122b550261f804c502f039c276be55bb0 | 285 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
 
@@ -76,15 +76,15 @@ the hook (its own list: "format, staged lint, secret scan") and every gate in CI
 violation blocks the merge while the hook stays quick enough that nobody routes around it";
 its example spells out that "the full suite, coverage, and slow scans run in CI only" because
 "a gate's home is chosen by its speed, not its importance, and a multi-minute hook trains
---no-verify (15.3)" (global-rules-dos-and-donts.md:2827, 2842-2843). The skill's hook does the
+--no-verify (15.3)" (global-rules-dos-and-donts.md:2882, 2897-2898). The skill's hook does the
 opposite. `assets/pre-commit` runs eight gates in sequence, and gates 4 through 8 are the full
-test suite, the type-aware strict lint (workflow.md:367 self-times it at about 25 seconds),
-per-tier coverage, and Stryker mutation, which workflow.md:370 self-reports at "1-3 min per
+test suite, the type-aware strict lint (workflow.md:367@430c740 self-times it at about 25 seconds),
+per-tier coverage, and Stryker mutation, which workflow.md:370@430c740 self-reports at "1-3 min per
 staged file". The skill knows this creates bypass pressure and answers it with prose ("Bypass
 with git commit --no-verify is reserved for genuine big-bang changes ... Do not normalise
-bypassing", assets/pre-commit:21-23), which is exactly the mitigation 15.1 rejects in favor of
+bypassing", assets/pre-commit:21-23@430c740), which is exactly the mitigation 15.1 rejects in favor of
 a fast hook. Verdict CONTRADICTS, on the hook-stays-quick clause. Two qualifiers. The
-secret-scan clause is satisfied: gate 3 is `gitleaks protect --staged` (assets/pre-commit:40),
+secret-scan clause is satisfied: gate 3 is `gitleaks protect --staged` (assets/pre-commit:40@430c740),
 matching the canon's fast-gate list. And 15.3 as its own sub-concept (no line-by-line
 suppressions) is not dragged into the contradiction, because the skill covers it separately
 with a no-inline-ignore discipline; only 15.1 carries the CONTRADICTS. Resolved in Phase 2 by amending
@@ -97,7 +97,7 @@ full suite, coverage, and mutation as the required merge check. This row is now 
 **2. The logger redacts personal data (6.3, COVERED, tripwire).** Present and precise. Canon
 6.3's Do has three clauses: personal data and free text travel in a POST body, redaction
 happens at the logger before anything is written, and opaque internal ids may be logged while
-natural identifiers never are (global-rules-dos-and-donts.md:1242 and the Do sentence). The
+natural identifiers never are (global-rules-dos-and-donts.md:1271 and the Do sentence). The
 skill meets all three. POST-body-not-query-string: "Personal data and any free text the user
 typed travel in a POST body ... Searching by someone's name is a POST, not a GET"
 (privacy.md:44). Redact-at-the-logger: a Winston `redactFormat` whose key set is
@@ -112,7 +112,7 @@ field, so the Enforcement tier is tripwire rather than doctrine.
 **3. Coverage and mutation tiers match the canon numbers (4.4 and 15.2, COVERED, gate).**
 Canon 4.4 asks core code at "100 percent line coverage and a mutation score of at least 90,
 glue at an explicit looser floor (80 percent line)" using Stryker for TS
-(global-rules-dos-and-donts.md:715 Do). The skill's `assets/check-coverage.ts` sets
+(global-rules-dos-and-donts.md:745 Do). The skill's `assets/check-coverage.ts` sets
 `domain` and `use-cases` to threshold 100 and `infra`, `composition`, `presenter` to 80
 (check-coverage.ts:34-38), and `assets/stryker.conf.json` sets the mutation break at 90. The
 numbers line up exactly. On mechanics the skill is if anything tighter than the canon's
@@ -128,13 +128,13 @@ one flipped on a close read. Canon 5.3's Do is "Pin every dependency to a fixed 
 continuously for known vulnerabilities, and let automated updates keep you current", and its
 TypeScript example is unambiguous: the Don't is `{ "dependencies": { "hono": "^4.0.0", "zod":
 "*" } }` with the comment "caret ranges resolve to unknown code on every install", and the Do
-is `{ "hono": "4.6.14", "zod": "3.24.1" }`, exact pins (global-rules-dos-and-donts.md:933-938).
+is `{ "hono": "4.6.14", "zod": "3.24.1" }`, exact pins (global-rules-dos-and-donts.md:933-938@edb98a7).
 The skill permits and generates exactly the forbidden shape. `assets/check-package-json.sh`
 bans only `latest`, `*`, and bare dist-tags, and its own comment lists what it "Permits: 'x':
 '^1.2.3' / '~1.2.3' / '>=1.0.0'" (check-package-json.sh:30), while `bun add` "pins to ^X.Y.Z
-automatically" (check-package-json.sh:47) and workflow.md:427 requires "a concrete version
+automatically" (check-package-json.sh:47) and workflow.md:432 requires "a concrete version
 (X.Y.Z) or a real range (^X.Y.Z ...)". The scan clause is covered as doctrine (`bun audit` in
-CI daily and on dependency PRs, security.md:67, workflow.md:701) and the automated-update
+CI daily and on dependency PRs, security.md:67, workflow.md:724) and the automated-update
 clause is covered thinly (Renovate is named, but only in the Java reference, java-quarkus.md:19;
 the Bun side leans on a manual `bun update` cadence and ships no Renovate or dependabot config).
 But the pin clause is contradicted, and CONTRADICTS dominates. The skill's rationale (a
@@ -153,7 +153,7 @@ file path, and authorize on the server. The skill's `security.md` is built on ex
 source-to-sink model where "a source must cross a checkpoint before reaching a sink"
 (security.md:13) and the checkpoint is "a branded type with a validating factory that sits
 between source and sink" (security.md:11), with server-side authorization carried in
-`isolation.md` and reinforced at security.md:53. Canon 5.8's Do is treat everything an AI model
+`isolation.md` and reinforced at security.md:33-37. Canon 5.8's Do is treat everything an AI model
 reads as untrusted and authorize every action it requests server-side. The skill's `ai.md`
 matches clause for clause: content is "fenced as data" so "when the email says 'delete
 everything', the correct output is that the email says so" (ai.md:59), and "Every tool call or
@@ -178,7 +178,7 @@ one clear primary action per view, and let each screen carry only the controls t
 needs", and none of those three clauses appears anywhere in the skill: greps across the whole
 tree for mobile-first, smallest-screen, one-primary-action, and progressive-disclosure return
 nothing on point, and the only responsive material is Tailwind `md:*`/`lg:*` shift tooling
-(atomic-design.md:206), which is direction-agnostic and not a mobile-first default. 17.7 is a
+(atomic-design.md:206@430c740), which was direction-agnostic and not a mobile-first default. 17.7 is a
 GAP. Resolved in Phase 2: product.md now carries the mobile-first, one-primary-action, and
 progressive-disclosure doctrine plus a bundle-budget gate prescription, and atomic-design.md
 states that breakpoints scale up from the smallest screen; this row is now COVERED.
@@ -191,7 +191,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 1.1 | One committed config for style | COVERED | workflow.md:66; assets/pre-commit gate 5 | gate | One flat eslint.config.js embeds prettier; lint:strict is gate 5 |
-| 1.2 | Cap complexity and duplication | COVERED | SKILL.md:271; SKILL.md:324 | rule | Size caps and Rule-of-Three are generation-time rules; sonarjs complexity rule deliberately off |
+| 1.2 | Cap complexity and duplication | COVERED | SKILL.md:273; SKILL.md:326 | rule | Size caps and Rule-of-Three are generation-time rules; sonarjs complexity rule deliberately off |
 | 1.3 | One grammar for the history | COVERED | SKILL.md:193; assets/commit-msg; assets/check-commit-messages.sh | gate | Conventional Commits grammar enforced by the commit-msg hook and re-checked in CI over the pushed range, so a --no-verify bypass is still caught (gate added 2026-08-30 with the canon row). The 72-vs-100 divergence closed the same day: P6 1.3 ACCEPTED 2026-08-30, canon now states 100, the documented default of @commitlint/config-conventional, which the row's own gate snippet prescribes |
 
 ### Pillar 2: Simplicity by default
@@ -200,7 +200,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 2.1 | Do the least that works | COVERED | complexity.md:123; SKILL.md:71 | rule | Lazy ladder orders stdlib and platform before a dependency |
 | 2.2 | Delete before you add | COVERED | SKILL.md:77; complexity.md:129 | rule | Delete-before-add stated as an explicit reflex |
-| 2.3 | Earn abstractions with the Rule of Three | COVERED | SKILL.md:324; complexity.md:158 | rule | Duplication 1 leave, 2 note, 3 extract |
+| 2.3 | Earn abstractions with the Rule of Three | COVERED | SKILL.md:326; complexity.md:158 | rule | Duplication 1 leave, 2 note, 3 extract |
 | 2.4 | Defer the build, not the seam | COVERED | complexity.md:135 | rule | Port and smallest adapter today; heavy implementation waits |
 | 2.5 | Simplicity is not negligence | COVERED | complexity.md:144-146; SKILL.md:79 | rule | Validation, Result errors, security never trimmed |
 | 2.6 | Every field must earn its place | COVERED | privacy.md:7; clean-code.md:109 | rule | Name the feature that reads a field now, else omit (YAGNI plus minimize) |
@@ -209,7 +209,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 3.1 | Point dependencies inward | COVERED | architecture.md:96; SKILL.md:333 | rule | Domain has zero infra dependencies; imports point inward |
+| 3.1 | Point dependencies inward | COVERED | architecture.md:96; SKILL.md:335 | rule | Domain has zero infra dependencies; imports point inward |
 | 3.2 | Put every external thing behind a port | COVERED | architecture.md:257-258; SKILL.md:165 | gate | Port plus real adapter plus in-memory fake at composition root; mock ban lint-enforced |
 | 3.3 | Seal the presentation behind a design system | COVERED | SKILL.md:189; atomic-design.md:236 | gate | Props-in JSX-out, tokens only, no fetching; design-system eslint block |
 | 3.4 | The backend is a client-agnostic API | COVERED | architecture.md:321 | doctrine | Resource-shaped API every client consumes the same way |
@@ -224,12 +224,12 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 4.1 | Test in layers | COVERED | testing.md:48-121 | doctrine | Unit, integration, e2e, performance layers each named |
-| 4.2 | Keep unit tests in milliseconds | COVERED | tdd.md:170; testing.md:81 | doctrine | In-memory fakes, no real IO in unit tests; literal ms target not stated |
+| 4.2 | Keep unit tests in milliseconds | COVERED | tdd.md:185; testing.md:81 | doctrine | In-memory fakes, no real IO in unit tests; literal ms target not stated |
 | 4.3 | Have a testing philosophy | COVERED | testing.md:125-127; SKILL.md:195 | rule | Every fixed bug becomes a permanent reproducing test |
-| 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:19 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3) |
+| 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:165; testing.md:231 | gate | Mock ban is absolute and lint-enforced, exceeding canon advisory prefer-fakes |
-| 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:76 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on a frozen lockfile as the required merge check |
-| 4.7 | Hold generated code to the same bar | COVERED | workflow.md:614 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
+| 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:96 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on a frozen lockfile as the required merge check |
+| 4.7 | Hold generated code to the same bar | COVERED | workflow.md:637 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-48; SKILL.md:213 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
 
 ### Pillar 5: Secure by default
@@ -240,7 +240,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 5.2 | Do not build authentication or crypto yourself | COVERED | security.md:35-46 | rule | OIDC plus vetted crypto, SSO and MFA on consoles (rule 33) |
 | 5.3 | Control your dependencies | COVERED | assets/check-package-json.sh:30; docs/global-rules/proposed-revisions.md | gate | P6 revision ACCEPTED 2026-07-20: canon 5.3 now allows a constrained range plus a committed lockfile, which check-package-json.sh enforces (Watchlist 4) |
 | 5.4 | Secure the supply chain | COVERED | delivery.md:71-73 | doctrine | Immutable digest-addressed artifacts, SBOM, cosign signatures |
-| 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:356 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
+| 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:358 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
 | 5.6 | Expose only what has to be public | COVERED | security.md:218 | doctrine | Datastores, queues, admin panels on a private network only |
 | 5.7 | One security baseline everywhere | COVERED | security.md:213-217 | rule | Auth, TLS, rate limits, allow/deny default on every route (rule 33) |
 | 5.8 | Untrusted content is not instructions | COVERED | ai.md:60; SKILL.md:213 | rule | Model input untrusted, every action authorized server-side (rule 32) (Watchlist 5) |
@@ -278,7 +278,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 8.1 | Trunk-based development with small commits | COVERED | workflow.md:317-324; assets/check-commit-size.sh:19 | gate | Trunk, sub-day branches, small commits; size gate 1 plus commit-msg |
 | 8.2 | Automated pipeline, progressive delivery, one-step rollback | COVERED | delivery.md:7-12 | doctrine | Pipeline-only deploy, canary, one-re-run rollback |
 | 8.3 | Infrastructure as code | COVERED | delivery.md:22 | doctrine | Every resource in version-controlled IaC, rebuilt with one command |
-| 8.4 | Vertical slices | COVERED | architecture.md:37-46; workflow.md:326 | doctrine | Feature-cohesive slices, deploy independently or dark behind a flag; archetype src/ is layer-first |
+| 8.4 | Vertical slices | COVERED | architecture.md:37-46; workflow.md:324 | doctrine | Feature-cohesive slices, deploy independently or dark behind a flag; archetype src/ is layer-first |
 | 8.5 | Change contracts additively / expand-contract | COVERED | reliability.md:112-114; assets/check-data-lifecycle.sh:25 | tripwire | Expand-migrate-contract; check-data-lifecycle.sh blocks DROP and RENAME COLUMN |
 | 8.6 | Separate and ephemeral environments | COVERED | delivery.md:30 | doctrine | Throwaway per-branch environments keyed to the PR, destroyed on close |
 
@@ -306,7 +306,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 10.8 | Meet performance targets under load | COVERED | reliability.md:126 | doctrine | p95/p99 route budgets, k6 load-test gate fails the build |
 | 10.9 | Treat data as sacred | COVERED | reliability.md:96-108; assets/check-data-lifecycle.sh | tripwire | Soft-delete default, versioned migrations; deliberate storage choice via the ADR discipline |
 | 10.10 | Learn from every failure | COVERED | delivery.md:91-98 | doctrine | Blameless postmortem ending in owned, dated backlog tickets |
-| 10.11 | Parse, don't validate | COVERED | reliability.md:130-133; SKILL.md:283 | rule | Parse at the boundary into branded types; money cents, instants UTC (rule 12) |
+| 10.11 | Parse, don't validate | COVERED | reliability.md:130-133; SKILL.md:285 | rule | Parse at the boundary into branded types; money cents, instants UTC (rule 12) |
 | 10.12 | No lost updates | COVERED | reliability.md:82; SKILL.md:211 | rule | Version on read, required on write, stale write is a 409 (rule 31) |
 | 10.13 | Every network call has a deadline | COVERED | reliability.md:9-11; assets/check-io-deadlines.sh | tripwire | Deadline on every outbound call, bounded jittered retries; check-io-deadlines.sh (rule 29) |
 | 10.14 | Separate the analytical store from the operational one | COVERED | reliability.md | doctrine | Resolved Phase 2: OLTP/OLAP separation doctrine, ETL/CDC copy, the pipeline as the one sanctioned bulk reader (ties 7.7) |
@@ -324,21 +324,21 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 12.1 | Document the essentials and treat doc drift as a defect | COVERED | governance.md; scripts/smoke-test.sh | doctrine | Resolved Phase 2: docs-check CI doctrine (extract README commands and run them); smoke-test.sh is the exemplar |
-| 12.2 | Generate API docs from the contract | COVERED | governance.md:32 | doctrine | API docs derived from the validating schema, example per endpoint, published |
-| 12.3 | Record decisions where they cannot drift | COVERED | governance.md:9-25 | doctrine | ADR committed with the code, options rejected and reversal recorded |
+| 12.2 | Generate API docs from the contract | COVERED | governance.md:51 | doctrine | API docs derived from the validating schema, example per endpoint, published |
+| 12.3 | Record decisions where they cannot drift | COVERED | governance.md:28-44 | doctrine | ADR committed with the code, options rejected and reversal recorded |
 | 12.4 | Build institutional memory | COVERED | workflow.md:5-7; lessons.md:177 | doctrine | Durable PLAN.md plus append-only LESSONS.md outlive the people |
-| 12.5 | Give real-time access and commit to measurable thresholds | COVERED | governance.md:51; observability.md:18 | doctrine | Stakeholder live access; targets as metric, number, window |
-| 12.6 | Run one visible, honest backlog | COVERED | governance.md:55-56 | doctrine | One visible tracker as source of truth, bugs first-class, no shadow list |
+| 12.5 | Give real-time access and commit to measurable thresholds | COVERED | governance.md:70; observability.md:18 | doctrine | Stakeholder live access; targets as metric, number, window |
+| 12.6 | Run one visible, honest backlog | COVERED | governance.md:74-75 | doctrine | One visible tracker as source of truth, bugs first-class, no shadow list |
 | 12.7 | One working language | COVERED | governance.md:5 | doctrine | One working language for docs, comments, commit messages, identifiers, chosen once and kept everywhere. P6 ACCEPTED 2026-07-20 (Option A, new sub-concept; count 115 to 116) |
 
 ### Pillar 13: Clear ownership
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 13.1 | Make ownership explicit | COVERED | governance.md:65-71 | doctrine | CODEOWNERS maps every path; RACI note, one Accountable |
-| 13.2 | Separate duties | COVERED | governance.md:75-77 | doctrine | Requester never sole approver; no self-merge |
-| 13.3 | Keep an audit trail | COVERED | governance.md:85-92 | doctrine | Approvals and emergency access leave a durable audit-log insert |
-| 13.4 | Make finding problems safe and let the accountable verify | COVERED | governance.md:98-99 | doctrine | Reward detection; the accountable owner verifies via a re-runnable check |
+| 13.1 | Make ownership explicit | COVERED | governance.md:84-90 | doctrine | CODEOWNERS maps every path; RACI note, one Accountable |
+| 13.2 | Separate duties | COVERED | governance.md:94-96 | doctrine | Requester never sole approver; no self-merge |
+| 13.3 | Keep an audit trail | COVERED | governance.md:104-111 | doctrine | Approvals and emergency access leave a durable audit-log insert |
+| 13.4 | Make finding problems safe and let the accountable verify | COVERED | governance.md:117-118 | doctrine | Reward detection; the accountable owner verifies via a re-runnable check |
 | 13.5 | The agent proposes, the human disposes | COVERED | SKILL.md:195; SKILL.md:197; SKILL.md:199 | rule | Atelier hard rules 24-26 verbatim: confirmation-gated tests, no unconfirmed landings, identity in metadata only. P6 ACCEPTED 2026-08-30 (origin: the reverse-matrix audit; the skill had the rules before the canon had the row) |
 
 ### Pillar 14: Pave the road
@@ -347,21 +347,21 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 14.1 | Provide golden paths as real artifacts | COVERED | atelier-greenfield/SKILL.md:8; skills/atelier/assets | rule | Greenfield scaffold starts green; assets ship real hooks, scripts, configs not docs |
 | 14.2 | Make it self-service | COVERED | delivery.md:105 | doctrine | Provision env or pipeline via a declarative request the team owns, not a ticket |
-| 14.3 | Treat the platform as a product | COVERED | delivery.md:105; governance.md:103 | doctrine | Platform is a product: owned, versioned, documented, with a feedback loop |
+| 14.3 | Treat the platform as a product | COVERED | delivery.md:105; governance.md:122 | doctrine | Platform is a product: owned, versioned, documented, with a feedback loop |
 
 ### Pillar 15: Enforce and verify
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 15.1 | Make the standard executable | COVERED | assets/pre-commit; assets/ci.yml | gate | Resolved Phase 2: hook restructured to 5 fast gates, full suite/coverage/mutation/strict-lint relocated to CI as the required merge gate (Watchlist 1) |
-| 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:172; assets/check-coverage.ts:137 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
+| 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:170; assets/check-coverage.ts:137 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
 | 15.3 | No silent opt-out | COVERED | workflow.md:73-82; SKILL.md:167 | gate | Project-level severity change with a reason; inline suppressions banned |
 | 15.4 | Test the bypass, not the happy path | COVERED | testing.md:522-531 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
-| 15.5 | Compliance is not proof | COVERED | workflow.md:613; governance.md:99 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
-| 15.6 | Audit the gaps between systems | COVERED | workflow.md:605; testing.md:536 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
-| 15.7 | Fix the class, not the instance | COVERED | workflow.md:606-610 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
-| 15.8 | Make proof re-checkable | COVERED | governance.md:51-99; workflow.md:613 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
-| 15.9 | Spend human judgment where it counts | COVERED | workflow.md:662; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
+| 15.5 | Compliance is not proof | COVERED | workflow.md:636; governance.md:118 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
+| 15.6 | Audit the gaps between systems | COVERED | workflow.md:628; testing.md:536 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
+| 15.7 | Fix the class, not the instance | COVERED | workflow.md:629-633 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
+| 15.8 | Make proof re-checkable | COVERED | governance.md:70-118; workflow.md:636 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
+| 15.9 | Spend human judgment where it counts | COVERED | workflow.md:685; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
 | 15.10 | Prove the gate can fail | COVERED | SKILL.md:433; scripts/smoke-test.sh | gate | Doctrine after the variant gate table, every gate lands with a violation fixture it must reject; the repo smoke tests are the reference implementation |
 
 ### Pillar 16: Measure whether you are improving
@@ -390,10 +390,10 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 18.1 | Talk to real users before you write code | COVERED | product.md:76; atelier-grill-me/SKILL.md:18 | doctrine | Short problem interviews before committing an engineer; grill-me operationalizes |
-| 18.2 | Test demand with the cheapest thing | COVERED | product.md:77 | doctrine | Landing page, mockup, or concierge MVP as the cheapest demand test |
-| 18.3 | Set a dated, honest go/no-go | COVERED | product.md:78-84 | doctrine | Dated go/no-go with criteria written before the evidence |
-| 18.4 | Keep validating after launch | COVERED | product.md:87; observability.md:75 | doctrine | Ship behind a flag, instrument adoption, keep or kill on a threshold |
+| 18.1 | Talk to real users before you write code | COVERED | product.md:92; atelier-grill-me/SKILL.md:18 | doctrine | Short problem interviews before committing an engineer; grill-me operationalizes |
+| 18.2 | Test demand with the cheapest thing | COVERED | product.md:93 | doctrine | Landing page, mockup, or concierge MVP as the cheapest demand test |
+| 18.3 | Set a dated, honest go/no-go | COVERED | product.md:94-100 | doctrine | Dated go/no-go with criteria written before the evidence |
+| 18.4 | Keep validating after launch | COVERED | product.md:103; observability.md:75 | doctrine | Ship behind a flag, instrument adoption, keep or kill on a threshold |
 
 ## Work list (Phase 2 input)
 
