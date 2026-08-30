@@ -89,3 +89,13 @@ jobs:
       # first proves the gate can fail on a retitled row or a corrupted pin.
       - run: python3 scripts/check-matrix-drift.py --selftest
       - run: python3 scripts/check-matrix-drift.py
+      # file:line evidence citations rot when cited files grow (38 rotted in one
+      # day, 2026-08-30); the lock pins each cited line's content. Re-anchor and
+      # run --lock when a cited file legitimately changes.
+      - run: python3 scripts/check-citations.py --selftest
+      - run: python3 scripts/check-citations.py
+      # the shipped CI workflows must be self-sufficient in a consumer repo:
+      # referenced scripts ship in assets/ and are copied by the variant's
+      # bootstrap reference; non-preinstalled binaries get an install step.
+      - run: bash scripts/check-workflow-assets.sh --selftest
+      - run: bash scripts/check-workflow-assets.sh

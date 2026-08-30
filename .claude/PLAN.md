@@ -1,21 +1,35 @@
-# Plan: P6 rows 15.10 and 10.2 (canon improvement from the reverse audit)
+# Plan: audit fix campaign (2026-08-30)
 
-Two proposals distilled from the stricter-than deltas and the repo's own gate discipline.
-Loop: draft rows -> owner ruling -> apply cascade per accepted row -> re-pin -> gates -> land.
+Order matters: gates land first and must fail RED on the current defects (test-first);
+content fixes turn them green; citation re-anchor runs LAST because every earlier slice
+shifts line numbers.
 
-1. [x] Draft P6 rows in docs/global-rules/proposed-revisions.md, status PROPOSED.
-   - 15.10 Prove the gate can fail (new sub-concept; source: repo smoke-test discipline).
-   - 10.2 catch-at-the-boundary strengthening (source: hard rule 17 delta).
-   - DoD: rows match file idiom, cite canon line refs, name full cascade incl. the
-     skill amendment 15.10 forces (doctrine today binds only the skill repo, not consumers).
-2. [x] Owner ruling via AskUserQuestion, one round, per row.
-3. [x] Apply cascade for each ACCEPTED row:
-   - 15.10: canon section after 15.9 + index :76 + pillar-15 bullet in every-new-project.md;
-     count 118->119; drift checker TOTAL + PER_PILLAR pillar 15 9->10; forward matrix row
-     15.10; skill doctrine sentence (SKILL.md gates section and/or references/governance.md)
-     so the row is COVERED honestly; reverse-matrix "Outside the 34" note; re-pin both hashes.
-   - 10.2: Do/Don't at dos-and-donts :1983-1984; pillar-10 bullet every-new-project.md:163;
-     forward matrix 10.2 evidence adds rule 17; reverse matrix row 17 STRICTER->CANON-ROW,
-     tally 20/5/9; no count change; re-pin.
-   - DoD: check-matrix-drift.py green, validate-frontmatter green, no em dashes in diff.
-4. [ ] Land on explicit confirmation only; commit slices: canon+P6, matrices+drift, skill text.
+A. [x] New gates, proven red first.
+   - scripts/check-workflow-assets.sh: shipped assets/ci*.yml lint; every `scripts/X`
+     referenced must exist in assets/, every bare binary (gitleaks) needs an install step.
+     --selftest with embedded violation fixture. DoD: selftest red-on-fixture, verify mode
+     RED on current assets (gitleaks missing).
+   - scripts/check-citations.py: extracts file:line citations from conformance-matrix.md
+     + reverse-matrix.md, verifies against citations-lock.json (content snippet per cite);
+     --lock regenerates, --selftest proves rejection. DoD: selftest red, verify RED on the
+     38 rotten rows before slice G.
+B. [x] Cluster 1 assets/bootstrap: gitleaks install step both ci ymls; java-quarkus.md
+   copies check-commit-messages.sh; bun-typescript.md skeleton gains lint:staged + step 14
+   copies lint-staged.sh/check-commit-messages.sh/ci.yml; greenfield installs CI re-check,
+   variant-scopes step 8 commands, adds per-gate red proofs. DoD: check-workflow-assets
+   green; smoke tests still green.
+C. [x] Cluster 2 prose 8-gate legacy: bun-typescript.md strict-lint-in-hook, SKILL.md:424
+   PIT-in-hook, java-quarkus.md:133/348/369, workflow.md 8-gate sentences + :686 + :357 +
+   :446 + :371, asset header comments (mutate-staged.sh, regenerate-coverage-preload.ts),
+   isolation.md to-response exemption. bun-audit placement = open decision for landing.
+D. [x] Cluster 4 companions: review-me gate-file mapping row + rule-17 carve-out note.
+   (greenfield handled in B.)
+E. [x] Cluster 5 canon: one P6 row (cascade completion: 8.1 exemplar, 7.1->7.5 tag,
+   15.2->15.10 + 4.7->13.5 pointers, 2.2 tag, subject->summary), owner ruling, apply,
+   re-pin, drift green.
+F. [x] Cluster 6 hygiene: reverse-matrix:9 count-free, README FP-filter phrase, LESSONS
+   [decision] lines for 08-30 rulings, CLAUDE.md companion-sweep process line.
+G. [x] Cluster 3 re-anchor: scripted fix of all stale citations to current lines, then
+   check-citations.py --lock; verify green. Wire both new gates into repo ci.yml.
+H. [ ] Full gate run (frontmatter, drift+selftest, both eval selftests, both new gates,
+   bun smoke at minimum) then propose commit slices; land only on explicit confirmation.
