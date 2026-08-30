@@ -38,7 +38,24 @@ def paragraphs(review: str) -> list[str]:
     return [p.strip() for p in re.split(r"\n\s*\n", review) if p.strip()]
 
 
-def rule_pattern(rule: int) -> re.Pattern[str]:
+def rule_pattern(rule: int | str | list) -> re.Pattern[str]:
+    # A list means alternates: any one of them is a correct citation (a canon id
+    # or the doctrine phrase it names, say). Cited when ANY alternate matches.
+    if isinstance(rule, list):
+        # Inline (?i) flags cannot sit mid-expression, so strip them from the
+        # alternates and set the flag once on the combined pattern.
+        parts = [rule_pattern(r).pattern.replace("(?i)", "") for r in rule]
+        return re.compile("|".join(f"(?:{p})" for p in parts), re.IGNORECASE | re.MULTILINE)
+    # A hard rule is an integer ("rule 27"); a canon sub-concept is dotted
+    # ("15.10"), which is the only citable id for findings the numbered rules do
+    # not carry, such as a gate landed with no violation fixture.
+    # A raw regex alternate (a doctrine phrase rather than an id) is used as-is.
+    if isinstance(rule, str) and not re.fullmatch(r"[\d.]+", rule):
+        return re.compile(rf"(?i){rule}")
+    if isinstance(rule, str) and "." in rule:
+        # The dotted id stands on its own ("canon 15.10", "15.10"), but the bare
+        # integer part must NOT satisfy it: "rule 15" is a different claim.
+        return re.compile(rf"(?<![\d.]){re.escape(rule)}(?![\d])")
     # "rule 27", "Rule 27:", "(27)", "27." as a list lead, but never a bare
     # number inside a path or a line reference like crm-sync.ts:27.
     return re.compile(rf"(?i)rule\s*{rule}\b|\({rule}\)|^\s*{rule}[.)]\s", re.MULTILINE)
@@ -67,9 +84,29 @@ def grade_review(review: str, violations: list[dict], clean_files: list[str]) ->
     false_positives = [
         f
         for f in clean_files
-        if any(basename(f) in s and re.search(r"(?i)rule\s*\d+\b|\(\d{1,2}\)", s) for s in sentences)
+        if any(
+            basename(f) in s
+            and re.search(r"(?i)rule\s*\d+\b|\(\d{1,2}\)", s)
+            and not _exonerates(s)
+            for s in sentences
+        )
     ]
     return {"caught": caught, "rule_cited": rule_cited, "false_positives": false_positives}
+
+
+# Words a reviewer uses to CLEAR a file. A conforming review often names the
+# rule it checked against while clearing ("settings.ts is conformant: the catch
+# is the carve-out rule 17 names"), and counting that as an accusation punishes
+# the correct answer. Negated forms ("not conformant", "isn't clean") are
+# accusations again, so they win over the clearing word.
+_CLEARING = r"(?i)\b(conformant|compliant|clean|cleared|fine|correct|conforms|exempt|sanctioned|carve-?out|allowed|permitted|no (?:rule )?(?:impact|violation|issue|finding)s?|holds)\b"
+_NEGATED = r"(?i)\b(not|isn't|is not|aren't|are not|never|fails? to|violat\w+|breaks?)\b[^.]{0,40}?\b(conformant|compliant|clean|cleared|fine|correct|conforms|exempt|sanctioned|allowed|permitted|holds)\b"
+
+
+def _exonerates(sentence: str) -> bool:
+    if re.search(_NEGATED, sentence):
+        return False
+    return bool(re.search(_CLEARING, sentence))
 
 
 def selftest() -> None:
@@ -100,6 +137,57 @@ orders-db.ts line 30 looks fine to me.
     assert got["rule_cited"] == ["v-console", "v-deadline"], got
     # shipping.ts is clean but the review asserts "rule 12" against it -> FP.
     assert got["false_positives"] == ["src/domain/shipping.ts"], got
+
+    # A canon sub-concept id ("15.10") is a citable rule too: the gate-proving
+    # finding has no numbered hard rule to cite, only the canon row. A dotted id
+    # must count as cited, and must NOT be satisfied by the bare integer part.
+    dotted = [{"id": "v-gate", "file": "scripts/check-package-json.sh", "rule": "15.10",
+               "evidence": r"(?i)fixture|violation case|prove.{0,12}fail"}]
+    cited = grade_review(
+        "check-package-json.sh widens the gate with no violation fixture proving it can fail "
+        "(canon 15.10).", dotted, [])
+    assert cited["caught"] == ["v-gate"], cited
+    assert cited["rule_cited"] == ["v-gate"], cited
+    uncited = grade_review(
+        "check-package-json.sh widens the gate with no violation fixture proving it can fail, "
+        "which rule 15 would have caught.", dotted, [])
+    assert uncited["caught"] == ["v-gate"], uncited
+    assert uncited["rule_cited"] == [], uncited
+
+    # Some findings have more than one correct citation: the gate-proving rule is
+    # canon 15.10 AND the skill's own doctrine line, and a reviewer naming either
+    # has cited its source. A list of alternates counts as cited when ANY matches
+    # (observed: a real review cited the doctrine phrase, not the canon id).
+    alts = [{"id": "v-gate", "file": "scripts/check-package-json.sh",
+             "rule": ["15.10", r"gates?\s+prove[sd]?\s+(it\s+)?can\s+fail"],
+             "evidence": r"(?i)fixture|violation case"}]
+    by_phrase = grade_review(
+        "check-package-json.sh widens the gate with no violation fixture; every gate proves "
+        "it can fail.", alts, [])
+    assert by_phrase["rule_cited"] == ["v-gate"], by_phrase
+    by_id = grade_review(
+        "check-package-json.sh widens the gate with no violation fixture (canon 15.10).",
+        alts, [])
+    assert by_id["rule_cited"] == ["v-gate"], by_id
+    neither = grade_review(
+        "check-package-json.sh widens the gate with no violation fixture, which seems sloppy.",
+        alts, [])
+    assert neither["caught"] == ["v-gate"] and neither["rule_cited"] == [], neither
+
+    # An exoneration that CITES a rule is still an exoneration. A conforming
+    # reviewer clears the rule 17 pure-domain carve-out by naming rule 17, and
+    # counting that as an accusation punishes the correct review (observed on a
+    # real run, 2026-08-30).
+    cleared = grade_review(
+        "src/domain/settings.ts is conformant: the try/catch around JSON.parse is the "
+        "pure-domain carve-out rule 17 names explicitly, and it returns a Result.",
+        [], ["src/domain/settings.ts"])
+    assert cleared["false_positives"] == [], cleared
+    # But a NEGATED clearing word is an accusation, not an exoneration.
+    accused = grade_review(
+        "src/domain/settings.ts is not conformant with rule 17: that catch belongs in infra.",
+        [], ["src/domain/settings.ts"])
+    assert accused["false_positives"] == ["src/domain/settings.ts"], accused
 
     # An empty review scores zero everywhere and flags nothing.
     empty = grade_review("", violations, clean)

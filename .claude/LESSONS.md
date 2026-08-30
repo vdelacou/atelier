@@ -2,6 +2,14 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [gotcha] 2026-08-30 | every review-grader defect so far punishes the BETTER review
+
+Planting the two violation classes review-me gained today (a gate widened with no fixture; a rule 17 pure-domain catch as a CLEAN file) surfaced two more grader bugs in one pass, both fixed selftest-first. The FP lens counted an exoneration that cites a rule ("settings.ts is conformant: the catch is the carve-out rule 17 names explicitly") as an accusation, and the rule-cited metric missed the gate finding because the reviewer cited the doctrine (SKILL.md:433, "every gate proves it can fail") instead of canon 15.10. Fixes: clearing-word detection with negation handling, and a `rule` field that accepts a list of alternate citations beside integers and dotted canon ids. The pattern is worth remembering: all four grader defects found to date punished the more thorough arm, because a baseline reviewer says less and gives the instrument less to misread. Corollary: when an eval reports a false positive against the skill arm, read the review text before believing the number.
+
+## [decision] 2026-08-30 | the Java variant never saw its own tripwires
+
+All four discipline tripwires ship Java detection (ROUTE_GLOBS_JAVA, @QueryParam, HttpClient, deleteById), but java-quarkus.md named none of them, so a Java bootstrap followed verbatim copied zero of the four. The capability existed and the install path hid it, the same shape as the field test's other findings. Fixed by adding them to the Java asset list with their Java triggers and proving all four in smoke-test-java (six new checks, red on the violation, green on the fix). Rule for next time: an asset that handles a variant is not shipped to that variant until the variant's bootstrap names it.
+
 ## [decision] 2026-08-30 | staleness is now a gate, and the size rule got its CI half
 
 Two gates from the field test's findings. check-commit-range.sh walks every non-merge commit in a pushed range against the same <=10 files / <=300 lines cap the hook applies to one staged diff: the size gate's --no-verify-proof half, exactly what check-commit-messages.sh is to the commit-msg hook, adopted from the consumer that had written it independently. check-skill-pin.sh compares a vendored SKILL.md against upstream and fails when it is behind; it rides in audit.yml beside the CVE scan rather than blocking commits, because upstream doctrine changes independently of your diff, and it degrades when it cannot reach upstream while saying plainly that unverified is not current. Proven on the real stale consumer copy before shipping.

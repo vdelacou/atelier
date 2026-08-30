@@ -1,13 +1,89 @@
 [
-  { "id": "v-class",      "file": "src/domain/loyalty.ts",            "rule": 1,  "evidence": "(?i)\\bclass\\b",                                          "desc": "class declaration in domain code" },
-  { "id": "v-interface",  "file": "src/domain/loyalty.ts",            "rule": 3,  "evidence": "(?i)\\binterface\\b",                                      "desc": "interface instead of type" },
-  { "id": "v-console",    "file": "src/use-cases/award-points.ts",    "rule": 4,  "evidence": "(?i)console\\.(log|error|warn)|console\\b.*logger|logger port", "desc": "console.log instead of the Logger port" },
-  { "id": "v-trycatch",   "file": "src/use-cases/award-points.ts",    "rule": 17, "evidence": "(?i)try\\s*/\\s*catch|try.?catch|\\btry\\b.*\\bcatch\\b",  "desc": "try/catch outside src/infra" },
-  { "id": "v-mock",       "file": "src/use-cases/award-points.test.ts","rule": 13, "evidence": "(?i)\\bmock\\b|toHaveBeenCalled|hand-written fake",       "desc": "mock from bun:test instead of a hand-written fake" },
-  { "id": "v-latest",     "file": "package.json",                     "rule": 19, "evidence": "(?i)\"?latest\"?",                                          "desc": "\"latest\" as a dependency version" },
-  { "id": "v-nodefs",     "file": "src/infra/export-report.ts",       "rule": 20, "evidence": "(?i)node:fs|writeFileSync|Bun\\.write",                    "desc": "node:fs in production code instead of Bun.write" },
-  { "id": "v-weakened",   "file": "src/domain/shipping.test.ts",      "rule": 24, "evidence": "(?i)weaken|expected value|existing test|without .*(confirmation|sign-off)|899", "desc": "existing test's expected value changed without sign-off" },
-  { "id": "v-pii",        "file": "src/infra/crm-sync.ts",            "rule": 27, "evidence": "(?i)\\bpii\\b|personal data|email.{0,60}(query|url)|(query|url).{0,60}email", "desc": "email in a URL query string" },
-  { "id": "v-deadline",   "file": "src/infra/crm-sync.ts",            "rule": 29, "evidence": "(?i)deadline|timeout|AbortSignal",                          "desc": "outbound fetch with no deadline" },
-  { "id": "v-harddelete", "file": "src/infra/orders-db.ts",           "rule": 30, "evidence": "(?i)hard.?delete|soft.?delete|deletedAt",                   "desc": "hard delete instead of soft delete" }
+  {
+    "id": "v-class",
+    "file": "src/domain/loyalty.ts",
+    "rule": 1,
+    "evidence": "(?i)\\bclass\\b",
+    "desc": "class declaration in domain code"
+  },
+  {
+    "id": "v-interface",
+    "file": "src/domain/loyalty.ts",
+    "rule": 3,
+    "evidence": "(?i)\\binterface\\b",
+    "desc": "interface instead of type"
+  },
+  {
+    "id": "v-console",
+    "file": "src/use-cases/award-points.ts",
+    "rule": 4,
+    "evidence": "(?i)console\\.(log|error|warn)|console\\b.*logger|logger port",
+    "desc": "console.log instead of the Logger port"
+  },
+  {
+    "id": "v-trycatch",
+    "file": "src/use-cases/award-points.ts",
+    "rule": 17,
+    "evidence": "(?i)try\\s*/\\s*catch|try.?catch|\\btry\\b.*\\bcatch\\b",
+    "desc": "try/catch outside src/infra"
+  },
+  {
+    "id": "v-mock",
+    "file": "src/use-cases/award-points.test.ts",
+    "rule": 13,
+    "evidence": "(?i)\\bmock\\b|toHaveBeenCalled|hand-written fake",
+    "desc": "mock from bun:test instead of a hand-written fake"
+  },
+  {
+    "id": "v-latest",
+    "file": "package.json",
+    "rule": 19,
+    "evidence": "(?i)\"?latest\"?",
+    "desc": "\"latest\" as a dependency version"
+  },
+  {
+    "id": "v-nodefs",
+    "file": "src/infra/export-report.ts",
+    "rule": 20,
+    "evidence": "(?i)node:fs|writeFileSync|Bun\\.write",
+    "desc": "node:fs in production code instead of Bun.write"
+  },
+  {
+    "id": "v-weakened",
+    "file": "src/domain/shipping.test.ts",
+    "rule": 24,
+    "evidence": "(?i)weaken|expected value|existing test|without .*(confirmation|sign-off)|899",
+    "desc": "existing test's expected value changed without sign-off"
+  },
+  {
+    "id": "v-pii",
+    "file": "src/infra/crm-sync.ts",
+    "rule": 27,
+    "evidence": "(?i)\\bpii\\b|personal data|email.{0,60}(query|url)|(query|url).{0,60}email",
+    "desc": "email in a URL query string"
+  },
+  {
+    "id": "v-deadline",
+    "file": "src/infra/crm-sync.ts",
+    "rule": 29,
+    "evidence": "(?i)deadline|timeout|AbortSignal",
+    "desc": "outbound fetch with no deadline"
+  },
+  {
+    "id": "v-harddelete",
+    "file": "src/infra/orders-db.ts",
+    "rule": 30,
+    "evidence": "(?i)hard.?delete|soft.?delete|deletedAt",
+    "desc": "hard delete instead of soft delete"
+  },
+  {
+    "id": "v-gate-nofixture",
+    "file": "scripts/check-package-json.sh",
+    "rule": [
+      "15.10",
+      "gates?\\s+prove[sd]?\\s+(it\\s+)?can\\s+fail"
+    ],
+    "evidence": "(?i)fixture|violation case|prove[sd]?\\s+(it\\s+)?can\\s+fail|never seen red|red path",
+    "desc": "gate widened with no violation fixture proving it can fail"
+  }
 ]

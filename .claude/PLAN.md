@@ -1,16 +1,13 @@
-# Plan: four open atelier items (2026-08-30)
+# Plan: Java tripwire wiring + review-eval fixture coverage (2026-08-30)
 
-3. [ ] Conformance re-baseline on current doctrine (3 passes, opus, local only).
-   Running: pass 1 (tag rebase1). DoD: baseline.md rewritten with the new numbers
-   and the date, old numbers kept as the superseded reference.
-1. [ ] Java staleness + CVE placement parity with the Bun variant.
-   Ship assets/audit-java.yml (schedule + pom-scoped PR runs: OWASP dependency-check
-   plus check-skill-pin.sh); drop the OWASP step from ci-java.yml's gates job for the
-   same reason bun audit left ci.yml. Cascade: java-quarkus.md copy list + prose,
-   workflow-assets gate mapping. DoD: gate green, java smoke green.
-2. [ ] check-commit-range.sh --selftest (parity with the other three new gates):
-   temp git repo fixtures, small commit passes, oversized fails, merge excluded.
-   DoD: selftest green, and it fails when the thresholds are broken.
-4. [ ] Phase 5 second pass against the consumer's caught-up tree: pin gate in situ,
-   hook shape, CI gates, ADR bylines, test flag. Read-only. DoD: short delta report.
-5. [ ] Gates + both smokes, then propose slices. Land on confirmation only.
+1. [ ] Java tripwires: all four guards are Java-aware but java-quarkus.md never names them,
+   so a Java bootstrap never copies one. Add to the asset list + bootstrap step with the
+   Java-specific triggers, and prove each in smoke-test-java (red on a Java violation,
+   green on the conforming case), matching what smoke-test.sh does for the Bun side.
+2. [ ] review-eval: plant the two violation classes review-me gained today.
+   - gate-file change with no violation fixture (canon 15.10 mapping row)
+   - a legitimate pure-domain catch around a native thrower, as a CLEAN case, so the
+     rule 17 carve-out is measured as a false-positive lens, not a catch.
+   Update violations.json / clean-files.json + fixtures for the bun variant; java too if
+   the shape carries. Then one eval pass to confirm the planted cases behave.
+3. [ ] Gates + java smoke, then propose slices. Land on confirmation only.

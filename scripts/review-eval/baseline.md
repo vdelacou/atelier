@@ -20,6 +20,30 @@ single runs are too noisy for a verdict (`.claude/LESSONS.md`).
 - Reproduce: `REVIEW_MODEL=claude-opus-5 REVIEW_TAG=<tag> bash scripts/review-eval/run.sh`
   three times with distinct tags, then grade each printed runs dir.
 
+## Fixture update, 2026-08-30 (12 violations, 3 clean files)
+
+Two cases were planted after the day's doctrine changes gave atelier-review-me findings that
+nothing measured. Both were validated in a single opus pass, reported separately from the
+3-pass numbers below, which predate them:
+
+- **v-gate-nofixture** (canon 15.10): `scripts/check-package-json.sh` widened on two axes with
+  no violation fixture proving either can fail. The skill arm caught it and cited it; the
+  baseline reviewer read the widening as an improvement and said nothing.
+- **`src/domain/settings.ts`**, a new CLEAN file: a `try/catch` around `JSON.parse` in pure
+  domain code returning a `Result`, which rule 17 sanctions explicitly. It exists to measure a
+  false positive, not a catch. The skill arm cleared it by name and verified the carve-out
+  rather than taking the file's own docstring on faith.
+
+One-pass reading with the new fixtures: with_skill 12/12 caught, 12/12 rule-cited, 0 false
+positives; baseline 10/12 caught, 0/12 cited, 0 false positives (it missed v-interface and
+v-harddelete, the same two it has never caught).
+
+That pass also cost two grader bugs, both fixed selftest-first (see Grader integrity):
+the run initially scored a false positive against the skill arm for the exoneration sentence
+that cleared `settings.ts` while citing rule 17, and scored the gate finding uncited because
+the reviewer named the doctrine (`SKILL.md:433`, "every gate proves it can fail") instead of
+the canon id. Both were the instrument being wrong about a correct review.
+
 ## Result (summed over 3 passes)
 
 | Metric | with_skill | baseline |
@@ -57,6 +81,22 @@ a false positive, which inflated the with_skill FP count to 1 in two passes; sen
 matching fixed it. A second hazard, a line reference like `orders-db.ts:30` counting as a rule-30
 citation, was designed out up front. Both cases are pinned in `grade.py --selftest`, which CI
 runs (`review-eval grader selftest`).
+
+The 2026-08-30 fixture pass cost two more, same discipline, both of them the grader misreading
+a correct review:
+
+- **An exoneration that cites a rule is still an exoneration.** Clearing `settings.ts` reads
+  "the try/catch is the pure-domain carve-out rule 17 names explicitly", so the sentence carries
+  the clean file and a rule token, and the FP lens called it an accusation. It now checks for
+  clearing words (conformant, clean, exempt, carve-out, holds) and, so the fix cannot swallow a
+  real finding, treats a negated one ("not conformant with rule 17") as an accusation again.
+- **A finding can have more than one correct citation.** The gate-proving rule is canon 15.10
+  and the skill's own doctrine line; the reviewer cited `SKILL.md:433, every gate proves it can
+  fail`, which the integer-only matcher could not see. A violation's `rule` may now be a list of
+  alternates, any one of which counts, alongside the integer hard rules and dotted canon ids.
+
+The pattern across all four: every grader defect found so far punished the better review, never
+the worse one, because a baseline reviewer says less and gives the instrument less to misread.
 
 ## Java variant (added 2026-08-30, same day; fixture v4)
 
