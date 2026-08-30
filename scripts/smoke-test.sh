@@ -266,6 +266,21 @@ del p['dependencies']
 json.dump(p, open('package.json', 'w'), indent=2)
 EOF
 
+# A monorepo hides its dependencies in workspace manifests, so a gate that reads
+# only the root manifest passes a repo whose packages/* pin "latest" (found in a
+# real consumer repo, 2026-08-30 field test). The violation lives one directory
+# down, exactly where the root-only grep could not see it.
+mkdir -p packages/widget
+cat > packages/widget/package.json <<'EOF'
+{ "name": "widget", "dependencies": { "left-pad": "latest" } }
+EOF
+expect_err "package.json gate rejects \"latest\" in a workspace manifest" bash scripts/check-package-json.sh
+cat > packages/widget/package.json <<'EOF'
+{ "name": "widget", "dependencies": { "left-pad": "^1.3.0" } }
+EOF
+expect_ok "package.json gate accepts a pinned workspace manifest" bash scripts/check-package-json.sh
+rm -rf packages
+
 check_msg() { printf '%s\n' "$1" > .msg; bash .githooks/commit-msg .msg; }
 expect_ok  "commit-msg accepts feat(scope)!: subject" check_msg "feat(auth)!: rotate refresh tokens"
 expect_ok  "commit-msg accepts plain fix:" check_msg "fix: guard empty cart"
