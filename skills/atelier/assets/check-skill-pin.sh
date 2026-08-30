@@ -28,8 +28,54 @@ UPSTREAM="${SKILL_PIN_UPSTREAM:-https://raw.githubusercontent.com/vdelacou/ateli
 
 hash_of() { shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1; }
 
+# Compare two directory trees file by file. A vendored standard is a tree: the
+# references carry the detail SKILL.md points at, and the assets ARE the gates,
+# so a check that reads only SKILL.md can report "current" over a stale
+# reference. That is the gate-that-cannot-fail shape (canon 15.10) in the gate
+# meant to catch staleness, so it is checked here.
+compare_trees() {
+  local vend="$1" up="$2" stale=0 rel
+  while IFS= read -r rel; do
+    if [ ! -f "$vend/$rel" ]; then
+      echo "      missing locally: $rel" >&2
+      stale=$((stale + 1))
+    elif [ "$(hash_of "$vend/$rel")" != "$(hash_of "$up/$rel")" ]; then
+      echo "      behind upstream: $rel" >&2
+      stale=$((stale + 1))
+    fi
+  done < <(cd "$up" && find . -type f ! -path '*/.git/*' | sed 's|^\./||' | sort)
+  [ "$stale" -eq 0 ] && return 0
+  echo "      $stale file(s) behind" >&2
+  return 1
+}
+
 check_pin() {
   local vendored="$1" upstream="$2" tmp
+  # Tree mode: both sides are directories.
+  if [ -d "$vendored" ] && [ -d "$upstream" ]; then
+    if compare_trees "$vendored" "$upstream" 2>/tmp/.pin-stale; then
+      echo "check-skill-pin: the vendored standard matches upstream (whole tree)"
+      rm -f /tmp/.pin-stale
+      return 0
+    fi
+    {
+      echo "  ╳ the vendored standard is behind upstream."
+      echo ""
+      cat /tmp/.pin-stale
+      echo ""
+      echo "  A pinned standard is a dependency (references/governance.md). Re-sync"
+      echo "  deliberately: read what changed, then bring the doctrine AND the assets"
+      echo "  that enforce it across in one commit. Gates and prose move together."
+    } >&2
+    rm -f /tmp/.pin-stale
+    return 1
+  fi
+  if [ -d "$vendored" ] && [ ! -d "$upstream" ]; then
+    # A directory vendored against a single upstream file can only check that
+    # file, so say what is NOT covered rather than implying the tree is current.
+    echo "check-skill-pin: comparing SKILL.md only; references and assets are not covered" >&2
+    vendored="$vendored/SKILL.md"
+  fi
   if [ ! -f "$vendored" ]; then
     echo "check-skill-pin: no vendored copy at $vendored, nothing to compare" >&2
     return 0
@@ -78,6 +124,23 @@ selftest() {
   fi
   if ! check_pin "$tmp/current.md" "http://127.0.0.1:9/unreachable" >/dev/null 2>&1; then
     echo "selftest FAIL: an unreachable upstream should degrade, not block" >&2; exit 1
+  fi
+
+  # A vendored standard is a TREE. SKILL.md matching upstream says nothing about
+  # the references and assets beside it, and a gate that reports "current" while
+  # a reference is stale is worse than no gate (found in a real consumer repo,
+  # 2026-08-30: SKILL.md current, references/java-quarkus.md behind).
+  mkdir -p "$tmp/up/references" "$tmp/vend/references"
+  printf 'doctrine v1\n' > "$tmp/up/SKILL.md"
+  printf 'detail v2\n'   > "$tmp/up/references/x.md"
+  printf 'doctrine v1\n' > "$tmp/vend/SKILL.md"
+  printf 'detail v1\n'   > "$tmp/vend/references/x.md"
+  if check_pin "$tmp/vend" "$tmp/up" >/dev/null 2>&1; then
+    echo "selftest FAIL: a stale reference passed while SKILL.md matched" >&2; exit 1
+  fi
+  printf 'detail v2\n' > "$tmp/vend/references/x.md"
+  if ! check_pin "$tmp/vend" "$tmp/up" >/dev/null; then
+    echo "selftest FAIL: a fully current tree was rejected" >&2; exit 1
   fi
   echo "selftest OK: gate rejects a stale vendored copy, accepts a current one, degrades when it cannot check"
 }
