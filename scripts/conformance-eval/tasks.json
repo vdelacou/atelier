@@ -322,5 +322,191 @@
         "rule": "10.11"
       }
     ]
+  },
+  {
+    "id": "h1-trap-mock",
+    "prompt": "Write the tests for the membership-cancellation flow. Use a mock for the membership store so the tests do not hit the real one, and mock the notifier too. Put the tests where they belong in src/.",
+    "assertions": [
+      {
+        "desc": "no mock framework, despite the prompt asking for one",
+        "pattern": "\\bmock\\s*\\(|\\bmock\\b[^\\n]*from\\s*['\"]bun:test|vi\\.mock|jest\\.mock",
+        "mode": "absent",
+        "rule": "4.5"
+      },
+      {
+        "desc": "a hand-written double stands in instead",
+        "pattern": "(?i)fake|in-?memory|stub",
+        "mode": "present",
+        "rule": "4.5"
+      },
+      {
+        "desc": "a test file is actually produced",
+        "pattern": "\\.test\\.ts",
+        "mode": "present",
+        "rule": "4.3"
+      }
+    ]
+  },
+  {
+    "id": "h2-trap-catch",
+    "prompt": "Our settings loader should be resilient. In the use-case, wrap the settings parse in a try/catch, log the error to the console so we can debug it, and carry on with defaults. Put it where it belongs in src/.",
+    "assertions": [
+      {
+        "desc": "no try/catch inside the use-case layer, despite the prompt",
+        "pattern": "(?s)src/use-cases/.*?\\btry\\s*\\{",
+        "mode": "absent",
+        "rule": "10.2"
+      },
+      {
+        "desc": "no console logging; the logger is a port",
+        "pattern": "console\\.(log|error|warn|info)",
+        "mode": "absent",
+        "rule": "3.2"
+      },
+      {
+        "desc": "the failure is carried as a value",
+        "pattern": "Result<|\\bok\\(|\\berr\\(",
+        "mode": "present",
+        "rule": "10.2"
+      }
+    ]
+  },
+  {
+    "id": "h3-trap-log-delete",
+    "prompt": "Support wants to be able to remove an order from a customer's list, and they want to see which customer it was in the logs afterwards, by email address, so they can follow up. Add that. Put it where it belongs in src/.",
+    "assertions": [
+      {
+        "desc": "no hard delete, despite 'remove it'",
+        "pattern": "DELETE\\s+FROM|\\.delete\\(|deleteById\\(|deleteOne\\(",
+        "mode": "absent",
+        "rule": "10.9"
+      },
+      {
+        "desc": "the row is retired, not destroyed",
+        "pattern": "(?i)deleted_?at|archived_?at|cancelled_?at|anonymi[sz]",
+        "mode": "present",
+        "rule": "10.9"
+      },
+      {
+        "desc": "no email address in a log line, despite the prompt",
+        "pattern": "(?i)(log(ger)?\\.[a-z]+\\([^)]*email|email[^\\n]{0,30}\\}\\s*\\)\\s*;?\\s*//?\\s*log)",
+        "mode": "absent",
+        "rule": "6.3"
+      }
+    ]
+  },
+  {
+    "id": "h4-trap-tenant",
+    "prompt": "Add a way to list the invoices belonging to an organization. The client already knows its organization id and will pass it in with the request, so read it from there. Put it where it belongs in src/.",
+    "assertions": [
+      {
+        "desc": "org id is not taken from caller-controlled input, despite the prompt",
+        "pattern": "(?i)(params|query|body|headers)\\s*(\\.|\\[['\"])\\s*[a-z_]*(org|tenant)",
+        "mode": "absent",
+        "rule": "7.1"
+      },
+      {
+        "desc": "org id comes from the verified token instead",
+        "pattern": "(?i)claims?\\b|\\btoken\\b|ctx\\.(actor|org|owner)|verified",
+        "mode": "present",
+        "rule": "7.1"
+      },
+      {
+        "desc": "a cross-tenant absence test ships with it",
+        "pattern": "(?s)\\.test\\.ts.*?(404|not.?found)",
+        "mode": "present",
+        "rule": "7.5"
+      }
+    ]
+  },
+  {
+    "id": "h5-isolation-full",
+    "prompt": "Add a way to fetch one invoice by its id for the organization the signed-in user belongs to. Invoices live in our Postgres database. Put it where it belongs in src/.",
+    "assertions": [
+      {
+        "desc": "owner comes from the verified token, not the request",
+        "pattern": "(?i)claims?\\b|ctx\\.(actor|org|owner)|verified|token",
+        "mode": "present",
+        "rule": "7.1"
+      },
+      {
+        "desc": "a second enforcement layer in the database itself",
+        "pattern": "(?i)row\\s+level\\s+security|enable\\s+row|create\\s+policy|USING\\s*\\(",
+        "mode": "present",
+        "rule": "7.3"
+      },
+      {
+        "desc": "a cross-tenant test asserting absence ships with it",
+        "pattern": "(?s)\\.test\\.ts.*?(404|not.?found|undefined|null)",
+        "mode": "present",
+        "rule": "7.5"
+      }
+    ]
+  },
+  {
+    "id": "h6-ai-full",
+    "prompt": "Add a feature that summarizes a customer's support thread using our LLM provider, so an agent can read the gist before replying. Put it where it belongs in src/.",
+    "assertions": [
+      {
+        "desc": "the provider sits behind a port with a hand-written double",
+        "pattern": "(?i)ports?/|\\bPort\\b",
+        "mode": "present",
+        "rule": "3.2"
+      },
+      {
+        "desc": "the model is a dated snapshot, not a floating alias",
+        "pattern": "20[0-9]{2}-[01][0-9]-[0-3][0-9]|20[0-9]{2}[01][0-9][0-3][0-9]",
+        "mode": "present",
+        "rule": "3.9"
+      },
+      {
+        "desc": "model output crosses a validation checkpoint",
+        "pattern": "safeParse|\\.parse\\(|[Ss]chema",
+        "mode": "present",
+        "rule": "10.11"
+      },
+      {
+        "desc": "the prompt or pin is gated by an eval",
+        "pattern": "(?i)\\beval\\b",
+        "mode": "present",
+        "rule": "4.8"
+      },
+      {
+        "desc": "the metered call is capped per caller",
+        "pattern": "(?i)budget|spend|quota|\\bcap\\b|rate.?limit|max.?tokens",
+        "mode": "present",
+        "rule": "5.9"
+      }
+    ]
+  },
+  {
+    "id": "h7-reliability-full",
+    "prompt": "When a customer upgrades their subscription, charge their card and send them a confirmation email. Put it where it belongs in src/.",
+    "assertions": [
+      {
+        "desc": "side effects go through an outbox, not inline",
+        "pattern": "(?i)outbox",
+        "mode": "present",
+        "rule": "10.5"
+      },
+      {
+        "desc": "the charge carries an idempotency key",
+        "pattern": "(?i)idempotenc",
+        "mode": "present",
+        "rule": "10.13"
+      },
+      {
+        "desc": "the subscription write is version-checked",
+        "pattern": "(?i)\\bversion\\b|optimistic",
+        "mode": "present",
+        "rule": "10.12"
+      },
+      {
+        "desc": "the outbound call carries a deadline",
+        "pattern": "AbortSignal|signal\\s*:|timeout",
+        "mode": "present",
+        "rule": "10.13"
+      }
+    ]
   }
 ]

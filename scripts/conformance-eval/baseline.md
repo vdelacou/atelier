@@ -11,7 +11,9 @@ single run is too noisy for a verdict (see `.claude/LESSONS.md`).
   lines). The morning reading from the same date is kept below as the prior scorecard.
 - Model (pinned): `claude-opus-5`
 - Passes: 3, aggregated. 14 tasks (e1-e10 plus the four architecture tasks a1-a4), both arms, per
-  pass, so 84 runs, 0 failures. This supersedes the 2026-07-19 `claude-sonnet-5` baseline
+  pass, so 84 runs, 0 failures. The seven hard tasks added later the same day (h1-h7, 24 more
+  assertions) carry their own one-pass reading in The hard tier below and are deliberately not
+  folded into these totals. This supersedes the 2026-07-19 `claude-sonnet-5` baseline
   (with_skill 82/84 = 97.6%, baseline 62/84 = 73.8%, delta +23.8), which predated a1-a4 and is
   kept here only as the prior reading.
 - Assertions: 37 per pass. Two were corrected in this re-baseline after all three passes showed
@@ -67,6 +69,37 @@ regression" rather than as evidence the day's changes helped.
 | 10.11 Parse, don't validate | 15/15 | 11/15 | skill ahead |
 | 10.12 No lost updates | 6/6 | 6/6 | parity |
 | 10.13 Every network call has a deadline | 15/15 | 15/15 | parity |
+
+## The hard tier (h1-h7, added 2026-08-30) and what it proved
+
+The 3-pass baseline above scores 111/111 for the skill arm, which means the instrument can
+only detect regression. Seven tasks were added to try to restore headroom, in two designs:
+
+- **Trap prompts (h1-h4)**: the instruction itself asks for the violation. Use a mock for the
+  store. Wrap it in try/catch inside the use-case and log to console. Log the customer's email
+  so support can follow up. The client knows its own org id, so read it from the request. A
+  conforming answer has to refuse the instruction, which is harder than remembering a rule
+  nobody argued against.
+- **Completeness tasks (h5-h7)**: one feature, the whole discipline. The isolation triad
+  including a database-side second layer, not just the claim check. The AI feature with its
+  eval gate and per-caller spend cap, not just a pinned snapshot. The upgrade flow with an
+  outbox, an idempotency key, and a version check, not just a deadline.
+
+First reading, one opus pass, 24 assertions across the seven: **with_skill 24/24, baseline
+15/24**. The tasks discriminate well, the unaided arm losing nine points on exactly the clauses
+partial answers drop (a console log and a thrown error in h2, the retired-row and email-in-log
+pair in h3, the cross-tenant test in h4, database-side isolation in h5, the schema checkpoint
+and eval gate in h6, the outbox in h7).
+
+**They did not restore headroom, and that is the result worth recording.** The skill arm scored
+perfectly on both designs, including the traps. h1 is the sharpest datum: told twice to use a
+mock, BOTH arms wrote a hand-written in-memory fake instead, so on this model that discipline no
+longer needs the skill at all. The ceiling is not a symptom of easy tasks; it is what mechanical
+regex assertions over a single-feature diff can measure. Distinguishing conforming from
+excellent needs a different instrument, an LLM judge scoring depth against the doctrine, which
+is a bigger change than another task. Until then, read this eval as a regression net whose
+resolution just improved by 24 harder ways to fall off, not as a measure of how good the skill
+is.
 
 ## Corrected checks (2026-08-30)
 
