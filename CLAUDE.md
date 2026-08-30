@@ -36,6 +36,9 @@ tree. What binds work HERE is the authoring and process discipline below.
   description edit (a description is a triggering contract).
 - `python3 scripts/review-eval/grade.py --selftest` (fast; the CI review-grader gate). The full
   eval: `bash scripts/review-eval/run.sh`, then grade the printed runs dir.
+- `python3 scripts/conformance-eval/judge.py --selftest` (fast; the CI judge-harness gate).
+  The judging itself is local and paired: `JUDGE_MODEL=claude-opus-5 python3
+  scripts/conformance-eval/judge.py <runs-dir>` over run dirs the conformance eval produced.
 - CI (`.github/workflows/ci.yml`) runs the four gates on every push; `canary.yml` weekly-probes
   the two deliberate toolchain concessions (whether the typescript pin can lift, and whether the
   two disabled sonarjs rules can go back on).

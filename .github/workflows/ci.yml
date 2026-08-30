@@ -66,6 +66,11 @@ jobs:
       # file (src/domain/result.ts) drifting back into scope and silently
       # satisfying present-mode assertions for both arms.
       - run: python3 scripts/conformance-eval/grade.py --selftest
+      # The judge's harness math is CI-checkable even though judging itself is
+      # local: the selftest proves the blind order swaps, a position-flipped
+      # verdict scores inconsistent rather than as a win, and an uncited winner
+      # is discarded. An inverted unblinding would silently invert every result.
+      - run: python3 scripts/conformance-eval/judge.py --selftest
 
   review-grader-selftest:
     name: review-eval grader selftest

@@ -26,3 +26,4 @@ node_modules/
 
 # python bytecode (trigger-eval runner)
 __pycache__/
+.judge-last.json

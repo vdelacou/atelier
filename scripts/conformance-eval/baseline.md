@@ -101,6 +101,40 @@ is a bigger change than another task. Until then, read this eval as a regression
 resolution just improved by 24 harder ways to fall off, not as a measure of how good the skill
 is.
 
+## The judge (added 2026-08-30)
+
+`judge.py` is the second instrument, built because the first one saturated. It compares the two
+arms' answers to the same task on depth rather than presence, and every design choice defends
+against a documented failure mode of LLM judging: pairwise, so nothing has to stay calibrated
+across runs; blind, with the A/B assignment taken from a hash of the task id so it is
+reproducible without tracking arm identity; judged twice with the order swapped, so a verdict
+that flips with position is recorded as INCONSISTENT rather than averaged into a win; grounded
+in the doctrine with a citation required for the winner, so an uncited verdict is discarded;
+and free to answer "tie", because forced choice manufactures signal.
+
+First reading, the seven hard tasks, 14 comparisons: **with_skill 7, baseline 0, ties 0,
+inconsistent 0, uncited 0**. Every verdict came back at margin 3, and no pair flipped when the
+order swapped, which is the result that makes the other numbers worth reading at all: 14
+comparisons with zero position bias is the instrument reporting on itself.
+
+The judge agreed with the mechanical grader rather than adding to it, and the reason matters.
+Asked to separate conforming from excellent, it was handed conforming against
+non-conforming: the baseline arm obeyed the traps (try/catch in the use-case, the email in the
+log, the org id from the query string), so the comparison was easy and the margins were
+maximal. **A judge that always answers 3-0 measures no more headroom than a grader that always
+answers 24/24.**
+
+Its real use is the one this reading could not exercise: A/B-ing DOCTRINE. Point it at two
+with_skill run sets produced by different versions of the skill and it will say which version
+writes better code, which is exactly the question the mechanical grader can never answer and
+the reason the ceiling mattered. Skill-versus-no-skill was the wrong comparison to spend it on;
+it is the right smoke test for the harness, and that is what this reading is.
+
+The harness math is CI-checkable even though judging is local: `judge.py --selftest` pins that
+the blind order swaps, that a position-flipped verdict scores inconsistent, that an uncited
+winner is discarded, and that ties and errors survive collapse. Verified by mutation: inverting
+the unblinding, the defect that would silently reverse every result, makes the selftest fail.
+
 ## Corrected checks (2026-08-30)
 
 Two assertions failed every pass in a way that proved they measured the wrong thing, and were
