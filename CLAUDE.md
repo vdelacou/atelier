@@ -27,6 +27,9 @@ tree. What binds work HERE is the authoring and process discipline below.
 
 ## Verify commands
 - `bun run scripts/validate-frontmatter.ts` (fast; the CI frontmatter gate).
+- `python3 scripts/check-citations.py` (fast; file-line evidence vs citations-lock.json; after
+  a deliberate re-anchor, `--lock`) and `bash scripts/check-workflow-assets.sh` (shipped CI
+  workflows self-sufficient); both take `--selftest`.
 - `bash scripts/smoke-test.sh` / `smoke-test-next.sh` / `smoke-test-java.sh` (the CI e2e gates;
   Java needs JDK 21+ and mvn; each takes minutes on first run for dependency downloads).
 - `bash scripts/trigger-eval/run.sh <set> <skill-dir> [fixture] [runs]` after any SKILL.md
@@ -46,6 +49,10 @@ tree. What binds work HERE is the authoring and process discipline below.
 - **Never commit or push without explicit confirmation** (rules 25). Commit and push are
   separate decisions; ask per landing. Eval results stay gitignored (`skills/*-workspace/`);
   harnesses and sets are committed.
+- **Main-skill doctrine changes cascade to companions**: when `skills/atelier/SKILL.md` gains
+  or changes doctrine (a rule summary, a gate, a workflow step), sweep atelier-greenfield,
+  atelier-review-me, and atelier-grill-me for stale echoes in the same change; the 2026-08-30
+  audit found every companion gap was a missed cascade.
 - **Every new gate proves it can fail**: ship a fixture violation case alongside it, and wire
   it into the matching smoke test so a toolchain major cannot silently disable it.
 - **Read `.claude/LESSONS.md` at session start**: it holds the toolchain gotchas (TypeScript 7
