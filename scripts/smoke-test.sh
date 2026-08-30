@@ -382,6 +382,8 @@ git reset -q --soft HEAD~1
 # The commit-SIZE CI gate (pre-commit gate 1, canon 8.1). Same split as the
 # message gate: the hook sees one staged diff, CI walks every commit in the
 # range, so a bypassed oversized commit is still caught. Proven both ways.
+expect_ok "check-commit-range.sh selftest (the gate proves itself)" \
+  bash scripts/check-commit-range.sh --selftest
 expect_ok "check-commit-range.sh passes on small commits" \
   bash scripts/check-commit-range.sh HEAD~1 HEAD
 python3 - <<'PYEOF2'

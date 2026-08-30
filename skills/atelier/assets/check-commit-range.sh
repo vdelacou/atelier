@@ -23,6 +23,35 @@
 # (Commit size limits).
 set -euo pipefail
 
+# --selftest builds a throwaway repo and proves the gate both ways, so the gate
+# can be trusted on a machine that is not running the full smoke suite
+# (canon 15.10: a gate only ever seen green is a hypothesis).
+if [ "${1:-}" = "--selftest" ]; then
+  tmp=$(mktemp -d)
+  trap "rm -rf '$tmp'" EXIT
+  gate=$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
+  cd "$tmp"
+  git init -q . && git config user.email t@e.st && git config user.name t
+  echo one > a.txt && git add -A && git commit -qm "chore: base"
+  echo two > b.txt && git add -A && git commit -qm "feat: small change"
+  if ! bash "$gate" HEAD~1 HEAD >/dev/null; then
+    echo "selftest FAIL: a small commit was rejected" >&2; exit 1
+  fi
+  i=0; while [ "$i" -lt 12 ]; do printf 'x\n%.0s' $(seq 1 40) > "big$i.txt"; i=$((i + 1)); done
+  git add -A && git commit -qm "feat: oversized"
+  if bash "$gate" HEAD~1 HEAD >/dev/null 2>&1; then
+    echo "selftest FAIL: an oversized commit was accepted" >&2; exit 1
+  fi
+  # a merge legitimately touches many files and is excluded by design
+  git checkout -q -b side HEAD~1 && echo s > s.txt && git add -A && git commit -qm "feat: side"
+  git checkout -q - && git merge -q --no-ff side -m "Merge branch 'side'" >/dev/null 2>&1
+  if ! MAX_FILES=1000 MAX_LINES=100000 bash "$gate" HEAD~1 HEAD >/dev/null; then
+    echo "selftest FAIL: a merge commit was not excluded" >&2; exit 1
+  fi
+  echo "selftest OK: gate rejects an oversized commit, accepts a small one, excludes merges"
+  exit 0
+fi
+
 MAX_FILES="${MAX_FILES:-10}"
 MAX_LINES="${MAX_LINES:-300}"
 

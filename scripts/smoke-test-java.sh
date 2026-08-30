@@ -306,6 +306,8 @@ expect_err "check-commit-messages.sh catches a --no-verify bypass" \
 git reset -q --soft HEAD~1
 
 # 4c. check-commit-range.sh: the CI half of the commit-size gate (canon 8.1).
+expect_ok "check-commit-range.sh selftest (the gate proves itself)" \
+  bash scripts/check-commit-range.sh --selftest
 expect_ok "check-commit-range.sh passes on small commits" \
   bash scripts/check-commit-range.sh HEAD~1 HEAD
 python3 - <<'PYEOF2'
