@@ -4,6 +4,10 @@
 # This is the required merge check; the pre-commit-java hook is the fast first
 # line. Make it a required status check in branch protection (rule 13.2).
 #
+# The CVE scan and the vendored-standard check are NOT here: both change
+# independently of your diff, so they ride in audit-java.yml on a schedule
+# rather than blocking an unrelated commit (references/workflow.md).
+#
 # Actions are pinned to major tags for readability; pin to a commit SHA for
 # supply-chain safety in a real repo (rule 5.4).
 name: ci
@@ -44,5 +48,3 @@ jobs:
         run: ./mvnw -q verify
       - name: mutation (PIT, >= 90 on domain and usecases)
         run: ./mvnw -q test-compile org.pitest:pitest-maven:mutationCoverage
-      - name: dependency CVEs (OWASP dependency-check, fails on high CVSS)
-        run: ./mvnw -q org.owasp:dependency-check-maven:check

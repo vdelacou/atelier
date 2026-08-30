@@ -32,7 +32,7 @@ lint_workflow() {
   local ref=""
   case "$(basename "$wf")" in
     ci.yml|audit.yml) ref="${BOOTSTRAP_REF_BUN:-skills/atelier/references/bun-typescript.md}" ;;
-    ci-java.yml) ref="${BOOTSTRAP_REF_JAVA:-skills/atelier/references/java-quarkus.md}" ;;
+    ci-java.yml|audit-java.yml) ref="${BOOTSTRAP_REF_JAVA:-skills/atelier/references/java-quarkus.md}" ;;
   esac
   if [ -n "$ref" ] && [ -f "$ref" ]; then
     while IFS= read -r sref; do
@@ -99,7 +99,7 @@ if [ "${1:-}" = "--selftest" ]; then
 fi
 
 status=0
-for wf in "$ASSETS_DIR"/ci*.yml "$ASSETS_DIR"/audit.yml; do
+for wf in "$ASSETS_DIR"/ci*.yml "$ASSETS_DIR"/audit*.yml; do
   lint_workflow "$wf" "$ASSETS_DIR" || status=1
 done
 if [ "$status" -eq 0 ]; then

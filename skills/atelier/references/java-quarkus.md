@@ -355,7 +355,8 @@ Same git hooks as the Bun variant, shell only, wired with `git config core.hooks
 
 - `assets/commit-msg`: the shipped Conventional Commits validator, unchanged (rule 23; it is dependency-free shell).
 - `assets/pre-commit-java`: the fast gates only, commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>`; the project's own dev version may be a SNAPSHOT) → `gitleaks protect --staged` → `./mvnw -q spotless:check`. A multi-minute hook trains `--no-verify` (rule 15.1, and 15.3), so `./mvnw verify` and PIT do not live here.
-- `assets/ci-java.yml`: the authoritative gate set, run on every push and pull request as the required merge check. Its first step re-runs the commit-msg validator over the pushed range (`scripts/check-commit-messages.sh`, so `--no-verify` cannot slip a message past the local hook), then the pom gate, a full-history `gitleaks detect` (CI installs its own pinned copy), plus `./mvnw verify` (compile with `-Werror`, unit + integration tests, JaCoCo tier check), PIT mutation (≥90 on `domain`/`usecases`), and the OWASP dependency scan.
+- `assets/audit-java.yml`: the two watchdogs that are not gate material, the OWASP CVE scan and `check-skill-pin.sh` (a vendored standard is a dependency, `references/governance.md`), on a daily schedule plus the pull requests that touch a pom or the vendored skill.
+- `assets/ci-java.yml`: the authoritative gate set, run on every push and pull request as the required merge check. Its first step re-runs the commit-msg validator over the pushed range (`scripts/check-commit-messages.sh`, so `--no-verify` cannot slip a message past the local hook), then the pom gate, a full-history `gitleaks detect` (CI installs its own pinned copy), plus `./mvnw verify` (compile with `-Werror`, unit + integration tests, JaCoCo tier check), and PIT mutation (≥90 on `domain`/`usecases`). The commit-size range check runs here too; the CVE scan does not.
 
 ```bash
 cp <skill>/assets/pre-commit-java        .githooks/pre-commit
@@ -366,11 +367,13 @@ cp <skill>/assets/check-commit-messages.sh scripts/check-commit-messages.sh
 cp <skill>/assets/check-commit-range.sh    scripts/check-commit-range.sh
 mkdir -p .github/workflows
 cp <skill>/assets/ci-java.yml            .github/workflows/ci.yml
+cp <skill>/assets/audit-java.yml         .github/workflows/audit-java.yml
+cp <skill>/assets/check-skill-pin.sh     scripts/check-skill-pin.sh
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh
 git config core.hooksPath .githooks
 ```
 
-CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the full history with `gitleaks detect`, then runs `spotless:check`, `./mvnw verify`, PIT, and the dependency scan (the commit-size gate stays hook-only; a pushed range is already sliced), and where the repo deploys, the compose portability gate and deployment events (`references/delivery.md`).
+CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the full history with `gitleaks detect`, then runs `spotless:check`, `./mvnw verify`, and PIT. The CVE scan and the vendored-standard check moved out to the scheduled `assets/audit-java.yml`, since both change independently of your diff, and where the repo deploys, the compose portability gate and deployment events (`references/delivery.md`).
 
 ## Bootstrap checklist (fresh Java repo)
 
@@ -385,7 +388,7 @@ CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the fu
 4. `application.properties`: authenticated-by-default policy, OIDC config placeholders, OTel enabled, JSON logging with the redaction filter, datasource for the constrained runtime role.
 5. Flyway: `src/main/resources/db/migration/V1__init.sql`; dev services or Testcontainers for the integration ring.
 6. Test support: `testsupport` package with the first hand-written fakes (logger recorder, clock); **no Mockito in the pom**.
-7. Hooks and CI scripts: copy the six assets as above (`pre-commit-java`, `commit-msg`, `check-commit-size.sh`, `check-pom.sh`, `check-commit-messages.sh`, `check-commit-range.sh`); `git config core.hooksPath .githooks`; optional local `gitleaks` install (CI installs its own). Verify the pom gate once: `bash scripts/check-pom.sh`.
+7. Hooks and CI scripts: copy the assets as above (`pre-commit-java`, `commit-msg`, `check-commit-size.sh`, `check-pom.sh`, `check-commit-messages.sh`, `check-commit-range.sh`); `git config core.hooksPath .githooks`; optional local `gitleaks` install (CI installs its own). Verify the pom gate once: `bash scripts/check-pom.sh`.
 8. Walking skeleton: one use-case returning `Ok` through its port, its value record, its JUnit test (propose the test first, rule 24), one resource with its REST Assured test including the 401 case.
 9. Verify green: `./mvnw spotless:check verify`, PIT on the skeleton, hooks reject a junk message and an oversized commit.
 10. `.claude/LESSONS.md` header; verify no scaffolded file names a person, an employer, or a client (rule 26); stage and propose the first commit (rule 25).
