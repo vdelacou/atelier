@@ -67,10 +67,10 @@ def render(files: dict[str, str]) -> str:
     return "".join(body) or "[no files produced]"
 
 
-def blind_order(task: str, swapped: bool) -> tuple[str, str]:
+def blind_order(task: str, swapped: bool, arms: tuple[str, str] = ARMS) -> tuple[str, str]:
     """Which arm is shown as A. Deterministic per task, then swapped for pass two."""
-    first = ARMS[int(hashlib.sha256(task.encode()).hexdigest(), 16) % 2]
-    second = ARMS[1] if first == ARMS[0] else ARMS[0]
+    first = arms[int(hashlib.sha256(task.encode()).hexdigest(), 16) % 2]
+    second = arms[1] if first == arms[0] else arms[0]
     return (second, first) if swapped else (first, second)
 
 
@@ -147,12 +147,13 @@ def cited_for(verdict: dict, letter: str) -> bool:
     return any(c.get("submission") == letter for c in verdict.get("citations") or [])
 
 
-def score_pair(task: str, verdicts: list[tuple[dict, tuple[str, str]]]) -> dict:
+def score_pair(task: str, verdicts: list[tuple[dict, tuple[str, str]]],
+               arms: tuple[str, str] = ARMS) -> dict:
     """Two order-swapped verdicts collapse to one outcome."""
     winners = []
     for v, shown in verdicts:
         w = unblind(v, shown)
-        if w in ARMS and not cited_for(v, v["winner"]):
+        if w in arms and not cited_for(v, v["winner"]):
             w = "uncited"          # a winner with no evidence for itself does not count
         winners.append(w)
     if "error" in winners:
@@ -185,6 +186,17 @@ def selftest() -> None:
     assert r["outcome"] == "uncited", r
     r = score_pair("t", [(tie, ("with_skill", "baseline")), (tie, ("baseline", "with_skill"))])
     assert r["outcome"] == "tie", r
+    # Custom labels: the instrument's real use is A/B-ing two skill VERSIONS, so
+    # the arm names cannot be hardcoded and the unblinding must follow the labels.
+    doctrine = ("current", "candidate")
+    d1, d2 = blind_order("h5-isolation-full", False, doctrine), blind_order("h5-isolation-full", True, doctrine)
+    assert set(d1) == set(doctrine) and d1 == (d2[1], d2[0]), (d1, d2)
+    r = score_pair("t", [(cited_a, ("candidate", "current")), (cited_b, ("current", "candidate"))], doctrine)
+    assert r["outcome"] == "candidate", r
+    # And a label that is not one of the two arms is never invented by the scorer.
+    r = score_pair("t", [(tie, ("current", "candidate")), (tie, ("candidate", "current"))], doctrine)
+    assert r["outcome"] == "tie", r
+
     err = {"winner": "error", "margin": 0, "citations": []}
     r = score_pair("t", [(err, ("with_skill", "baseline")), (tie, ("baseline", "with_skill"))])
     assert r["outcome"] == "error", r
@@ -195,6 +207,26 @@ def selftest() -> None:
     assert inverted(cited_a, ("with_skill", "baseline")) != unblind(cited_a, ("with_skill", "baseline"))
     print("selftest OK: order is deterministic and swaps, a position-flipped verdict scores "
           "inconsistent, an uncited winner is discarded, ties and errors survive collapse")
+
+
+def judge_pairs(pairs: list[tuple[str, str, str]], arms: tuple[str, str], model: str | None,
+                tasks: dict[str, str]) -> list[dict]:
+    """pairs: (task, rendered-for-arm0, rendered-for-arm1)."""
+    results = []
+    for task, a0, a1 in pairs:
+        rendered = {arms[0]: a0, arms[1]: a1}
+        verdicts = []
+        for swapped in (False, True):
+            shown = blind_order(task, swapped, arms)
+            v = ask_judge(tasks[task], rendered[shown[0]], rendered[shown[1]], model, REPO)
+            verdicts.append((v, shown))
+            print(f"  {task} order{'2' if swapped else '1'}: {v.get('winner')} "
+                  f"(margin {v.get('margin')}) {str(v.get('why'))[:70]}", flush=True)
+        r = score_pair(task, verdicts, arms)
+        r["detail"] = [v for v, _ in verdicts]
+        results.append(r)
+        print(f"{task}: {r['outcome']}", flush=True)
+    return results
 
 
 def main() -> int:
@@ -208,36 +240,57 @@ def main() -> int:
     import os
     model = os.environ.get("JUDGE_MODEL")
     tasks = {t["id"]: t["prompt"] for t in json.loads((REPO / "scripts/conformance-eval/tasks.json").read_text())}
-    results = []
-    for runs_dir in map(Path, sys.argv[1:]):
-        for ws in sorted(runs_dir.glob("*-with_skill")):
-            task = ws.name[: -len("-with_skill")]
-            bl = runs_dir / f"{task}-baseline"
-            if not bl.is_dir() or task not in tasks:
+    argv = sys.argv[1:]
+
+    # Doctrine A/B: the same arm, produced by two different skill versions, in two
+    # run dirs. This is the comparison the mechanical grader cannot make, and the
+    # reason the judge exists; skill-versus-no-skill is only its smoke test.
+    if argv[0] == "--ab":
+        if len(argv) < 3:
+            print("usage: judge.py --ab <dir-a> <dir-b> [label-a label-b] [--arm with_skill]")
+            return 2
+        dir_a, dir_b = Path(argv[1]), Path(argv[2])
+        rest = argv[3:]
+        arm = "with_skill"
+        if "--arm" in rest:
+            i = rest.index("--arm")
+            arm = rest[i + 1]
+            rest = rest[:i] + rest[i + 2:]
+        arms = (rest[0], rest[1]) if len(rest) >= 2 else (dir_a.name, dir_b.name)
+        pairs = []
+        for run_a in sorted(dir_a.glob(f"*-{arm}")):
+            task = run_a.name[: -len(f"-{arm}")]
+            run_b = dir_b / run_a.name
+            if not run_b.is_dir() or task not in tasks:
                 continue
-            rendered = {"with_skill": render(collect(ws)), "baseline": render(collect(bl))}
-            verdicts = []
-            for swapped in (False, True):
-                shown = blind_order(task, swapped)
-                v = ask_judge(tasks[task], rendered[shown[0]], rendered[shown[1]], model, REPO)
-                verdicts.append((v, shown))
-                print(f"  {task} order{'2' if swapped else '1'}: {v.get('winner')} "
-                      f"(margin {v.get('margin')}) {str(v.get('why'))[:70]}", flush=True)
-            r = score_pair(task, verdicts)
-            r["detail"] = [v for v, _ in verdicts]
-            results.append(r)
-            print(f"{task}: {r['outcome']}", flush=True)
+            pairs.append((task, render(collect(run_a)), render(collect(run_b))))
+        if not pairs:
+            print(f"no {arm} runs common to both dirs", file=sys.stderr)
+            return 1
+        print(f"doctrine A/B on {len(pairs)} task(s): {arms[0]} vs {arms[1]} (arm: {arm})")
+        results = judge_pairs(pairs, arms, model, tasks)
+    else:
+        arms = ARMS
+        pairs = []
+        for runs_dir in map(Path, argv):
+            for ws in sorted(runs_dir.glob("*-with_skill")):
+                task = ws.name[: -len("-with_skill")]
+                bl = runs_dir / f"{task}-baseline"
+                if not bl.is_dir() or task not in tasks:
+                    continue
+                pairs.append((task, render(collect(ws)), render(collect(bl))))
+        results = judge_pairs(pairs, arms, model, tasks)
 
     counts: dict[str, int] = {}
     for r in results:
         counts[r["outcome"]] = counts.get(r["outcome"], 0) + 1
     print("\nJUDGE TOTALS (order-swapped, blind, citation-required):")
-    for k in ("with_skill", "baseline", "tie", "inconsistent", "uncited", "error"):
+    for k in (arms[0], arms[1], "tie", "inconsistent", "uncited", "error"):
         if counts.get(k):
             print(f"  {k:13} {counts[k]}")
-    decided = counts.get("with_skill", 0) + counts.get("baseline", 0)
+    decided = counts.get(arms[0], 0) + counts.get(arms[1], 0)
     if decided:
-        print(f"  with_skill wins {counts.get('with_skill', 0)}/{decided} of the pairs both orders agreed on")
+        print(f"  {arms[0]} wins {counts.get(arms[0], 0)}/{decided} of the pairs both orders agreed on")
     (REPO / "scripts/conformance-eval/.judge-last.json").write_text(json.dumps(results, indent=2))
     return 0
 
