@@ -78,6 +78,8 @@ git config user.email "atelier-smoke@users.noreply.github.com"
 cp "$SKILL/assets/pre-commit-java" .githooks/pre-commit
 cp "$SKILL/assets/commit-msg" .githooks/commit-msg
 cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/assets/check-commit-messages.sh" "$SKILL/assets/check-commit-range.sh" scripts/
+cp "$SKILL/assets/check-pii-channels.sh" "$SKILL/assets/check-io-deadlines.sh" \
+   "$SKILL/assets/check-data-lifecycle.sh" "$SKILL/assets/check-isolation-tests.sh" scripts/
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh
 git config core.hooksPath .githooks
 
@@ -321,6 +323,102 @@ expect_err "check-commit-range.sh catches an oversized commit in the range" \
   bash scripts/check-commit-range.sh HEAD~1 HEAD
 git reset -q --mixed HEAD~1   # keeps every other untracked file the later scenarios need
 rm -f oversized*.txt
+
+# 4d. The four discipline tripwires on their JAVA triggers (rules 27-30). All
+# four ship Java detection (@QueryParam, HttpClient, hard delete, api/ routes),
+# so the Java variant gets them proven the same way the Bun smoke proves the
+# TypeScript side: each guard red on its violation, green once fixed.
+mkdir -p src/main/java/com/example/app/{api,infra} src/test/java/com/example/app/api
+
+cat > src/main/java/com/example/app/api/LookupResource.java <<'EOF'
+package com.example.app.api;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.QueryParam;
+
+public class LookupResource {
+  @GET
+  public String find(@QueryParam("email") String email) {
+    return email;
+  }
+}
+EOF
+git add src/main/java/com/example/app/api/LookupResource.java
+expect_err "pii guard blocks a Java @QueryParam(\"email\")" bash scripts/check-pii-channels.sh
+git rm -q --cached src/main/java/com/example/app/api/LookupResource.java
+rm src/main/java/com/example/app/api/LookupResource.java
+
+cat > src/main/java/com/example/app/infra/CrmClient.java <<'EOF'
+package com.example.app.infra;
+
+import java.net.http.HttpClient;
+
+public final class CrmClient {
+  private final HttpClient client = HttpClient.newBuilder().build();
+
+  public HttpClient client() {
+    return client;
+  }
+}
+EOF
+git add src/main/java/com/example/app/infra/CrmClient.java
+expect_err "deadline guard blocks a Java HttpClient with no timeout" bash scripts/check-io-deadlines.sh
+python3 - <<'PYEOF2'
+import pathlib
+p = pathlib.Path('src/main/java/com/example/app/infra/CrmClient.java')
+p.write_text(p.read_text().replace(
+    'HttpClient.newBuilder().build()',
+    'HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(2)).build()'))
+PYEOF2
+git add src/main/java/com/example/app/infra/CrmClient.java
+expect_ok "deadline guard passes once the Java client has connectTimeout" bash scripts/check-io-deadlines.sh
+git rm -q --cached src/main/java/com/example/app/infra/CrmClient.java
+rm src/main/java/com/example/app/infra/CrmClient.java
+
+cat > src/main/java/com/example/app/infra/OrderRepo.java <<'EOF'
+package com.example.app.infra;
+
+public final class OrderRepo {
+  public void purge(String id) {
+    db.deleteById(id);
+  }
+}
+EOF
+git add src/main/java/com/example/app/infra/OrderRepo.java
+expect_err "lifecycle guard blocks a Java hard delete" bash scripts/check-data-lifecycle.sh
+git rm -q --cached src/main/java/com/example/app/infra/OrderRepo.java
+rm src/main/java/com/example/app/infra/OrderRepo.java
+
+cat > src/main/java/com/example/app/api/InvoiceResource.java <<'EOF'
+package com.example.app.api;
+
+import jakarta.ws.rs.GET;
+
+public class InvoiceResource {
+  @GET
+  public String get() {
+    return "invoice";
+  }
+}
+EOF
+git add src/main/java/com/example/app/api/InvoiceResource.java
+expect_err "isolation guard blocks a Java resource with no 404 test" bash scripts/check-isolation-tests.sh
+cat > src/test/java/com/example/app/api/InvoiceResourceTest.java <<'EOF'
+package com.example.app.api;
+
+import org.junit.jupiter.api.Test;
+
+class InvoiceResourceTest {
+  @Test
+  void crossTenantReadIsNotFound() {
+    // another owner's invoice must look absent: 404, never 403
+  }
+}
+EOF
+git add src/test/java/com/example/app/api/InvoiceResourceTest.java
+expect_ok "isolation guard passes once the Java 404 test is staged" bash scripts/check-isolation-tests.sh
+git reset -q
+rm -rf src/main/java/com/example/app/api src/test/java/com/example/app/api
 
 # 5. spotless:check fails on a misformatted file.
 printf 'package com.example.app.domain;\n\npublic class Ugly{public static int x(){return 1;}}\n' \
