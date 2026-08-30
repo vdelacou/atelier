@@ -32,6 +32,7 @@ Minimal skeleton:
     "lint": "eslint --cache --max-warnings=0",
     "lint:strict": "LINT_STRICT=1 eslint --max-warnings=0",
     "lint:staged": "bash scripts/lint-staged.sh",
+    "test": "bun test",
     "typecheck": "tsc --noEmit",
     "coverage": "bun run scripts/check-coverage.ts",
     "mutate": "stryker run",
@@ -415,7 +416,7 @@ The shared `formatError(err: unknown): string` helper lives in `src/domain/utili
 ## Bootstrap checklist (fresh Bun repo)
 
 1. `mkdir <new-repo> && cd <new-repo> && bun init -y`.
-2. Replace `package.json` with the skeleton above (devDependencies include `eslint-plugin-sonarjs`; scripts include `lint`, `lint:strict`, `lint:staged`, `typecheck`, `coverage`, `mutate`, `mutate:changed`, `mutate:staged`, `start`). **No `"latest"` or `"*"` anywhere**; the skeleton's `^X.Y.Z` ranges are samples; bump them in step 7 below.
+2. Replace `package.json` with the skeleton above (devDependencies include `eslint-plugin-sonarjs`; scripts include `test`, `lint`, `lint:strict`, `lint:staged`, `typecheck`, `coverage`, `mutate`, `mutate:changed`, `mutate:staged`, `start`. Keep `test` as bare `bun test`: `--pass-with-no-tests` turns a suite that has vanished into a green run, the gate-that-cannot-fail canon 15.10 rejects). **No `"latest"` or `"*"` anywhere**; the skeleton's `^X.Y.Z` ranges are samples; bump them in step 7 below.
 3. Create `tsconfig.json` with the block above (includes `"types": ["bun"]`).
 4. Create `eslint.config.js` with the flat config above (includes `sonarjs.configs.recommended` and type-aware `@typescript-eslint` rules behind `LINT_STRICT=1`).
 5. Create `.vscode/settings.json` and `.vscode/extensions.json`.
