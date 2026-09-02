@@ -597,21 +597,7 @@ export const GET = async (
 
 ### Result → HTTP lives in `infra/`, not `presenter/`
 
-This is the exact mapper from `references/architecture.md` § Inbound HTTP: read it for the full rationale. The `Result → Response` mapper must read `StepError` (which lives in `use-cases/ports/`), and the `presenter → domain/ only` dependency rule forbids a presenter from importing it, so the mapper is an **`infra/` inbound adapter**, not a presenter. A use-case failure **defaults to `500`**: the use-case flatten already stringified the port `kind` into `cause: string`, so there is no typed discriminant left to `switch` on (per `references/result-type.md` § Mapping errors to an HTTP status). The narrow client errors (`400`) were already decided upstream at the branded checkpoint, above.
-
-```ts
-// src/infra/http/to-response.ts, pure and total: a use-case Result → an HTTP Response
-import type { Result } from '../../domain/result.ts';
-import type { StepError, Summary } from '../../use-cases/ports/step-error.ts';
-
-export const toResponse = <T extends Summary>(result: Result<T, StepError>): Response => {
-  if (result.ok) return Response.json(result.value, { status: 200 });
-  const { step, cause, message } = result.error;
-  // `cause` is a plain string after the flatten: no typed discriminant to switch on,
-  // so a use-case failure is a 500 by default. 400s are handled at the branded checkpoint.
-  return Response.json({ step, error: cause, message }, { status: 500 });
-};
-```
+This is the exact mapper from `references/architecture.md` § Inbound HTTP: read it for the full rationale. The `Result → Response` mapper must read `StepError` (which lives in `use-cases/ports/`), and the `presenter → domain/ only` dependency rule forbids a presenter from importing it, so the mapper is an **`infra/` inbound adapter**, not a presenter. A use-case failure **defaults to `500`**: the use-case flatten already stringified the port `kind` into `cause: string`, so there is no typed discriminant left to `switch` on (per `references/result-type.md` § Mapping errors to an HTTP status). The narrow client errors (`400`) were already decided upstream at the branded checkpoint, above. The mapper itself (`src/infra/http/to-response.ts`, pure and total, `ok` to 200, a use-case failure to 500 with `step`, `cause` and `message`) is printed once, in `references/architecture.md` § Inbound HTTP; copy it from there.
 
 ### Server-side body parsing without breaking the try/catch quarantine
 

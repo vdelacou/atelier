@@ -119,7 +119,7 @@ numbers line up exactly. On mechanics the skill is if anything tighter than the 
 per-module framing: it enforces per-file against a path-prefix tier, so one weak file fails
 rather than a module average, and it ships a coverage-preload that forces untested files to
 appear at 0 percent, which is precisely canon 15.2's Do ("an untested file reports as 0 percent
-and drags the number down", 15.2 Do; workflow.md:170-197). Both verdicts COVERED, enforced by
+and drags the number down", 15.2 Do; workflow.md:159-197). Both verdicts COVERED, enforced by
 the coverage and mutation gates; the per-file tightening is noted but not scored as STRICTER
 because the canon's clauses are all met rather than exceeded in kind.
 
@@ -132,7 +132,7 @@ is `{ "hono": "4.6.14", "zod": "3.24.1" }`, exact pins (global-rules-dos-and-don
 The skill permits and generates exactly the forbidden shape. `assets/check-package-json.sh`
 bans only `latest`, `*`, and bare dist-tags, and its own comment lists what it "Permits: 'x':
 '^1.2.3' / '~1.2.3' / '>=1.0.0'" (check-package-json.sh:37), while `bun add` "pins to ^X.Y.Z
-automatically" (check-package-json.sh:71) and workflow.md:436 requires "a concrete version
+automatically" (check-package-json.sh:71) and workflow.md:364 requires "a concrete version
 (X.Y.Z) or a real range (^X.Y.Z ...)". The scan clause is covered as doctrine (`bun audit` in
 CI daily and on dependency PRs, security.md:67, workflow.md:731) and the automated-update
 clause is covered thinly (Renovate is named, but only in the Java reference, java-quarkus.md:19;
@@ -190,7 +190,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 1.1 | One committed config for style | COVERED | workflow.md:66; assets/pre-commit gate 5 | gate | One flat eslint.config.js embeds prettier; lint:strict is gate 5 |
+| 1.1 | One committed config for style | COVERED | workflow.md:55; assets/pre-commit gate 5 | gate | One flat eslint.config.js embeds prettier; lint:strict is gate 5 |
 | 1.2 | Cap complexity and duplication | COVERED | SKILL.md:277; SKILL.md:221; SKILL.md:336 | gate | Size caps and Rule-of-Three are generation-time rules; rule 35 gates cyclomatic complexity at 10 in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`); sonarjs cognitive stays off, one metric |
 | 1.3 | One grammar for the history | COVERED | SKILL.md:193; assets/commit-msg; assets/check-commit-messages.sh | gate | Conventional Commits grammar enforced by the commit-msg hook and re-checked in CI over the pushed range, so a --no-verify bypass is still caught (gate added 2026-08-30 with the canon row). The 72-vs-100 divergence closed the same day: P6 1.3 ACCEPTED 2026-08-30, canon now states 100, the documented default of @commitlint/config-conventional, which the row's own gate snippet prescribes |
 
@@ -229,7 +229,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:165; testing.md:290 | gate | Mock ban is absolute and lint-enforced, exceeding canon advisory prefer-fakes |
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:117 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on a frozen lockfile as the required merge check |
-| 4.7 | Hold generated code to the same bar | COVERED | workflow.md:644 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
+| 4.7 | Hold generated code to the same bar | COVERED | workflow.md:572 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-48; SKILL.md:213 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
 
 ### Pillar 5: Secure by default
@@ -275,10 +275,10 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 8.1 | Trunk-based development with small commits | COVERED | workflow.md:321-324; assets/check-commit-size.sh:19 | gate | Trunk, sub-day branches, small commits; size gate 1 plus commit-msg |
+| 8.1 | Trunk-based development with small commits | COVERED | workflow.md:249-324; assets/check-commit-size.sh:19 | gate | Trunk, sub-day branches, small commits; size gate 1 plus commit-msg |
 | 8.2 | Automated pipeline, progressive delivery, one-step rollback | COVERED | delivery.md:7-12 | doctrine | Pipeline-only deploy, canary, one-re-run rollback |
 | 8.3 | Infrastructure as code | COVERED | delivery.md:22 | doctrine | Every resource in version-controlled IaC, rebuilt with one command |
-| 8.4 | Vertical slices | COVERED | architecture.md:37-46; workflow.md:328 | doctrine | Feature-cohesive slices, deploy independently or dark behind a flag; archetype src/ is layer-first |
+| 8.4 | Vertical slices | COVERED | architecture.md:37-46; workflow.md:256 | doctrine | Feature-cohesive slices, deploy independently or dark behind a flag; archetype src/ is layer-first |
 | 8.5 | Change contracts additively / expand-contract | COVERED | reliability.md:112-114; assets/check-data-lifecycle.sh:31 | tripwire | Expand-migrate-contract; check-data-lifecycle.sh blocks DROP COLUMN/TABLE, RENAME, TRUNCATE, ALTER COLUMN TYPE outside a *contract* migration |
 | 8.6 | Separate and ephemeral environments | COVERED | delivery.md:30 | doctrine | Throwaway per-branch environments keyed to the PR, destroyed on close |
 
@@ -354,13 +354,13 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 15.1 | Make the standard executable | COVERED | assets/pre-commit; assets/ci.yml | gate | Resolved Phase 2: hook restructured to 5 fast gates, full suite/coverage/mutation/strict-lint relocated to CI as the required merge gate (Watchlist 1) |
-| 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:170; assets/check-coverage.ts:148 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
-| 15.3 | No silent opt-out | COVERED | workflow.md:73-82; SKILL.md:167 | gate | Project-level severity change with a reason; inline suppressions banned |
+| 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:159; assets/check-coverage.ts:148 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
+| 15.3 | No silent opt-out | COVERED | workflow.md:62-82; SKILL.md:167 | gate | Project-level severity change with a reason; inline suppressions banned |
 | 15.4 | Test the bypass, not the happy path | COVERED | testing.md:649-531 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
-| 15.5 | Compliance is not proof | COVERED | workflow.md:643; governance.md:139 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
-| 15.6 | Audit the gaps between systems | COVERED | workflow.md:635; testing.md:663 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
-| 15.7 | Fix the class, not the instance | COVERED | workflow.md:636-640 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
-| 15.8 | Make proof re-checkable | COVERED | governance.md:91-139; workflow.md:643 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
+| 15.5 | Compliance is not proof | COVERED | workflow.md:571; governance.md:139 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
+| 15.6 | Audit the gaps between systems | COVERED | workflow.md:563; testing.md:663 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
+| 15.7 | Fix the class, not the instance | COVERED | workflow.md:564-640 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
+| 15.8 | Make proof re-checkable | COVERED | governance.md:91-139; workflow.md:571 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
 | 15.9 | Spend human judgment where it counts | COVERED | workflow.md:692; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
 | 15.10 | Prove the gate can fail | COVERED | SKILL.md:444; scripts/smoke-test.sh | gate | Doctrine after the variant gate table, every gate lands with a violation fixture it must reject; the repo smoke tests are the reference implementation |
 
@@ -382,7 +382,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 17.2 | Earn trust rather than extract a sale | COVERED | product.md:25-28 | doctrine | Honest over conversion, symmetric cancel, no dark patterns |
 | 17.3 | Design for real behavior, not the demo | COVERED | product.md:33-39 | doctrine | Ground flows in observed behavior per market, re-ranked on evidence |
 | 17.4 | Let technology serve the person, not replace them | COVERED | product.md:47-48 | doctrine | Automation removes friction; the human path stays visible |
-| 17.5 | Speak the user's language | COVERED | product.md:51-52; nextjs-monorepo.md:658 | rule | Every string in a meaning-keyed catalog; localization is a data change |
+| 17.5 | Speak the user's language | COVERED | product.md:51-52; nextjs-monorepo.md:644 | rule | Every string in a meaning-keyed catalog; localization is a data change |
 | 17.6 | Accessible by default | COVERED | atomic-design.md:234-239; nextjs-monorepo.md:300 | gate | Semantic, keyboard, token contrast; jsx-a11y error-level gate; axe optional (Watchlist 6) |
 | 17.7 | Mobile first, and a light interface | COVERED | product.md:86; assets/check-bundle-size.sh; atomic-design.md:206 | gate | Resolved Phase 2: smallest-screen-first, one-primary-action, progressive-disclosure; the bundle budget is a shipped gate. P6 ACCEPTED 2026-08-30, canon 17.7 gained the budget clause the pillar prose already asked for (Watchlist 6) |
 

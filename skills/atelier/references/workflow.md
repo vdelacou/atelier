@@ -50,18 +50,7 @@ bun run coverage   # per-directory thresholds pass
 
 If any of the four fail, fix the cause and re-run all four. Do not move on while one is red. Warnings have repeatedly hidden real issues (silent precedence bugs, dead returns, suppressed scanners); the zero-warning rule is not cosmetic.
 
-`package.json` scripts:
-
-```json
-{
-  "scripts": {
-    "lint": "eslint --cache --max-warnings=0",
-    "lint:strict": "LINT_STRICT=1 eslint --max-warnings=0",
-    "typecheck": "tsc --noEmit",
-    "coverage": "bun run scripts/check-coverage.ts"
-  }
-}
-```
+The `package.json` scripts behind the four commands (`lint`, `lint:strict`, `typecheck`, `coverage`, plus the mutation and staged-lint ones) are printed once, in `references/bun-typescript.md` § `package.json`.
 
 `bun run lint:strict` (~25 s) sets the env var `LINT_STRICT=1`; the same `eslint.config.js` reads `process.env['LINT_STRICT']` and conditionally adds a type-aware block (`parserOptions.projectService: true` plus `@typescript-eslint/no-unnecessary-type-assertion` and `@typescript-eslint/prefer-promise-reject-errors`). One config file, two modes, no separate `eslint.strict.config.js` to keep in sync. CI runs the strict version as a merge gate; the pre-commit hook runs the fast, non-type-aware `lint:staged` on the staged files, so run `bun run lint:strict` yourself in the inner loop to see the type-aware findings before you push.
 
@@ -220,68 +209,7 @@ When introducing a per-tier coverage gate in an existing repo, remove any global
 
 SonarLint runs IDE-side; CI and pre-commit do not see it. To keep IDE-only findings from drifting back in, ESLint is wired to catch them at lint time.
 
-In `eslint.config.js` (one config, two modes, `LINT_STRICT=1` switches on the type-aware block). The **canonical, complete** flat config lives in `references/bun-typescript.md` (§ `eslint.config.js`), the excerpt below shows only the SonarJS / type-aware slice this section is about, so if the two ever disagree, `bun-typescript.md` wins:
-
-```js
-import pluginJs from '@eslint/js';
-import sonarjsPlugin from 'eslint-plugin-sonarjs';
-import securityPlugin from 'eslint-plugin-security';
-import tsPlugin from 'typescript-eslint';
-
-export default [
-  pluginJs.configs.recommended,
-  ...tsPlugin.configs.recommended,
-  securityPlugin.configs.recommended,
-  {
-    files: ['**/*.ts'],
-    rules: {
-      'no-restricted-imports': ['error', {
-        paths: [{
-          name: 'bun:test',
-          importNames: ['mock'],
-          message:
-            '`mock` from bun:test is forbidden: it leaks across test files. Use dependency injection: refactor the production code to accept the SDK as a parameter, then pass a fake at construction.',
-        }],
-      }],
-    },
-  },
-  // Type-aware rules: gated by LINT_STRICT=1. Inner-loop `bun run lint`
-  // does not pay the ~25s parserOptions.projectService cost.
-  ...(process.env['LINT_STRICT']
-    ? [{
-        files: ['src/**/*.ts'],
-        languageOptions: {
-          parserOptions: {
-            projectService: true,
-            tsconfigRootDir: import.meta.dirname,
-          },
-        },
-        rules: {
-          '@typescript-eslint/no-unnecessary-type-assertion': 'error',
-          '@typescript-eslint/prefer-promise-reject-errors': 'error',
-        },
-      }]
-    : []),
-  sonarjsPlugin.configs.recommended,
-  {
-    // SonarJS rule overrides: always-on, justified per rule.
-    rules: {
-      'sonarjs/no-unused-vars': 'off',          // duplicates @typescript-eslint/no-unused-vars
-      'sonarjs/no-empty-test-file': 'off',      // false positives on `describe` test layout
-      'sonarjs/cognitive-complexity': 'off',    // one metric: the cyclomatic cap (rule 35) plus the size caps cover it
-    },
-  },
-  {
-    rules: {
-      'security/detect-object-injection': 'off',
-      'security/detect-unsafe-regex': 'off',
-      // false-positive on chmodSync(mkdtempSync(...)) in FS-adapter tests;
-      // production uses Bun.file (not covered by this rule), so no real loss.
-      'security/detect-non-literal-fs-filename': 'off',
-    },
-  },
-];
-```
+In `eslint.config.js` (one config, two modes, `LINT_STRICT=1` switches on the type-aware block). The canonical, complete flat config is printed once, in `references/bun-typescript.md` (§ `eslint.config.js`): `sonarjsPlugin.configs.recommended` is on, the type-aware lane adds `@typescript-eslint/no-unnecessary-type-assertion` and `prefer-promise-reject-errors`, and the five SonarJS rules turned off are each justified beside the switch there (the two dated 2026-08-29 are re-probed weekly by the skill repository's canary). Copy from that file, never from memory.
 
 The conditional block runs only when `process.env['LINT_STRICT']` is set, so the inner-loop `bun run lint` skips it entirely. `bun run lint:strict` is just `LINT_STRICT=1 eslint`.
 

@@ -157,31 +157,9 @@ export const createUser = (email: string, age: number, zipCode: string): User =>
   return { email, age, zipCode };
 };
 
-// REFACTORED - branded types catch invalid data at construction time. Two tiers, one type:
-// parseEmail is the boundary factory for untrusted input and returns Result (rules 16-17);
-// email() asserts a value already proven (a literal, a row you own) and throws, because an
-// invalid value there is a bug. parseX parses, x() asserts; Age and ZipCode follow the same shape.
-export type Email = string & { readonly __brand: 'Email' };
-export type EmailError = { readonly kind: 'invalidEmail'; readonly value: string };
-export const parseEmail = (raw: string): Result<Email, EmailError> =>
-  raw.includes('@') ? ok(raw as Email) : err({ kind: 'invalidEmail', value: raw });
-export const email = (value: string): Email => {
-  if (!value.includes('@')) throw new Error('invalid Email');
-  return value as Email;
-};
-
-export type Age = number & { readonly __brand: 'Age' };
-export const age = (value: number): Age => {
-  if (value < 0 || value > 150) throw new Error('invalid Age');
-  return value as Age;
-};
-
-export type ZipCode = string & { readonly __brand: 'ZipCode' };
-export const zipCode = (value: string): ZipCode => {
-  if (!/^\d{5}(-\d{4})?$/.test(value)) throw new Error('invalid ZipCode');
-  return value as ZipCode;
-};
-
+// REFACTORED - branded types with validating factories, two tiers per type (parseEmail returns
+// Result for untrusted input, email() asserts a proven value). The Email / Age / Money exemplar
+// is printed once, in references/clean-code.md, calisthenics rule 3; ZipCode follows the same shape.
 export const createUser = (e: Email, a: Age, z: ZipCode): User => ({ email: e, age: a, zipCode: z });
 ```
 
