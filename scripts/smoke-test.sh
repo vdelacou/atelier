@@ -318,6 +318,17 @@ printf 'export const f = (): Promise<Response> => fetch("https://svc.test/x");\n
 git add src/infra/no-deadline.ts
 expect_err "deadline guard blocks fetch without a deadline marker" bash scripts/check-io-deadlines.sh
 git reset -q && rm src/infra/no-deadline.ts
+# The doctrine's own idiom is globalThis.fetch (references/bun-typescript.md),
+# which the old call pattern never matched, and the old marker was the bare word
+# `timeout` anywhere in the file, which a comment satisfied. Found 2026-09-02.
+printf 'export const f = (): Promise<Response> => globalThis.fetch("https://svc.test/x"); // timeout upstream\n' > src/infra/global-no-deadline.ts
+git add src/infra/global-no-deadline.ts
+expect_err "deadline guard blocks globalThis.fetch with only a comment mentioning timeout" bash scripts/check-io-deadlines.sh
+git reset -q && rm src/infra/global-no-deadline.ts
+printf 'export const f = (): Promise<Response> => globalThis.fetch("https://svc.test/x", { signal: AbortSignal.timeout(2_000) });\n' > src/infra/global-deadline.ts
+git add src/infra/global-deadline.ts
+expect_ok "deadline guard passes globalThis.fetch with a deadline on the call" bash scripts/check-io-deadlines.sh
+git reset -q && rm src/infra/global-deadline.ts
 git add src/infra/fetch-greeting.ts
 expect_ok "deadline guard passes the conforming adapter" bash scripts/check-io-deadlines.sh
 git reset -q

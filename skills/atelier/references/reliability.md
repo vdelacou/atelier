@@ -147,7 +147,7 @@ Writes stay on the transactional path, done by a user; reads at scale move to th
 
 ## Executable tripwires
 
-The mechanical slices of rules 29 and 30 ship as staged-diff gates (`references/workflow.md`, Discipline tripwires): `assets/check-io-deadlines.sh` blocks an infra file that calls `fetch` (or opens a Java `HttpClient`) with no deadline marker, and `assets/check-data-lifecycle.sh` blocks a hard delete in application code and destructive DDL in a non-contract migration. Exceptions ride on path conventions, never inline suppressions: erasure/retention/prune/sweep paths for the sanctioned hard deletes, a `*contract*` filename for the deliberate contract-step migration. Tripwires, not proofs; the checklist below stays the review duty.
+The mechanical slices of rules 29 and 30 ship as staged-diff gates (`references/workflow.md`, Discipline tripwires): `assets/check-io-deadlines.sh` blocks an infra `fetch` or `globalThis.fetch` call with no `AbortSignal.timeout(` or `signal:` within the eight lines after it, comments stripped first (a Java `HttpClient` with no `.timeout(` or `connectTimeout` in the file), and `assets/check-data-lifecycle.sh` blocks a hard delete in application code and destructive DDL in a non-contract migration. Exceptions ride on path conventions, never inline suppressions: erasure/retention/prune/sweep paths for the sanctioned hard deletes, a `*contract*` filename for the deliberate contract-step migration. Tripwires, not proofs; the checklist below stays the review duty.
 
 ## Review checklist (changes touching IO, persistence, or state)
 
