@@ -29,12 +29,30 @@ fi
 
 # Match a VALUE position (after the colon) equal to the bare strings
 # "latest", "*", or a bare dist-tag ("beta", "alpha", "next", "canary",
-# "rc") — all non-deterministic in exactly the way rule 19 bans.
-# Anchoring on the colon keeps package NAMES out of scope (the dependency
-# "next" is fine; the version "next" is not).
-# Catches:  "any-pkg": "latest",   "x": "*",   "plugin": "beta"
+# "rc"), or an npm: alias resolving to one, all non-deterministic in
+# exactly the way rule 19 bans. Only the four dependency blocks are read, so
+# a version-shaped value elsewhere (publishConfig.tag: "next", an engines
+# field, a script) is not a finding (a false positive found 2026-09-02).
+# Catches:  "any-pkg": "latest",   "x": "*",   "plugin": "beta",   "a": "npm:b@latest"
 # Permits:  "x": "^1.2.3" / "~1.2.3" / ">=1.0.0" / "^4.0.0-beta.0",  "next": "16.1.1"
-violations=$(echo "$manifests" | tr '\n' '\0' | xargs -0 grep -nHE ':[[:space:]]*"(\*|latest|beta|alpha|next|canary|rc)"' || true)
+violations=$(echo "$manifests" | tr '\n' '\0' | xargs -0 awk '
+  BEGIN { V = ":[[:space:]]*\"(\\*|latest|beta|alpha|next|canary|rc|npm:[^\"]*@(latest|\\*))\"" }
+  FNR == 1 { inblock = 0 }
+  {
+    s = $0
+    while (match(s, /"(dependencies|devDependencies|peerDependencies|optionalDependencies)"[[:space:]]*:[[:space:]]*\{/)) {
+      rest = substr(s, RSTART + RLENGTH)
+      close_at = index(rest, "}")
+      if (close_at > 0) {                         # a one-line block: test just its body
+        if (substr(rest, 1, close_at) ~ V) print FILENAME ":" FNR ":" $0
+        s = substr(rest, close_at + 1); continue
+      }
+      inblock = 1; s = ""                         # a multi-line block opens here
+    }
+    if (!inblock) next
+    if ($0 ~ /^[[:space:]]*\}/) { inblock = 0; next }
+    if ($0 ~ V) print FILENAME ":" FNR ":" $0
+  }' || true)
 
 if [ -z "$violations" ]; then
   exit 0

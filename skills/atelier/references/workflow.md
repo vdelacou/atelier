@@ -443,7 +443,7 @@ Workflow:
 - **Bumping one specific dep.** `bun update <pkg>` for a constrained bump, or `bun add <pkg>@latest` to force the absolute current latest into the same `^X.Y.Z` slot. Either way, no `"latest"` ends up in the file.
 - **Initial scaffold.** When using the skill's `package.json` skeleton (in `references/bun-typescript.md`), the version ranges are samples. Run `bun install` to resolve them, then `bun update` to pull each dep to its current latest, then commit both files together. Verify with `bash scripts/check-package-json.sh`.
 
-The gate greps the version strings themselves (colon-anchored), catching `"*"`, `"latest"`, and bare dist-tags (`beta`, `alpha`, `next`, `canary`, `rc`); real ranges like `^1.2.3` and `>=4.0.0` pass.
+The gate reads the version strings inside the four dependency blocks only (`dependencies`, `devDependencies`, `peerDependencies`, `optionalDependencies`, one-line or multi-line), catching `"*"`, `"latest"`, bare dist-tags (`beta`, `alpha`, `next`, `canary`, `rc`), and an `npm:` alias resolving to one; real ranges like `^1.2.3` and `>=4.0.0` pass, and a dist-tag elsewhere in the manifest (`publishConfig.tag`) is not a finding.
 
 ### Secret scanning with gitleaks (gate 3)
 

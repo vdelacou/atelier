@@ -279,6 +279,21 @@ cat > packages/widget/package.json <<'EOF'
 { "name": "widget", "dependencies": { "left-pad": "^1.3.0" } }
 EOF
 expect_ok "package.json gate accepts a pinned workspace manifest" bash scripts/check-package-json.sh
+# Only the dependency blocks are versions: a dist-tag elsewhere in the manifest
+# (publishConfig.tag) used to block the commit (false positive, 2026-09-02),
+# and an npm: alias resolving to latest used to pass.
+cat > packages/widget/package.json <<'EOF'
+{
+  "name": "widget",
+  "publishConfig": { "tag": "next" },
+  "dependencies": { "left-pad": "^1.3.0" }
+}
+EOF
+expect_ok "package.json gate ignores a dist-tag outside the dependency blocks" bash scripts/check-package-json.sh
+cat > packages/widget/package.json <<'EOF'
+{ "name": "widget", "dependencies": { "pad": "npm:left-pad@latest" } }
+EOF
+expect_err "package.json gate rejects an npm: alias resolving to latest" bash scripts/check-package-json.sh
 rm -rf packages
 
 check_msg() { printf '%s\n' "$1" > .msg; bash .githooks/commit-msg .msg; }

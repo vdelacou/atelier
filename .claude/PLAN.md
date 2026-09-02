@@ -21,7 +21,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
        (comment-exempt red, path-exempt green, DROP TABLE red, contract migration green); V1 V2 V3.
 4. [ ] fix(atelier): pii tripwire reads a multi-line logger call and more names. DoD: two-line
        logger fixture red; V1 V2.
-5. [ ] fix(atelier): package.json gate scopes to the dependency blocks. DoD: publishConfig.tag
+5. [x] fix(atelier): package.json gate scopes to the dependency blocks. DoD: publishConfig.tag
        fixture green, existing latest fixtures still red; V1 V3.
 6. [ ] fix(atelier): isolation tripwire wants a 404 inside a test naming the route. DoD: three
        fixtures (wrong test file red, 404 in comment red, 404 in a test block green); Java mirror;

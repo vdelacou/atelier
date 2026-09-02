@@ -131,8 +131,8 @@ TypeScript example is unambiguous: the Don't is `{ "dependencies": { "hono": "^4
 is `{ "hono": "4.6.14", "zod": "3.24.1" }`, exact pins (global-rules-dos-and-donts.md:933-938@edb98a7).
 The skill permits and generates exactly the forbidden shape. `assets/check-package-json.sh`
 bans only `latest`, `*`, and bare dist-tags, and its own comment lists what it "Permits: 'x':
-'^1.2.3' / '~1.2.3' / '>=1.0.0'" (check-package-json.sh:36), while `bun add` "pins to ^X.Y.Z
-automatically" (check-package-json.sh:53) and workflow.md:432 requires "a concrete version
+'^1.2.3' / '~1.2.3' / '>=1.0.0'" (check-package-json.sh:37), while `bun add` "pins to ^X.Y.Z
+automatically" (check-package-json.sh:71) and workflow.md:432 requires "a concrete version
 (X.Y.Z) or a real range (^X.Y.Z ...)". The scan clause is covered as doctrine (`bun audit` in
 CI daily and on dependency PRs, security.md:67, workflow.md:727) and the automated-update
 clause is covered thinly (Renovate is named, but only in the Java reference, java-quarkus.md:19;
@@ -238,7 +238,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 5.1 | Keep secrets out of the codebase | COVERED | security.md:184; assets/pre-commit gate 3 | gate | Secret manager, rotation, central control; gitleaks gate backs the ban |
 | 5.2 | Do not build authentication or crypto yourself | COVERED | security.md:35-46 | rule | OIDC plus vetted crypto, SSO and MFA on consoles (rule 33) |
-| 5.3 | Control your dependencies | COVERED | assets/check-package-json.sh:36; docs/global-rules/proposed-revisions.md | gate | P6 revision ACCEPTED 2026-07-20: canon 5.3 now allows a constrained range plus a committed lockfile, which check-package-json.sh enforces (Watchlist 4) |
+| 5.3 | Control your dependencies | COVERED | assets/check-package-json.sh:37; docs/global-rules/proposed-revisions.md | gate | P6 revision ACCEPTED 2026-07-20: canon 5.3 now allows a constrained range plus a committed lockfile, which check-package-json.sh enforces (Watchlist 4) |
 | 5.4 | Secure the supply chain | COVERED | delivery.md:71-73 | doctrine | Immutable digest-addressed artifacts, SBOM, cosign signatures |
 | 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:358 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
 | 5.6 | Expose only what has to be public | COVERED | security.md:218 | doctrine | Datastores, queues, admin panels on a private network only |
