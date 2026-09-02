@@ -409,6 +409,7 @@ public class InvoiceResource {
 EOF
 git add src/main/java/com/example/app/api/InvoiceResource.java
 expect_err "isolation guard blocks a Java resource with no 404 test" bash scripts/check-isolation-tests.sh
+# A 404 that lives only in a comment used to satisfy the guard (2026-09-02).
 cat > src/test/java/com/example/app/api/InvoiceResourceTest.java <<'EOF'
 package com.example.app.api;
 
@@ -418,6 +419,22 @@ class InvoiceResourceTest {
   @Test
   void crossTenantReadIsNotFound() {
     // another owner's invoice must look absent: 404, never 403
+  }
+}
+EOF
+git add src/test/java/com/example/app/api/InvoiceResourceTest.java
+expect_err "isolation guard ignores a Java 404 that lives only in a comment" bash scripts/check-isolation-tests.sh
+cat > src/test/java/com/example/app/api/InvoiceResourceTest.java <<'EOF'
+package com.example.app.api;
+
+import static io.restassured.RestAssured.given;
+
+import org.junit.jupiter.api.Test;
+
+class InvoiceResourceTest {
+  @Test
+  void crossTenantReadIsNotFound() {
+    given().auth().oauth2(ownerAToken).when().get("/invoices/" + ownerBInvoice).then().statusCode(404);
   }
 }
 EOF

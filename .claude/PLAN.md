@@ -23,7 +23,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
        logger fixture red; V1 V2.
 5. [x] fix(atelier): package.json gate scopes to the dependency blocks. DoD: publishConfig.tag
        fixture green, existing latest fixtures still red; V1 V3.
-6. [ ] fix(atelier): isolation tripwire wants a 404 inside a test naming the route. DoD: three
+6. [x] fix(atelier): isolation tripwire wants a 404 inside a test naming the route. DoD: three
        fixtures (wrong test file red, 404 in comment red, 404 in a test block green); Java mirror;
        V1 V2.
 7. [ ] fix(atelier): the staleness gate runs in tree mode from the shipped workflow. DoD: tree

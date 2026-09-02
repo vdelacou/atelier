@@ -391,6 +391,15 @@ mkdir -p src/infra/http
 printf 'export const route = (orgId: string): string => orgId;\n' > src/infra/http/invoices.ts
 git add src/infra/http/invoices.ts
 expect_err "isolation guard blocks a route without a 404 test" bash scripts/check-isolation-tests.sh
+# Any test in the directory containing the characters 404 used to satisfy it,
+# even a test for another route or a TODO comment (found 2026-09-02).
+printf 'import { test, expect } from "bun:test";\ntest("orders cross-tenant read is not_found", () => { expect(404).toBe(404); });\n' > src/infra/http/orders.test.ts
+git add src/infra/http/orders.test.ts
+expect_err "isolation guard ignores a 404 in a test not named for the route" bash scripts/check-isolation-tests.sh
+git rm -q --cached src/infra/http/orders.test.ts && rm src/infra/http/orders.test.ts
+printf 'import { test, expect } from "bun:test";\n// TODO: assert 404 for another owner\ntest("lists invoices", () => { expect(1).toBe(1); });\n' > src/infra/http/invoices.test.ts
+git add src/infra/http/invoices.test.ts
+expect_err "isolation guard ignores a 404 that lives only in a comment" bash scripts/check-isolation-tests.sh
 printf 'import { test, expect } from "bun:test";\ntest("cross-tenant read is not_found", () => { expect(404).toBe(404); });\n' > src/infra/http/invoices.test.ts
 git add src/infra/http/invoices.test.ts
 expect_ok "isolation guard passes once the 404 test is staged" bash scripts/check-isolation-tests.sh
