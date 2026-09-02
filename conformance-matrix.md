@@ -134,7 +134,7 @@ bans only `latest`, `*`, and bare dist-tags, and its own comment lists what it "
 '^1.2.3' / '~1.2.3' / '>=1.0.0'" (check-package-json.sh:36), while `bun add` "pins to ^X.Y.Z
 automatically" (check-package-json.sh:53) and workflow.md:432 requires "a concrete version
 (X.Y.Z) or a real range (^X.Y.Z ...)". The scan clause is covered as doctrine (`bun audit` in
-CI daily and on dependency PRs, security.md:67, workflow.md:724) and the automated-update
+CI daily and on dependency PRs, security.md:67, workflow.md:727) and the automated-update
 clause is covered thinly (Renovate is named, but only in the Java reference, java-quarkus.md:19;
 the Bun side leans on a manual `bun update` cadence and ships no Renovate or dependabot config).
 But the pin clause is contradicted, and CONTRADICTS dominates. The skill's rationale (a
@@ -229,7 +229,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:165; testing.md:231 | gate | Mock ban is absolute and lint-enforced, exceeding canon advisory prefer-fakes |
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:117 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on a frozen lockfile as the required merge check |
-| 4.7 | Hold generated code to the same bar | COVERED | workflow.md:637 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
+| 4.7 | Hold generated code to the same bar | COVERED | workflow.md:640 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-48; SKILL.md:213 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
 
 ### Pillar 5: Secure by default
@@ -357,11 +357,11 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:170; assets/check-coverage.ts:137 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
 | 15.3 | No silent opt-out | COVERED | workflow.md:73-82; SKILL.md:167 | gate | Project-level severity change with a reason; inline suppressions banned |
 | 15.4 | Test the bypass, not the happy path | COVERED | testing.md:522-531 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
-| 15.5 | Compliance is not proof | COVERED | workflow.md:636; governance.md:139 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
-| 15.6 | Audit the gaps between systems | COVERED | workflow.md:628; testing.md:536 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
-| 15.7 | Fix the class, not the instance | COVERED | workflow.md:629-633 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
-| 15.8 | Make proof re-checkable | COVERED | governance.md:91-139; workflow.md:636 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
-| 15.9 | Spend human judgment where it counts | COVERED | workflow.md:685; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
+| 15.5 | Compliance is not proof | COVERED | workflow.md:639; governance.md:139 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
+| 15.6 | Audit the gaps between systems | COVERED | workflow.md:631; testing.md:536 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
+| 15.7 | Fix the class, not the instance | COVERED | workflow.md:632-636 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
+| 15.8 | Make proof re-checkable | COVERED | governance.md:91-139; workflow.md:639 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
+| 15.9 | Spend human judgment where it counts | COVERED | workflow.md:688; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
 | 15.10 | Prove the gate can fail | COVERED | SKILL.md:433; scripts/smoke-test.sh | gate | Doctrine after the variant gate table, every gate lands with a violation fixture it must reject; the repo smoke tests are the reference implementation |
 
 ### Pillar 16: Measure whether you are improving

@@ -154,13 +154,13 @@
     "skills/atelier/references/workflow.md:324": "- **Incomplete work hides behind a flag, not a branch.** When a feature ",
     "skills/atelier/references/workflow.md:432": "`scripts/check-package-json.sh` blocks any commit where `package.json` d",
     "skills/atelier/references/workflow.md:5": "## The durable plan (`.claude/PLAN.md`)",
-    "skills/atelier/references/workflow.md:628": "- **Audit the seams between systems.** The dangerous gap lives where two",
-    "skills/atelier/references/workflow.md:629": "- **Fix the class, not the instance.** When a flaw is found, assume it r",
-    "skills/atelier/references/workflow.md:636": "- **Compliance is not proof.** A ticked checklist and a passed audit des",
-    "skills/atelier/references/workflow.md:637": "- **Generated code meets the same bar (provenance is not proof).** Code ",
+    "skills/atelier/references/workflow.md:631": "- **Audit the seams between systems.** The dangerous gap lives where two",
+    "skills/atelier/references/workflow.md:632": "- **Fix the class, not the instance.** When a flaw is found, assume it r",
+    "skills/atelier/references/workflow.md:639": "- **Compliance is not proof.** A ticked checklist and a passed audit des",
+    "skills/atelier/references/workflow.md:640": "- **Generated code meets the same bar (provenance is not proof).** Code ",
     "skills/atelier/references/workflow.md:66": "`bun run lint:strict` (~25 s) sets the env var `LINT_STRICT=1`; the same",
-    "skills/atelier/references/workflow.md:685": "1. `source.fixAll.eslint` on save applies the ESLint-with-Prettier rules",
-    "skills/atelier/references/workflow.md:724": "- **Dependency CVE scanning lives in CI, not the gate** (`bun audit --au",
+    "skills/atelier/references/workflow.md:688": "1. `source.fixAll.eslint` on save applies the ESLint-with-Prettier rules",
+    "skills/atelier/references/workflow.md:727": "- **Dependency CVE scanning lives in CI, not the gate** (`bun audit --au",
     "skills/atelier/references/workflow.md:73": "2. **Configure rule severity at the project level** in `eslint.config.js"
   }
 }

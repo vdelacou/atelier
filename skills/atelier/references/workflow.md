@@ -540,11 +540,14 @@ The shipped `assets/commit-msg` is a **dependency-free shell validator** — it 
 
 **The hook is the first line, CI is the one that cannot be skipped.** `git commit --no-verify`
 walks straight past the hook, so `assets/check-commit-messages.sh` re-runs the identical grammar
-in CI over every commit in the pushed range (the PR's base branch by default, `HEAD~1..HEAD` when
-that ref does not resolve, never the whole history, so a repo adopting the standard is not failed
-on commits nobody can rewrite). It delegates to the hook script rather than restating the pattern,
-so local and CI cannot drift apart. Merge commits are excluded; the hook's own Revert / fixup! /
-squash! / amend! exemptions still apply.
+in CI over every commit in the pushed range: the PR's base branch on a pull request; on a push,
+`github.event.before..HEAD`, which the shipped workflow exports as `GITHUB_EVENT_BEFORE` (on a
+push to `main` the checkout has `HEAD == origin/main`, so a range against `origin/main` is empty
+by construction and would pass without checking anything); `HEAD~1..HEAD` when neither resolves;
+never the whole history, so a repo adopting the standard is not failed on commits nobody can
+rewrite. `check-commit-range.sh` resolves its base the same way. The message gate delegates to the
+hook script rather than restating the pattern, so local and CI cannot drift apart. Merge commits
+are excluded; the hook's own Revert / fixup! / squash! / amend! exemptions still apply.
 
 For Husky, copy `assets/commit-msg`'s body into `.husky/commit-msg`.
 

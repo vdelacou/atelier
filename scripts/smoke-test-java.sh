@@ -305,6 +305,12 @@ rm -f .msg
 git commit -q --no-verify --allow-empty -m "wip stuff"
 expect_err "check-commit-messages.sh catches a --no-verify bypass" \
   bash scripts/check-commit-messages.sh
+# On a push to main HEAD == origin/main, so the old default range was empty and
+# the gate passed vacuously; the shipped workflow now exports github.event.before.
+git update-ref refs/remotes/origin/main HEAD
+expect_err "check-commit-messages.sh still catches the bypass on a push where origin/main == HEAD" \
+  env -u GITHUB_BASE_REF GITHUB_EVENT_NAME=push bash scripts/check-commit-messages.sh
+git update-ref -d refs/remotes/origin/main
 git reset -q --soft HEAD~1
 
 # 4c. check-commit-range.sh: the CI half of the commit-size gate (canon 8.1).

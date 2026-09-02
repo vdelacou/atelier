@@ -12,7 +12,9 @@
 # `--no-verify` bypass cannot skip.
 #
 # Usage: bash scripts/check-commit-range.sh [base] [head]
-#   Defaults: base = origin/$GITHUB_BASE_REF (pull request) or HEAD~1 (push),
+#   Defaults: base = origin/$GITHUB_BASE_REF (pull request), else
+#             $GITHUB_EVENT_BEFORE (a push: every commit it added, exported by
+#             the shipped workflow from github.event.before), else HEAD~1;
 #             head = HEAD. Never walks the whole history.
 #
 # Merge commits are excluded: a merge legitimately touches many files.
@@ -58,9 +60,13 @@ MAX_LINES="${MAX_LINES:-300}"
 base="${1:-}"
 head="${2:-HEAD}"
 
+zero_sha=0000000000000000000000000000000000000000
 if [ -z "$base" ]; then
   if [ -n "${GITHUB_BASE_REF:-}" ] && git rev-parse --verify -q "origin/$GITHUB_BASE_REF" >/dev/null; then
     base="origin/$GITHUB_BASE_REF"
+  elif [ -n "${GITHUB_EVENT_BEFORE:-}" ] && [ "$GITHUB_EVENT_BEFORE" != "$zero_sha" ] \
+    && git rev-parse --verify -q "${GITHUB_EVENT_BEFORE}^{commit}" >/dev/null; then
+    base="$GITHUB_EVENT_BEFORE"   # a push: walk every commit it added, not only the tip
   elif git rev-parse --verify -q HEAD~1 >/dev/null; then
     base="HEAD~1"
   else

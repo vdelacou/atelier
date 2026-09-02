@@ -377,6 +377,17 @@ expect_ok  "check-commit-messages.sh passes on a conventional history" \
 git commit -q --no-verify --allow-empty -m 'wip: bypassed the hook'
 expect_err "check-commit-messages.sh catches a --no-verify bypass" \
   bash scripts/check-commit-messages.sh
+# On a push to main the checkout has HEAD == origin/main, so the old default
+# range origin/main..HEAD was empty and the gate exited 0 having checked
+# nothing (found 2026-09-02). Simulate that checkout and prove the push path
+# both without and with the github.event.before the shipped workflow exports.
+git update-ref refs/remotes/origin/main HEAD
+expect_err "check-commit-messages.sh still catches the bypass on a push where origin/main == HEAD" \
+  env -u GITHUB_BASE_REF GITHUB_EVENT_NAME=push bash scripts/check-commit-messages.sh
+expect_err "check-commit-messages.sh walks github.event.before..HEAD on a push" \
+  env -u GITHUB_BASE_REF GITHUB_EVENT_NAME=push GITHUB_EVENT_BEFORE="$(git rev-parse HEAD~1)" \
+  bash scripts/check-commit-messages.sh
+git update-ref -d refs/remotes/origin/main
 git reset -q --soft HEAD~1
 
 # The commit-SIZE CI gate (pre-commit gate 1, canon 8.1). Same split as the
@@ -395,7 +406,13 @@ git add oversized*.txt
 git commit -q --no-verify -m 'chore: oversized commit that bypassed the hook'
 expect_err "check-commit-range.sh catches an oversized commit in the range" \
   bash scripts/check-commit-range.sh HEAD~1 HEAD
-git reset -q --mixed HEAD~1   # keeps every other untracked file the later scenarios need
+# A push default of HEAD~1 checks only the tip: an oversized commit one below a
+# small one sailed through. With github.event.before exported, every pushed
+# commit is walked.
+git commit -q --no-verify --allow-empty -m 'chore: small tip above the oversized one'
+expect_err "check-commit-range.sh walks github.event.before..HEAD on a push, not only the tip" \
+  env -u GITHUB_BASE_REF GITHUB_EVENT_BEFORE="$(git rev-parse HEAD~2)" bash scripts/check-commit-range.sh
+git reset -q --mixed HEAD~2   # keeps every other untracked file the later scenarios need
 rm -f oversized*.txt
 cat > src/domain/eligibility.ts <<'EOF'
 export const isEligible = (age: number): boolean => age >= 18;
