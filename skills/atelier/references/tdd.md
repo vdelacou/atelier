@@ -201,7 +201,7 @@ Never import from the `mock` namespace of `bun:test`: `mock()`, `mock.module()`,
 
 ## TDD for a pure arrow-function module
 
-Example. Build a `calculateDiscount` function.
+Example. Build a `calculateDiscount` function. This is the rule 14 exception, not the rule: a pure domain function with non-trivial logic of its own (tier brackets over money) earns a few direct tests, and the loop below is what those look like. In the use-case that calls it, `calculateDiscount` runs real behind the primary port (`references/testing.md`, Value-object tests).
 
 **Test file** `src/pricing/calculate-discount.test.ts`:
 

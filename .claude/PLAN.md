@@ -60,7 +60,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 16. [x] boundary factories return Result, constructors assert (parseX / x). Landed with 15 (same section); the a2+e5 eval pass runs at the end of Phase C. DoD: every listed
         site on the two-tier form; V3 after `--lock`; conformance eval a2 + e5 one pass.
 17. [x] money is integer cents in every example. DoD: no `amount: number` Money left; V3.
-18. [ ] rule 14 names the value-object exception. DoD: SKILL.md:166, testing.md:25, tdd.md:207,
+18. [x] rule 14 names the value-object exception. DoD: SKILL.md:166, testing.md:25, tdd.md:207,
         review-eval baseline note; V3.
 19. [ ] dotted ids are canon ids, slice 1 (SKILL.md note + 5 refs). DoD: V3 V6.
 20. [ ] dotted ids, slice 2 (5 refs). DoD: V3.

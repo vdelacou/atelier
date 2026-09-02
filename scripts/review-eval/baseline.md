@@ -142,6 +142,14 @@ against my candidates while the baseline arm never noticed any of them:
   value objects real inside primary-port tests, and the reviews noted the base `RefundTest`
   precedent honestly rather than blaming the diff.
 
+Read together, v2 and v4 asked for opposite things of the same file, and the doctrine, not
+the reviewer, was the ambiguity: rule 14 said the SUT is never a value object while
+testing.md allowed a few direct tests for one with non-trivial logic. Settled 2026-09-03 in
+both files: the exception exists, stays rare, and a regex-shaped id such as `MemberId` does
+not qualify, so v4 was the correct finding and v2's rule 11 demand was the misfire (the right
+question was which port test exercises `MemberId`). No grader or sentinel change followed;
+`MemberIdTest` is not in `violations-java.json`.
+
 Final sentinel set: `Refund.java` (a conforming edit, unflagged in all 12 with_skill runs) and
 `MemberId.java` (exemplar-shaped, unflagged once its test existed and its pattern was hoisted).
 `Notifier` and `MemberIdTest` remain in the diff, deliberately unlisted: reviewable, not
