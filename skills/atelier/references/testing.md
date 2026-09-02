@@ -2,9 +2,9 @@
 
 ## The school: Outside-in classicist
 
-The SUT of every unit test is a **primary port** — a use case, command handler, or application service at the hexagonal boundary. Inside the port, the full domain runs real: entities, value objects, domain services, aggregate roots. The only test doubles are **fakes** for secondary ports (repository, email sender, clock, token decoder, payment gateway, any adapter to the outside world).
+The SUT of every unit test is a **primary port**: a use case, command handler, or application service at the hexagonal boundary. Inside the port, the full domain runs real: entities, value objects, domain services, aggregate roots. The only test doubles are **fakes** for secondary ports (repository, email sender, clock, token decoder, payment gateway, any adapter to the outside world).
 
-> **Note on examples.** Some example port signatures in this file are elided to `Promise<T>` for brevity where error handling is not the lesson. Real IO ports return `Promise<Result<T, PortError>>` and use-cases return `Promise<Result<Summary, StepError>>` — hard rule 16, see `references/result-type.md`.
+> **Note on examples.** Some example port signatures in this file are elided to `Promise<T>` for brevity where error handling is not the lesson. Real IO ports return `Promise<Result<T, PortError>>` and use-cases return `Promise<Result<Summary, StepError>>`: hard rule 16, see `references/result-type.md`.
 
 Benefits:
 
@@ -16,16 +16,16 @@ See `references/tdd.md` for the full treatment and Ian Cooper's context.
 
 ## Test the code you own; trust your dependencies
 
-The first question before writing any test is *whose behaviour am I pinning?* Test only the code this repo owns. Never write a test whose real assertion is that a third-party library, the runtime, or the framework behaves as documented — that test pins someone else's contract, breaks when they release, and proves nothing about your code. Trust your dependencies; if one is genuinely suspect, the answer is to pin its version (hard rule 19) or replace it, not to grow a test suite around it.
+The first question before writing any test is *whose behaviour am I pinning?* Test only the code this repo owns. Never write a test whose real assertion is that a third-party library, the runtime, or the framework behaves as documented: that test pins someone else's contract, breaks when they release, and proves nothing about your code. Trust your dependencies; if one is genuinely suspect, the answer is to pin its version (hard rule 19) or replace it, not to grow a test suite around it.
 
 This single principle is why several other rules look the way they do:
 
-- **Adapters test the translation, not the SDK.** An infra adapter's job is to turn a library's contract into `Result<T, PortError>`. The test feeds a slice of the SDK's real surface (the two-constructor pattern, hard rule 13) and asserts that *your* mapping of success and error is correct — not that the SDK itself works. You are testing the seam, not the library behind it. See the infra-adapter section below and `references/testing-infra.md`.
+- **Adapters test the translation, not the SDK.** An infra adapter's job is to turn a library's contract into `Result<T, PortError>`. The test feeds a slice of the SDK's real surface (the two-constructor pattern, hard rule 13) and asserts that *your* mapping of success and error is correct, not that the SDK itself works. You are testing the seam, not the library behind it. See the infra-adapter section below and `references/testing-infra.md`.
 - **SDK-bridge lines are coverage-exempt.** A line whose only job is to construct or call into a third-party SDK has no behaviour of yours to cover, so it is exempt from the line-coverage gate rather than wrapped in a contortion test. See `references/workflow.md` (SDK-bridge lines).
-- **Domain pieces are used, not tested.** Entities, value objects, and domain services run real inside a primary-port test (the classicist rule above). You own them, but you pin their behaviour *through the port*, not in isolation — so they stay free to refactor.
+- **Domain pieces are used, not tested.** Entities, value objects, and domain services run real inside a primary-port test (the classicist rule above). You own them, but you pin their behaviour *through the port*, not in isolation, so they stay free to refactor.
 - **Prop-pure components are not unit-tested.** A design-system component is a deterministic prop→JSX map with no logic of its own (hard rule 21); there is nothing to own a test. It is covered by the design-system lint block and review, never by React Testing Library ceremony that re-proves React renders props.
 
-The same instinct underlies the mock ban (hard rule 13): you write fakes for the secondary-port contracts *you define*, and for code you do not own you inject a thin slice of its real surface — you never reach into a dependency to puppet it.
+The same instinct underlies the mock ban (hard rule 13): you write fakes for the secondary-port contracts *you define*, and for code you do not own you inject a thin slice of its real surface, you never reach into a dependency to puppet it.
 
 ## The testing pyramid
 
@@ -74,7 +74,7 @@ describe('placeOrder', () => {
 });
 ```
 
-Notice what is **real**: the `placeOrder` use case, every domain function it calls, the `Money` value object, the `Order` entity, the pricing rules. What is **faked**: `orders` and `customers` — the two secondary ports.
+Notice what is **real**: the `placeOrder` use case, every domain function it calls, the `Money` value object, the `Order` entity, the pricing rules. What is **faked**: `orders` and `customers`, the two secondary ports.
 
 ### Integration tests
 
@@ -161,7 +161,7 @@ it('when a premium customer buys a 100 EUR item, the order total is 80 EUR', asy
 
 ### Writing AAA backwards
 
-When stuck, write the test in reverse — Assert, then Act, then Arrange. The technique is `references/tdd.md`'s (§ Writing tests backwards).
+When stuck, write the test in reverse: Assert, then Act, then Arrange. The technique is `references/tdd.md`'s (§ Writing tests backwards).
 
 ---
 
@@ -206,11 +206,11 @@ Avoid titles that name functions (`getDiscount`, `calculateTotal`, `isValid`). I
 
 ## Test doubles
 
-Three shapes are permitted: **dummy**, **stub**, **fake**. Hand-written spies (a fake that also records its inputs) are allowed when outcome assertions are not enough. Mocks from a mock library are banned — see the "No mocks" rule below.
+Three shapes are permitted: **dummy**, **stub**, **fake**. Hand-written spies (a fake that also records its inputs) are allowed when outcome assertions are not enough. Mocks from a mock library are banned: see the "No mocks" rule below.
 
 ### Dummy
 
-A record passed but never used. Satisfy the port with real no-ops — never `{} as Logger`, which is the non-narrowing `as` cast the skill bans.
+A record passed but never used. Satisfy the port with real no-ops, never `{} as Logger`, which is the non-narrowing `as` cast the skill bans.
 
 ```ts
 const dummyLogger: Logger = { info: () => {}, warn: () => {}, error: () => {} };
@@ -279,7 +279,7 @@ it('when one of three rows fails to post, the batch completes with errored=1', a
 });
 ```
 
-`err(...)` from a batch use-case is reserved for prerequisites — the initial `sheets.readRows` fails, or credentials are missing. See `references/result-type.md` for the full rationale.
+`err(...)` from a batch use-case is reserved for prerequisites: the initial `sheets.readRows` fails, or credentials are missing. See `references/result-type.md` for the full rationale.
 
 ### Hand-written spy
 
@@ -304,7 +304,7 @@ expect(spy.sentEmails).toContain(email('user@example.com'));
 
 ### No `mock` from `bun:test` (absolute, enforced by lint)
 
-The entire `mock` namespace of `bun:test` is banned — `mock()`, `mock.module()`, `.toHaveBeenCalledWith`, `.toHaveBeenCalledTimes`. The canonical `no-restricted-imports` block that enforces this lives in `references/bun-typescript.md` (ESLint config section); it bans the entire `mock` namespace from `bun:test`.
+The entire `mock` namespace of `bun:test` is banned: `mock()`, `mock.module()`, `.toHaveBeenCalledWith`, `.toHaveBeenCalledTimes`. The canonical `no-restricted-imports` block that enforces this lives in `references/bun-typescript.md` (ESLint config section); it bans the entire `mock` namespace from `bun:test`.
 
 ```ts
 // BANNED
@@ -315,12 +315,12 @@ expect(mockSave).toHaveBeenCalledWith(expectedUser);
 // BANNED (module substitution is process-global and leaks across test files)
 mock.module('googleapis', () => ({ google: { drive: () => fakeApi } }));
 
-// REQUIRED — fake the port for use-case tests
+// REQUIRED: fake the port for use-case tests
 const repo = createInMemoryUserRepo();
 await placeOrder(order, { repo });
 expect(await repo.count()).toBe(1);
 
-// REQUIRED — pass the API slice for infra adapter tests (see "Testing infra adapters")
+// REQUIRED: pass the API slice for infra adapter tests (see "Testing infra adapters")
 const api: DriveApi = { files: { copy: async () => ({ data: { id: 'X' } }), /* ... */ } };
 const drive = createDriveFromApi(api);
 ```
@@ -329,17 +329,17 @@ Why the absolute ban:
 
 - **`mock.module` is process-global, not file-scoped.** Once set in any test file, every subsequent file the runner loads sees the substitution. This silently corrupted an unrelated `sleep.test.ts` in production use. There is no per-file restore; the leak is a feature of Bun's module cache.
 - **`mock()` leaks without `mock.restore()` discipline.** Easy to forget; leak detection is best-effort.
-- **Mocks test call sequences, not outcomes.** A mock passes when the right method is called with the right arguments — even if the production code does nothing useful afterwards. A fake passes only when the final state is correct, which is what the system is actually for.
+- **Mocks test call sequences, not outcomes.** A mock passes when the right method is called with the right arguments, even if the production code does nothing useful afterwards. A fake passes only when the final state is correct, which is what the system is actually for.
 - **Mocks couple tests to implementation.** Rename a method, split a call into two, extract a helper: the mock expectations break even though behaviour is unchanged. The fake keeps passing because the observable state is the same.
 - **Mocks hide design pressure.** If you need a mock to test something, the contract is probably too fat (Interface Segregation), or the adapter is missing its `createXFromApi(api)` factory. Fix the design; do not reach for a mock.
 
-`installFetchMock` (see "Testing infra adapters") and per-file `globalThis.setTimeout` swaps are **not** `mock.module` — they swap a global within a lifecycle hook (`afterEach`, `afterAll`) that always restores. The scope is bounded to the test file, not the process.
+`installFetchMock` (see "Testing infra adapters") and per-file `globalThis.setTimeout` swaps are **not** `mock.module`: they swap a global within a lifecycle hook (`afterEach`, `afterAll`) that always restores. The scope is bounded to the test file, not the process.
 
 ---
 
 ## What goes where
 
-### Unit tests — primary port as SUT (the default)
+### Unit tests: primary port as SUT (the default)
 
 Most tests. The SUT is a use case, command handler, or application service. The domain runs real; secondary ports are faked.
 
@@ -365,7 +365,7 @@ describe('placeOrder', () => {
 
 ### Value-object / domain-service tests (the exception)
 
-If a value object or a domain service has genuinely complex logic of its own — `Money.add` with currency rules, `PricingPolicy` with tier brackets, `DateRange.overlaps` — a handful of small direct tests is fine. They supplement the primary-port tests, they do not replace them. Keep them rare and only when the logic is non-trivial enough that discovering it through a use-case test would be confusing.
+If a value object or a domain service has genuinely complex logic of its own (`Money.add` with currency rules, `PricingPolicy` with tier brackets, `DateRange.overlaps`), a handful of small direct tests is fine. They supplement the primary-port tests, they do not replace them. Keep them rare and only when the logic is non-trivial enough that discovering it through a use-case test would be confusing.
 
 ```ts
 describe('Money.add', () => {
@@ -381,7 +381,7 @@ describe('Money.add', () => {
 
 A rough signal: if you find yourself writing more direct value-object tests than primary-port tests, something is off. The use case is where the business value lives; that is where most tests should point.
 
-### Branded types and `expect(...).toBe(raw)` — the test escape hatch
+### Branded types and `expect(...).toBe(raw)`, the test escape hatch
 
 Bun's `expect(x).toBe(y)` matcher infers `y`'s type from `x`. When `x` has a branded type, `y` must be the same brand or TypeScript fails:
 
@@ -393,8 +393,8 @@ expect(tok).toBe('eyJ...');
 
 Three options. Use the third.
 
-1. ❌ `as` the raw string — assertions are forbidden everywhere else, do not start in tests.
-2. ❌ Run the value through the real factory in the assertion (`expect(tok).toBe(accessToken('eyJ...'))`) — works, but the factory may have side effects (logging, parsing) that you don't want in a hot test loop.
+1. ❌ `as` the raw string: assertions are forbidden everywhere else, do not start in tests.
+2. ❌ Run the value through the real factory in the assertion (`expect(tok).toBe(accessToken('eyJ...'))`): works, but the factory may have side effects (logging, parsing) that you don't want in a hot test loop.
 3. ✅ **Export an `xxxUnsafe(raw): X` helper next to the factory. Use it only in tests.**
 
 ```ts
@@ -406,7 +406,7 @@ export const accessToken = (value: string): AccessToken => {
   return value as AccessToken;
 };
 
-// Test escape hatch — bypasses validation. Naming convention: <factory>Unsafe.
+// Test escape hatch: bypasses validation. Naming convention: <factory>Unsafe.
 // Production code MUST NOT import this; the only callers are *.test.ts files.
 export const accessTokenUnsafe = (value: string): AccessToken => value as AccessToken;
 ```
@@ -420,12 +420,12 @@ it('round-trips through the factory', () => {
 });
 ```
 
-**Naming convention.** `<factoryName>Unsafe` — `accessTokenUnsafe`, `envVarUnsafe`, `userIdUnsafe`, `safeUrlUnsafe`. The `Unsafe` suffix tells the next reader (and the next grep) exactly what they're looking at: a brand cast without validation, for tests only.
+**Naming convention.** `<factoryName>Unsafe`: `accessTokenUnsafe`, `envVarUnsafe`, `userIdUnsafe`, `safeUrlUnsafe`. The `Unsafe` suffix tells the next reader (and the next grep) exactly what they're looking at: a brand cast without validation, for tests only.
 
 **Boundary.** Production code must not import any `*Unsafe` helper. A simple lint rule (or a periodic grep) keeps it honest:
 
 ```js
-// eslint.config.js — scope with files + ignores (flat config's reliable idiom;
+// eslint.config.js: scope with files + ignores (flat config's reliable idiom;
 // negated extglobs like `!(*.test).ts` in `files` are not dependable). This block
 // binds to production sources and excludes tests, so *Unsafe imports stay test-only.
 {
@@ -439,7 +439,7 @@ it('round-trips through the factory', () => {
 }
 ```
 
-(The pattern IS lint-enforceable: ESLint ≥ 8.55 supports `importNamePattern` — a regex over imported names — inside `patterns`, so no custom rule is needed.)
+(The pattern IS lint-enforceable: ESLint ≥ 8.55 supports `importNamePattern` (a regex over imported names) inside `patterns`, so no custom rule is needed.)
 
 ### Secondary-port integration tests
 
@@ -567,7 +567,7 @@ const withItems = buildOrder({ items: [item({ sku: 'ABC', price: money(100, 'EUR
 | Mistake | Problem | Fix |
 |:---|:---|:---|
 | Testing implementation | Brittle tests | Test observable behaviour only |
-| Using mocks | Tests prove call sequences instead of outcomes; break on refactor | Never use mocks — write a fake for the contract |
+| Using mocks | Tests prove call sequences instead of outcomes; break on refactor | Never use mocks: write a fake for the contract |
 | Testing only the happy path of a guard | A missing role/tenant check still passes every test | Ship the refusal tests: 403 wrong role, 401 no token, 404 cross-tenant (Bypass tests above) |
 | Fixing a bug without a test | The same defect returns unnoticed | Reproduce red first; keep it as a permanent `regression:` test |
 | Shared state between tests | Flaky tests | Isolate each test (fresh fakes per test) |
