@@ -191,7 +191,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 1.1 | One committed config for style | COVERED | workflow.md:55; assets/pre-commit gate 5 | gate | One flat eslint.config.js embeds prettier; lint:strict is gate 5 |
-| 1.2 | Cap complexity and duplication | COVERED | SKILL.md:133; SKILL.md:59; SKILL.md:57 | gate | Size caps and Rule-of-Three are generation-time rules; rule 35 gates cyclomatic complexity at 10 in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`); sonarjs cognitive stays off, one metric |
+| 1.2 | Cap complexity and duplication | COVERED | SKILL.md:86; SKILL.md:59; SKILL.md:57 | gate | Size caps and Rule-of-Three are generation-time rules; rule 35 gates cyclomatic complexity at 10 in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`); sonarjs cognitive stays off, one metric |
 | 1.3 | One grammar for the history | COVERED | SKILL.md:59; assets/commit-msg; assets/check-commit-messages.sh | gate | Conventional Commits grammar enforced by the commit-msg hook and re-checked in CI over the pushed range, so a --no-verify bypass is still caught (gate added 2026-08-30 with the canon row). The 72-vs-100 divergence closed the same day: P6 1.3 ACCEPTED 2026-08-30, canon now states 100, the documented default of @commitlint/config-conventional, which the row's own gate snippet prescribes |
 
 ### Pillar 2: Simplicity by default
@@ -209,7 +209,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 3.1 | Point dependencies inward | COVERED | architecture.md:96; SKILL.md:182 | rule | Domain has zero infra dependencies; imports point inward |
+| 3.1 | Point dependencies inward | COVERED | architecture.md:96; SKILL.md:90 | rule | Domain has zero infra dependencies; imports point inward |
 | 3.2 | Put every external thing behind a port | COVERED | architecture.md:257-258; SKILL.md:49 | gate | Port plus real adapter plus in-memory fake at composition root; mock ban lint-enforced |
 | 3.3 | Seal the presentation behind a design system | COVERED | SKILL.md:57; atomic-design.md:236 | gate | Props-in JSX-out, tokens only, no fetching; design-system eslint block |
 | 3.4 | The backend is a client-agnostic API | COVERED | architecture.md:321 | doctrine | Resource-shaped API every client consumes the same way |
@@ -240,7 +240,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 5.2 | Do not build authentication or crypto yourself | COVERED | security.md:35-46 | rule | OIDC plus vetted crypto, SSO and MFA on consoles (rule 33) |
 | 5.3 | Control your dependencies | COVERED | assets/check-package-json.sh:37; docs/global-rules/proposed-revisions.md | gate | P6 revision ACCEPTED 2026-07-20: canon 5.3 now allows a constrained range plus a committed lockfile, which check-package-json.sh enforces (Watchlist 4) |
 | 5.4 | Secure the supply chain | COVERED | delivery.md:71-73 | doctrine | Immutable digest-addressed artifacts, SBOM, cosign signatures |
-| 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:205 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
+| 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:92 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
 | 5.6 | Expose only what has to be public | COVERED | security.md:232 | doctrine | Datastores, queues, admin panels on a private network only |
 | 5.7 | One security baseline everywhere | COVERED | security.md:227-217 | rule | Auth, TLS, rate limits, allow/deny default on every route (rule 33) |
 | 5.8 | Untrusted content is not instructions | COVERED | ai.md:60; behavioural-examples.md:42 | rule | Model input untrusted, every action authorized server-side (rule 32) (Watchlist 5) |
@@ -306,7 +306,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 10.8 | Meet performance targets under load | COVERED | reliability.md:126 | doctrine | p95/p99 route budgets, k6 load-test gate fails the build |
 | 10.9 | Treat data as sacred | COVERED | reliability.md:96-108; assets/check-data-lifecycle.sh | tripwire | Soft-delete default, versioned migrations; deliberate storage choice via the ADR discipline |
 | 10.10 | Learn from every failure | COVERED | delivery.md:91-98 | doctrine | Blameless postmortem ending in owned, dated backlog tickets |
-| 10.11 | Parse, don't validate | COVERED | reliability.md:130-133; SKILL.md:146 | rule | Parse at the boundary into branded types; money cents, instants UTC (rule 12) |
+| 10.11 | Parse, don't validate | COVERED | reliability.md:130-133; security.md:183 | rule | Parse at the boundary into branded types; money cents, instants UTC (rule 12) |
 | 10.12 | No lost updates | COVERED | reliability.md:82; SKILL.md:70 | rule | Version on read, required on write, stale write is a 409 (rule 31) |
 | 10.13 | Every network call has a deadline | COVERED | reliability.md:9-11; assets/check-io-deadlines.sh | tripwire | Deadline on every outbound call, bounded jittered retries; check-io-deadlines.sh (rule 29) |
 | 10.14 | Separate the analytical store from the operational one | COVERED | reliability.md | doctrine | Resolved Phase 2: OLTP/OLAP separation doctrine, ETL/CDC copy, the pipeline as the one sanctioned bulk reader (ties 7.7) |
@@ -362,7 +362,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 15.7 | Fix the class, not the instance | COVERED | workflow.md:574-640 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
 | 15.8 | Make proof re-checkable | COVERED | governance.md:91-139; workflow.md:581 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
 | 15.9 | Spend human judgment where it counts | COVERED | workflow.md:630; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
-| 15.10 | Prove the gate can fail | COVERED | SKILL.md:272; scripts/smoke-test.sh | gate | Doctrine after the variant gate table, every gate lands with a violation fixture it must reject; the repo smoke tests are the reference implementation |
+| 15.10 | Prove the gate can fail | COVERED | SKILL.md:137; scripts/smoke-test.sh | gate | Doctrine after the variant gate table, every gate lands with a violation fixture it must reject; the repo smoke tests are the reference implementation |
 
 ### Pillar 16: Measure whether you are improving
 
@@ -411,5 +411,5 @@ None. Every sub-concept is COVERED or STRICTER, so there is no CONTRADICTS or GA
 | OUT-OF-SCOPE | 0 |
 | Total | 119 |
 
-No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2 and the accepted 5.3 P6 revision, no row diverges: every sub-concept is covered, two of them more strictly than the canon asks. The last contradiction (5.3) closed when the canon accepted that a constrained range plus a committed lockfile satisfies the pin requirement (docs/global-rules/proposed-revisions.md); 15.1 and 4.6 were resolved by splitting the hook from CI (assets/ci.yml), and the five gaps by adding the missing doctrine. The 2026-08-30 canon addition, 1.3, landed COVERED: the grammar and its hook were already rule 23, and the CI re-check the row asks for shipped with it (assets/check-commit-messages.sh, proven both ways in both smoke tests). The same day, P6 rows 15.10 (Prove the gate can fail) and the 10.2 catch-placement strengthening were accepted: 15.10 lands COVERED via the new doctrine paragraph after the variant gate table (SKILL.md:272), which also slims 15.4 back to COVERED because its surplus was exactly this discipline, and 10.2 was already rule 17. The canonical count is 119 and both pins moved again.
+No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2 and the accepted 5.3 P6 revision, no row diverges: every sub-concept is covered, two of them more strictly than the canon asks. The last contradiction (5.3) closed when the canon accepted that a constrained range plus a committed lockfile satisfies the pin requirement (docs/global-rules/proposed-revisions.md); 15.1 and 4.6 were resolved by splitting the hook from CI (assets/ci.yml), and the five gaps by adding the missing doctrine. The 2026-08-30 canon addition, 1.3, landed COVERED: the grammar and its hook were already rule 23, and the CI re-check the row asks for shipped with it (assets/check-commit-messages.sh, proven both ways in both smoke tests). The same day, P6 rows 15.10 (Prove the gate can fail) and the 10.2 catch-placement strengthening were accepted: 15.10 lands COVERED via the new doctrine paragraph after the variant gate table (SKILL.md:137), which also slims 15.4 back to COVERED because its surplus was exactly this discipline, and 10.2 was already rule 17. The canonical count is 119 and both pins moved again.
 

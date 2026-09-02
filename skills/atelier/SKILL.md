@@ -76,159 +76,24 @@ Rule 35 is a style rule that arrived later (2026-09); it sits after the discipli
 
 35. **Cyclomatic complexity at most 10 per function.** Lint-enforced in every variant (ESLint `complexity: ['error', 10]`, PMD `CyclomaticComplexity` at level 11); it counts what the size caps cannot see, a one-line chain of `&&`/`??`/ternaries or a wide `switch`; the fix is never a bigger number, split the function or dispatch on a map (`references/workflow.md`, Complexity gate).
 
-## The TDD process (non-negotiable - every feature)
+## The TDD process (non-negotiable, every feature)
 
-Red-Green-Refactor is the only loop, with the test boundary confirmation-gated (rule 24):
+Red-Green-Refactor is the only loop, with the Red step confirmation-gated (rule 24): propose a failing test in domain language with a concrete example, get the yes, write it next to the source and watch it fail (`bun test`); write the simplest arrow-function code that passes, faking it first when that is simpler; refactor on green (Rule of Three, names, extraction, primitives promoted to branded types). The Three Laws hold: no production code without a failing test, no more test than needed to fail, no more code than needed to pass. A unit is a behaviour at the primary port, not a function. Test the code you own and trust your dependencies: adapters test their translation of an SDK, SDK-bridge lines are coverage-exempt, prop-pure components carry no unit tests. A bug is a missing test: the regression test comes first, red for the bug's reason, before any fix; a live incident is the one inversion, and the mitigation commit says so. When the user asks for a feature without mentioning tests, still go test-first and say so; when asked to skip tests, ask why and offer characterisation tests at minimum. Next.js scope: the loop applies to `src/lib/**` and `src/config/**`; design-system components are verified by the lint block and review. Full treatment: `references/testing.md`.
 
-1. **RED.** Propose a failing test (concrete example, domain language) and get the user's confirmation before writing it to `*.test.ts` next to source. Once confirmed, write it and watch it fail. Runner: `bun test`.
-2. **GREEN.** Write the simplest arrow-function code that makes it pass. "Fake it" (hardcoded return) is a valid first step.
-3. **REFACTOR.** Remove duplication (Rule of Three, wait for the third occurrence), improve names, extract functions, promote primitives to branded types.
+## Design
 
-**Three Laws of TDD:**
-1. No production code unless it makes a failing test pass.
-2. No more test code than sufficient to fail (compilation failures count).
-3. No more production code than sufficient to pass.
-
-**What is the unit?** A unit is a **behaviour**, not a function. The test targets the primary port (use case, command handler, application service). Inside the port, every domain collaborator runs for real. The only test doubles are hand-written fakes for secondary ports (repository, email sender, clock, token decoder). This is Outside-in classicist TDD (Ian Cooper). See `references/testing.md` for the full treatment.
-
-**Test the code you own; trust your dependencies.** Never write a test whose real assertion is that a third-party library, the runtime, or the framework behaves as documented: pin your own behaviour, not someone else's contract. This is why adapters test their *translation* of an SDK (not the SDK), SDK-bridge lines are coverage-exempt, domain pieces are exercised through the port rather than tested in isolation, and prop-pure design-system components carry no unit tests at all. See `references/testing.md` (Test the code you own).
-
-**Test naming.** Every test describes a complete business scenario in domain language. Not the name of a function.
-
-- Bad: `'getDiscount returns 20 when tier is premium'`
-- Good: `'when a premium customer buys 100 EUR, the order total is 80 EUR'`
-
-**Test structure.** Arrange-Act-Assert. When stuck, write backwards: Assert first, then Act, then Arrange.
-
-**A bug is a missing test.** When a bug surfaces, mid-implementation, in review, or from production, the first act is a failing regression test that reproduces it: propose it, get the confirmation rule 24 requires, write it, and watch it fail for the bug's reason before touching production code. Then fix to green and refactor. Never patch first and backfill the test; an untested fix is the same class of unverified change that let the bug in, and the red run is the only proof the test actually captures it. If a live incident forces a mitigation before the test, the regression test is the first act of the follow-up, and the mitigation commit says so.
-
-When the user asks for a feature without mentioning tests, still go test-first, but propose the test and get confirmation before writing it (rule 24), stating briefly that you are doing so. If they ask you to skip tests, do not comply silently. Ask why, and offer to proceed with TDD or at minimum add the characterisation tests that pin current behaviour. Modifying or deleting an existing test is never silent: show the change and wait for an explicit yes.
-
-**Next.js variant scope.** The loop applies to logic, `src/lib/**` and `src/config/**` (path helpers, i18n, SEO builders, config factories, hook internals extracted as pure functions). Design-system components contain nothing unit-testable by design (rule 21 makes them prop→JSX maps); they are verified by the design-system lint block and review, not by tests. See the variant matrix below and `references/nextjs-monorepo.md` (Testing).
-
-See `references/testing.md`.
-
-## SOLID in a class-free codebase
-
-SOLID still applies. It just expresses differently when you do not have classes:
-
-- **S** | Single Responsibility. One module = one reason to change. If describing the module requires "and", split it.
-- **O** | Open/Closed. Extend by adding new functions or strategy records, not by editing existing ones. Prefer dispatch maps over growing `if/else` chains.
-- **L** | Liskov Substitution. Every implementation of a function-type contract must honour the contract. Real repo, fake repo, in-memory repo: all satisfy the same `type Repo = {...}` and behave within its invariants.
-- **I** | Interface Segregation. Keep function-type aliases small and focused. A caller that only needs to read should depend on a read-only contract, not a full CRUD one.
-- **D** | Dependency Inversion. High-level modules depend on function-type aliases, not on concrete implementations. Inject dependencies through factory functions.
-
-See `references/solid-principles.md`.
-
-## Clean code (mandatory)
-
-**Naming (priority order).**
-1. Consistency. One concept, one name, everywhere.
-2. Understandability. Domain language, never technical jargon.
-3. Specificity. Precise, never vague. Ban `data`, `info`, `manager`, `handler`, `processor`, `utils` as primary names.
-4. Brevity. Short but not cryptic.
-5. Searchability. Unique enough to grep.
-
-**Structure.**
-- Functions < 10 lines. Modules < 50 lines. Files < 100 lines. If larger, split.
-- One level of indentation per function. Extract when deeper.
-- Cyclomatic complexity at most 10 per function, lint-enforced (rule 35).
-- No `else`. Use early returns and guard clauses.
-- One dot per line (Law of Demeter). Do not chain through object graphs.
-- Use `Object.hasOwn(map, key)` (or `Object.prototype.hasOwnProperty.call(map, key)`) for untrusted key lookup. Never the `in` operator, which matches prototype keys.
-- First-class collections. When a record holds an array with domain meaning, extract a typed collection module with its own operations.
-- No getters or setters. Objects expose behaviour functions, not raw data.
-
-See `references/clean-code.md`.
-
-## Value objects at trust boundaries (branded types)
-
-Wrap every domain primitive that crosses a trust boundary or feeds a dangerous sink (the rule 12 test): IDs, emails, money, dates, URLs, phone numbers, ISO codes arriving from outside. The factory is the validation gate; once a value has type `Email`, downstream code trusts it. Inside one trust zone a plain `string` is honest and lighter; rule 12 says where the line falls. This replaces the `class Email { constructor(...) }` idiom without losing any safety.
-
-```ts
-export type Email = string & { readonly __brand: 'Email' };
-export type EmailError = { readonly kind: 'invalidEmail'; readonly value: string };
-// boundary tier: untrusted input in, Result out (rules 16-17); the only entry for outside data
-export const parseEmail = (raw: string): Result<Email, EmailError> =>
-  raw.includes('@') ? ok(raw as Email) : err({ kind: 'invalidEmail', value: raw });
-// assertion tier: a value already proven (a literal, a row you own, a test); invalid here is a bug
-export const email = (value: string): Email => {
-  if (!value.includes('@')) throw new Error('invalid Email');
-  return value as Email;
-};
-```
-
-Two tiers, one type: `parseX` parses and returns `Result`, `x()` asserts and throws, and only the first ever sees outside data (`assets/java/Email.java` is the same shape in Java). The same shape applies to `UserId`, `Money`, `Url`, `IsoCountryCode`, etc. Money carries currency in the record itself, holds the amount as **integer minor units (cents), never a float** (`0.1 + 0.2 !== 0.3`, and the rounding lands on an invoice), and validates arithmetic against currency mismatch. Instants live in **UTC** behind a type; a timezone is a display concern applied only at the presentation edge. This is "parse, don't validate": the check runs once at the boundary and the type carries the proof from then on. Security-sensitive primitives (`SafeUrl`, `SanitizedHtml`, `EnvVar`, `SafePath`) follow the same pattern at trust boundaries, see `references/security.md`. The full catalogue and worked examples live in `references/clean-code.md` (object-calisthenics rule 3) and `references/object-design.md`.
-
-## The class-to-module translation
-
-Since `class` and `interface` are banned, every OO pattern is expressed as typed records and factory functions. `references/design-patterns.md` opens with the four basic translations (value object, interface, service with dependencies, entity), holds the full GoF catalogue in this style, and closes with the translation quick-reference table; read it the first time you reach for a classical OO pattern. `references/object-design.md` covers value objects, entities, aggregates, and polymorphism-via-dispatch in depth.
-
-## Complexity management
-
-Essential complexity (inherent to the domain) stays. Accidental complexity (introduced by us) goes.
-
-- **KISS.** Simplest thing that could work. Question every abstraction.
-- **YAGNI.** Do not build for hypothetical future needs. Delete speculative abstractions on sight.
-- **DRY with Rule of Three.** Leave duplication #1 and #2 alone. Extract at #3.
-- **Tell, don't ask.** Command the module, do not interrogate its data and decide elsewhere.
-- **Law of Demeter.** Only talk to immediate friends. No train-wrecks like `a.b.c.d`.
-
-See `references/complexity.md`, `references/code-smells.md`.
-
-## Architecture
-
-- **Vertical slices first.** Organise by feature, not by technical layer.
-- **Dependency rule.** Source code dependencies point inward. Domain has zero dependencies on infrastructure. Infrastructure depends on domain through function-type contracts.
-- **Separation of concerns.** Validation, business logic, persistence, notification: each in its own module, composed at the use-case layer.
-
-See `references/architecture.md`.
-
-## UI architecture: Atomic Design (React/Next.js repos)
-
-The UI is two worlds with a hard wall between them (hard rules 21–22):
-
-- **The design system**: `src/components/{atoms,molecules,organisms}`. Stateless, props-only, logic-free presentational components. Imports point strictly upward (atoms → molecules → organisms) and never leave the design system; the only external import is `react`. No hooks, no fetching, no i18n, no `next/*`.
-- **The application**: `src/page/` page shells own all state (hooks from `src/lib/hooks/`), resolve translations and config (`src/config/`, `data/translations/`), build framework wrappers (`src/lib/layout/wrappers.tsx` is the only place importing `next/link`/`next/image`), and hand everything to the design system as props: display strings, `isOpen` + `onToggle` pairs, injected `ComponentType` link/image components.
-
-The wall is two-way. No application knowledge enters the design system, and no styling knowledge leaves it. Tailwind utilities appear only under `src/components/**` (tokens in `app/globals.css`); routes, page shells, lib, and config never carry a class string, and component APIs expose typed variants instead of `className`. The app does not know Tailwind exists.
-
-Interactivity climbs a ladder: native HTML (`<details>`/`<summary>`, CSS `group-open:`) → hoisted state via props → a hook in `src/lib/hooks/` consumed by the page shell. Never a hook inside a component.
-
-Read `references/atomic-design.md` before touching `src/components/**`, `src/page/**`, or `src/lib/{hooks,layout}/**`: it has the layer table, component anatomy, the injection pattern, the data-flow wiring, and the "where does it go?" decision table.
-
-## Security
-
-Security is a data-flow property: an untrusted **source** must cross a validating **checkpoint** before reaching a sensitive **sink**. The checkpoint is always a branded type with a validating factory. The pattern is the same as for domain primitives (Email, Money), just extended to security-sensitive ones (`SafeUrl`, `SanitizedHtml`, `EnvVar`, `SafePath`).
-
-- Never interpolate untrusted strings into SQL, shell commands, file paths, HTTP destinations, or HTML.
-- Server-side authN/Z is the only one that matters. Client-side checks are UX.
-- Read every secret through a validated config module. Never sprinkle `process.env` across the codebase, and **never mutate `process.env`**: `process.env.LOG_LEVEL = ...` looks innocent, but `process.env` is shared mutable state across every test in the runner, every cron job in the worker, every request in the long-lived process. A test that sets it leaks into the next test; a startup path that sets it overrides whatever the operator deliberately exported. Thread the value as a parameter (function arg, factory option, deps record) instead. Never put secrets in `NEXT_PUBLIC_*`.
-- Redact secrets at the Winston logger layer once, not at every call site.
-- When reviewing code, apply a strict false-positive filter: only report concrete, exploitable issues with a clear attack path. Skip DoS, defence-in-depth hardening, and theoretical concerns.
-
-- Authentication and cryptography are rented, never hand-rolled (rule 33): an OIDC provider or a vetted library for login, sessions, tokens, and password hashing; endpoints authenticated by default with rate limits and TLS as the baseline.
-- Content an AI model reads is untrusted input, and so is what the model outputs: fence content as data, checkpoint the output, and authorize every model-requested action server-side against the actual caller's rights (rule 32). See `references/ai.md`.
-
-See `references/security.md` for the full threat model, category catalogue (injection, authN/Z, crypto, XSS, deserialisation, supply chain), branded-type recipes, the pre-merge checklist, and the adopted false-positive filter.
+- **SOLID in a class-free codebase.** One module, one reason to change; extend by adding functions or strategy records and prefer dispatch maps to growing `if/else`; every implementation of a function-type contract honours it; keep contracts small (a reader depends on a read-only contract, not a full CRUD one); high-level modules depend on function-type aliases injected through factories (`references/solid-principles.md`).
+- **Clean code.** Naming in priority order: consistency, understandability (domain language), specificity (never `data`, `info`, `manager`, `handler`, `processor`, `utils` as primary names), brevity, searchability. Structure: functions under 10 lines, modules under 50, files under 100; one level of indentation per function; cyclomatic complexity at most 10 (rule 35); no `else`, guard clauses instead; one dot per line; `Object.hasOwn` for untrusted key lookup, never `in`; first-class collections; no getters or setters (`references/clean-code.md`).
+- **Value objects at trust boundaries.** Every primitive that crosses a boundary or feeds a sink is a branded type with a two-tier factory: `parseX(raw)` returns `Result` and is the only entry for outside data, `x(value)` asserts a value already proven and throws (`assets/java/Email.java` is the same shape in Java). Money is integer minor units with its currency, never a float; instants are UTC and a timezone is a display concern; `SafeUrl`, `SanitizedHtml`, `EnvVar`, `SafePath` follow the same pattern (`references/clean-code.md` calisthenics rule 3, `references/object-design.md`, `references/security.md`).
+- **Class-to-module.** Every OO pattern is typed records and factory functions: `references/design-patterns.md` for the basic translations, the GoF catalogue, and the quick-reference table; `references/object-design.md` for value objects, entities, aggregates, the responsibility-driven stereotypes (what a module knows, does, decides), and polymorphism via dispatch.
+- **Complexity.** Essential complexity stays, accidental complexity goes: KISS, YAGNI (delete speculative abstractions on sight), DRY only at the third duplication, tell-don't-ask, Law of Demeter. The four elements of simple design, in priority order: passes the tests, expresses intent, no duplication, minimal; when all four hold, stop polishing (`references/complexity.md`, `references/code-smells.md`).
+- **Architecture.** Vertical slices first; dependencies point inward (the domain knows nothing of infrastructure, infrastructure depends on the domain through function-type contracts); validation, logic, persistence, and notification each in their own module, composed at the use-case (`references/architecture.md`).
+- **UI (React/Next.js).** Two worlds with a hard wall (rules 21-22): the design system under `src/components/**` renders props and knows nothing of the application; the application (`src/page/` shells, `src/lib/hooks/`, `src/config/`, and `src/lib/layout/wrappers.tsx` as the only importer of `next/link` and `next/image`) owns state and hands everything down as props; styling never leaves the design system. Interactivity climbs native HTML, then hoisted state via props, then a hook in the page shell, never a hook inside a component (`references/atomic-design.md`).
+- **Security.** A data-flow property: an untrusted source crosses a validating checkpoint (a branded type) before any sink; never interpolate untrusted strings into SQL, shell, paths, HTTP destinations, or HTML; server-side authN/Z is the only one that counts; secrets through a validated config module, never scattered `process.env` reads, never a `process.env` mutation, never `NEXT_PUBLIC_*`; redact once at the logger; review with the strict false-positive filter (concrete, exploitable, an attack path); auth and crypto are rented (rule 33); what an AI model reads and writes is untrusted (rule 32) (`references/security.md`).
 
 ## Production disciplines
 
-The hard rules govern how code is written; these govern what production-grade code must also carry. Each binds whenever a change touches its concern, in every variant; each reference holds the full doctrine, Do/Don't examples, and a review checklist:
-
-- **Privacy** (`references/privacy.md`; rules 27, 34): collect the least, PII out of logs/URLs/query strings, user rights as routine endpoints, a data map with classifications, synthetic fixtures only, impact assessments before risky processing.
-- **Isolation** (`references/isolation.md`; rule 28): owner from the verified token, defense in depth (RLS), fail closed, least-privilege runtime role, the cross-tenant 404 test on every endpoint, UUIDv7 ids that are never the authorization.
-- **Reliability** (`references/reliability.md`; rules 29-31): deadlines and idempotent bounded retries, explicit hot reads, keyset pagination, the transactional outbox, optimistic locking, soft delete plus expand-contract migrations, stateless scaling with deliberate caching, load-tested latency budgets.
-- **Observability** (`references/observability.md`): SLOs as numbers with windows, correlated OpenTelemetry traces/metrics/logs on an open standard, behaviour metrics split by outcome, symptom-based alerts that page only when a human must act.
-- **Delivery** (`references/delivery.md`): pipeline-only deploys with canary and one-step rollback, infrastructure as code with read-only humans, ephemeral environments, managed services over self-run (no SSH, automatic TLS), open-standard interfaces for portability, signed artifacts with an SBOM, restore drills, blameless postmortems.
-- **Metrics** (`references/metrics.md`): the four DORA metrics derived from pipeline events, flow metrics (cycle time, not story points), system metrics never per-person sticks, trends over snapshots, and cost as a first-class metric with idle-cheap design.
-- **AI models** (`references/ai.md`; rule 32): the model behind a port with a fake, pinned snapshots, eval gates in CI, prompt-injection fencing with server-side action authorization, per-caller spend caps.
-- **Governance** (`references/governance.md`): decision records (`[decision]` entries plus an ADR tier for choices with rejected options and a reversal path), API docs generated from the contract, numbers not adjectives, one honest backlog, CODEOWNERS with exactly one Accountable per area, separation of duties, audit trails, owner-verifiable done.
-- **Product** (`references/product.md`): error copy naming cause and next step over stable error codes, honest flows (cancel as easy as subscribe), market-driven defaults, a visible human path, the i18n catalog, accessible by default (semantic HTML, keyboard, contrast in tokens, an axe gate), and validate-before-build (problem interviews, the cheapest demand test, a dated go/no-go, keep-or-kill on measured adoption).
-
-Scale judgment, not principle: a throwaway CLI does not need an SLO, but a system holding two users' data always needs rule 28. When a concern's trigger exists in the repo (personal data, tenants, network IO, a schema, a deploy target, an LLM call, a UI), its discipline is not optional.
-
-The mechanical slices of rules 27-30 also ship as executable staged-diff guards (`assets/check-pii-channels.sh`, `check-io-deadlines.sh`, `check-data-lifecycle.sh`, `check-isolation-tests.sh`): wire them as pre-commit pre-flights or CI steps where the concern exists. See `references/workflow.md` (Discipline tripwires).
+Beyond how code is written, what production-grade code must also carry. Each reference holds the doctrine, Do/Don't examples, and a review checklist, and binds whenever a change touches its concern, in any variant: privacy (rules 27, 34; `references/privacy.md`), isolation (rule 28; `references/isolation.md`), reliability (rules 29-31; `references/reliability.md`: deadlines and idempotent bounded retries, explicit hot reads, keyset pagination, the transactional outbox, optimistic locking, soft delete plus expand-contract, stateless scaling, load-tested latency budgets), observability (`references/observability.md`: SLOs as numbers with windows, correlated OpenTelemetry traces, metrics and logs, symptom-based alerts that page only when a human must act), delivery (`references/delivery.md`: pipeline-only deploys with canary and one-step rollback, infrastructure as code with read-only humans, ephemeral environments, managed over self-run, signed artifacts with an SBOM, restore drills, blameless postmortems), metrics (`references/metrics.md`: the four DORA metrics from pipeline events, flow metrics, cost as a first-class metric), AI models (rule 32; `references/ai.md`), governance (`references/governance.md`: decision records and an ADR tier, API docs generated from the contract, numbers not adjectives, one honest backlog, CODEOWNERS with exactly one Accountable per area, separation of duties, audit trails), and product (`references/product.md`: error copy naming cause and next step, honest flows, market-driven defaults, a visible human path, the i18n catalog, accessible by default with an axe gate, validate before you build). Scale judgment, not principle: a throwaway CLI does not need an SLO, but a system holding two users' data always needs rule 28. The mechanical slices of rules 27-30 ship as staged-diff tripwires (`assets/check-pii-channels.sh`, `check-io-deadlines.sh`, `check-data-lifecycle.sh`, `check-isolation-tests.sh`; `references/workflow.md`, Discipline tripwires).
 
 ## Project type (pick the right variant reference)
 
