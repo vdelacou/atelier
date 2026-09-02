@@ -97,22 +97,11 @@ Beyond how code is written, what production-grade code must also carry. Each ref
 
 ## Project type (pick the right variant reference)
 
-**Next.js monorepo** (read `references/nextjs-monorepo.md`; for any work on components, pages, or UI sections also read `references/atomic-design.md`) if:
-- `packages/*` with Bun workspaces at the root, or
-- `next.config.ts` in a package, or
-- `app/(en)/`, `app/(fr)/` route groups, or
-- `tailwindcss` in dependencies.
+**Next.js monorepo** (`references/nextjs-monorepo.md`; for components, pages, or UI sections also `references/atomic-design.md`) if `packages/*` with Bun workspaces at the root, or `next.config.ts` in a package, or `app/(en)/`-style route groups, or `tailwindcss` in dependencies. Within it, the **static content site** sub-shape is the default (`output: 'export'`, build-time data); the **server app** sub-variant applies only when `output: 'export'` is absent and the app has `app/**/route.ts` handlers or runtime server state (`references/nextjs-monorepo.md`, Next.js server app). The two are mutually exclusive.
 
-Within the Next.js variant, pick the **static content site** sub-shape (the default: `output: 'export'`, build-time data) unless the app has `output: 'export'` *absent* and contains `app/**/route.ts` handlers or runtime/in-memory server state, which is the **server app** sub-variant (`references/nextjs-monorepo.md` § Next.js server app). Static export and request-time route handlers are mutually exclusive, so this is a real fork, not a spectrum.
+**Bun TypeScript script repo** (`references/bun-typescript.md`) if a single `src/main.ts` entry with `"module": "src/main.ts"`, or the `src/{domain,use-cases,infra,presenter,composition,test-helpers}` layout, or no Next.js, React, or Tailwind at all: CLIs, batch scripts, Firebase Admin jobs.
 
-**Bun TypeScript script repo** (read `references/bun-typescript.md`) if:
-- single `src/main.ts` entry with `"module": "src/main.ts"`, or
-- the `src/{domain,use-cases,infra,presenter,composition,test-helpers}` Clean Architecture layout (see `references/architecture.md`), or
-- no Next.js, no React, no Tailwind. Typically CLIs, batch scripts, Firebase Admin jobs.
-
-**Java (Quarkus) repo** (read `references/java-quarkus.md`) if:
-- `pom.xml` (or `build.gradle`) with sources under `src/main/java/**`.
-The hard rules apply as translated by that reference's table (records and sealed types instead of the class ban, interfaces as ports, no Mockito, `./mvnw` only, JaCoCo + PIT for the gates); rules 21-22 do not apply (no UI).
+**Java (Quarkus) repo** (`references/java-quarkus.md`) if `pom.xml` (or `build.gradle`) with sources under `src/main/java/**`. The hard rules apply as translated by that reference's table (records and sealed types instead of the class ban, interfaces as ports, no Mockito, `./mvnw` only, JaCoCo and PIT for the gates); rules 21-22 do not apply.
 
 If the repo is brand-new, ask which variant the user wants before scaffolding.
 
@@ -136,100 +125,59 @@ The hard rules are universal unless this table says otherwise. Gates and tooling
 
 Whatever the variant, **every gate proves it can fail**: when you add or change a gate (a lint rule, a coverage tier, a hook, a CI check), land a violation fixture the gate must reject and keep it re-running, so a toolchain upgrade that silently disables the gate turns CI red instead of quiet. A gate only ever seen green is a hypothesis. The skill repo's own smoke tests are the reference implementation: each proves its gates pass on compliant code AND block their target violation.
 
-## Reference files
+## Reference files: read when, skip when
 
-Dotted ids in these files (canon 1.3, canon 15.10) are sub-concepts of the published Global Rules, the canon this standard is audited against; it is vendored at `docs/global-rules/` in the skill repository and does not ship inside the skill. The hard rules are the plain integers 1-35.
+Dotted ids in these files (canon 1.3, canon 15.10) are sub-concepts of the published Global Rules, the canon this standard is audited against; it is vendored at `docs/global-rules/` in the skill repository and does not ship inside the skill. The hard rules are the plain integers 1-35. Read a reference when its condition holds and not otherwise; the conditions are files touched, repo shape, or rules triggered.
 
-Toolchain:
-- `references/nextjs-monorepo.md` | Next.js 16 + Tailwind v4 + i18n route groups + static export.
-- `references/atomic-design.md` | the logic-free design system: atoms/molecules/organisms layer rules, stateless props-only components, interactivity ladder (native HTML → hoisted state → `src/lib/hooks`), injected link/image wrappers, page-shell wiring, accessibility defaults, "where does it go?" table.
-- `references/bun-typescript.md` | Bun-script repo bootstrap: tsconfig, ESLint flat config (SonarJS + type-aware rules + `no-restricted-imports`), Logger port + Winston adapter, secrets discipline, full bootstrap checklist with asset copy steps, optional containerization Dockerfile.
-- `references/java-quarkus.md` | the Java variant: records + sealed `Result`, ports as interfaces with hand-written fakes (no Mockito), Maven-wrapper toolchain with pinned exact versions, Spotless, JaCoCo tiers + PIT mutation, Flyway expand-contract, Panache writes / explicit reads, authenticated-by-default resources, the hard-rules translation table, bootstrap checklist.
-
-Engineering:
-- `references/testing.md` | Outside-in classicist school, the Red-Green-Refactor loop with the Three Laws, bug fixes test-first, triangulation and transformation priority, primary-port SUT, the test-the-code-you-own principle (trust your dependencies), fakes (with error-injection knob), the absolute no-`mock`-from-`bun:test` rule, test builders, contract tests, common mistakes.
-- `references/testing-infra.md` | three patterns for infra-adapter tests (custom-fetch DI / two-constructor / sync-builder export), production-wiring smoke test, `installFetchMock`, global-swap pattern, FS chmod tricks, ordering gotchas.
-- `references/solid-principles.md` | SRP, OCP, LSP, ISP, DIP expressed as typed records and function contracts.
-- `references/clean-code.md` | naming priorities, object calisthenics translated to a class-free world, comments, formatting, storytelling.
-- `references/object-design.md` | RDD, stereotypes, tell-don't-ask, value objects vs entities, aggregates, polymorphism via dispatch.
-- `references/code-smells.md` | detection catalogue and the refactorings that clean each smell.
-- `references/complexity.md` | essential vs accidental complexity, YAGNI, the lazy ladder (stop at the first rung), KISS, DRY + Rule of Three, four elements.
-- `references/behavioural-examples.md` | before/after worked examples (in this repo's idiom) for the four Behavioural Guidelines: think-before-coding, simplicity, surgical changes, goal-driven execution; anti-pattern table.
-- `references/architecture.md` | vertical slices, dependency rule, hexagonal and clean architecture, walking skeleton, inbound HTTP server archetype.
-- `references/design-patterns.md` | the four basic class-to-module translations (value object, interface, service with deps, entity), the full GoF catalogue rewritten as modules of arrow functions, the translation quick-reference table.
-
-Security:
-- `references/security.md` | source-to-sink mental model, vulnerability categories, branded types for trust boundaries, rented auth/crypto and the security baseline, pre-merge checklist, adopted false-positive filter.
-
-Error handling:
-- `references/result-type.md` | `Result<T, E>` and helpers, per-port discriminated-union errors, `StepError` aggregation, try/catch quarantine, fan-out batch semantics, `retryOnErr`, fakes-with-error-injection, `captureRejection`.
-
-Production disciplines:
-- `references/privacy.md` | private by default: minimize collection, PII out of logs/URLs/query strings (rule 27), user rights as routine endpoints, data map, synthetic fixtures (rule 34), impact assessments.
-- `references/isolation.md` | one user's data never reaches another (rule 28): token-derived owner, RLS defense in depth, fail closed, blast radius, cross-tenant 404 tests, UUIDv7.
-- `references/reliability.md` | design for failure (rules 29-31): deadlines + jittered idempotent retries, explicit hot reads, keyset pagination, transactional outbox, optimistic locking, soft delete + expand-contract migrations, stateless scaling, load-tested budgets.
-- `references/observability.md` | SLOs as numbers, correlated OpenTelemetry traces/metrics/logs, behaviour metrics by outcome, symptom-based alerting and alert hygiene.
-- `references/delivery.md` | boring delivery and operations: pipeline-only deploys (canary + one-step rollback), IaC with read-only humans, ephemeral environments, managed over self-run, open-standard portability, SBOM + signed artifacts, restore drills, blameless postmortems.
-- `references/metrics.md` | measure whether you are improving: DORA from pipeline events, flow metrics over story points, system metrics never per-person, trend over snapshot, cost as a first-class metric.
-- `references/ai.md` | the AI model as a dependency (rule 32): capability port + fake, pinned snapshots, eval gates, prompt-injection fencing + server-side action authorization, per-caller spend caps.
-- `references/governance.md` | no black boxes, clear ownership: `[decision]` + ADR tier, API docs from the contract, numbers not adjectives, one honest backlog, CODEOWNERS/RACI, separation of duties, audit trail, owner-verifiable done.
-- `references/product.md` | the whole experience and validation: error copy over stable codes, honest flows, market-driven defaults, human path, accessibility (semantic HTML, keyboard, token contrast, axe gate), problem interviews, dated go/no-go, keep-or-kill on adoption.
-
-Process:
-- `references/workflow.md` | the durable plan (`.claude/PLAN.md`), inner-loop checks, zero-warning rule, no-inline-ignore, per-tier coverage gates, SonarJS-at-lint-time, fast pre-commit hook (commit-size + package.json + gitleaks + staged lint + typecheck) plus the full CI gate set in `assets/ci.yml` (strict lint + tests + coverage + Stryker mutation + audit), commit identity (rule 26, metadata normal, file contents clean), dependency hygiene (no `"latest"`), periodic test-helpers audit, README consistency check.
-- `references/lessons.md` | session memory format, triggers, extraction heuristics, entry templates, worked examples, and harvesting accumulated lessons as an audit source for the standard itself.
+| Reference | Read when | Skip when |
+|:---|:---|:---|
+| `bun-typescript.md` | `src/main.ts` and no `next.config.*`; or touching `package.json`, `tsconfig.json`, `eslint.config.js`, `bunfig.toml`, `src/infra/logger.ts`, or file IO (rule 20) | Next.js or Java repo |
+| `nextjs-monorepo.md` | `next.config.*` or `packages/*`; or touching `app/**`, `eslint.config.mjs`, `src/lib/utils/logger.ts` | no `next` in any `package.json` |
+| `atomic-design.md` | touching `src/components/**`, `src/page/**`, `src/lib/{hooks,layout}/**`, `app/globals.css` (rules 21-22) | no React |
+| `java-quarkus.md` | `pom.xml` or `build.gradle` present | no Java sources |
+| `architecture.md` | a new directory under `src/`, a new use-case, an HTTP entry, a composition root; adopt mode | the change stays inside one module |
+| `testing.md` | any `*.test.ts` or `src/test-helpers/**` in the diff; rules 11, 13, 14, 24 | never (rule 11 puts a test in every feature diff) |
+| `testing-infra.md` | adding or testing a `src/infra/**` adapter (SDK, fetch, filesystem, timers) | no infra file touched |
+| `result-type.md` | a new port, use-case, `try/catch`, retry, or Result-to-HTTP mapping; rules 16-17 | a pure function with no IO |
+| `security.md` | input reaches SQL, shell, filesystem, HTTP, HTML, or a redirect; env or secrets read; an auth surface; rules 12, 33 | no external input, no sink |
+| `clean-code.md` | a function over 10 lines, a module over 50, a file over 100 after the change; naming a module; rule 18 | under the numbers |
+| `object-design.md` | a new value object, entity, aggregate, or dispatch over kinds; a SOLID question | no new domain type |
+| `solid-principles.md` | a SOLID question the object-design summary does not settle | otherwise |
+| `design-patterns.md` | reaching for a GoF pattern or translating a `class` (rule 1) | no class in sight |
+| `code-smells.md` | review flags a smell; a refactor spans more than one module | greenfield code |
+| `complexity.md` | tempted to add an abstraction, dependency, or config knob (guideline 2) | a one-line change |
+| `behavioural-examples.md` | a guideline 1-5 call is unclear | otherwise |
+| `workflow.md` | touching hooks, CI, coverage, mutation, or lint config; suppressing a warning (15); commit size or message; rules 19, 23-26; the confirmation gates | an inner-loop edit with the gates green |
+| `lessons.md` | the first session in a repo; proposing entries at wrap-up | otherwise |
+| `privacy.md` | the diff holds a name, email, phone, free-text field, log line, or query string; rules 27, 34 | no personal data |
+| `isolation.md` | any query or route scoped by user, tenant, or org; rule 28 | a single-user CLI |
+| `reliability.md` | a fetch, SDK, or driver call; a retry; a migration; a delete; a mutable shared record; rules 29-31 | no IO, no schema |
+| `observability.md` | a new service, route, or job reaches production; adding a log, metric, or alert | a throwaway script |
+| `metrics.md` | delivery or flow metrics, cost dashboards | otherwise |
+| `delivery.md` | touching `.github/workflows/**`, infrastructure as code, a Dockerfile, a release | an inner-loop code change |
+| `governance.md` | an ADR, CODEOWNERS, README claims, API docs, a vendored-standard re-sync | otherwise |
+| `ai.md` | an LLM SDK import, prompt, model name, or eval; rule 32 | no model call |
+| `product.md` | user-facing copy, an error state, a form, accessibility; a new feature's go/no-go | backend only |
 
 ## Workflow when writing or editing code
 
-0. Read `.claude/LESSONS.md`, `.claude/lessons.local.md`, and `.claude/PLAN.md` if they exist. Apply past lessons silently; if `PLAN.md` holds an unfinished task, resume from its first unchecked step.
-1. Identify the variant. Read the matching variant reference.
-2. Identify the feature. If it is multi-step, write the plan and a definition of done per step to `.claude/PLAN.md` before coding (Behavioural Guideline #4); if non-trivial, skim `references/architecture.md`. Name which production disciplines the change triggers (rules 27-34: personal data, tenants, network IO, schema, LLM, auth, user-facing UI) and read those references before designing.
-3. Propose a failing test in `*.test.ts` with a concrete example name; get the user's confirmation before writing it, and never modify or delete an existing test without explicit sign-off (rule 24).
-4. Write the simplest arrow-function code to make it green.
-5. Refactor. Apply object calisthenics. Promote primitives to branded types. Extract on Rule of Three. (The hard rules bind throughout: no banned syntax, deps via `bun add`, logging via the `Logger` port, Conventional Commits.)
-6. Work trunk-based: commit to `main` in small green increments (≤10 files / ≤300 lines per gate 1), not onto long-lived feature branches. Every commit keeps `main` releasable: that is what the pre-commit gates guarantee. Hide unfinished work behind a flag, not a branch. This is the default and overrides any "branch first" habit. See `references/workflow.md` (Trunk-based development).
-7. If legacy code in the repo uses a forbidden pattern, match the local style in that file only. Flag the drift once and offer to refactor.
-7b. If the repo follows the standard but its `CLAUDE.md` carries no atelier pointer block, offer once to add it (copy `assets/claude-md-pointer.md`; atelier-greenfield § step 6). Deterministic repo context beats probabilistic skill triggering: with the block in place every future session carries the standard even when no description matches the prompt.
-8. At session wrap-up, update `.claude/PLAN.md` to reflect the final state (all DoD ticked, or what remains for next time), and scan for `[mistake]`, `[decision]`, `[gotcha]` entries worth capturing. Propose a candidate list and append on approval. See `references/lessons.md`.
+0. Read `.claude/LESSONS.md`, `.claude/lessons.local.md`, and `.claude/PLAN.md` if they exist; apply lessons silently; resume an unfinished plan from its first unchecked step.
+1. Identify the variant and read its reference; read the references the table above triggers for this change.
+2. Identify the feature. If multi-step, write the plan with a definition of done per step to `.claude/PLAN.md` before coding (guideline 4). Name the production disciplines the change triggers (rules 27-34) and read their references before designing.
+3. Propose a failing test in `*.test.ts` with a concrete, domain-language name; get the confirmation rule 24 requires; write it and watch it fail.
+4. Write the simplest arrow-function code that makes it green.
+5. Refactor: object calisthenics, primitives promoted to branded types, extraction on the third duplication. The hard rules bind throughout.
+6. Work trunk-based: small green commits to `main` (at most 10 files and 300 lines), unfinished work behind a flag, never a long-lived branch (`references/workflow.md`, Trunk-based development). Each commit and each push waits for the user's yes (rule 25).
+7. If legacy code uses a forbidden pattern, match the local style in that file only; flag the drift once and offer to refactor. If the repo follows the standard but its `CLAUDE.md` carries no atelier pointer block, offer once to add it from `assets/claude-md-pointer.md`; deterministic repo context beats probabilistic skill triggering.
+8. At wrap-up, update `.claude/PLAN.md` to its final state and propose the `[mistake]`, `[decision]`, `[gotcha]` entries worth keeping (`references/lessons.md`).
 
-## Pre-code checklist
+## Checklists
 
-1. Do I understand the requirement? Write acceptance criteria.
-2. What is the first failing test? (domain-language name, concrete example)
-3. What is the simplest solution? Walk the lazy ladder (Behavioural Guideline #2): skip it / stdlib / native runtime / existing dep / one line / minimal custom, in that order.
-4. Am I solving a real need or a hypothetical one?
-5. Which production disciplines does this change trigger (rules 27-34: personal data, tenants, network IO, schema, LLM, auth, user-facing UI)?
+**Before code.** Acceptance criteria written; the first failing test named as a concrete business scenario; the lazy ladder walked; a real need, not a hypothetical one; the disciplines (27-34) this change triggers named.
 
-## During-code checklist
+**During.** The simplest thing that could work; one reason to change per module; dependencies on function-type contracts, not concretions; extraction only at the third duplication; the test written first, proposed and confirmed, never silently changed.
 
-1. Is this the simplest thing that could work?
-2. Does this module have one reason to change?
-3. Am I depending on function-type contracts, not concretions?
-4. Is there duplication I should extract? (Rule of Three, not before)
-5. Did I write the test first, proposed and confirmed before writing, never silently changed (rule 24)?
-
-## Post-code checklist
-
-Inner-loop checks 1–4 run after every code change; check 5 runs before staging (Bun variant, see the variant matrix for what applies in a Next.js repo):
-
-1. `bun test`: passes.
-2. `bun run lint`: 0 errors AND 0 warnings. No inline ignores added.
-3. `bun run typecheck`: `tsc --noEmit`, clean.
-4. `bun run coverage`: 100% on `src/domain/**` and `src/use-cases/**`, 80% on `composition` + `infra` + `presenter`.
-5. Before pushing (not after every edit, it costs 1-3 min per file): `bun run mutate:changed`, domain/use-case files score >=90% mutation. CI enforces mutation as a merge gate (`mutate:changed` on a pull request, `mutate` on main); running it locally first catches surviving mutants sooner.
-
-Then review:
-
-6. Is there dead code to remove? Are names still accurate? Can conditionals simplify?
-7. Does any user input reach a sensitive sink (SQL, shell, filesystem, HTTP, HTML)? If yes, did it cross a branded-type checkpoint?
-8. Every new IO port returns `Result<T, PortError>` and its `PortError` is a discriminated union. Every new use-case returns `Result<Summary, StepError>`. `try/catch` only in `infra/`, `main.ts`, or a pure-domain native-API fallback.
-9. Production disciplines triggered by this change (rules 27-34): no personal data in a log, URL, or query string, and redaction keys cover any new field (27); owner-scoped path takes its id from the verified claim and ships its cross-tenant 404 test (28); every new outbound call has a deadline and a bounded jittered retry with an idempotency key where needed (29); deletion is soft, the schema change is a versioned additive migration (30); a mutable shared record checks its version on write (31); an LLM touchpoint is behind its port with a pinned snapshot and its eval run (32); nothing hand-rolls auth or crypto (33); fixtures stay synthetic (34).
-10. New `src/infra/`, `src/composition/`, or `src/presenter/` files land in the same commit as a regenerated `scripts/coverage-preload.ts` (`bun run scripts/regenerate-coverage-preload.ts`).
-11. The commit is small: ≤10 files AND ≤300 lines (insertions + deletions). The pre-commit gate enforces this; aim well under during iteration.
-12. `README.md` audited against the user-visible surface area (install steps, `package.json` scripts, CLI flags, env vars, top-level layout, public exports, pinned versions) and updated in the same commit if anything is now stale. See Behavioural Guideline #5. The audit runs **twice**: once before declaring the task done, and again before ending the session: the same READMEs that are correct at task-done can drift across multiple back-to-back tasks in one session.
-13. Would a new team member understand this in six months?
-
-The pre-commit hook runs the **fast gates** (commit size, package.json no `"latest"` / `"*"`, gitleaks `protect --staged`, staged lint, typecheck); the full test suite, coverage, and mutation run in **CI** (`assets/ci.yml`), the required merge check. See `references/workflow.md` for the split and the no-bypass rule.
+**After every change (the inner loop, Bun variant; the matrix says what applies elsewhere).** `bun test` passes; `bun run lint` reports 0 errors and 0 warnings with no inline ignore added; `bun run typecheck` is clean; `bun run coverage` holds 100 on `src/domain/**` and `src/use-cases/**`, 80 on `composition`, `infra`, and `presenter`. Before pushing, `bun run mutate:changed` scores domain and use-case files at 90 or above (CI enforces mutation as the merge gate). Then review: dead code, names, conditionals; every input that reaches a sink crossed a branded checkpoint; every new port returns `Result<T, PortError>` with a discriminated-union error and every use-case `Result<Summary, StepError>`; the disciplines the change triggers, each with the concrete check its rule states; new `src/infra/`, `src/composition/`, or `src/presenter/` files land with a regenerated `scripts/coverage-preload.ts`; the commit is at most 10 files and 300 lines; the README audit (guideline 5), before task-done and again before session end; would a new team member understand this in six months. The pre-commit hook runs the fast gates (commit size, package.json, gitleaks, staged lint, typecheck); the full suite, coverage, and mutation run in CI as the required merge check (`references/workflow.md`).
 
 ## Red flags (stop and rethink)
 

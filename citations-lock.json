@@ -6,7 +6,7 @@
     "docs/global-rules/global-rules-dos-and-donts.md:745": "**Do:** Judge a suite by its mutation score, using Stryker for TS and PI",
     "skills/atelier-greenfield/SKILL.md:8": "Bring a repo into existence already conforming to the atelier standard, ",
     "skills/atelier-grill-me/SKILL.md:18": "- The plan is a new product or feature: before grilling how to build it,",
-    "skills/atelier/SKILL.md:137": "Whatever the variant, **every gate proves it can fail**: when you add or",
+    "skills/atelier/SKILL.md:126": "Whatever the variant, **every gate proves it can fail**: when you add or",
     "skills/atelier/SKILL.md:49": "13. **No `mock` from `bun:test`, the entire namespace.** `mock()`, `mock",
     "skills/atelier/SKILL.md:51": "15. **Zero lint warnings; no inline ignores, ever.** Refactor, or change",
     "skills/atelier/SKILL.md:52": "16. **`Result<T, E>` at IO boundaries.** Every IO port returns `Promise<",

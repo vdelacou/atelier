@@ -77,7 +77,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
         V3 after `--lock`; V6.
 28. [x] interaction rewritten, guidelines compressed, companions cascaded. DoD: rules 24-25
         bullets present; V3 after `--lock`; V6.
-29. [ ] trigger table, merged checklists, workflow. DoD: SKILL.md about 210 lines; V1 V2 V3 V5
+29. [x] trigger table, merged checklists, workflow. DoD: SKILL.md about 210 lines; V1 V2 V3 V5
         V6; h1-h7 with_skill 24/24; judge --ab old vs new (3 generations); trigger-eval
         atelier-bun once.
 
