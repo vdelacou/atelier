@@ -80,7 +80,7 @@ export type WithdrawResult =
   | { readonly kind: 'insufficientFunds' };
 
 export const withdraw = (account: Account, amount: Money): WithdrawResult => {
-  if (amount.amount <= 0) return { kind: 'invalidAmount' };
+  if (amount.cents <= 0) return { kind: 'invalidAmount' };
   if (lessThanMoney(account.balance, amount)) return { kind: 'insufficientFunds' };
   return { kind: 'success', account: { ...account, balance: subMoney(account.balance, amount) } };
 };
@@ -233,20 +233,37 @@ Both approaches avoid the growing-if-else smell.
 Defined by attributes. No identity. Immutable. Compared by value. Examples: `Money`, `Email`, `Address`, `DateRange`.
 
 ```ts
-export type Money = { readonly amount: number; readonly currency: string };
+// The canonical Money: integer minor units, never a float (0.1 + 0.2 !== 0.3, and the
+// rounding lands on an invoice). Every other Money in these references is this one.
+export type Currency = 'EUR' | 'USD';
+export type Money = { readonly cents: number; readonly currency: Currency };
+export type MoneyError = { readonly kind: 'malformed'; readonly value: string };
 
-export const money = (amount: number, currency: string): Money => {
-  if (!Number.isFinite(amount)) throw new Error('invalid Money.amount');
-  return { amount, currency };
+// assertion tier: cents already proven (a literal, a row you own); a non-integer here is a bug
+export const money = (cents: number, currency: Currency): Money => {
+  if (!Number.isSafeInteger(cents)) throw new Error('invalid Money.cents');
+  return { cents, currency };
 };
 
-export const moneyEquals = (a: Money, b: Money): boolean =>
-  a.amount === b.amount && a.currency === b.currency;
+// boundary tier: a decimal string from outside ("19.99") in, Result out; no float arithmetic
+export const parseMoney = (decimal: string, currency: Currency): Result<Money, MoneyError> => {
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(decimal);
+  if (!match) return err({ kind: 'malformed', value: decimal });
+  const [, whole = '0', fraction = ''] = match;
+  return ok(money(Number(whole) * 100 + Number(fraction.padEnd(2, '0')), currency));
+};
 
-export const addMoney = (a: Money, b: Money): Money => {
+const sameCurrency = (a: Money, b: Money): Currency => {
   if (a.currency !== b.currency) throw new Error('CurrencyMismatch');
-  return money(a.amount + b.amount, a.currency);
+  return a.currency;
 };
+
+export const moneyEquals = (a: Money, b: Money): boolean => a.cents === b.cents && a.currency === b.currency;
+export const addMoney = (a: Money, b: Money): Money => money(a.cents + b.cents, sameCurrency(a, b));
+export const subMoney = (a: Money, b: Money): Money => money(a.cents - b.cents, sameCurrency(a, b));
+export const lessThanMoney = (a: Money, b: Money): boolean => a.cents < b.cents && sameCurrency(a, b) === a.currency;
+// scaling rounds once, at the edge of the arithmetic, never inside a running total
+export const scaleMoney = (m: Money, factor: number): Money => money(Math.round(m.cents * factor), m.currency);
 ```
 
 ### Entities
@@ -285,7 +302,7 @@ export type Order = {
   readonly customerId: CustomerId;
 };
 
-const MAX_ORDER_VALUE = money(10000, 'EUR');
+const MAX_ORDER_VALUE = money(1_000_000, 'EUR'); // 10 000.00 EUR in cents
 
 // All access through the root
 export const addItemToOrder = (order: Order, product: Product, quantity: number): Order => {

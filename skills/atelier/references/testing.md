@@ -64,12 +64,12 @@ describe('placeOrder', () => {
     const customers = createInMemoryCustomerRepo({ [customer]: { tier: 'premium' } });
 
     await placeOrder(
-      { customer, items: [{ sku: 'SKU-1', price: money(100, 'EUR') }] },
+      { customer, items: [{ sku: 'SKU-1', price: money(10_000, 'EUR') }] },
       { orders, customers }
     );
 
     const [saved] = await orders.findByCustomer(customer);
-    expect(saved.total).toEqual(money(80, 'EUR'));
+    expect(saved.total).toEqual(money(8_000, 'EUR'));
   });
 });
 ```
@@ -90,7 +90,7 @@ describe('postgresOrderRepo', () => {
 
   it('saves an order and retrieves it by customer', async () => {
     const customer = customerId('c-1');
-    const order = buildOrder({ customer, total: money(80, 'EUR') });
+    const order = buildOrder({ customer, total: money(8_000, 'EUR') });
     await repo.save(order);
     const [found] = await repo.findByCustomer(customer);
     expect(found).toEqual(order);
@@ -149,13 +149,13 @@ it('when a premium customer buys a 100 EUR item, the order total is 80 EUR', asy
 
   // ACT - call the primary port
   await placeOrder(
-    { customer, items: [{ sku: 'SKU-1', price: money(100, 'EUR') }] },
+    { customer, items: [{ sku: 'SKU-1', price: money(10_000, 'EUR') }] },
     { orders, customers }
   );
 
   // ASSERT - read state from the fake
   const [saved] = await orders.findByCustomer(customer);
-  expect(saved.total).toEqual(money(80, 'EUR'));
+  expect(saved.total).toEqual(money(8_000, 'EUR'));
 });
 ```
 
@@ -352,12 +352,12 @@ describe('placeOrder', () => {
     const customers = createInMemoryCustomerRepo({ [customer]: { tier: 'premium' } });
 
     await placeOrder(
-      { customer, items: [{ sku: 'SKU-1', price: money(100, 'EUR') }] },
+      { customer, items: [{ sku: 'SKU-1', price: money(10_000, 'EUR') }] },
       { orders, customers, emails }
     );
 
     const [saved] = await orders.findByCustomer(customer);
-    expect(saved.total).toEqual(money(80, 'EUR'));
+    expect(saved.total).toEqual(money(8_000, 'EUR'));
     expect(emails.sentEmails).toContain(email('c-1@example.com'));
   });
 });
@@ -370,11 +370,11 @@ If a value object or a domain service has genuinely complex logic of its own (`M
 ```ts
 describe('Money.add', () => {
   it('adds two amounts with the same currency', () => {
-    expect(addMoney(money(10, 'EUR'), money(20, 'EUR'))).toEqual(money(30, 'EUR'));
+    expect(addMoney(money(1_000, 'EUR'), money(2_000, 'EUR'))).toEqual(money(3_000, 'EUR'));
   });
 
   it('refuses to add different currencies', () => {
-    expect(() => addMoney(money(10, 'EUR'), money(10, 'USD'))).toThrow('CurrencyMismatch');
+    expect(() => addMoney(money(1_000, 'EUR'), money(1_000, 'USD'))).toThrow('CurrencyMismatch');
   });
 });
 ```
@@ -454,7 +454,7 @@ describe('postgresOrderRepo', () => {
   });
 
   it('saves an order and finds it by customer', async () => {
-    const order = buildOrder({ customer: customerId('c-1'), total: money(80, 'EUR') });
+    const order = buildOrder({ customer: customerId('c-1'), total: money(8_000, 'EUR') });
     await repo.save(order);
     const [found] = await repo.findByCustomer(customerId('c-1'));
     expect(found).toEqual(order);
@@ -557,7 +557,7 @@ export const buildOrder = (overrides: OrderConfig = {}): Order => ({
 // usage
 const pending = buildOrder();
 const paid = buildOrder({ status: 'paid' });
-const withItems = buildOrder({ items: [item({ sku: 'ABC', price: money(100, 'EUR') })] });
+const withItems = buildOrder({ items: [item({ sku: 'ABC', price: money(10_000, 'EUR') })] });
 ```
 
 ---

@@ -144,8 +144,7 @@ export type PaymentGateway = {
 // Adapter
 export const createOldPaymentAdapter = (oldAPI: OldPaymentAPI): PaymentGateway => ({
   charge: async (amount) => {
-    const cents = Math.round(amount.amount * 100);
-    const success = oldAPI.makePayment(cents);
+    const success = oldAPI.makePayment(amount.cents);
     return success ? chargeSuccess() : chargeFailed();
   },
 });
@@ -230,14 +229,14 @@ export const componentPrice = (c: Component): Money => {
 const smallBox: Component = {
   kind: 'box',
   children: [
-    { kind: 'product', price: money(10, 'EUR') },
-    { kind: 'product', price: money(20, 'EUR') },
+    { kind: 'product', price: money(1_000, 'EUR') },
+    { kind: 'product', price: money(2_000, 'EUR') },
   ],
 };
 
 const bigBox: Component = {
   kind: 'box',
-  children: [smallBox, { kind: 'product', price: money(50, 'EUR') }],
+  children: [smallBox, { kind: 'product', price: money(5_000, 'EUR') }],
 };
 
 // componentPrice(bigBox) -> 80 EUR
@@ -261,11 +260,11 @@ export const regularPricing: PricingStrategy = {
 };
 
 export const premiumDiscount: PricingStrategy = {
-  calculate: (basePrice) => money(basePrice.amount * 0.8, basePrice.currency),
+  calculate: (basePrice) => scaleMoney(basePrice, 0.8),
 };
 
 export const blackFriday: PricingStrategy = {
-  calculate: (basePrice) => money(basePrice.amount * 0.5, basePrice.currency),
+  calculate: (basePrice) => scaleMoney(basePrice, 0.5),
 };
 
 export const cartTotal = (items: readonly Item[], pricing: PricingStrategy): Money => {

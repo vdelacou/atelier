@@ -11,23 +11,25 @@ The `references/design-patterns.md` file contains the full GoF catalogue in this
 `class Money { ... }` becomes a readonly record plus operation functions:
 
 ```ts
-export type Money = { readonly amount: number; readonly currency: string };
+// integer minor units, never a float; the full canonical Money (parseMoney, scaleMoney,
+// subMoney) lives in references/object-design.md, Value objects
+export type Currency = 'EUR' | 'USD';
+export type Money = { readonly cents: number; readonly currency: Currency };
 
-export const money = (amount: number, currency: string): Money => {
-  if (!Number.isFinite(amount)) throw new Error('invalid Money.amount');
-  return { amount, currency };
+export const money = (cents: number, currency: Currency): Money => {
+  if (!Number.isSafeInteger(cents)) throw new Error('invalid Money.cents');
+  return { cents, currency };
 };
 
 export const addMoney = (a: Money, b: Money): Money => {
   if (a.currency !== b.currency) throw new Error('CurrencyMismatch');
-  return money(a.amount + b.amount, a.currency);
+  return money(a.cents + b.cents, a.currency);
 };
 
-export const moneyEquals = (a: Money, b: Money): boolean =>
-  a.amount === b.amount && a.currency === b.currency;
+export const moneyEquals = (a: Money, b: Money): boolean => a.cents === b.cents && a.currency === b.currency;
 ```
 
-The factory function (`money`) is the validation gate. Downstream code trusts anything with type `Money` without re-checking.
+The factory function (`money`) is the assertion gate for cents already proven; `parseMoney` (object-design.md) is the boundary tier that turns a decimal string from outside into a `Result`. Downstream code trusts anything with type `Money` without re-checking.
 
 ## Interface / contract
 

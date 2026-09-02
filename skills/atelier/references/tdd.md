@@ -164,11 +164,11 @@ describe('placeOrder use-case', () => {
     const orders = createInMemoryOrderRepo();
     const customer = customerId('c-1');
     await placeOrder(
-      { customer, items: [{ sku: 'SKU-1', price: money(100, 'EUR') }] },
+      { customer, items: [{ sku: 'SKU-1', price: money(10_000, 'EUR') }] },
       { orders, customers: createInMemoryCustomerRepo({ [customer]: { tier: 'premium' } }) }
     );
     const saved = await orders.findByCustomer(customer);
-    expect(saved[0].total).toEqual(money(80, 'EUR'));
+    expect(saved[0].total).toEqual(money(8_000, 'EUR'));
   });
 });
 ```
@@ -212,15 +212,15 @@ import { money } from '../money/money';
 
 describe('calculateDiscount', () => {
   it('when standard customer buys 100 EUR, returns 0', () => {
-    const subtotal = money(100, 'EUR');
+    const subtotal = money(10_000, 'EUR');
     const result = calculateDiscount(subtotal, 'standard');
-    expect(result.amount).toBe(0);
+    expect(result.cents).toBe(0);
   });
 
-  it('when premium customer buys 100 EUR, returns 20', () => {
-    const subtotal = money(100, 'EUR');
+  it('when premium customer buys 100 EUR, returns 20 EUR', () => {
+    const subtotal = money(10_000, 'EUR');
     const result = calculateDiscount(subtotal, 'premium');
-    expect(result.amount).toBe(20);
+    expect(result.cents).toBe(2_000);
   });
 });
 ```
@@ -231,7 +231,7 @@ describe('calculateDiscount', () => {
 
 ```ts
 import type { Money } from '../money/money';
-import { money } from '../money/money';
+import { money, scaleMoney } from '../money/money';
 
 type CustomerTier = 'standard' | 'premium';
 
@@ -242,7 +242,7 @@ Test 1 passes. Test 2 fails. Generalise:
 
 ```ts
 export const calculateDiscount = (subtotal: Money, tier: CustomerTier): Money => {
-  if (tier === 'premium') return money(subtotal.amount * 0.2, subtotal.currency);
+  if (tier === 'premium') return scaleMoney(subtotal, 0.2);
   return money(0, subtotal.currency);
 };
 ```
@@ -257,7 +257,7 @@ const tierRates: Record<CustomerTier, number> = {
 };
 
 export const calculateDiscount = (subtotal: Money, tier: CustomerTier): Money =>
-  money(subtotal.amount * tierRates[tier], subtotal.currency);
+  scaleMoney(subtotal, tierRates[tier]);
 ```
 
 This is what "design happens during refactor" looks like.

@@ -125,20 +125,20 @@ export const refund = () => { /* ... */ };
 // src/orders/order.ts
 export const calculateShipping = (customer: Customer): Money => {
   if (customer.country === 'US') {
-    if (customer.state === 'CA') return money(10, 'USD');
-    return money(15, 'USD');
+    if (customer.state === 'CA') return money(1_000, 'USD');
+    return money(1_500, 'USD');
   }
-  return money(25, 'USD');
+  return money(2_500, 'USD');
 };
 
 // REFACTORED - move to customer module
 // src/customers/customer-shipping.ts
 export const customerShippingCost = (customer: Customer): Money => {
   if (customer.country === 'US') {
-    if (customer.state === 'CA') return money(10, 'USD');
-    return money(15, 'USD');
+    if (customer.state === 'CA') return money(1_000, 'USD');
+    return money(1_500, 'USD');
   }
-  return money(25, 'USD');
+  return money(2_500, 'USD');
 };
 
 // src/orders/order.ts - now just asks the friend
