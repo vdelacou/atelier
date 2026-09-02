@@ -445,6 +445,8 @@ Whatever the variant, **every gate proves it can fail**: when you add or change 
 
 ## Reference files
 
+Dotted ids in these files (canon 1.3, canon 15.10) are sub-concepts of the published Global Rules, the canon this standard is audited against; it is vendored at `docs/global-rules/` in the skill repository and does not ship inside the skill. The hard rules are the plain integers 1-35.
+
 Toolchain:
 - `references/nextjs-monorepo.md` | Next.js 16 + Tailwind v4 + i18n route groups + static export.
 - `references/atomic-design.md` | the logic-free design system: atoms/molecules/organisms layer rules, stateless props-only components, interactivity ladder (native HTML → hoisted state → `src/lib/hooks`), injected link/image wrappers, page-shell wiring, accessibility defaults, "where does it go?" table.
