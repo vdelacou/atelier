@@ -80,6 +80,7 @@ cp "$SKILL/assets/commit-msg" .githooks/commit-msg
 cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/assets/check-commit-messages.sh" "$SKILL/assets/check-commit-range.sh" scripts/
 cp "$SKILL/assets/check-pii-channels.sh" "$SKILL/assets/check-io-deadlines.sh" \
    "$SKILL/assets/check-data-lifecycle.sh" "$SKILL/assets/check-isolation-tests.sh" scripts/
+cp "$SKILL/assets/java/pmd-ruleset.xml" pmd-ruleset.xml
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh
 git config core.hooksPath .githooks
 
@@ -464,6 +465,16 @@ public interface Raw {
 EOF
 expect_err "-Werror blocks a rawtypes warning (rule 15)" ./mvnw -q compile
 rm src/main/java/com/example/app/domain/Raw.java
+
+# 6b. Rule 35: PMD blocks a method of cyclomatic complexity 11 (ten guards)
+# and passes complexity 10 (nine), pinning the boundary. pmd:check alone, so
+# the JaCoCo tier does not also fail on the untested planted class.
+gen_guards() { { echo 'package com.example.app.domain;'; echo ''; echo 'public final class Branchy {'; echo '  private Branchy() {}'; echo ''; echo '  public static int score(int[] v) {'; local i=1; while [ "$i" -le "$1" ]; do echo "    if (v[$i] > $i) return $i;"; i=$((i + 1)); done; echo '    return 0;'; echo '  }'; echo '}'; } > src/main/java/com/example/app/domain/Branchy.java; }
+gen_guards 10
+expect_err "PMD blocks a method of cyclomatic complexity 11 (rule 35)" ./mvnw -q pmd:check
+gen_guards 9
+expect_ok "PMD accepts complexity 10, the cap itself" ./mvnw -q pmd:check
+rm src/main/java/com/example/app/domain/Branchy.java
 
 # 7. The JaCoCo 100 tier blocks an untested domain class.
 cat > src/main/java/com/example/app/domain/Untested.java <<'EOF'

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  atelier rule 35: cyclomatic complexity at most 10 per method.
+
+  The size caps (short methods, one indentation level) are prose; this is the
+  gate, and it counts what they miss: a one-line chain of && / || / ternaries,
+  a wide switch. PMD reports a method whose complexity is AT OR ABOVE
+  methodReportLevel (verified on PMD 7.17: level 10 flags a complexity-10
+  method), so "at most 10" is level 11, the same boundary as the TypeScript
+  variants' `complexity: ['error', 10]`.
+
+  Copied to the repository root as pmd-ruleset.xml; the canonical pom binds
+  pmd:check to verify (references/java-quarkus.md, Gates and hooks). The fix
+  for a violation is never a higher level: split the method or dispatch on a
+  map (references/complexity.md).
+-->
+<ruleset name="atelier"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+  <description>atelier rule 35: cyclomatic complexity at most 10 per method</description>
+  <rule ref="category/java/design.xml/CyclomaticComplexity">
+    <properties>
+      <property name="methodReportLevel" value="11" />
+    </properties>
+  </rule>
+</ruleset>

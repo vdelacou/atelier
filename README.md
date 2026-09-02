@@ -270,7 +270,7 @@ atelier/
     │   │   ├── fetch-mock.ts                   # installFetchMock for infra adapter tests
     │   │   ├── format-error.ts                 # safe catch-block formatter (SonarJS S6551)
     │   │   ├── format-error.test.ts            # its test (format-error is in the mutation scope)
-    │   │   ├── java/                           # Java variant exemplars: sealed Result/Ok/Err + the Email value-record
+    │   │   ├── java/                           # Java variant exemplars: sealed Result/Ok/Err, the Email value-record, the rule-35 PMD ruleset
     │   │   ├── lint-staged.sh                  # fast staged-file ESLint for the pre-commit hook
     │   │   ├── mutate-changed.sh               # Stryker mutation on files changed vs origin/main
     │   │   ├── mutate-staged.sh                # Stryker mutation on staged files (optional local; CI enforces mutation)
