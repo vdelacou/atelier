@@ -257,6 +257,15 @@ expect_ok "bun install" bun install
 echo "== positive path: a conforming package passes every gate =="
 expect_ok "bun test (src/lib TDD gate)" bun test
 expect_ok "eslint (design system + shell clean)" bun run lint
+
+# Rule 35 in this variant's config: ten guards are complexity 11 (red), nine
+# are complexity 10 (green), pinning the boundary.
+gen_guards() { { echo 'export const score = (v: Record<string, number>): number => {'; local i=1; while [ "$i" -le "$1" ]; do echo "  if (v.k$i > $i) return $i;"; i=$((i + 1)); done; echo '  return 0;'; echo '};'; } > "$2"; }
+gen_guards 10 src/lib/branchy.ts
+expect_err "complexity gate rejects a function of cyclomatic complexity 11 (rule 35)" bun run lint
+gen_guards 9 src/lib/branchy.ts
+expect_ok "complexity gate accepts complexity 10, the cap itself" bun run lint
+rm src/lib/branchy.ts
 expect_ok "tsc --noEmit" bun run typecheck
 expect_ok "next build (static export)" env NODE_ENV=production bun run build
 

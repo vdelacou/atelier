@@ -214,6 +214,9 @@ const eslintConfig = defineConfig([
   {
     rules: {
       'func-style': ['error', 'expression'],
+      // Rule 35: cyclomatic complexity at most 10 per function (the size caps
+      // miss a one-line chain of `&&`/`??`/ternaries and a wide `switch`).
+      complexity: ['error', 10],
       'no-console': 'error',
       'no-restricted-syntax': ['off', 'ForOfStatement'],
       'prefer-template': 'error',

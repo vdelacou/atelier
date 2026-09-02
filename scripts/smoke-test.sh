@@ -232,6 +232,16 @@ expect_ok "typecheck" bun run typecheck
 expect_ok "coverage gate" bun run coverage
 
 echo "== negative paths: each gate blocks the violation it exists for =="
+
+# Rule 35: cyclomatic complexity at most 10 per function. Ten sequential guard
+# clauses are complexity 11 (one level deep, under 20 lines, so only this rule
+# fires); nine are complexity 10 and pass, which pins the boundary.
+gen_guards() { { echo 'export const score = (v: Record<string, number>): number => {'; local i=1; while [ "$i" -le "$1" ]; do echo "  if (v.k$i > $i) return $i;"; i=$((i + 1)); done; echo '  return 0;'; echo '};'; } > "$2"; }
+gen_guards 10 src/domain/branchy.ts
+expect_err "complexity gate rejects a function of cyclomatic complexity 11 (rule 35)" bun run lint
+gen_guards 9 src/domain/branchy.ts
+expect_ok "complexity gate accepts complexity 10, the cap itself" bun run lint
+rm src/domain/branchy.ts
 cat > src/infra/orphan.ts <<'EOF'
 export const orphan = (n: number): number => n * 2;
 EOF

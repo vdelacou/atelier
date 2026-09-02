@@ -35,7 +35,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 
 ## Phase F: rule 35, cyclomatic complexity
 
-31. [ ] feat(atelier): cyclomatic complexity gate in both ESLint configs. DoD: planted 11-branch
+31. [x] feat(atelier): cyclomatic complexity gate in both ESLint configs. DoD: planted 11-branch
         function red in smoke-test.sh and smoke-test-next.sh, conforming green.
 32. [ ] feat(atelier): PMD cyclomatic complexity gate for the Java variant. DoD: planted method
         of complexity 11 fails `./mvnw verify` in smoke-test-java.sh; asset named by the

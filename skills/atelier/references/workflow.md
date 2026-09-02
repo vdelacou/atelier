@@ -268,7 +268,7 @@ export default [
     rules: {
       'sonarjs/no-unused-vars': 'off',          // duplicates @typescript-eslint/no-unused-vars
       'sonarjs/no-empty-test-file': 'off',      // false positives on `describe` test layout
-      'sonarjs/cognitive-complexity': 'off',    // function-size cap already covers this
+      'sonarjs/cognitive-complexity': 'off',    // one metric: the cyclomatic cap (rule 35) plus the size caps cover it
     },
   },
   {
@@ -284,6 +284,10 @@ export default [
 ```
 
 The conditional block runs only when `process.env['LINT_STRICT']` is set, so the inner-loop `bun run lint` skips it entirely. `bun run lint:strict` is just `LINT_STRICT=1 eslint`.
+
+### Complexity gate (rule 35)
+
+`complexity: ['error', 10]` in the base rules block (both variants) caps cyclomatic complexity at 10 per function: nine sequential guard clauses pass (complexity 10), ten fail (11), and so does a one-line chain of ten `&&` terms, which the size caps in SKILL.md (10 lines, one indentation level) never see. That is why the cap exists beside the size caps rather than instead of them, and why `sonarjs/cognitive-complexity` stays off: one metric, the one the size caps cannot substitute for. The fix is never a bigger number; split the function or replace the chain with a dispatch map (`references/complexity.md`). The Java variant enforces the same cap through PMD (`references/java-quarkus.md`, Gates and hooks). Both smoke tests plant a complexity-11 function and see the gate red.
 
 ### Common SonarJS findings and how to fix them
 
