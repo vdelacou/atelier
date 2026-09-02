@@ -19,7 +19,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
        `globalThis.fetch(...) // timeout upstream` fixture red; conforming adapter green; V1 V2.
 3. [x] fix(atelier): lifecycle tripwire exempts by path, catches DROP TABLE. DoD: four fixtures
        (comment-exempt red, path-exempt green, DROP TABLE red, contract migration green); V1 V2 V3.
-4. [ ] fix(atelier): pii tripwire reads a multi-line logger call and more names. DoD: two-line
+4. [x] fix(atelier): pii tripwire reads a multi-line logger call and more names. DoD: two-line
        logger fixture red; V1 V2.
 5. [x] fix(atelier): package.json gate scopes to the dependency blocks. DoD: publishConfig.tag
        fixture green, existing latest fixtures still red; V1 V3.

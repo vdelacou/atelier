@@ -568,7 +568,7 @@ Four shipped guards move the mechanical slices of the production disciplines int
 
 | Guard | Rule | Blocks |
 |:---|:--:|:---|
-| `assets/check-pii-channels.sh` | 27 | a natural identifier in a query string (literal or via `new URLSearchParams`), a logger message interpolation, a Java `@QueryParam` |
+| `assets/check-pii-channels.sh` | 27 | a natural identifier (thirteen names, any casing or prefix) in a query string (literal or via `new URLSearchParams`), a logger message interpolation (the call joined with up to 3 following lines), a Java `@QueryParam` |
 | `assets/check-io-deadlines.sh` | 29 | an infra `fetch` / `globalThis.fetch` call with no `AbortSignal.timeout(` / `signal:` within the 8 lines after it, comments stripped (Java `HttpClient` with no `.timeout(` / `connectTimeout` in the file) |
 | `assets/check-data-lifecycle.sh` | 30 | a hard delete in app code (erasure/retention/prune/sweep paths exempt, matched on the path only); DROP COLUMN / DROP TABLE / RENAME / TRUNCATE / ALTER COLUMN TYPE outside a `*contract*` migration |
 | `assets/check-isolation-tests.sh` | 28 | a new route file with no nearby test mentioning 404 (`*public*`/`*health*`/`*to-response*` exempt) |

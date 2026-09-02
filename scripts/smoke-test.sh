@@ -328,6 +328,20 @@ printf 'export const s = async (u: { email: string }) => fetch("/search", { meth
 git add src/use-cases/post-body.ts
 expect_ok "pii guard passes email carried in a POST body" bash scripts/check-pii-channels.sh
 git reset -q && rm src/use-cases/post-body.ts
+# The logger pattern was single-line, so a call split over lines passed, and
+# the name list was four literal words, so ?userEmail= passed (2026-09-02).
+printf 'export const s = (u: { email: string }): void => {\n  logger.info(\n    `signup ${u.email}`,\n  );\n};\n' > src/use-cases/leak-log-multiline.ts
+git add src/use-cases/leak-log-multiline.ts
+expect_err "pii guard blocks an email interpolated into a multi-line logger call" bash scripts/check-pii-channels.sh
+git reset -q && rm src/use-cases/leak-log-multiline.ts
+printf 'export const s = async (u: { email: string }) => fetch(`/search?userEmail=${u.email}`);\n' > src/use-cases/leak-prefixed.ts
+git add src/use-cases/leak-prefixed.ts
+expect_err "pii guard blocks a prefixed natural identifier in a query string" bash scripts/check-pii-channels.sh
+git reset -q && rm src/use-cases/leak-prefixed.ts
+printf 'export const s = (u: { id: string }): void => {\n  logger.info(\n    `signup ${u.id}`,\n  );\n};\n' > src/use-cases/log-opaque-id.ts
+git add src/use-cases/log-opaque-id.ts
+expect_ok "pii guard passes an opaque id in a multi-line logger call" bash scripts/check-pii-channels.sh
+git reset -q && rm src/use-cases/log-opaque-id.ts
 
 printf 'export const f = (): Promise<Response> => fetch("https://svc.test/x");\n' > src/infra/no-deadline.ts
 git add src/infra/no-deadline.ts
