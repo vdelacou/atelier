@@ -223,11 +223,11 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 4.1 | Test in layers | COVERED | testing.md:48-121 | doctrine | Unit, integration, e2e, performance layers each named |
-| 4.2 | Keep unit tests in milliseconds | COVERED | tdd.md:185; testing.md:81 | doctrine | In-memory fakes, no real IO in unit tests; literal ms target not stated |
-| 4.3 | Have a testing philosophy | COVERED | testing.md:125-127; SKILL.md:195 | rule | Every fixed bug becomes a permanent reproducing test |
+| 4.1 | Test in layers | COVERED | testing.md:107-121 | doctrine | Unit, integration, e2e, performance layers each named |
+| 4.2 | Keep unit tests in milliseconds | COVERED | tdd.md:185; testing.md:140 | doctrine | In-memory fakes, no real IO in unit tests; literal ms target not stated |
+| 4.3 | Have a testing philosophy | COVERED | testing.md:184-127; SKILL.md:195 | rule | Every fixed bug becomes a permanent reproducing test |
 | 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3) |
-| 4.5 | Test behavior, not internals | STRICTER | SKILL.md:165; testing.md:231 | gate | Mock ban is absolute and lint-enforced, exceeding canon advisory prefer-fakes |
+| 4.5 | Test behavior, not internals | STRICTER | SKILL.md:165; testing.md:290 | gate | Mock ban is absolute and lint-enforced, exceeding canon advisory prefer-fakes |
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:117 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on a frozen lockfile as the required merge check |
 | 4.7 | Hold generated code to the same bar | COVERED | workflow.md:644 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-48; SKILL.md:213 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
@@ -356,9 +356,9 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 15.1 | Make the standard executable | COVERED | assets/pre-commit; assets/ci.yml | gate | Resolved Phase 2: hook restructured to 5 fast gates, full suite/coverage/mutation/strict-lint relocated to CI as the required merge gate (Watchlist 1) |
 | 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:170; assets/check-coverage.ts:148 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
 | 15.3 | No silent opt-out | COVERED | workflow.md:73-82; SKILL.md:167 | gate | Project-level severity change with a reason; inline suppressions banned |
-| 15.4 | Test the bypass, not the happy path | COVERED | testing.md:522-531 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
+| 15.4 | Test the bypass, not the happy path | COVERED | testing.md:649-531 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
 | 15.5 | Compliance is not proof | COVERED | workflow.md:643; governance.md:139 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
-| 15.6 | Audit the gaps between systems | COVERED | workflow.md:635; testing.md:536 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
+| 15.6 | Audit the gaps between systems | COVERED | workflow.md:635; testing.md:663 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
 | 15.7 | Fix the class, not the instance | COVERED | workflow.md:636-640 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
 | 15.8 | Make proof re-checkable | COVERED | governance.md:91-139; workflow.md:643 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
 | 15.9 | Spend human judgment where it counts | COVERED | workflow.md:692; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |

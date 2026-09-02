@@ -12,7 +12,66 @@ Benefits:
 - Tests describe business scenarios, so they read as living documentation.
 - The design pressure lands on the right boundary: when a test is hard to write, the port's contract is wrong, not the entity.
 
-See `references/tdd.md` for the full treatment and Ian Cooper's context.
+The school is Ian Cooper's (*TDD, Where Did It All Go Wrong?*) and the classic Detroit/Chicago school before it. Each of its three rules answers a pattern of test pain the industry learned the hard way: the SUT is the primary port (§ What goes where), domain collaborators run real and only secondary ports get fakes (the table under § What goes where), and there are no mocks, ever (§ No `mock` from `bun:test`). What it buys: internal restructurings never break tests, tests read as specifications a new team member learns the product from, and when a test is hard to write the pressure lands on the port's contract, not on an entity that "needs a helper".
+
+## The loop: Red, Green, Refactor
+
+```
+RED -> GREEN -> REFACTOR -> RED -> ...
+```
+
+**RED.** Propose a failing test that describes the behaviour you want, and get the user's confirmation before writing it (SKILL.md hard rule 24: tests are confirmation-gated; never create, change, or delete one silently). The test uses domain language, describes WHAT rather than HOW, and is a concrete example, not an abstract statement:
+
+```ts
+// BAD - abstract
+it('can add numbers', () => { /* ... */ });
+
+// GOOD - concrete example
+it('when adding 2 + 3, returns 5', () => { /* ... */ });
+```
+
+**GREEN.** Write the simplest possible code to make the test pass. Two strategies: *Fake It* (return a hardcoded value, `export const add = (a: number, b: number): number => 5;`) and *Obvious Implementation* (`a + b`) when you know the solution. Prefer Fake It when learning or unsure; let more tests drive the real implementation.
+
+**REFACTOR.** This is where design happens. Look for duplication (wait for the Rule of Three), functions longer than 10 lines to extract, poor names to improve, complex conditions to simplify, raw primitives in domain positions to promote to branded types.
+
+### The Three Laws
+
+1. No production code unless it makes a failing test pass.
+2. No more test code than sufficient to fail (compilation failures count).
+3. No more production code than sufficient to pass the one failing test.
+
+### Bug fixes: the regression test comes first
+
+A bug is a missing test: the suite said green while the behaviour was wrong, so the suite has a hole exactly bug-shaped. Fixing the code without first filling the hole leaves you with no proof the fix addresses the actual defect, and nothing to stop the same regression returning. The loop is RED-GREEN-REFACTOR with a sharper RED:
+
+1. **Reproduce as a failing test.** Write the smallest test that fails for the bug's reason, named as the business scenario that went wrong (`'when a refund is issued twice, the second attempt is rejected'`, not `'fix double refund'`). Propose it and get confirmation first (hard rule 24), like any test.
+2. **Watch it fail, and read WHY.** The red run must fail with the bug's symptom. A test that fails for a setup error, or passes immediately, does not capture the bug; fix the test, not the code, until the failure is the bug.
+3. **Fix to green.** The smallest production change that makes the regression test pass without breaking the rest of the suite.
+4. **Refactor**, then look sideways: the same hole often exists in sibling paths (the other branch, the other adapter, the plural endpoint). Each one found gets its own failing test first.
+
+This applies mid-implementation too. When you are building feature A and trip over broken behaviour B, do not silently patch B on the way past: stop, reproduce B as its own failing test (confirmation-gated), fix it, and keep the fix in its own commit, then return to A. The temptation to fold a drive-by fix into an unrelated diff is how untested fixes ship. The only sanctioned inversion is a live incident where mitigation cannot wait for a test: mitigate, say so in the commit body, and make the regression test the first act of the follow-up; the incident is not closed while the hole is open.
+
+### The Rule of Three
+
+Only extract duplication when you see it THREE times: a wrong abstraction is more expensive to undo than duplication is to tolerate. Duplication #1, leave it. #2, note it, leave it. #3, now extract it.
+
+### Triangulation
+
+Each new test sculpts the solution toward a general implementation; think of degrees of freedom, each test carving out one until the implementation handles all cases. Implementing `isPalindrome`: test `'mom'` and fake it (`return true`); test `'hello'` and the fake fails, so generalise (compare halves); test `''` and the edge case forces explicit handling; test `'racecar'` and the general case is confirmed.
+
+### Transformation Priority Premise
+
+When going from RED to GREEN, prefer the simpler transformation; higher in this list is simpler, and jumping to a complex one too early is how speculative code arrives.
+
+| Priority | Transformation |
+|:---|:---|
+| 1 | `{}` to `null` |
+| 2 | `null` to constant |
+| 3 | constant to variable |
+| 4 | unconditional to conditional |
+| 5 | scalar to collection |
+| 6 | statement to recursion |
+| 7 | value to mutated value |
 
 ## Test the code you own; trust your dependencies
 
@@ -161,7 +220,7 @@ it('when a premium customer buys a 100 EUR item, the order total is 80 EUR', asy
 
 ### Writing AAA backwards
 
-When stuck, write the test in reverse: Assert, then Act, then Arrange. The technique is `references/tdd.md`'s (§ Writing tests backwards).
+When stuck, write the test in reverse: the ASSERT first (what do you want to verify?), then the ACT (what action produces that result?), then the ARRANGE (what setup does that action need?).
 
 ---
 
@@ -339,6 +398,17 @@ Why the absolute ban:
 
 ## What goes where
 
+Domain collaborators are real; only secondary ports get fakes. The secondary ports are the ones that talk to the outside world (databases, HTTP, the clock, the filesystem, random sources) and they are the only things that need a double; everything else runs for real inside the test. This is the single most important property of the school: the domain can be refactored freely (rename an entity, split a domain service, merge three value objects, change the shape of an aggregate) and the tests keep passing, because they describe behaviour at the port, not structure inside.
+
+| Kind | Role | Treatment in tests |
+|:---|:---|:---|
+| Entity | `Order`, `User`, `Subscription` | Real |
+| Value object | `Money`, `Email`, `OrderId` | Real |
+| Domain service | `pricingRules`, `discountPolicy` | Real |
+| Aggregate root | `Order`, `Cart` | Real |
+| Primary port | `placeOrder`, `registerUser`, `checkoutCart` | **The SUT** |
+| Secondary port | `OrderRepo`, `EmailSender`, `Clock`, `TokenDecoder`, `PaymentGateway` | **Faked** (hand-written in-memory) |
+
 ### Unit tests: primary port as SUT (the default)
 
 Most tests. The SUT is a use case, command handler, or application service. The domain runs real; secondary ports are faked.
@@ -380,6 +450,63 @@ describe('Money.add', () => {
 ```
 
 A rough signal: if you find yourself writing more direct value-object tests than primary-port tests, something is off. The use case is where the business value lives; that is where most tests should point.
+
+**The loop on a pure domain function**, which is what these exception tests look like when driven test-first. Build `calculateDiscount` (tier brackets over money; in the use-case that calls it, it runs real behind the primary port):
+
+```ts
+import { describe, expect, it } from 'bun:test';
+import { calculateDiscount } from './calculate-discount';
+import { money } from '../money/money';
+
+describe('calculateDiscount', () => {
+  it('when standard customer buys 100 EUR, returns 0', () => {
+    const subtotal = money(10_000, 'EUR');
+    const result = calculateDiscount(subtotal, 'standard');
+    expect(result.cents).toBe(0);
+  });
+
+  it('when premium customer buys 100 EUR, returns 20 EUR', () => {
+    const subtotal = money(10_000, 'EUR');
+    const result = calculateDiscount(subtotal, 'premium');
+    expect(result.cents).toBe(2_000);
+  });
+});
+```
+
+RED: test 1 fails (no `calculate-discount.ts` yet). GREEN, fake it:
+
+```ts
+import type { Money } from '../money/money';
+import { money, scaleMoney } from '../money/money';
+
+type CustomerTier = 'standard' | 'premium';
+
+export const calculateDiscount = (subtotal: Money, tier: CustomerTier): Money => money(0, subtotal.currency);
+```
+
+Test 1 passes, test 2 fails. Generalise:
+
+```ts
+export const calculateDiscount = (subtotal: Money, tier: CustomerTier): Money => {
+  if (tier === 'premium') return scaleMoney(subtotal, 0.2);
+  return money(0, subtotal.currency);
+};
+```
+
+REFACTOR: no duplication to extract, names are clear, the function is four lines; move on to the next test. When a third tier appears (`vip`), resist extracting until after the third `if` branch exists (Rule of Three), then promote the logic to a dispatch record:
+
+```ts
+const tierRates: Record<CustomerTier, number> = {
+  standard: 0,
+  premium: 0.2,
+  vip: 0.3,
+};
+
+export const calculateDiscount = (subtotal: Money, tier: CustomerTier): Money =>
+  scaleMoney(subtotal, tierRates[tier]);
+```
+
+This is what "design happens during refactor" looks like.
 
 ### Branded types and `expect(...).toBe(raw)`, the test escape hatch
 
@@ -566,6 +693,11 @@ const withItems = buildOrder({ items: [item({ sku: 'ABC', price: money(10_000, '
 
 | Mistake | Problem | Fix |
 |:---|:---|:---|
+| Writing code before the test | The fundamental inversion; the test then documents what was built, not what was wanted | RED first, always |
+| Writing too much test, or too much code | The loop loses its grip; speculative branches arrive untested | Just enough test to fail, just enough code to pass, then refactor |
+| Skipping refactor | Design never happens; duplication and poor names accrete | Refactor on every green; extract only on the third duplication |
+| Abstract test names | Nothing to learn the product from | Concrete examples in domain language, one behaviour per test |
+| Reaching for doubles too soon | Real collaborators would have caught the integration | Start real; if a double is needed, write a fake, never a mock |
 | Testing implementation | Brittle tests | Test observable behaviour only |
 | Using mocks | Tests prove call sequences instead of outcomes; break on refactor | Never use mocks: write a fake for the contract |
 | Testing only the happy path of a guard | A missing role/tenant check still passes every test | Ship the refusal tests: 403 wrong role, 401 no token, 404 cross-tenant (Bypass tests above) |

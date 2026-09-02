@@ -68,7 +68,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 
 ## Phase D: SKILL.md restructure
 
-22. [ ] fold tdd.md sections into testing.md. DoD: testing.md holds the loop; V3.
+22. [x] fold tdd.md sections into testing.md. DoD: testing.md holds the loop; V3.
 23. [ ] remove tdd.md, repoint citers, redirect stub. DoD: V3 after `--lock`; V6; V1.
 24. [ ] fold class-to-module.md into design-patterns.md, stub. DoD: V3 V6.
 25. [ ] drop the remaining duplicated examples. DoD: V1 (fences intact); V3 after `--lock`.
