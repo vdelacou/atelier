@@ -56,12 +56,12 @@ Minimal skeleton:
 }
 ```
 
-The version ranges above are sample pins as of writing, with one that is load-bearing: keep `typescript` on `^5` until eslint-plugin-sonarjs supports TypeScript 7 (sonarjs <= 4.1.0 reads `ts.SyntaxKind` at rule-module load and crashes under TS 7's module shape; found by the repo smoke test 2026-07-12). **Never use `"latest"` or `"*"`** (atelier hard rule 19, enforced by `scripts/check-package-json.sh` in pre-commit gate 2). To get the actual current latest of every dep on a fresh repo, run `bun install` first (resolving the ranges above), then `bun update` (which rewrites the `^X.Y.Z` ranges to the latest matching version) and commit the lockfile change. After that, every new package goes in via `bun add <pkg>` (runtime) or `bun add -d <pkg>` (dev) — Bun pins it to `^X.Y.Z` automatically. Hand-editing `package.json` to add a dep is a smell.
+The version ranges above are sample pins as of writing, with one that is load-bearing: keep `typescript` on `^5` until eslint-plugin-sonarjs supports TypeScript 7 (sonarjs <= 4.1.0 reads `ts.SyntaxKind` at rule-module load and crashes under TS 7's module shape; found by the repo smoke test 2026-07-12). **Never use `"latest"` or `"*"`** (atelier hard rule 19, enforced by `scripts/check-package-json.sh` in pre-commit gate 2). To get the actual current latest of every dep on a fresh repo, run `bun install` first (resolving the ranges above), then `bun update` (which rewrites the `^X.Y.Z` ranges to the latest matching version) and commit the lockfile change. After that, every new package goes in via `bun add <pkg>` (runtime) or `bun add -d <pkg>` (dev): Bun pins it to `^X.Y.Z` automatically. Hand-editing `package.json` to add a dep is a smell.
 
 Common runtime deps in this class of repo (install on demand with `bun add <name>`):
 `@google/genai`, `canvas`, `chardet`, `csv-writer`, `firebase-admin`, `iconv-lite`, `jsonwebtoken` (+ `@types/jsonwebtoken`), `papaparse`, `pdf-extract-image`, `pdf-to-png-converter`, `pdfjs-dist`, `winston`, `xlsx`.
 
-For HTTP, reach for the native `fetch` (built into Bun) before adding an HTTP client — the lazy ladder's rung 3 (SKILL.md #2) and the whole `installFetchMock` test seam assume adapters call `globalThis.fetch` directly. Add `axios`/`got`/etc. only when you need something `fetch` genuinely lacks, and say what.
+For HTTP, reach for the native `fetch` (built into Bun) before adding an HTTP client: the lazy ladder's rung 3 (SKILL.md #2) and the whole `installFetchMock` test seam assume adapters call `globalThis.fetch` directly. Add `axios`/`got`/etc. only when you need something `fetch` genuinely lacks, and say what.
 
 ## `tsconfig.json`
 
@@ -135,7 +135,7 @@ export default [
           name: 'bun:test',
           importNames: ['mock'],
           message:
-            '`mock` from bun:test is forbidden — it leaks across test files. Use dependency injection: refactor the production code to accept the SDK as a parameter, then pass a fake at construction.',
+            '`mock` from bun:test is forbidden: it leaks across test files. Use dependency injection: refactor the production code to accept the SDK as a parameter, then pass a fake at construction.',
         }],
       }],
       '@typescript-eslint/explicit-function-return-type': ['error', { allowExpressions: true, allowTypedFunctionExpressions: true }],
@@ -147,11 +147,11 @@ export default [
     // are terminal tools, not production code: their whole job is printing to the
     // console that invoked them. The Logger port (rule 4) governs src/**; injecting
     // Winston into a pre-commit gate would be ceremony without observability value.
-    // Project-level severity change with a comment — never an inline ignore (rule 15).
+    // Project-level severity change with a comment, never an inline ignore (rule 15).
     files: ['scripts/**/*.ts'],
     rules: { 'no-console': 'off' },
   },
-  // Type-aware rules — slow (~25s on full repo), enabled only by
+  // Type-aware rules: slow (~25s on full repo), enabled only by
   // `bun run lint:strict` (which sets LINT_STRICT=1), CI's lint step.
   // Inner-loop `bun run lint` does NOT run them.
   ...(process.env['LINT_STRICT']
@@ -199,7 +199,7 @@ export default [
   {
     rules: {
       // false-positive-heavy rules in this codebase's idioms; disabled at project level.
-      // Never inline-ignore — change severity here or refactor the code.
+      // Never inline-ignore: change severity here or refactor the code.
       'security/detect-object-injection': 'off',
       'security/detect-unsafe-regex': 'off',
       // detect-non-literal-fs-filename flags `chmodSync(mkdtempSync(...))` in FS-adapter
@@ -210,7 +210,7 @@ export default [
   },
   sonarjsPlugin.configs.recommended,
   {
-    // SonarJS rule overrides — always-on, justified per rule. See LESSONS.md.
+    // SonarJS rule overrides: always-on, justified per rule. See LESSONS.md.
     rules: {
       'sonarjs/no-unused-vars': 'off',          // duplicates @typescript-eslint/no-unused-vars
       'sonarjs/no-empty-test-file': 'off',      // false positives on `describe` test layout
@@ -230,7 +230,7 @@ export default [
   // Non-source paths must not be linted: Stryker copies the tree into .stryker-tmp/
   // during a run, reports/ is output, and the config file itself would trip no-undef
   // on `process` (it runs under Node semantics, not the **/*.ts globals block).
-  // scripts/ IS linted — the gate scripts stay under the full rule set, with only
+  // scripts/ IS linted: the gate scripts stay under the full rule set, with only
   // no-console turned off for them above.
   {
     ignores: ['eslint.config.js', '.stryker-tmp/**', 'reports/**', 'docs/**', '.claude/**', '.agents/**'],
@@ -242,9 +242,9 @@ Notes on the config:
 
 - **One config file, two modes.** Both scripts carry `--max-warnings=0`, so warnings fail either run (the zero-warning rule, hard rule 15); the modes differ only in depth. The inner-loop `bun run lint` runs the fast non-type-aware rules (~2 s cached / ~7 s cold); `bun run lint:strict` sets `LINT_STRICT=1` and the conditional block adds `parserOptions.projectService: true` plus the type-aware `@typescript-eslint` rules (~25 s on a full repo). CI runs the strict version (`assets/ci.yml`); the pre-commit hook's gate 4 lints only the staged files, fast and non-type-aware (`scripts/lint-staged.sh`), and gate 5 is the typecheck. There is no separate `eslint.strict.config.js`; keeping one config eliminates drift.
 - **`sonarjsPlugin.configs.recommended`** catches SonarLint findings at lint time so they no longer escape the IDE. See `references/workflow.md` for the common ones (S4325, S6594, S4123, S6551, S6671). Five rules are turned off, each justified in a comment beside it: `sonarjs/no-unused-vars` (duplicate), `sonarjs/no-empty-test-file` (false-positive on `describe` blocks), `sonarjs/cognitive-complexity` (one metric is enough: the cyclomatic cap of rule 35, `complexity: ['error', 10]` in the base block, plus the size caps cover it), and two that fire only in the type-aware lane and contradict the standard itself, `sonarjs/no-useless-intersection` (reports every branded type, i.e. hard rule 12) and `sonarjs/null-dereference` (reports non-nullable and explicitly narrowed values, a class `strict: true` already owns). The last two are dated 2026-08-29 against sonarjs 4.2.0 and re-probed weekly by `canary.yml`, which turns them back on and reports if upstream has fixed them. Holding sonarjs at an older version is not an option: 4.1.0 does not load under ESLint 10 at all.
-- **`no-console` is `error`** under `src/**`. Always use the logger port (see below), never `console.*`. The one carve-out is `scripts/**` — the gate scripts shipped in `assets/` are terminal tools whose output *is* their interface; the config turns the rule off there at the project level rather than sprinkling inline ignores (rule 15).
+- **`no-console` is `error`** under `src/**`. Always use the logger port (see below), never `console.*`. The one carve-out is `scripts/**`: the gate scripts shipped in `assets/` are terminal tools whose output *is* their interface; the config turns the rule off there at the project level rather than sprinkling inline ignores (rule 15).
 - **`security/detect-object-injection`, `detect-unsafe-regex`, and `detect-non-literal-fs-filename`** are disabled at the project level because they only false-positive on this codebase's idioms (branded-type `Record<K, V>` lookups, bounded regexes, `chmodSync(mkdtempSync(...))` in tests). Comments in the config explain why each is off. Never inline-ignore them per-line.
-- **`no-restricted-imports`** blocks `mock` from `bun:test` (the entire namespace) — see hard rule 13.
+- **`no-restricted-imports`** blocks `mock` from `bun:test` (the entire namespace), see hard rule 13.
 
 See `references/workflow.md` for the zero-warning rule and the no-inline-ignore discipline that make this config load-bearing.
 
@@ -305,7 +305,7 @@ If you use Firebase Admin, add `*-service-account*.json` to keep credentials out
 
 ## Source architecture
 
-The canonical shape for any non-trivial backend — a pipeline, batch job, or CLI with real integrations — is the Clean Architecture layout: `src/{domain,use-cases,infra,presenter,composition,test-helpers}` + `src/main.ts`. See `references/architecture.md` for the full layout, the dependency matrix, and the "adding a new external service" recipe.
+The canonical shape for any non-trivial backend (a pipeline, batch job, or CLI with real integrations) is the Clean Architecture layout: `src/{domain,use-cases,infra,presenter,composition,test-helpers}` + `src/main.ts`. See `references/architecture.md` for the full layout, the dependency matrix, and the "adding a new external service" recipe.
 
 For throwaway scripts, one-off CLIs, or prototypes with a single integration, a flat `src/main.ts` plus a thin `src/utils/` is fine. Graduate to the Clean Architecture layout once you have a second external service, real tests, or ~500 lines of production code.
 
@@ -337,7 +337,7 @@ Tests are mandatory, TDD is hard rule 11, and the whole gate pipeline (tests, co
 
 ## Secrets & config hygiene
 
-No credentials in source. Load every env var through the `envVar` branded-type factory — or its coerced siblings `envNumber` / `envEnum` — centralised in a `config/env.ts` per feature, including the logger's level (`createWinstonLogger(config.logLevel)`), so nothing reads `process.env` directly. `.env*` is git-ignored. For Firebase Admin, add `*-service-account*.json` to `.gitignore` and load the path via env var, never commit the JSON.
+No credentials in source. Load every env var through the `envVar` branded-type factory (or its coerced siblings `envNumber` / `envEnum`) centralised in a `config/env.ts` per feature, including the logger's level (`createWinstonLogger(config.logLevel)`), so nothing reads `process.env` directly. `.env*` is git-ignored. For Firebase Admin, add `*-service-account*.json` to `.gitignore` and load the path via env var, never commit the JSON.
 
 See `references/security.md` for the full pattern: the `envVar` / `envNumber` / `envEnum` factories (and the Zod-schema scale-up for large config), the redacted Winston logger, the never-sprinkle-`process.env` rule, and the list of what must never be committed.
 
@@ -346,7 +346,7 @@ See `references/security.md` for the full pattern: the `envVar` / `envNumber` / 
 The logger is a side-effectful dependency, so it gets port/adapter separation like every other IO dependency. Three files:
 
 ```ts
-// src/use-cases/ports/logger.ts — type only, zero dependencies
+// src/use-cases/ports/logger.ts: type only, zero dependencies
 export type LogMeta = Readonly<Record<string, unknown>>;
 
 export type Logger = {
@@ -357,7 +357,7 @@ export type Logger = {
 ```
 
 ```ts
-// src/infra/logger.ts — Winston-backed adapter, real for production
+// src/infra/logger.ts: Winston-backed adapter, real for production
 import { createLogger, format, transports } from 'winston';
 import type { Logger } from '../use-cases/ports/logger.ts';
 
@@ -385,7 +385,7 @@ export const createWinstonLogger = (level: string): Logger => {
 ```
 
 ```ts
-// src/test-helpers/logger-fake.ts — in-memory fake for tests, logs become assertable
+// src/test-helpers/logger-fake.ts: in-memory fake for tests, logs become assertable
 import type { Logger, LogMeta } from '../use-cases/ports/logger.ts';
 
 export type LoggerFake = Logger & {
@@ -403,7 +403,7 @@ export const createLoggerFake = (): LoggerFake => {
 };
 ```
 
-Every use-case declares `readonly logger: Logger` in its `Deps` and calls `deps.logger.info(...)`. Composition wires `createWinstonLogger(config.logLevel)` in `src/composition/build-deps.ts` (the level comes from the typed-env config, never `process.env` directly). Tests inject `createLoggerFake()` and assert on the `calls` array — logs become assertable without a mocking library.
+Every use-case declares `readonly logger: Logger` in its `Deps` and calls `deps.logger.info(...)`. Composition wires `createWinstonLogger(config.logLevel)` in `src/composition/build-deps.ts` (the level comes from the typed-env config, never `process.env` directly). Tests inject `createLoggerFake()` and assert on the `calls` array: logs become assertable without a mocking library.
 
 Why this and not a module-level singleton: a singleton makes the logger impossible to swap in tests without monkey-patching, and impossible to redact/reformat per-environment without mutating global state. A port is one extra type declaration and pays off the first time you want to assert that a warning fired, or run a test suite in silent mode.
 
@@ -413,7 +413,7 @@ Invariant: `grep -rn "from '.*infra" src/domain src/use-cases` must return nothi
 
 No `try/catch` anywhere outside `src/infra/**`, pure-domain fallbacks for native-synchronous throwers (`JSON.parse`, `URL` constructor), and exactly one top-level handler in `src/main.ts`. Every IO port returns `Promise<Result<T, PortError>>`. Use-cases pattern-match on `.ok` and aggregate port errors into `StepError`. See `references/result-type.md` for the full treatment, the discriminated-union error design, the fan-out batch semantics, and the `retryOnErr` + `captureRejection` helpers.
 
-The shared `formatError(err: unknown): string` helper lives in `src/domain/utilities/format-error.ts`. Use it in every `catch (e)` block in `src/infra/**` — never `String(e)`, which returns `"[object Object]"` for non-Error throws (SonarJS S6551).
+The shared `formatError(err: unknown): string` helper lives in `src/domain/utilities/format-error.ts`. Use it in every `catch (e)` block in `src/infra/**`, never `String(e)`, which returns `"[object Object]"` for non-Error throws (SonarJS S6551).
 
 `process.exit(1)` is allowed only in `src/main.ts` after the top-level catch. Never inside a use-case, adapter, or domain module.
 
@@ -425,7 +425,7 @@ The shared `formatError(err: unknown): string` helper lives in `src/domain/utili
 4. Create `eslint.config.js` with the flat config above (includes `sonarjs.configs.recommended` and type-aware `@typescript-eslint` rules behind `LINT_STRICT=1`).
 5. Create `.vscode/settings.json` and `.vscode/extensions.json`.
 6. Drop in a Node `.gitignore`, plus `*-service-account*.json` if Firebase is in play.
-7. `bun install` to resolve the skeleton's ranges; then `bun update` to bump every dep to its current latest matching version. Commit `bun.lock` and the updated `package.json` together. From this point, every new dep is added via `bun add <pkg>` (runtime) or `bun add -d <pkg>` (dev) — never hand-edit `package.json`.
+7. `bun install` to resolve the skeleton's ranges; then `bun update` to bump every dep to its current latest matching version. Commit `bun.lock` and the updated `package.json` together. From this point, every new dep is added via `bun add <pkg>` (runtime) or `bun add -d <pkg>` (dev), never hand-edit `package.json`.
 8. Scaffold the Clean Architecture layout (see `references/architecture.md`): `mkdir -p src/{domain,use-cases/ports,infra,presenter,composition,test-helpers}`.
 9. Create `src/domain/result.ts` with the `Result<T, E>` type and helpers from `references/result-type.md`.
 10. Create `src/use-cases/ports/logger.ts` and `src/infra/logger.ts` with the port + Winston adapter above; create `src/test-helpers/logger-fake.ts`.
@@ -437,7 +437,7 @@ The shared `formatError(err: unknown): string` helper lives in `src/domain/utili
 12. Set up the per-tier coverage gate:
     - `cp <skill-path>/assets/check-coverage.ts scripts/check-coverage.ts`
     - `cp <skill-path>/assets/regenerate-coverage-preload.ts scripts/regenerate-coverage-preload.ts`
-    - `bun run scripts/regenerate-coverage-preload.ts` — generates `scripts/coverage-preload.ts` from the current tree; re-run it (or wire `--check` as the pre-commit pre-flight) whenever an infra/composition/presenter file is added. Never hand-edit the generated file.
+    - `bun run scripts/regenerate-coverage-preload.ts`: generates `scripts/coverage-preload.ts` from the current tree; re-run it (or wire `--check` as the pre-commit pre-flight) whenever an infra/composition/presenter file is added. Never hand-edit the generated file.
     - In `bunfig.toml`: `[test]` section with `coverage = true`, `coverageSkipTestFiles = true`, `coverageReporter = ["text"]`. **Do not** add `coverageThreshold` (the per-tier script owns enforcement) and **do not** add `preload` (the coverage preload is loaded only by `scripts/check-coverage.ts` via `--preload` so plain `bun test` runs stay fast).
 13. Set up mutation testing:
     - `cp <skill-path>/assets/stryker.conf.json stryker.conf.json`
@@ -458,17 +458,17 @@ The shared `formatError(err: unknown): string` helper lives in `src/domain/utili
     - `cp <skill-path>/assets/audit.yml .github/workflows/audit.yml` (the CVE watchdog: daily schedule plus dependency-scoped PR runs; deliberately not a gate on unrelated commits)
     - `cp <skill-path>/assets/check-skill-pin.sh scripts/check-skill-pin.sh` (only if this repo vendors or pins the skill: the audit workflow runs it against the repository named in its `SKILL_PIN_UPSTREAM` env, comparing the whole vendored tree, and fails when any file falls behind)
     - `cp <skill-path>/assets/pre-commit .githooks/pre-commit`
-    - `cp <skill-path>/assets/commit-msg .githooks/commit-msg` (Conventional Commits validator, hard rule 23 — dependency-free, no `package.json` change)
+    - `cp <skill-path>/assets/commit-msg .githooks/commit-msg` (Conventional Commits validator, hard rule 23: dependency-free, no `package.json` change)
     - `chmod +x .githooks/pre-commit .githooks/commit-msg`
     - `git config core.hooksPath .githooks` (picks up both hooks)
     - Optional: `brew install gitleaks` (macOS) or grab a binary from `github.com/gitleaks/gitleaks/releases`. The hook degrades gracefully if missing.
     - See `references/workflow.md` for the gate breakdown (fast hook plus CI set), the commit-message format, and the no-bypass rule.
 15. Verify: `bun run lint`, `bun run typecheck`, `bun run coverage`, and `bun run mutate` all clean on a minimal `src/main.ts`. Run `bash scripts/check-package-json.sh` once to confirm no `"latest"` slipped in, and confirm the `commit-msg` hook rejects a junk message (`echo 'nope' | …` or just try a bad commit).
-16. Commit with Conventional Commits (`type(scope): subject`) — once the user confirms (rule 25); the `commit-msg` hook enforces the format. From here, follow the Clean Architecture rules for every new feature.
+16. Commit with Conventional Commits (`type(scope): subject`), once the user confirms (rule 25); the `commit-msg` hook enforces the format. From here, follow the Clean Architecture rules for every new feature.
 
 ## Containerization (optional)
 
-The atelier takes no position on deployment — `atelier-greenfield` scopes Docker out of repo-birth, and the canonical archetypes (CLIs, batch jobs, Firebase Admin jobs) ship as a `bun run`, not an image. This section exists only so that *if* you containerize, the image conforms instead of drifting. It is documentation, not a gate.
+The atelier takes no position on deployment: `atelier-greenfield` scopes Docker out of repo-birth, and the canonical archetypes (CLIs, batch jobs, Firebase Admin jobs) ship as a `bun run`, not an image. This section exists only so that *if* you containerize, the image conforms instead of drifting. It is documentation, not a gate.
 
 A minimal, production-ready multi-stage build:
 
@@ -491,11 +491,11 @@ USER bun
 ENTRYPOINT ["bun", "run", "src/main.ts"]
 ```
 
-Four things keep it conforming — and they are exactly where a copied-from-a-blog Dockerfile drifts:
+Four things keep it conforming, and they are exactly where a copied-from-a-blog Dockerfile drifts:
 
-- **Entry is `src/main.ts`**, never `src/index.ts` — the atelier's named entry (rule 5, `"module": "src/main.ts"`).
-- **Copy `bun.lock`, not `bun.lockb`** — Bun's lockfile is text now; the binary `bun.lockb` is legacy.
-- **No `EXPOSE`** for the CLI/batch archetype — it runs and `process.exit`s; there is no port to bind. Add `EXPOSE <port>` only for an actual server whose `src/main.ts` calls `Bun.serve`.
+- **Entry is `src/main.ts`**, never `src/index.ts`: the atelier's named entry (rule 5, `"module": "src/main.ts"`).
+- **Copy `bun.lock`, not `bun.lockb`**: Bun's lockfile is text now; the binary `bun.lockb` is legacy.
+- **No `EXPOSE`** for the CLI/batch archetype: it runs and `process.exit`s; there is no port to bind. Add `EXPOSE <port>` only for an actual server whose `src/main.ts` calls `Bun.serve`.
 - **No `bun run lint` or tests inside the build.** Quality is already owned by the five fast pre-commit gates and CI; linting in the image duplicates the gate and couples building with checking. If you want a build-time backstop anyway, run `bun run lint:strict` (the full type-aware gate) rather than bare `bun run lint` (which runs only the fast non-type-aware rules; both already fail on warnings).
 
 Add a `.dockerignore` so the build context stays small and the image never ships local cruft:
@@ -508,7 +508,7 @@ coverage
 reports
 ```
 
-Build and run a CLI image (argv in, process exits — no port mapping):
+Build and run a CLI image (argv in, process exits, no port mapping):
 
 ```bash
 docker build -t my-app .

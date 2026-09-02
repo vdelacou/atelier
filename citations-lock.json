@@ -55,7 +55,7 @@
     "skills/atelier/references/complexity.md:123": "2. **Standard library or language feature?** `Array`/`Map`/`Set`, `struc",
     "skills/atelier/references/complexity.md:129": "**Tiebreaker.** When two stdlib approaches are the same size, pick the o",
     "skills/atelier/references/complexity.md:135": "- The **port** (one function-type alias) and the **smallest real adapter",
-    "skills/atelier/references/complexity.md:144": "- **Trust-boundary validation** \u2014 branded value objects with validating ",
+    "skills/atelier/references/complexity.md:144": "- **Trust-boundary validation**: branded value objects with validating f",
     "skills/atelier/references/complexity.md:158": "### BUT | do not extract until the third occurrence",
     "skills/atelier/references/delivery.md:105": "Provisioning an environment, a pipeline, or an access grant should be a ",
     "skills/atelier/references/delivery.md:22": "- Every resource lives in version-controlled files (OpenTofu/Terraform o",

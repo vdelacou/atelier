@@ -1,6 +1,6 @@
 # Testing infra adapters
 
-Infra adapters are the quarantine zone where thrown exceptions from third-party libraries become `Result<T, PortError>` values. Testing them is not testing the domain — it is testing the translation layer.
+Infra adapters are the quarantine zone where thrown exceptions from third-party libraries become `Result<T, PortError>` values. Testing them is not testing the domain: it is testing the translation layer.
 
 This reference is the companion to `references/testing.md`. The general "what is the unit, what is faked, no mocks" rules come from there; this file covers the patterns that apply specifically to infra-layer adapter tests.
 
@@ -13,7 +13,7 @@ There are three canonical patterns, one per dependency shape. Use the right patt
 Plus two cross-cutting bits at the end:
 
 - The production-wiring smoke test that hits `createX(realDeps)` with placeholder credentials so the wiring line is covered without any network IO
-- The fetch-mock ordering gotcha (silent failures) — most-specific-first, or `endsWith`
+- The fetch-mock ordering gotcha (silent failures): most-specific-first, or `endsWith`
 
 ---
 
@@ -97,7 +97,7 @@ Three sub-patterns, in order of preference. Pick the first that applies.
 
 ### 2a. SDK accepts a custom `fetch` (preferred when available)
 
-Many modern SDKs accept a custom `fetch` implementation as a constructor option — Vercel AI's `createGoogleGenerativeAI({ fetch })`, the OpenAI SDK's `new OpenAI({ fetch })`, the Anthropic SDK's `new Anthropic({ fetch })`. When integrating any new SDK, **check the docs for a custom-fetch option first**. If one exists, the whole adapter becomes end-to-end testable with zero SDK mocking.
+Many modern SDKs accept a custom `fetch` implementation as a constructor option: Vercel AI's `createGoogleGenerativeAI({ fetch })`, the OpenAI SDK's `new OpenAI({ fetch })`, the Anthropic SDK's `new Anthropic({ fetch })`. When integrating any new SDK, **check the docs for a custom-fetch option first**. If one exists, the whole adapter becomes end-to-end testable with zero SDK mocking.
 
 Thread the fetch through your factory as an optional argument. Production omits it (the SDK falls back to `globalThis.fetch`); the test passes a fake fetch returning a canned response.
 
@@ -122,7 +122,7 @@ export const callGemini = (fetchImpl?: typeof globalThis.fetch): GenerateOutput 
   };
 };
 
-// Production wiring — no fetch passed; SDK uses globalThis.fetch.
+// Production wiring: no fetch passed; SDK uses globalThis.fetch.
 export const createGeminiLlm = (): Llm => ({
   summarise: (text) => callGemini()({ modelName: 'gemini-2.5-flash', prompt: `...${text}`, schema }),
 });
@@ -148,16 +148,16 @@ describe('callGemini', () => {
 });
 ```
 
-**Cast note.** `typeof globalThis.fetch` includes `preconnect` (a Bun-specific extension on `fetch`, not part of the WHATWG Fetch standard). A bare arrow function cannot be assigned directly, and `as typeof globalThis.fetch` fails TypeScript's overlap heuristic. Use `as unknown as typeof globalThis.fetch` — the double-cast is load-bearing and `@typescript-eslint/no-unnecessary-type-assertion` will **not** flag it because the conversion truly spans an incompatible gap.
+**Cast note.** `typeof globalThis.fetch` includes `preconnect` (a Bun-specific extension on `fetch`, not part of the WHATWG Fetch standard). A bare arrow function cannot be assigned directly, and `as typeof globalThis.fetch` fails TypeScript's overlap heuristic. Use `as unknown as typeof globalThis.fetch`: the double-cast is load-bearing and `@typescript-eslint/no-unnecessary-type-assertion` will **not** flag it because the conversion truly spans an incompatible gap.
 
 ### 2b. No custom-fetch hook → two-constructor pattern
 
-When the SDK has no fetch injection but its method surface is sliceable (`googleapis`, `firebase-admin`), split the SDK instantiation from the adapter logic. Every adapter exposes **two** exports from day one: `createX(realDeps)` (production wiring, one-liner) and `createXFromApi(api: XApi)` (the testable factory). `XApi` is a minimal type slice covering only the methods this adapter calls — never the full SDK type.
+When the SDK has no fetch injection but its method surface is sliceable (`googleapis`, `firebase-admin`), split the SDK instantiation from the adapter logic. Every adapter exposes **two** exports from day one: `createX(realDeps)` (production wiring, one-liner) and `createXFromApi(api: XApi)` (the testable factory). `XApi` is a minimal type slice covering only the methods this adapter calls, never the full SDK type.
 
 ```ts
 // src/infra/drive-google.ts
 
-// 1) Minimal type slice — only the SDK surface this adapter actually calls.
+// 1) Minimal type slice, only the SDK surface this adapter actually calls.
 export type DriveApi = {
   readonly files: {
     readonly copy: (params: { readonly fileId: string; readonly requestBody: { readonly name: string } }) =>
@@ -167,7 +167,7 @@ export type DriveApi = {
   };
 };
 
-// 2) The testable factory — takes the API shape directly, returns the port.
+// 2) The testable factory: takes the API shape directly, returns the port.
 export const createDriveFromApi = (api: DriveApi): Drive => ({
   copy: async (fileId, name) => {
     try {
@@ -187,7 +187,7 @@ export const createDriveFromApi = (api: DriveApi): Drive => ({
   },
 });
 
-// 3) The production wiring — one-liner that instantiates the real SDK.
+// 3) The production wiring: one-liner that instantiates the real SDK.
 //    `as unknown as DriveApi` is permitted HERE ONLY, because real SDK types
 //    are overloaded and rarely structurally match a hand-written slice.
 export const createGoogleDrive = (auth: GoogleAuth): Drive =>
@@ -217,13 +217,13 @@ describe('driveGoogle.copy', () => {
 });
 ```
 
-If strict lint flags the `as unknown as XApi` cast as unnecessary, the SDK's real type structurally matched the slice — drop the cast. Keep it only when the compiler genuinely needs it.
+If strict lint flags the `as unknown as XApi` cast as unnecessary, the SDK's real type structurally matched the slice: drop the cast. Keep it only when the compiler genuinely needs it.
 
 ### Anti-pattern: `XApi` shaped like the port
 
 The two-constructor pattern only buys testability when `XApi` slices the **SDK's** surface. If `XApi` is shaped like the **port**, the seam is in the wrong place and `createX` stays untestable.
 
-**Bad — `BrowserAuthApi` is a clone of the port:**
+**Bad: `BrowserAuthApi` is a clone of the port:**
 
 ```ts
 // src/infra/browser-auth.ts
@@ -241,7 +241,7 @@ export const createBrowserAuthFromApi = (api: BrowserAuthApi): BrowserAuth => ({
 });
 
 // What does createBrowserAuth(realDeps) actually look like?
-// It has to call Playwright — but BrowserAuthApi doesn't say HOW.
+// It has to call Playwright, but BrowserAuthApi doesn't say HOW.
 // All the real logic (launchPersistentContext, polling for the auth callback,
 // extracting the cookie) lives inside createBrowserAuth and isn't reachable
 // from createBrowserAuthFromApi at all.
@@ -249,7 +249,7 @@ export const createBrowserAuthFromApi = (api: BrowserAuthApi): BrowserAuth => ({
 
 `createBrowserAuthFromApi` is a tautological pass-through. The test you can write against it proves nothing, and the production wiring stays a black box.
 
-**Good — `PlaywrightApi` slices the SDK's real surface:**
+**Good: `PlaywrightApi` slices the SDK's real surface:**
 
 ```ts
 // src/infra/browser-auth.ts
@@ -288,9 +288,9 @@ export const createBrowserAuth = (config: BrowserAuthConfig): BrowserAuth =>
   createBrowserAuthFromApi(playwright.chromium as unknown as PlaywrightApi, config);
 ```
 
-Now the test passes a fake `PlaywrightApi` that returns a stub `ctx` with stub pages and stub cookies — and the **real** orchestration logic inside `createBrowserAuthFromApi` (build URL, wait for redirect, extract token) is exercised. `createBrowserAuth` becomes the genuine one-line wiring it should be, covered by the production-wiring smoke test below.
+Now the test passes a fake `PlaywrightApi` that returns a stub `ctx` with stub pages and stub cookies, and the **real** orchestration logic inside `createBrowserAuthFromApi` (build URL, wait for redirect, extract token) is exercised. `createBrowserAuth` becomes the genuine one-line wiring it should be, covered by the production-wiring smoke test below.
 
-**The diagnostic.** Look at your `XApi` and your port side-by-side. If the method names are nearly identical and the parameter shapes match 1:1, you've made a port clone. The right slice usually has SDK-flavoured names (`launchPersistentContext`, `files.copy`, `chat.completions.create`) and SDK-flavoured option bags — because that's what the production code actually calls.
+**The diagnostic.** Look at your `XApi` and your port side-by-side. If the method names are nearly identical and the parameter shapes match 1:1, you've made a port clone. The right slice usually has SDK-flavoured names (`launchPersistentContext`, `files.copy`, `chat.completions.create`) and SDK-flavoured option bags: because that's what the production code actually calls.
 
 ### 2c. Sync constructor → export the private builder
 
@@ -325,7 +325,7 @@ expect(client.v1).toBeDefined();
 expect(client.v2).toBeDefined();
 ```
 
-The constructor runs — the wiring line executes and covers — but no network method is called.
+The constructor runs (the wiring line executes and covers), but no network method is called.
 
 ### Production-wiring smoke test (2b and 2c)
 
@@ -344,15 +344,15 @@ describe('createGoogleDrive (production wiring smoke)', () => {
 The smoke test does **two** jobs at once:
 
 1. It exercises the wiring line (the `createXFromApi(realSdk(...))` call) so the per-tier coverage gate passes without launching the real SDK.
-2. It pins the module as reachable, satisfying the `coverage-preload.ts` invariant — every infra file must be importable from the preload chain, and every infra file must have a test that touches it. The smoke test is the cheapest way to do both.
+2. It pins the module as reachable, satisfying the `coverage-preload.ts` invariant: every infra file must be importable from the preload chain, and every infra file must have a test that touches it. The smoke test is the cheapest way to do both.
 
-Methods are asserted as `typeof === 'function'`, not invoked. Invoking would require either a real Playwright browser, a real Google Drive client, or a fake — which would defeat the point. The whole purpose is "prove the wiring compiles and produces the right shape, without doing anything else."
+Methods are asserted as `typeof === 'function'`, not invoked. Invoking would require either a real Playwright browser, a real Google Drive client, or a fake, which would defeat the point. The whole purpose is "prove the wiring compiles and produces the right shape, without doing anything else."
 
 Pattern 2a (custom-fetch DI) does not need a separate smoke test because the production wiring is itself exercised end-to-end by passing `fakeFetch`.
 
 ### Configurable durations for IO loops with deadlines
 
-Adapters that retry, poll, or wait for external state always need a deadline. In production, the deadline matches user expectations (a 5-minute auth callback window, a 30-second LLM timeout, a 2-second between-poll delay). In tests, the same deadlines would crawl the suite to a halt — and `setTimeout` global swaps only help when the duration is genuinely "fire immediately".
+Adapters that retry, poll, or wait for external state always need a deadline. In production, the deadline matches user expectations (a 5-minute auth callback window, a 30-second LLM timeout, a 2-second between-poll delay). In tests, the same deadlines would crawl the suite to a halt, and `setTimeout` global swaps only help when the duration is genuinely "fire immediately".
 
 The pattern: every duration the adapter cares about is a field on a `Config` record passed into the factory. Production wiring fills it with real values; tests pass tiny values.
 
@@ -405,7 +405,7 @@ const auth = createBrowserAuthFromApi(fakePlaywright, fastConfig);
 
 ### Sub-pattern: swapping a global (e.g. `setTimeout`) per-test
 
-When an adapter calls a global like `setTimeout` — for real retry delays, say — tests will crawl unless the global is swapped. **Do not** reach for `mock.module`. Swap the global in `beforeAll` / `afterAll`; the scope is the test file, not the whole process.
+When an adapter calls a global like `setTimeout` (for real retry delays, say), tests will crawl unless the global is swapped. **Do not** reach for `mock.module`. Swap the global in `beforeAll` / `afterAll`; the scope is the test file, not the whole process.
 
 ```ts
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
@@ -466,7 +466,7 @@ describe('promptLoaderFs', () => {
 
 ### Triggering read/write catch blocks (chmod, not a directory)
 
-To hit the `catch` branch that guards a `Bun.file(path).text()` or `Bun.write(path, ...)` call, the instinct is to pass a directory path — but `Bun.file(dir).exists()` returns **`false`** for directories, so the read routes to the `not-found` branch instead of throwing. The real way to force a thrown exception is `chmod` on a real file (or directory) and restore in `finally`.
+To hit the `catch` branch that guards a `Bun.file(path).text()` or `Bun.write(path, ...)` call, the instinct is to pass a directory path, but `Bun.file(dir).exists()` returns **`false`** for directories, so the read routes to the `not-found` branch instead of throwing. The real way to force a thrown exception is `chmod` on a real file (or directory) and restore in `finally`.
 
 ```ts
 import { chmodSync } from 'node:fs';
@@ -498,11 +498,11 @@ it('when the directory is read-only (chmod 0500), Bun.write returns err write-fa
 });
 ```
 
-The restore in `finally` is mandatory — without it, `afterEach`'s `rmSync` cannot remove the locked file and the next test starts dirty.
+The restore in `finally` is mandatory: without it, `afterEach`'s `rmSync` cannot remove the locked file and the next test starts dirty.
 
 **Platform note.** `chmod` is a Unix primitive; on Windows it is a silent no-op. These tests exercise the catch branch on Linux and macOS CI runners only. If the project ever runs Windows CI, skip these with `if (process.platform !== 'win32') { ... }`.
 
 ## Fetch-mock handler ordering (silent gotcha)
 
-Fetch-mock handlers are checked in array order, first match wins. A broad match like `url.includes('/IG123/media')` will also match `/IG123/media_publish` — Instagram tests failed with `"network-failed"` instead of `"publish-failed"` because of this. Fix: use `url.endsWith('/IG123/media')` for exact suffix matching, or put the more specific handler (`/media_publish`) **first** in the handlers array. Silent failures are the worst kind; prefer `endsWith` by default.
+Fetch-mock handlers are checked in array order, first match wins. A broad match like `url.includes('/IG123/media')` will also match `/IG123/media_publish`: Instagram tests failed with `"network-failed"` instead of `"publish-failed"` because of this. Fix: use `url.endsWith('/IG123/media')` for exact suffix matching, or put the more specific handler (`/media_publish`) **first** in the handlers array. Silent failures are the worst kind; prefer `endsWith` by default.
 

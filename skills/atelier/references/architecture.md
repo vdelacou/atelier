@@ -1,6 +1,6 @@
 # Software Architecture
 
-> Code samples here are simplified to show *structure*. Some port signatures elide the mandatory `Result<T, E>` wrapper — e.g. a use-case shown returning `Result<User | null, RepoError>` would, in real code, aggregate to `Result<Summary, StepError>` (hard rule 16) — and some inner arrows omit explicit return types. The layout and dependency direction are the point; apply the hard rules in full when writing the real thing.
+> Code samples here are simplified to show *structure*. Some port signatures elide the mandatory `Result<T, E>` wrapper, e.g. a use-case shown returning `Result<User | null, RepoError>` would, in real code, aggregate to `Result<Summary, StepError>` (hard rule 16), and some inner arrows omit explicit return types. The layout and dependency direction are the point; apply the hard rules in full when writing the real thing.
 
 ## The goal
 
@@ -97,7 +97,7 @@ export const createPostgresUserRepo = (db: Database): UserRepo => ({
 export const createGetUser = (repo: UserRepo) => async (id: UserId): Promise<Result<User | null, RepoError>> => repo.findById(id);
 ```
 
-IO ports always return `Promise<Result<T, PortError>>`, never bare `Promise<T>` — see `references/result-type.md`.
+IO ports always return `Promise<Result<T, PortError>>`, never bare `Promise<T>`: see `references/result-type.md`.
 
 ### 4. Contracts
 
@@ -154,7 +154,7 @@ export const withLogging = <Req extends { path: string }, Res extends { status: 
 
 - **Layered** (Presentation → Business → Persistence): simple and well-understood, but without a dependency-direction rule it decays into a big ball of mud.
 - **Hexagonal (Ports and Adapters)**: the domain at the centre; **ports** are function-type contracts defined by the domain, **adapters** the concrete implementations that connect to the outside world. The layer diagram at the top of this file *is* this style.
-- **Clean architecture**: hexagonal with named rings — entities (enterprise rules), use cases (application rules), interface adapters (controllers/presenters/gateways), frameworks and drivers (web, DB, external interfaces).
+- **Clean architecture**: hexagonal with named rings, entities (enterprise rules), use cases (application rules), interface adapters (controllers/presenters/gateways), frameworks and drivers (web, DB, external interfaces).
 
 This standard's `src/{domain,use-cases,infra,presenter,composition}` layout (below) is the concrete expression of the last two.
 
@@ -162,7 +162,7 @@ This standard's `src/{domain,use-cases,infra,presenter,composition}` layout (bel
 
 ## Feature-driven structure (frontend)
 
-In the Next.js variant there is no `features/` folder. A vertical slice is expressed as one organism per page section plus a page shell per route, with the slice's logic in `src/lib/<feature>/` (e.g. `src/lib/guides/`). Components never live outside the design system (`src/components/{atoms,molecules,organisms}` — hard rules 21-22), and state lives in `src/lib/hooks/`, wired by the page shells.
+In the Next.js variant there is no `features/` folder. A vertical slice is expressed as one organism per page section plus a page shell per route, with the slice's logic in `src/lib/<feature>/` (e.g. `src/lib/guides/`). Components never live outside the design system (`src/components/{atoms,molecules,organisms}`: hard rules 21-22), and state lives in `src/lib/hooks/`, wired by the page shells.
 
 ```
 src/
@@ -183,7 +183,7 @@ See `references/nextjs-monorepo.md` for the full layout and rules, and `referenc
 
 ## Clean Architecture layout (backend, canonical)
 
-For any non-trivial Bun backend — pipelines, batch jobs, CLIs with real integrations — use this strict six-folder layout. Files land where they belong based on what they depend on, not on which feature they serve.
+For any non-trivial Bun backend (pipelines, batch jobs, CLIs with real integrations), use this strict six-folder layout. Files land where they belong based on what they depend on, not on which feature they serve.
 
 ```
 src/
@@ -253,7 +253,7 @@ Invariants the layout protects:
 
 ### Adding a new external service
 
-1. Define the port under `src/use-cases/ports/<service>.ts` — type only, returns `Promise<Result<T, <Service>Error>>` where the error is a discriminated union.
+1. Define the port under `src/use-cases/ports/<service>.ts`: type only, returns `Promise<Result<T, <Service>Error>>` where the error is a discriminated union.
 2. Create the in-memory fake under `src/test-helpers/<service>-fake.ts` with an optional `errors` config so tests can inject `err(...)`.
 3. Implement the real adapter under `src/infra/<service>-<protocol>.ts` (e.g. `sheets-google.ts`, `tmdb-http.ts`). The adapter is the only place `try/catch` wraps the SDK call.
 4. Wire it into `PipelineDeps` and `src/composition/build-deps.ts`.
@@ -261,12 +261,12 @@ Invariants the layout protects:
 
 ### Inbound HTTP (server archetype)
 
-The canonical archetype is a CLI/batch job that runs and `process.exit`s. When the entry instead serves HTTP, **the server is an `infra/` adapter — the inbound mirror of an outbound one — not a new layer and not a `presenter/` file.** An outbound adapter (`telegram-http.ts`) turns a thrown SDK error *into* a `Result`; the inbound adapter turns a use-case `Result` *into* a `Response`. It reuses infra's existing `try/catch` quarantine slot and 80% coverage tier, and **adds no new layer** — it lives under `infra/`, covered by that row's inbound-adapter clause.
+The canonical archetype is a CLI/batch job that runs and `process.exit`s. When the entry instead serves HTTP, **the server is an `infra/` adapter (the inbound mirror of an outbound one), not a new layer and not a `presenter/` file.** An outbound adapter (`telegram-http.ts`) turns a thrown SDK error *into* a `Result`; the inbound adapter turns a use-case `Result` *into* a `Response`. It reuses infra's existing `try/catch` quarantine slot and 80% coverage tier, and **adds no new layer**: it lives under `infra/`, covered by that row's inbound-adapter clause.
 
-Why not `presenter/`: the `Result → Response` mapper must read `Summary` and `StepError`, which live in `use-cases/ports/`. The `presenter → domain/ only` rule forbids that import, so a "presenter mapper" silently breaks the dependency table. The `infra/` row explicitly covers the use-case `Result`/error types an inbound adapter maps — so the mapper belongs there.
+Why not `presenter/`: the `Result → Response` mapper must read `Summary` and `StepError`, which live in `use-cases/ports/`. The `presenter → domain/ only` rule forbids that import, so a "presenter mapper" silently breaks the dependency table. The `infra/` row explicitly covers the use-case `Result`/error types an inbound adapter maps, so the mapper belongs there.
 
 ```ts
-// src/infra/http/to-response.ts — pure, total: a use-case Result → an HTTP Response.
+// src/infra/http/to-response.ts, pure and total: a use-case Result → an HTTP Response.
 import type { Result } from '../../domain/result.ts';
 import type { Summary, StepError } from '../../use-cases/ports/step-error.ts';
 
@@ -274,14 +274,14 @@ export const toResponse = (result: Result<Summary, StepError>): Response => {
   if (result.ok) return Response.json(result.value, { status: 200 });
   const { step, cause, message } = result.error;
   // The use-case flatten already stringified the port `kind` into `cause: string`, so there is no
-  // typed discriminant to switch on here — a use-case failure is a 500 by default. Precise client
+  // typed discriminant to switch on here: a use-case failure is a 500 by default. Precise client
   // errors (400) are decided upstream at the branded request checkpoint, before this runs.
   return Response.json({ step, error: cause, message }, { status: 500 });
 };
 ```
 
 ```ts
-// src/infra/http/server.ts — inbound adapter; the one request-level try/catch lives here.
+// src/infra/http/server.ts: inbound adapter; the one request-level try/catch lives here.
 import type { Result } from '../../domain/result.ts';
 import type { OrderInput } from '../../domain/order-input.ts';
 import type { Summary, StepError } from '../../use-cases/ports/step-error.ts';
@@ -308,11 +308,11 @@ export const createHttpServer = (deps: HttpDeps): { readonly fetch: (req: Reques
 
 Three rules this archetype leans on:
 
-1. **The body is an untrusted source — brand it (rule 12).** `parseOrderBody` is the validating checkpoint; precise `400`s are decided here, where the type is still narrow.
-2. **A use-case error defaults to `500`.** The flatten destroys the port `kind` (see `references/result-type.md`), so never switch on `StepError.cause` to fabricate `401`/`404`/`429` — that non-exhaustive lookup rots silently. Honoring typed statuses is a real upgrade: carry a status number through the flatten where TS still enforces totality over the `kind` union — adopt it when a requirement lands, not speculatively.
-3. **Register each new `src/infra/http/*.ts` in `scripts/coverage-preload.ts` in the same commit** — or the 80% gate passes trivially on uncovered files.
+1. **The body is an untrusted source: brand it (rule 12).** `parseOrderBody` is the validating checkpoint; precise `400`s are decided here, where the type is still narrow.
+2. **A use-case error defaults to `500`.** The flatten destroys the port `kind` (see `references/result-type.md`), so never switch on `StepError.cause` to fabricate `401`/`404`/`429`: that non-exhaustive lookup rots silently. Honoring typed statuses is a real upgrade: carry a status number through the flatten where TS still enforces totality over the `kind` union, adopt it when a requirement lands, not speculatively.
+3. **Register each new `src/infra/http/*.ts` in `scripts/coverage-preload.ts` in the same commit**, or the 80% gate passes trivially on uncovered files.
 
-No router until the third route (Rule of Three) — a `switch (new URL(req.url).pathname)` covers one or two endpoints. No framework; that choice stays out of scope.
+No router until the third route (Rule of Three): a `switch (new URL(req.url).pathname)` covers one or two endpoints. No framework; that choice stays out of scope.
 
 ### API shape and the three model boundaries
 
@@ -343,7 +343,7 @@ The UI is then built, demoed, and tested in parallel with the backend, and the f
 
 ### Framework vs configuration
 
-Domain-specific data — brand lists, tenant slugs, feature flags, tier-discount rates, per-environment API endpoints — is **configuration**, not framework code. It lives in env vars, JSON files, or an external source loaded at runtime. The framework code never contains string-literal unions of brand slugs, hardcoded record maps of brands, or `if (brand === 'acme') ...` branches.
+Domain-specific data (brand lists, tenant slugs, feature flags, tier-discount rates, per-environment API endpoints) is **configuration**, not framework code. It lives in env vars, JSON files, or an external source loaded at runtime. The framework code never contains string-literal unions of brand slugs, hardcoded record maps of brands, or `if (brand === 'acme') ...` branches.
 
 Signal: if a new tenant requires editing a union type or a switch statement, the code is fused with the data. Refactor to drive the behaviour from config.
 
@@ -351,7 +351,7 @@ Signal: if a new tenant requires editing a union type or a switch statement, the
 
 `src/composition/build-deps.ts` is **not** a coverage-skip. It is fully unit-testable when two ergonomic switches are in place:
 
-1. Every "where do I read state from" point — file path, env var, system clock, random source — is parameterisable.
+1. Every "where do I read state from" point (file path, env var, system clock, random source) is parameterisable.
 2. Every "what do I write to / log to" sink can be injected as a port (Logger, EmailSender, Clock).
 
 The pattern is an optional `BuildDepsConfig` argument with sensible defaults that preserve production behaviour:
