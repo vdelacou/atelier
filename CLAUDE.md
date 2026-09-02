@@ -7,7 +7,8 @@ tree. What binds work HERE is the authoring and process discipline below.
 ## Authoring conventions
 - **Never use em dashes** in anything you write: prose, code comments, commit messages,
   skill text, LESSONS/PLAN entries. The reference files predate this rule; do not imitate
-  their punctuation. Grep new work: `git diff | grep '^+' | grep '—'` must be empty.
+  their punctuation. The gate is `bash scripts/check-no-em-dash.sh`: the pre-commit hook runs
+  it on the staged diff, CI over the pushed range, and `--selftest` proves it can fail.
 - **YAML frontmatter descriptions carry no `: ` (colon-space)** and no unescaped `:` mid-line;
   it breaks the single-line YAML parse. Rephrase (a comma, a dash with spaces, parentheses).
   The frontmatter validator catches it: `bun run scripts/validate-frontmatter.ts`.

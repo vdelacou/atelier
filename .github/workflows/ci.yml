@@ -14,6 +14,20 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun run scripts/validate-frontmatter.ts
 
+  no-em-dash:
+    name: no em dash on an added line
+    runs-on: ubuntu-latest
+    env:
+      # the left side of the pushed range; on a push to main HEAD == origin/main
+      GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      # the gate proves it can fail before it judges the range (canon 15.10)
+      - run: bash scripts/check-no-em-dash.sh --selftest
+      - run: bash scripts/check-no-em-dash.sh
+
   asset-smoke-test:
     name: asset smoke test (Bun variant, all gates)
     runs-on: ubuntu-latest

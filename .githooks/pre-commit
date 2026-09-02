@@ -1,9 +1,14 @@
 #!/bin/sh
-# Pre-commit: validate every skill's YAML frontmatter before allowing a commit.
-# Catches the colon-space class of bug that silently breaks skill loading.
-# Degrades gracefully if Bun is unavailable, mirroring the gitleaks gate.
+# Pre-commit: this repo's own fast gates.
+#   1. No em dash on an added line (the CLAUDE.md authoring rule; the standard
+#      bans the character and an agent copies the punctuation it sees).
+#   2. Every skill's YAML frontmatter parses (the colon-space class of bug that
+#      silently breaks skill loading).
+# The frontmatter check degrades gracefully if Bun is unavailable, mirroring
+# the gitleaks gate; the em-dash check needs only git and awk.
+bash scripts/check-no-em-dash.sh || exit 1
 if ! command -v bun >/dev/null 2>&1; then
-  echo "pre-commit: bun not found — skipping skill-frontmatter validation" >&2
+  echo "pre-commit: bun not found, skipping skill-frontmatter validation" >&2
   exit 0
 fi
 exec bun run scripts/validate-frontmatter.ts
