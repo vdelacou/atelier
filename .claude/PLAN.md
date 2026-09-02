@@ -50,7 +50,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 12. [x] nextjs-monorepo.md, atomic-design.md, behavioural-examples.md. DoD: V7; V3.
 13. [x] bun-typescript.md, testing-infra.md, architecture.md, security.md, result-type.md,
         complexity.md. DoD: V7; V3 after `--lock`.
-14. [ ] remaining references, three companions, assets, README. DoD: V7 zero across skills/,
+14. [x] remaining references, three companions, assets, README. DoD: V7 zero across skills/,
         README.md, .githooks/; V3 after `--lock`; V6; V1.
 
 ## Phase C: doctrine contradictions

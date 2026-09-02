@@ -47,7 +47,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       # Scaffolds a Next.js package from the canonical configs in
       # references/nextjs-monorepo.md, then asserts conforming code passes and
-      # rule 21/22 violations are caught — so a future ESLint/Next major can't
+      # rule 21/22 violations are caught, so a future ESLint/Next major can't
       # silently disable the design-system enforcement.
       - run: bash scripts/smoke-test-next.sh
 
@@ -60,7 +60,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          # no `cache: maven` — it requires a pom.xml in the repo, and this
+          # no `cache: maven`, it requires a pom.xml in the repo, and this
           # repo's pom is generated at runtime by the smoke test
       # Scaffolds a Maven repo from the canonical pom.xml in
       # references/java-quarkus.md and the shipped hook assets, then proves the

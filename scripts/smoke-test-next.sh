@@ -10,9 +10,9 @@
 #     a page shell wiring build-time data through a test-driven src/lib function,
 #     and a static export all pass test / lint / typecheck / build
 #   - the design-system lint block CATCHES the violations it exists for:
-#       rule 21 — a hook, a next/* import, 'use client', an app-code import
+#       rule 21: a hook, a next/* import, 'use client', an app-code import
 #                 inside a component
-#       rule 22 — a className / class / style attribute outside src/components/**
+#       rule 22: a className / class / style attribute outside src/components/**
 #
 # The negative half is the point: it locks in the rules 21-22 enforcement so a
 # future ESLint / Next / typescript-eslint major cannot silently disable it.
@@ -275,7 +275,7 @@ expect_ok "bundle budget passes under a generous ceiling" \
 expect_err "bundle budget fails when over the ceiling" \
   env BUDGET_KB=0 bash "$REPO_ROOT/skills/atelier/assets/check-bundle-size.sh" out
 
-echo "== negative path: rule 21 — the design-system block rejects app knowledge in a component =="
+echo "== negative path: rule 21, the design-system block rejects app knowledge in a component =="
 cat > src/components/atoms/bad-widget.tsx <<'EOF'
 'use client';
 import { useState } from 'react';
@@ -294,7 +294,7 @@ rule21_hits=$(bunx eslint src/components/atoms/bad-widget.tsx 2>&1 | grep -c 'ha
   || { echo "expected >=4 'hard rule 21' findings, got ${rule21_hits:-0}"; fail "rule 21 enforcement"; }
 rm src/components/atoms/bad-widget.tsx
 
-echo "== negative path: rule 22 — a class/style attribute outside the design system is rejected =="
+echo "== negative path: rule 22, a class/style attribute outside the design system is rejected =="
 cat > app/_bad.tsx <<'EOF'
 import type { ReactNode } from 'react';
 const Bad = (): ReactNode => <div className="flex bg-red-500 p-8" style={{ color: 'red' }}>x</div>;

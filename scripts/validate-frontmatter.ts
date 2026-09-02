@@ -3,7 +3,7 @@
 // with a `---` block that parses as a YAML mapping carrying a non-empty `name` and
 // `description`, within the documented Agent Skills limits (name ≤ 64 chars,
 // lowercase kebab-case; description ≤ 1024 chars). Catches the colon-space class
-// of bug — and the over-limit description that silently breaks skill loading
+// of bug, and the over-limit description that silently breaks skill loading
 // (atelier's description sits at exactly 1024, so one added char would tip it).
 // Run by the pre-commit hook and on demand: `bun run scripts/validate-frontmatter.ts`.
 import { Glob } from 'bun';
@@ -30,7 +30,7 @@ const problemWith = (file: string, text: string): Problem | null => {
   try {
     parsed = Bun.YAML.parse(block);
   } catch (e) {
-    return { file, reason: `invalid YAML — ${e instanceof Error ? e.message.split('\n')[0] : 'parse error'}` };
+    return { file, reason: `invalid YAML: ${e instanceof Error ? e.message.split('\n')[0] : 'parse error'}` };
   }
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
     return { file, reason: 'frontmatter is not a YAML mapping' };
@@ -61,7 +61,7 @@ const main = async (): Promise<void> => {
   }
   if (problems.length > 0) {
     process.stderr.write(`✗ skill frontmatter invalid (${problems.length}/${count}):\n`);
-    for (const p of problems) process.stderr.write(`  ${p.file} — ${p.reason}\n`);
+    for (const p of problems) process.stderr.write(`  ${p.file}, ${p.reason}\n`);
     process.exit(1);
   }
   process.stdout.write(`✓ skill frontmatter valid (${count}/${count})\n`);
