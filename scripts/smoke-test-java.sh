@@ -136,8 +136,8 @@ public final class RegisterUser {
 
   public Result<Void, String> register(String raw) {
     return switch (Email.parse(raw)) {
-      case Ok<Email, String>(var email) -> store.save(email);
-      case Err<Email, String>(var e) -> new Err<>(e);
+      case Ok<Email, Email.Error>(var email) -> store.save(email);
+      case Err<Email, Email.Error>(var e) -> new Err<>("invalid_email");
     };
   }
 }
@@ -159,7 +159,7 @@ class EmailTest {
 
   @Test
   void aMalformedAddressParsesToInvalidEmail() {
-    assertEquals(new Err<Email, String>("invalid_email"), Email.parse("not-an-email"));
+    assertEquals(new Err<Email, Email.Error>(Email.Error.MALFORMED), Email.parse("not-an-email"));
   }
 
   @Test

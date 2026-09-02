@@ -304,8 +304,10 @@ public record Email(String value) {
 
   public Email { if (!SHAPE.matcher(value).matches()) throw new IllegalArgumentException("email"); }
 
-  public static Result<Email, String> parse(String raw) {
-    return SHAPE.matcher(raw).matches() ? new Ok<>(new Email(raw)) : new Err<>("invalid_email");
+  public enum Error { MALFORMED }
+
+  public static Result<Email, Error> parse(String raw) {
+    return SHAPE.matcher(raw).matches() ? new Ok<>(new Email(raw)) : new Err<>(Error.MALFORMED);
   }
 }
 

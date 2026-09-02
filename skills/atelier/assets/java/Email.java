@@ -2,8 +2,10 @@
 // boundary (hard rule 12, Java expression). The compact constructor is the
 // guard (constructing an invalid instance is a bug, so it throws); the static
 // parse is the boundary factory returning Result (expected-invalid input is a
-// value, not an exception). Copy this shape for Money (integer minor units),
-// UserId, IsoCountryCode, and every other domain primitive.
+// value, not an exception), and its error is a nested enum, never a bare
+// String, so a caller switches over the cases the type names (rule 16). Copy
+// this shape for Money (integer minor units), UserId, IsoCountryCode, and
+// every other domain primitive.
 package com.example.app.domain;
 
 public record Email(String value) {
@@ -15,7 +17,11 @@ public record Email(String value) {
     }
   }
 
-  public static Result<Email, String> parse(String raw) {
-    return SHAPE.matcher(raw).matches() ? new Ok<>(new Email(raw)) : new Err<>("invalid_email");
+  public enum Error {
+    MALFORMED
+  }
+
+  public static Result<Email, Error> parse(String raw) {
+    return SHAPE.matcher(raw).matches() ? new Ok<>(new Email(raw)) : new Err<>(Error.MALFORMED);
   }
 }

@@ -243,13 +243,25 @@ Once installed, the agent consults `atelier` on every code task in a Bun/TypeScr
 atelier/
 ├── LICENSE
 ├── README.md
-├── .github/workflows/ci.yml       # CI: frontmatter validation + asset smoke test
-├── .githooks/                     # this repo's own hooks (frontmatter check, Conventional Commits)
+├── .github/workflows/ci.yml       # CI: eight jobs (frontmatter, em-dash gate, three smoke tests, two grader selftests, matrix drift)
+├── .github/workflows/canary.yml   # weekly probe of the two toolchain concessions (typescript pin, two sonarjs rules)
+├── .githooks/                     # this repo's own hooks (em-dash gate + frontmatter check, Conventional Commits)
+├── conformance-matrix.md          # one row per canon sub-concept, verdict + file:line evidence
+├── reverse-matrix.md              # one row per hard rule, does the canon carry it
+├── citations-lock.json            # content pin for every file:line the matrices cite
+├── docs/global-rules/             # the vendored canon the matrices audit against
 ├── scripts/
 │   ├── validate-frontmatter.ts    # frontmatter gate: name/description present + within skill limits
+│   ├── check-no-em-dash.sh        # no em dash on an added line (hook + CI)
+│   ├── check-citations.py         # file:line evidence pinned to content (--lock re-pins after a deliberate move)
+│   ├── check-matrix-drift.py      # conformance-matrix.md true to the vendored canon (count, titles, sha256)
+│   ├── check-workflow-assets.sh   # shipped workflows self-sufficient in a consumer repo
 │   ├── smoke-test.sh              # e2e (Bun): install the assets per this README into a scratch repo, run every gate
-│   ├── smoke-test-next.sh         # e2e (Next.js): scaffold a package, assert rules 21-22 enforcement
-│   └── smoke-test-java.sh         # e2e (Java): scaffold from the canonical pom, run + block every gate
+│   ├── smoke-test-next.sh         # e2e (Next.js): scaffold a package, assert rules 21-22 and 35 enforcement
+│   ├── smoke-test-java.sh         # e2e (Java): scaffold from the canonical pom, run + block every gate
+│   ├── trigger-eval/              # does the skill load on the queries it should (and not on the others)
+│   ├── conformance-eval/          # does produced code follow the rules, with-skill vs baseline, plus the pairwise judge
+│   └── review-eval/               # does atelier-review-me catch planted violations in a diff
 └── skills/
     ├── atelier/
     │   ├── SKILL.md           # Main skill instructions
@@ -319,9 +331,12 @@ atelier/
 
 ## Repository CI
 
-Every push and pull request runs four GitHub Actions jobs, each guarding against the same failure mode: a toolchain major or a doc edit silently breaking what the skill ships:
+Every push and pull request runs eight GitHub Actions jobs, each guarding against the same failure mode: a toolchain major or a doc edit silently breaking what the skill ships:
 
 - **frontmatter validator**: every `SKILL.md` opens with a valid `name`/`description` within the skill-loader limits.
+- **no em dash on an added line** (`scripts/check-no-em-dash.sh`): the standard bans the character and an agent copies the punctuation it sees; the selftest runs first so the gate is seen red before it judges the range.
+- **grader selftests**: `conformance-eval/grade.py --selftest`, `conformance-eval/judge.py --selftest` and `review-eval/grade.py --selftest`, so a grader defect (four have been found so far, every one punishing the better review) cannot land unnoticed.
+- **matrix drift**: `check-matrix-drift.py`, `check-citations.py` and `check-workflow-assets.sh`, with their selftests, plus the staleness gate's own selftest; the matrices stay true to the vendored canon, every cited line keeps its content, and the shipped workflows stay self-sufficient.
 - **`scripts/smoke-test.sh` (Bun variant)**: follows this README's install steps into a scratch Bun repo, extracts the canonical `tsconfig.json` / `eslint.config.js` from `references/bun-typescript.md`, installs the **current unpinned** toolchain, and proves every gate both passes on a conforming tree and blocks its target violation (the fast pre-commit hook run end-to-end, plus the CI gates run directly, Stryker included).
 - **`scripts/smoke-test-next.sh` (Next.js variant)**: scaffolds a Next.js package from the canonical configs in `references/nextjs-monorepo.md`, builds a conforming design system + page shell + static export, and asserts the design-system lint block catches its target violations: rule 21 (a hook / `next/*` import / `'use client'` / app-code import inside a component) and rule 22 (a `className` / `class` / `style` attribute outside `src/components/**`).
 - **`scripts/smoke-test-java.sh` (Java variant)** | scaffolds a Maven repo from the canonical `pom.xml` in `references/java-quarkus.md` plus the shipped hook assets, proves the gates pass on a conforming skeleton (spotless, `verify` with the JaCoCo tiers, PIT, a real hooked commit through `pre-commit-java`), and that each gate blocks its target violation (a version range, a `-SNAPSHOT` dependency, an oversized commit, a junk commit message, a misformatted file, a warning under `-Werror`, an untested domain class, a covered-but-unasserted mutant survivor).
