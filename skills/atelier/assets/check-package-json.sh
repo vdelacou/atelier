@@ -2,7 +2,7 @@
 #
 # Block commits if package.json declares any version as "latest" or "*".
 #
-# Why: "latest" / "*" are non-deterministic — `bun install` on different
+# Why: "latest" / "*" are non-deterministic, `bun install` on different
 # days produces different node_modules trees. The lockfile only partially
 # helps, and the literal string semantically signals "always upgrade",
 # which is a silent-break footgun.
@@ -68,7 +68,7 @@ $(echo "$violations" | sed 's/^/      /')
     - Replace each "latest" / "*" / bare dist-tag with the actual installed
       version (a pre-release pin like "^4.0.0-beta.0" is fine; bare "beta" is not).
     - For new packages, use \`bun add <pkg>\` (or \`bun add -d <pkg>\`)
-      instead of hand-editing — Bun pins to ^X.Y.Z automatically.
+      instead of hand-editing: Bun pins to ^X.Y.Z automatically.
     - To bump everything to current latest, run \`bun update\` and commit
       the lockfile change in the same commit.
 

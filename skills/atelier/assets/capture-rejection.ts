@@ -11,7 +11,7 @@
  * Throws:
  *   - if the promise resolved (so the test fails loudly instead of silently passing)
  *   - if the rejection value is not an Error (in atelier codebases, all
- *     rejections must be Errors — enforced by @typescript-eslint/prefer-promise-reject-errors)
+ *     rejections must be Errors: enforced by @typescript-eslint/prefer-promise-reject-errors)
  *
  * See skills/atelier/references/workflow.md (SonarJS table, S4123) and
  * skills/atelier/references/result-type.md (Testing Result-returning code).

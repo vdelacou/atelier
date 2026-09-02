@@ -44,7 +44,7 @@ const SKIPPED: ReadonlyArray<SkipRule> = [
 ];
 // Resist adding composition/wiring files here: any composition root is
 // 100%-testable once its state-sources (paths, env, clock) are parameters
-// and its sinks (logger, sender) injected — see references/architecture.md
+// and its sinks (logger, sender) injected: see references/architecture.md
 // (Composition root testability). SKIPPED is for genuine non-code entries.
 
 type FileRow = {
@@ -158,7 +158,7 @@ const printViolations = (violations: ReadonlyArray<Violation>): void => {
     console.error(`  ${v.file.path}  [${v.tier}]  ${v.metric}=${v.actual.toFixed(1)}%  required=${v.threshold}%`);
   }
   const word = violations.length === 1 ? 'violation' : 'violations';
-  console.error(`\ncoverage: ${violations.length} ${word}. Add tests, or restructure to remove unreachable branches — never lower the threshold.`);
+  console.error(`\ncoverage: ${violations.length} ${word}. Add tests, or restructure to remove unreachable branches, never lower the threshold.`);
 };
 
 const main = async (): Promise<number> => {

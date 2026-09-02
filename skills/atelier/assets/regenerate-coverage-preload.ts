@@ -92,7 +92,7 @@ const HEADER = `/*
  *
  * \`bun test --coverage\` only emits rows for files the runner imports. Untested
  * src/infra, src/composition, and src/presenter files are silently absent
- * from the table — which makes the per-file gate trivially pass. This preload
+ * from the table, which makes the per-file gate trivially pass. This preload
  * side-effect-imports every such file so they appear at 0% (or better) and
  * the gate can fail loudly.
  *
