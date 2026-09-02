@@ -304,9 +304,9 @@ export const email = (value: string): Email => {
 
 Two tiers, one type: `parseX` parses and returns `Result`, `x()` asserts and throws, and only the first ever sees outside data (`assets/java/Email.java` is the same shape in Java). The same shape applies to `UserId`, `Money`, `Url`, `IsoCountryCode`, etc. Money carries currency in the record itself, holds the amount as **integer minor units (cents), never a float** (`0.1 + 0.2 !== 0.3`, and the rounding lands on an invoice), and validates arithmetic against currency mismatch. Instants live in **UTC** behind a type; a timezone is a display concern applied only at the presentation edge. This is "parse, don't validate": the check runs once at the boundary and the type carries the proof from then on. Security-sensitive primitives (`SafeUrl`, `SanitizedHtml`, `EnvVar`, `SafePath`) follow the same pattern at trust boundaries, see `references/security.md`. The full catalogue and worked examples live in `references/clean-code.md` (object-calisthenics rule 3) and `references/object-design.md`.
 
-## The class-to-module translation catalogue
+## The class-to-module translation
 
-Since `class` and `interface` are banned, every OO pattern is expressed as typed records and factory functions. The full translation table (value object, interface, service, strategy, factory, decorator, observer, command, entity, aggregate) lives in `references/class-to-module.md`. Read that file the first time you reach for a classical OO pattern. `references/design-patterns.md` holds the full GoF catalogue in this style; `references/object-design.md` covers value objects, entities, aggregates, and polymorphism-via-dispatch in depth.
+Since `class` and `interface` are banned, every OO pattern is expressed as typed records and factory functions. `references/design-patterns.md` opens with the four basic translations (value object, interface, service with dependencies, entity), holds the full GoF catalogue in this style, and closes with the translation quick-reference table; read it the first time you reach for a classical OO pattern. `references/object-design.md` covers value objects, entities, aggregates, and polymorphism-via-dispatch in depth.
 
 ## Responsibility-driven design
 
@@ -463,8 +463,7 @@ Engineering:
 - `references/complexity.md` | essential vs accidental complexity, YAGNI, the lazy ladder (stop at the first rung), KISS, DRY + Rule of Three, four elements.
 - `references/behavioural-examples.md` | before/after worked examples (in this repo's idiom) for the four Behavioural Guidelines: think-before-coding, simplicity, surgical changes, goal-driven execution; anti-pattern table.
 - `references/architecture.md` | vertical slices, dependency rule, hexagonal and clean architecture, walking skeleton, inbound HTTP server archetype.
-- `references/design-patterns.md` | full GoF catalogue rewritten as modules of arrow functions.
-- `references/class-to-module.md` | translation table for OO patterns (value object, interface, service, strategy, factory, decorator, observer, command, entity) in this class-free style.
+- `references/design-patterns.md` | the four basic class-to-module translations (value object, interface, service with deps, entity), the full GoF catalogue rewritten as modules of arrow functions, the translation quick-reference table.
 
 Security:
 - `references/security.md` | source-to-sink mental model, vulnerability categories, branded types for trust boundaries, rented auth/crypto and the security baseline, pre-merge checklist, adopted false-positive filter.

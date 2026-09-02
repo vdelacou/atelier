@@ -16,6 +16,52 @@ Use a pattern when:
 
 ---
 
+## The basic translations (before any pattern)
+
+Since `class` and `interface` are banned (hard rules 1 and 3), the everyday OO shapes are typed records and factory functions. Learn these four once; the GoF catalogue below is built from them, and `references/object-design.md` covers value objects, entities, aggregates and polymorphism-via-dispatch in depth.
+
+**Value object.** `class Money { ... }` becomes a readonly record plus operation functions, with the factory as the assertion gate and a `parseX` boundary tier returning `Result` for untrusted input. The canonical `Money` (integer cents, `parseMoney`, `addMoney`, `scaleMoney`) lives in `references/object-design.md`, Value objects; do not retype it.
+
+**Interface / contract.** `interface UserRepo { ... }` becomes a function-type alias:
+
+```ts
+export type UserRepo = {
+  save: (user: User) => Promise<void>;
+  findById: (id: UserId) => Promise<User | null>;
+};
+```
+
+**Service with injected dependencies.** `class UserService { constructor(repo) { ... } }` becomes a factory that closes over its dependencies:
+
+```ts
+export type UserService = { getUser: (id: UserId) => Promise<User | null> };
+
+export const createUserService = (repo: UserRepo): UserService => ({
+  getUser: async (id) => repo.findById(id),
+});
+```
+
+**Entity with state transitions.** `class Order` becomes an immutable record plus transform functions; every transformation takes the record in, returns a new record out, and enforces invariants in between. Aggregate roots follow the same pattern: every mutation goes through a root function that returns a new root.
+
+```ts
+export type Order = {
+  readonly id: OrderId;
+  readonly items: readonly OrderItem[];
+  readonly status: OrderStatus;
+};
+
+export const createOrder = (id: OrderId): Order => ({ id, items: [], status: 'pending' });
+
+export const addItemToOrder = (order: Order, item: OrderItem): Order => ({
+  ...order,
+  items: [...order.items, item],
+});
+
+export const payOrder = (order: Order): Order => ({ ...order, status: 'paid' });
+```
+
+---
+
 ## Creational patterns
 
 ### Singleton
@@ -421,3 +467,20 @@ This lets you recognise patterns even when the code has no class in sight.
 | Premature optimisation | Optimising before measuring | YAGNI, profile first |
 | Copy-paste | Duplication everywhere | Extract on Rule of Three |
 | Pattern hunting | Applying patterns to look clever | Let patterns emerge from refactoring |
+
+---
+
+## Translation quick reference
+
+| OO concept | Class-free expression |
+|:---|:---|
+| Value object | Readonly record + validating factory (assertion tier) + `parseX` boundary tier returning `Result` |
+| Interface / contract | `type Foo = { method: (...) => ... }` |
+| Service with deps | Factory function returning the contract |
+| Strategy | Contract + exported implementation records |
+| Factory | Plain function (or dispatch record) that returns the right variant |
+| Decorator | Higher-order function wrapping the contract |
+| Observer | Closure factory over an observer array |
+| Command | Record with `execute` / `undo` functions |
+| Entity | Immutable record + transform functions |
+| Aggregate root | Root function is the only mutation path |

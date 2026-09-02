@@ -70,7 +70,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 
 22. [x] fold tdd.md sections into testing.md. DoD: testing.md holds the loop; V3.
 23. [x] remove tdd.md, repoint citers, redirect stub. DoD: V3 after `--lock`; V6; V1.
-24. [ ] fold class-to-module.md into design-patterns.md, stub. DoD: V3 V6.
+24. [x] fold class-to-module.md into design-patterns.md, stub. DoD: V3 V6.
 25. [ ] drop the remaining duplicated examples. DoD: V1 (fences intact); V3 after `--lock`.
 26. [ ] absorb hard-rule bodies 4, 12, 17-20, 24-25 into references. DoD: V3 after `--lock`.
 27. [ ] hard rules as one-liners, red flags and four elements out. DoD: nouns for 28-32 kept;

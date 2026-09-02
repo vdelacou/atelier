@@ -59,12 +59,11 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 - `atomic-design.md`: the logic-free design system: atoms/molecules/organisms layer rules, interactivity ladder (native HTML → hoisted state → `src/lib/hooks`), injected link/image wrappers, styling seal (Tailwind invisible outside the design system), page-shell wiring, decision table
 - `behavioural-examples.md`: before/after worked examples for the four Behavioural Guidelines in this repo's idiom (over-abstraction vs one function, drive-by vs surgical edit, vague vs verifiable plan), anti-pattern table
 - `bun-typescript.md`: Clean Architecture Bun script repos, strict ESLint flat config (SonarJS + type-aware), Logger port + Winston adapter, bootstrap checklist, optional containerization Dockerfile
-- `class-to-module.md`: translation table for classical OO patterns (value object, interface, service, strategy, factory, decorator, observer, command, entity)
 - `clean-code.md`: naming priorities, object calisthenics in a class-free world, comments, formatting
 - `code-smells.md`: detection catalogue and the refactorings that clean each smell
 - `complexity.md`: essential vs accidental complexity, YAGNI, the lazy ladder (stop at the first rung; simplicity is not negligence; defer the build, not the seam), KISS, DRY + Rule of Three
 - `delivery.md` | pipeline-only deploys with canary + one-step rollback, infrastructure as code with read-only humans, ephemeral environments, managed over self-run (no SSH, automatic TLS), open-standard portability + compose gate, SBOM + signed artifacts, restore drills, blameless postmortems
-- `design-patterns.md`: full GoF catalogue rewritten as modules of arrow functions
+- `design-patterns.md`: the four basic class-to-module translations, the full GoF catalogue rewritten as modules of arrow functions, the translation quick-reference table
 - `governance.md` | decision records (`[decision]` + ADR tier), API docs from the contract, numbers not adjectives, one honest backlog, CODEOWNERS/RACI, separation of duties, audit trail, owner-verifiable done
 - `isolation.md` | token-derived owner, RLS defense in depth, fail closed, blast radius, cross-tenant 404 tests per endpoint, UUIDv7 identifiers
 - `java-quarkus.md` | the Java variant: records + sealed `Result`, ports as interfaces with hand-written fakes (no Mockito), Maven-wrapper toolchain with exact pins, Spotless, JaCoCo tiers + PIT mutation, Flyway expand-contract, Panache writes / explicit reads, authenticated-by-default resources, hard-rules translation table, bootstrap checklist
@@ -296,7 +295,7 @@ atelier/
     │       ├── atomic-design.md
     │       ├── behavioural-examples.md
     │       ├── bun-typescript.md
-    │       ├── class-to-module.md
+    │       ├── class-to-module.md          # redirect stub, folded into design-patterns.md (removed next release)
     │       ├── clean-code.md
     │       ├── code-smells.md
     │       ├── complexity.md
