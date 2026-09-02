@@ -2,7 +2,7 @@
 
 Reusable solutions to common design problems. A shared vocabulary for discussing design. This file translates the classic GoF patterns into modules of arrow functions and typed records.
 
-> **Note on examples.** Port and use-case signatures in this file are sometimes elided to `Promise<T>` (or throw on business failure) for brevity where error handling is not the lesson. In real code every IO port returns `Promise<Result<T, PortError>>` and every use-case returns `Promise<Result<Summary, StepError>>` — hard rule 16, see `references/result-type.md`.
+> **Note on examples.** Port and use-case signatures in this file are sometimes elided to `Promise<T>` (or throw on business failure) for brevity where error handling is not the lesson. In real code every IO port returns `Promise<Result<T, PortError>>` and every use-case returns `Promise<Result<Summary, StepError>>`: hard rule 16, see `references/result-type.md`.
 
 ## Warning first
 
@@ -32,7 +32,7 @@ export const retryPolicy = Object.freeze({ maxAttempts: 3, backoffMs: 200 });
 
 No ceremony needed. ESM modules are singletons by default.
 
-Stateful or IO-performing singletons (loggers, clients, pools) are NOT expressed this way — they are factories in `src/infra/**` injected at composition (hard rule 4).
+Stateful or IO-performing singletons (loggers, clients, pools) are NOT expressed this way: they are factories in `src/infra/**` injected at composition (hard rule 4).
 
 ### Factory
 

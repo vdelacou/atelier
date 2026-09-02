@@ -270,7 +270,7 @@ Affects: every repo using the mutation gate.
 
 Fresh machine on a network with TLS interception. `bun install` died with
 "unable to verify the first certificate". Bun reads `NODE_EXTRA_CA_CERTS`
-the same way Node does — exporting it to the proxy's root CA bundle fixes
+the same way Node does: exporting it to the proxy's root CA bundle fixes
 both `bun install` and `bunx`.
 Affects: every shell session on this network; add to `~/.zshenv`.
 ```
@@ -282,7 +282,7 @@ When a new lesson contradicts an older one, do not edit the older one. Add a new
 The older entry:
 
 ```markdown
-## [gotcha] 2026-04-23 | bun install rewrites bun.lock on drift — CI needs --frozen-lockfile
+## [gotcha] 2026-04-23 | bun install rewrites bun.lock on drift, CI needs --frozen-lockfile
 
 A CI run silently updated bun.lock because plain `bun install` reconciles the lockfile
 when package.json drifted. CI must run `bun install --frozen-lockfile` so drift fails
@@ -297,7 +297,7 @@ The superseding entry, appended later:
 
 The `--frozen-lockfile` flag moved from per-pipeline steps into the shared CI install
 script, so individual pipelines no longer set it by hand.
-Supersedes: "bun install rewrites bun.lock on drift — CI needs --frozen-lockfile" (2026-04-23).
+Supersedes: "bun install rewrites bun.lock on drift, CI needs --frozen-lockfile" (2026-04-23).
 Affects: CI pipelines created after 2026-05-15.
 ```
 

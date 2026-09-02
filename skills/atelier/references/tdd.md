@@ -1,6 +1,6 @@
 # Test-Driven Development
 
-> **Note on examples.** Port and use-case signatures in this file are sometimes elided to `Promise<T>` (or throw on business failure) for brevity where error handling is not the lesson. In real code every IO port returns `Promise<Result<T, PortError>>` and every use-case returns `Promise<Result<Summary, StepError>>` — hard rule 16, see `references/result-type.md`.
+> **Note on examples.** Port and use-case signatures in this file are sometimes elided to `Promise<T>` (or throw on business failure) for brevity where error handling is not the lesson. In real code every IO port returns `Promise<Result<T, PortError>>` and every use-case returns `Promise<Result<Summary, StepError>>`: hard rule 16, see `references/result-type.md`.
 
 ## The core loop
 
@@ -10,7 +10,7 @@ RED -> GREEN -> REFACTOR -> RED -> ...
 
 ### RED phase
 
-Propose a failing test that describes the behaviour you want, and get the user's confirmation before writing it (SKILL.md hard rule 24 — tests are confirmation-gated; never create, change, or delete one silently). The test should:
+Propose a failing test that describes the behaviour you want, and get the user's confirmation before writing it (SKILL.md hard rule 24: tests are confirmation-gated; never create, change, or delete one silently). The test should:
 
 - Use domain language, not technical jargon.
 - Describe WHAT, not HOW.
@@ -147,7 +147,7 @@ The school we follow has three rules. Each one is a direct response to a pattern
 
 ### 1. The SUT is the primary port
 
-Tests target the **primary port** — the use case, command handler, or application service at the hexagonal boundary. Never an individual entity, value object, or domain service.
+Tests target the **primary port**: the use case, command handler, or application service at the hexagonal boundary. Never an individual entity, value object, or domain service.
 
 ```ts
 // BAD - testing the entity directly
@@ -184,20 +184,20 @@ describe('placeOrder use-case', () => {
 | Primary port | `placeOrder`, `registerUser`, `checkoutCart` | **The SUT** |
 | Secondary port | `OrderRepo`, `EmailSender`, `Clock`, `TokenDecoder`, `PaymentGateway` | **Faked** (hand-written in-memory) |
 
-The secondary ports are the ones that talk to the outside world — databases, HTTP, the clock, the filesystem, random sources. They are the only things that need a double. Everything else runs for real inside the test.
+The secondary ports are the ones that talk to the outside world: databases, HTTP, the clock, the filesystem, random sources. They are the only things that need a double. Everything else runs for real inside the test.
 
-This is the single most important property of the school: **the domain can be refactored freely.** Rename an entity, split a domain service into two, merge three value objects, change the shape of an aggregate, extract a helper, inline a helper — tests keep passing because they describe behaviour at the port, not structure inside.
+This is the single most important property of the school: **the domain can be refactored freely.** Rename an entity, split a domain service into two, merge three value objects, change the shape of an aggregate, extract a helper, inline a helper, tests keep passing because they describe behaviour at the port, not structure inside.
 
 ### 3. No mocks, ever
 
-Never import from the `mock` namespace of `bun:test` — `mock()`, `mock.module()`, `.toHaveBeenCalled*`. The entire namespace is banned and enforced by `no-restricted-imports`. Write a fake (a working in-memory implementation of the secondary-port contract) and assert on its final state; for infra adapters wrapping external SDKs, expose the two-constructor pattern (`createX` + `createXFromApi`) instead. The philosophical reason belongs here: a mock verifies the *sequence of internal calls*, so the test breaks on every innocent refactor and stops proving behaviour; a fake verifies the *final state*, which is what the system is for. The banned/required code pair, the full five-point rationale, and the permitted test-double shapes (dummy, stub, fake, hand-written spy) live in `references/testing.md` (§ No `mock` from `bun:test`).
+Never import from the `mock` namespace of `bun:test`: `mock()`, `mock.module()`, `.toHaveBeenCalled*`. The entire namespace is banned and enforced by `no-restricted-imports`. Write a fake (a working in-memory implementation of the secondary-port contract) and assert on its final state; for infra adapters wrapping external SDKs, expose the two-constructor pattern (`createX` + `createXFromApi`) instead. The philosophical reason belongs here: a mock verifies the *sequence of internal calls*, so the test breaks on every innocent refactor and stops proving behaviour; a fake verifies the *final state*, which is what the system is for. The banned/required code pair, the full five-point rationale, and the permitted test-double shapes (dummy, stub, fake, hand-written spy) live in `references/testing.md` (§ No `mock` from `bun:test`).
 
 ### What this buys
 
 - **Freedom to refactor the domain.** Internal restructurings do not break tests. Tests describe the port's behaviour; the port's behaviour is what stays stable.
 - **Tests that survive for years.** Business scenarios are stable; code that implements them changes constantly.
 - **Tests that read as specifications.** Every test name is a complete business scenario. A new team member learns the product by reading test titles.
-- **Design pressure on the right boundary.** When a test is hard to write, it is telling you the primary port's contract is wrong — not that the entity needs a helper method.
+- **Design pressure on the right boundary.** When a test is hard to write, it is telling you the primary port's contract is wrong, not that the entity needs a helper method.
 
 ## TDD for a pure arrow-function module
 
@@ -271,5 +271,5 @@ This is what "design happens during refactor" looks like.
 5. Testing implementation. Test behaviour, not how it is done.
 6. Abstract test names. Use concrete examples.
 7. Extracting too early. Wait for Rule of Three.
-8. Reaching for doubles too soon. Start with real collaborators. If a double is needed, write a fake — never a mock.
+8. Reaching for doubles too soon. Start with real collaborators. If a double is needed, write a fake, never a mock.
 9. Asserting on multiple unrelated behaviours in one test. One behaviour per test.

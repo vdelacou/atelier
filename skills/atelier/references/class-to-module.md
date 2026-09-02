@@ -4,7 +4,7 @@ Since `class` and `interface` are banned in this codebase, classical OO patterns
 
 The `references/design-patterns.md` file contains the full GoF catalogue in this style. `references/object-design.md` covers value objects, entities, aggregates, and polymorphism-via-dispatch in depth. This page is the quick lookup table.
 
-> **Note on examples.** Port and use-case signatures in this file are sometimes elided to `Promise<T>` (or throw on business failure) for brevity where error handling is not the lesson. In real code every IO port returns `Promise<Result<T, PortError>>` and every use-case returns `Promise<Result<Summary, StepError>>` — hard rule 16, see `references/result-type.md`.
+> **Note on examples.** Port and use-case signatures in this file are sometimes elided to `Promise<T>` (or throw on business failure) for brevity where error handling is not the lesson. In real code every IO port returns `Promise<Result<T, PortError>>` and every use-case returns `Promise<Result<Summary, StepError>>`: hard rule 16, see `references/result-type.md`.
 
 ## Value object
 
