@@ -75,7 +75,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 26. [x] absorb hard-rule bodies 4, 12, 17-20, 24-25 into references. DoD: V3 after `--lock`.
 27. [x] hard rules as one-liners, red flags and four elements out. DoD: nouns for 28-32 kept;
         V3 after `--lock`; V6.
-28. [ ] interaction rewritten, guidelines compressed, companions cascaded. DoD: rules 24-25
+28. [x] interaction rewritten, guidelines compressed, companions cascaded. DoD: rules 24-25
         bullets present; V3 after `--lock`; V6.
 29. [ ] trigger table, merged checklists, workflow. DoD: SKILL.md about 210 lines; V1 V2 V3 V5
         V6; h1-h7 with_skill 24/24; judge --ab old vs new (3 generations); trigger-eval

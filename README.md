@@ -24,7 +24,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 
 | Area | Rule |
 |------|------|
-| Interaction | Terse direct prose, no em dashes, answer-first; coach-style pushback on substance, not clarifying-question spam; ask only when it changes the output and can't be inferred, then 2-4 concrete options via AskUserQuestion, one round max then assumptions named inline; confirm once before irreversible actions; next steps at wrap-up; headless runs never blocked but still never commit or weaken tests (rules 24-25) |
+| Interaction | Correctness, then a safety confirmation, then concision, then style; terse answer-first chat, polished prose in deliverables, never an em dash; challenge on substance, not question spam; one question round led by a recommendation, then assumptions named inline; the two agent gates, never commit or push and never touch an existing test without a yes (rules 24-25), and headless runs create new tests only |
 | Toolchain | Bun only, never `npm`, `pnpm`, `yarn`, `node`, or `vite` directly |
 | Language | `const` arrow functions, no `class`, no `function` declaration, no `interface`, no curried arrow chains |
 | Typing | Branded types at trust boundaries (rule 12: brand what crosses a boundary or feeds a sink, pass plain values through inside one); `Partial<Record<K, V>>` when the key set is open |
