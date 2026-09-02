@@ -114,7 +114,7 @@ export const invoices = pgTable('invoices', {
 app.get('/me/invoices', requireAuth, (c) => c.json(listInvoices(c.get('claims').org_id)));
 ```
 
-## 7. No service-token backdoor for bulk reads (7.7)
+## 7. No service-token backdoor for bulk reads (canon 7.7)
 
 Every API call carries the token of the user or tenant it acts for (section 1). There is **no anonymous service-key route** that returns everyone's rows for a dashboard or an export: that one endpoint bypasses every per-owner control in the system, and one leaked key becomes total exposure.
 

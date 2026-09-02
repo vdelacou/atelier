@@ -132,7 +132,7 @@ Parse, don't validate (rule 12): validate once at the boundary, then carry the f
 - **Money is integer minor units** (`cents`) behind a branded type or value record, never a float: `0.1 + 0.2 !== 0.3`, and the rounding error lands on an invoice.
 - **Instants are UTC** behind a type; a timezone is a display concern applied at the presentation edge, never stored in the domain value.
 
-## Separate the analytical store from the operational one (10.14)
+## Separate the analytical store from the operational one (canon 10.14)
 
 The transactional database serves the running application only. Anything that reads at volume (reporting, dashboards, bulk export, data science) reads a **separate analytical copy** (a warehouse or lake) fed by ETL or change-data-capture, never the production store directly. A heavy scan on the primary competes with real users and couples every report to the app's private schema.
 

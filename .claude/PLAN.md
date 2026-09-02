@@ -63,7 +63,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 18. [x] rule 14 names the value-object exception. DoD: SKILL.md:166, testing.md:25, tdd.md:207,
         review-eval baseline note; V3.
 19. [x] dotted ids are canon ids, slice 1 (SKILL.md note + 5 refs). DoD: V3 V6.
-20. [ ] dotted ids, slice 2 (5 refs). DoD: V3.
+20. [x] dotted ids, slice 2 (5 refs). DoD: V3.
 21. [ ] stale mentions: canary, CI count, README layout, Java assets, Email.Error. DoD: V2 V3.
 
 ## Phase D: SKILL.md restructure

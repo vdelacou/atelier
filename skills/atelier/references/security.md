@@ -227,7 +227,7 @@ Protection is the default on every route and every environment, never a per-rout
 
 One baseline for every project, not standards that drift per repo: this section plus the categories above are that baseline.
 
-## One inspectable edge, no reachable origin (5.10)
+## One inspectable edge, no reachable origin (canon 5.10)
 
 The private network above is only half the rule. Public traffic funnels through a **single filtering edge** (a WAF or the platform's managed gateway) that inspects, rate-limits, and blocks before anything reaches your code, and the **origin is locked to that edge**: it lives in the private subnets, has no public address, and accepts connections only from the edge. A filter you can sidestep by hitting the origin's IP is theater. Where the network cannot guarantee it, the origin verifies a shared edge secret too, defense in depth on top of the network:
 
