@@ -337,6 +337,26 @@ printf 'export const rm = async (id: string): Promise<void> => { await db.delete
 git add src/use-cases/hard-delete.ts
 expect_err "lifecycle guard blocks a hard delete" bash scripts/check-data-lifecycle.sh
 git reset -q && rm src/use-cases/hard-delete.ts
+# Exemptions are path conventions; a comment naming one used to exempt the line
+# it sat on, and the DDL pattern missed DROP TABLE (found 2026-09-02).
+printf 'export const rm = async (id: string): Promise<void> => { await db.delete(orders); }; // retention\n' > src/use-cases/hard-delete-comment.ts
+git add src/use-cases/hard-delete-comment.ts
+expect_err "lifecycle guard ignores a retention comment beside a hard delete" bash scripts/check-data-lifecycle.sh
+git reset -q && rm src/use-cases/hard-delete-comment.ts
+mkdir -p src/use-cases/retention
+printf 'export const sweep = async (): Promise<void> => { await db.delete(orders); };\n' > src/use-cases/retention/sweep.ts
+git add src/use-cases/retention/sweep.ts
+expect_ok "lifecycle guard exempts a hard delete on a retention path" bash scripts/check-data-lifecycle.sh
+git reset -q && rm -rf src/use-cases/retention
+mkdir -p migrations
+printf 'DROP TABLE legacy;\n' > migrations/0002_drop_legacy.sql
+git add migrations/0002_drop_legacy.sql
+expect_err "lifecycle guard blocks DROP TABLE in a migration" bash scripts/check-data-lifecycle.sh
+git reset -q && rm migrations/0002_drop_legacy.sql
+printf 'ALTER TABLE receipts DROP COLUMN amount;\n' > migrations/0003_contract_amount.sql
+git add migrations/0003_contract_amount.sql
+expect_ok "lifecycle guard passes the contract-step migration" bash scripts/check-data-lifecycle.sh
+git reset -q && rm -rf migrations
 
 mkdir -p src/infra/http
 printf 'export const route = (orgId: string): string => orgId;\n' > src/infra/http/invoices.ts

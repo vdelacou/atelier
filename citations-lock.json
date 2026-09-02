@@ -29,7 +29,7 @@
     "skills/atelier/assets/check-commit-size.sh:19": "MAX_FILES=10",
     "skills/atelier/assets/check-coverage.ts:137": "if (row.lines < tier.threshold) {",
     "skills/atelier/assets/check-coverage.ts:34": "{ name: 'domain', prefix: 'src/domain/', threshold: 100 },",
-    "skills/atelier/assets/check-data-lifecycle.sh:25": "DESTRUCTIVE_DDL='(DROP[[:space:]]+COLUMN|RENAME[[:space:]]+COLUMN)'",
+    "skills/atelier/assets/check-data-lifecycle.sh:31": "DESTRUCTIVE_DDL='(DROP[[:space:]]+(COLUMN|TABLE)|RENAME[[:space:]]+(COLU",
     "skills/atelier/assets/check-package-json.sh:36": "# Permits:  \"x\": \"^1.2.3\" / \"~1.2.3\" / \">=1.0.0\" / \"^4.0.0-beta.0\",  \"ne",
     "skills/atelier/assets/check-package-json.sh:53": "instead of hand-editing \u2014 Bun pins to ^X.Y.Z automatically.",
     "skills/atelier/assets/stryker.conf.json:20": "\"break\": 90",

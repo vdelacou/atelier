@@ -17,7 +17,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
        after; same push default mirrored in check-commit-range.sh; V1 V2 V4 V3 green.
 2. [x] fix(atelier): deadline tripwire sees globalThis.fetch and ignores comments. DoD:
        `globalThis.fetch(...) // timeout upstream` fixture red; conforming adapter green; V1 V2.
-3. [ ] fix(atelier): lifecycle tripwire exempts by path, catches DROP TABLE. DoD: four fixtures
+3. [x] fix(atelier): lifecycle tripwire exempts by path, catches DROP TABLE. DoD: four fixtures
        (comment-exempt red, path-exempt green, DROP TABLE red, contract migration green); V1 V2 V3.
 4. [ ] fix(atelier): pii tripwire reads a multi-line logger call and more names. DoD: two-line
        logger fixture red; V1 V2.
