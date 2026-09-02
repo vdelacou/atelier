@@ -2,7 +2,7 @@
 
 Applies to repos with the Bun-workspace + Next.js 16 layout. Identifiable by `packages/*`, `next.config.ts`, and `app/(en)/` route groups.
 
-This reference describes two shapes that share the same toolchain: the **static content site** (the default — `output: 'export'`, build-time data, i18n route groups) which everything below assumes, and the **server app** (route handlers, runtime state) covered in its own sub-variant section. Pick the static shape unless the app must answer requests or hold state at runtime; the two are mutually exclusive (static export cannot run request-time route handlers).
+This reference describes two shapes that share the same toolchain: the **static content site** (the default, `output: 'export'`, build-time data, i18n route groups) which everything below assumes, and the **server app** (route handlers, runtime state) covered in its own sub-variant section. Pick the static shape unless the app must answer requests or hold state at runtime; the two are mutually exclusive (static export cannot run request-time route handlers).
 
 ## Workspace layout
 
@@ -127,7 +127,7 @@ Activate hooks after install: `bun run prepare`.
 }
 ```
 
-No `format` or `lint:fix` script — save-in-editor triggers ESLint autofix. The `test` and `typecheck` scripts are mandatory: `test` is the TDD gate (see Testing below) and `typecheck` (`tsc --noEmit`) is the standalone type gate the workflow loop calls — `next build` typechecks too, but you want the fast check without a full build. Notes on the skeleton: `@types/bun` ships the `bun:test` module types — without it, `import { describe, it, expect } from 'bun:test'` in the mandated test files does not type-resolve (the same caveat the Bun-script variant documents); leave the tsconfig `types` key **unset** so automatic `@types/*` inclusion still picks up `@types/react` etc. (an explicit `["bun"]` would suppress them), and restart the VS Code TS server after adding it. `@types/winston` must NOT be added (winston 3 ships its own types; the v2 stub conflicts), and `trustedDependencies` is Bun's lifecycle-script allowlist — there is no `ignoreScripts` package.json field.
+No `format` or `lint:fix` script: save-in-editor triggers ESLint autofix. The `test` and `typecheck` scripts are mandatory: `test` is the TDD gate (see Testing below) and `typecheck` (`tsc --noEmit`) is the standalone type gate the workflow loop calls, `next build` typechecks too, but you want the fast check without a full build. Notes on the skeleton: `@types/bun` ships the `bun:test` module types, without it, `import { describe, it, expect } from 'bun:test'` in the mandated test files does not type-resolve (the same caveat the Bun-script variant documents); leave the tsconfig `types` key **unset** so automatic `@types/*` inclusion still picks up `@types/react` etc. (an explicit `["bun"]` would suppress them), and restart the VS Code TS server after adding it. `@types/winston` must NOT be added (winston 3 ships its own types; the v2 stub conflicts), and `trustedDependencies` is Bun's lifecycle-script allowlist, there is no `ignoreScripts` package.json field.
 
 ## `tsconfig.json`
 
@@ -198,7 +198,7 @@ const eslintConfig = defineConfig([
     files: ['**/*.ts', '**/*.tsx'],
     rules: {
       // false-positive-heavy security rules on this codebase's idioms; disabled
-      // at project level. Never inline-ignore — change severity here or refactor.
+      // at project level. Never inline-ignore: change severity here or refactor.
       // detect-object-injection fires on the prescribed Winston redaction loop
       // (`info[key] = '[REDACTED]'`); detect-unsafe-regex on bounded regexes.
       'security/detect-object-injection': 'off',
@@ -223,7 +223,7 @@ const eslintConfig = defineConfig([
       quotes: ['error', 'single', { avoidEscape: true }],
       // Mock ban (hard rule 13). Lives in this unscoped block (which precedes the
       // design-system block) AND is re-declared inside the design-system block:
-      // ESLint flat config REPLACES — never merges — two `no-restricted-imports`
+      // ESLint flat config REPLACES (never merges) two `no-restricted-imports`
       // objects that match the same file, so each scope must carry its full set.
       'no-restricted-imports': [
         'error',
@@ -232,7 +232,7 @@ const eslintConfig = defineConfig([
             {
               name: 'bun:test',
               importNames: ['mock'],
-              message: '`mock` from bun:test is forbidden — it leaks across test files. Use a hand-written fake (hard rule 13).',
+              message: '`mock` from bun:test is forbidden, it leaks across test files. Use a hand-written fake (hard rule 13).',
             },
           ],
         },
@@ -272,23 +272,23 @@ const eslintConfig = defineConfig([
         {
           // Carries BOTH the mock ban (hard rule 13) and the design-system bans:
           // flat config replaces, not merges, so re-declaring the mock ban here is
-          // mandatory — the general unscoped block's copy is overwritten for these files.
+          // mandatory: the general unscoped block's copy is overwritten for these files.
           paths: [
             {
               name: 'bun:test',
               importNames: ['mock'],
-              message: '`mock` from bun:test is forbidden — it leaks across test files. Use a hand-written fake (hard rule 13).',
+              message: '`mock` from bun:test is forbidden, it leaks across test files. Use a hand-written fake (hard rule 13).',
             },
           ],
           patterns: [
-            { group: ['next', 'next/*'], message: 'Design-system components import react only — inject links/images as ComponentType props (hard rule 21).' },
+            { group: ['next', 'next/*'], message: 'Design-system components import react only: inject links/images as ComponentType props (hard rule 21).' },
             { group: ['**/lib/**', '**/config/**', '**/page/**'], message: 'Design-system components must not import application code (hard rule 21).' },
           ],
         },
       ],
       'no-restricted-syntax': [
         'error',
-        { selector: 'CallExpression[callee.name=/^use[A-Z]/]', message: 'No hooks inside the design system — hoist state to the page shell via src/lib/hooks (hard rule 21).' },
+        { selector: 'CallExpression[callee.name=/^use[A-Z]/]', message: 'No hooks inside the design system: hoist state to the page shell via src/lib/hooks (hard rule 21).' },
         { selector: 'Program > ExpressionStatement[directive="use client"]', message: "The 'use client' boundary belongs to page shells, not design-system components (hard rule 21)." },
       ],
       // Accessible by default (rule 17.6): the design system is where a11y is won or
@@ -296,7 +296,7 @@ const eslintConfig = defineConfig([
       // is registered by next/core-web-vitals (spread below), which enables its recommended
       // subset app-wide but NOT the interaction rules that catch the flagship clickable-div;
       // these reference that same plugin and make them explicit and unmissable. Contrast is
-      // not lintable (needs layout) — it lives in the design tokens (rule 22) and review.
+      // not lintable (needs layout): it lives in the design tokens (rule 22) and review.
       'jsx-a11y/no-static-element-interactions': 'error',
       'jsx-a11y/click-events-have-key-events': 'error',
       'jsx-a11y/interactive-supports-focus': 'error',
@@ -307,16 +307,16 @@ const eslintConfig = defineConfig([
   },
   {
     // Hard rule 22 (the mirror of rule 21): styling is sealed inside the design system.
-    // Routes, page shells, lib, and config never carry a class string — visual variation
+    // Routes, page shells, lib, and config never carry a class string, visual variation
     // is a typed variant prop on a design-system component, never free-form className/
     // style outside src/components/**. Rule 21 bans the imports; this bans the styling leak.
     files: ['app/**/*.tsx', 'src/page/**/*.tsx', 'src/lib/**/*.tsx', 'src/config/**/*.tsx'],
     rules: {
       'no-restricted-syntax': [
         'error',
-        { selector: "JSXAttribute[name.name='className']", message: 'No className outside the design system — Tailwind is sealed under src/components/** (hard rule 22). Move the styling into a design-system component with a typed variant.' },
-        { selector: "JSXAttribute[name.name='class']", message: 'No class attribute outside the design system — styling is sealed under src/components/** (hard rule 22).' },
-        { selector: "JSXAttribute[name.name='style']", message: 'No inline style outside the design system — styling is sealed under src/components/** (hard rule 22).' },
+        { selector: "JSXAttribute[name.name='className']", message: 'No className outside the design system. Tailwind is sealed under src/components/** (hard rule 22). Move the styling into a design-system component with a typed variant.' },
+        { selector: "JSXAttribute[name.name='class']", message: 'No class attribute outside the design system: styling is sealed under src/components/** (hard rule 22).' },
+        { selector: "JSXAttribute[name.name='style']", message: 'No inline style outside the design system: styling is sealed under src/components/** (hard rule 22).' },
       ],
     },
   },
@@ -354,9 +354,9 @@ const eslintConfig = defineConfig([
 export default eslintConfig;
 ```
 
-Note: `no-console: 'error'` is the enforcement (hard rule 4); `next.config.ts` → `compiler.removeConsole` is defence-in-depth, not a substitute — a stripped `console.*` is a violation that silently vanished, which is why the lint rule exists. Log through the Winston module (below).
+Note: `no-console: 'error'` is the enforcement (hard rule 4); `next.config.ts` → `compiler.removeConsole` is defence-in-depth, not a substitute: a stripped `console.*` is a violation that silently vanished, which is why the lint rule exists. Log through the Winston module (below).
 
-**Tailwind plugin (v4 API).** `eslint-plugin-tailwindcss` v4 exposes a single flat-config **object** at `tailwind.configs.recommended` — drop it in as one array element, do **not** spread `...tailwind.configs['flat/recommended']` (that key is a v3 artefact, is `undefined` in v4, and spreading `undefined` throws at config load). It reads its CSS entrypoint from the mandatory `settings.tailwindcss.cssConfigPath`, which accepts a **relative** path — so the old `config:` key and the `fileURLToPath`/`dirname` absolute-path dance are both gone. The `^4.0.2` pin floats to the current 4.0.x stable: a caret anchored on a `-beta` tag (the previous `^4.0.0-beta.0`) still resolves to in-range **stable** releases, so it was already installing 4.0.x stable — which is exactly why the v3-era API above had to be corrected.
+**Tailwind plugin (v4 API).** `eslint-plugin-tailwindcss` v4 exposes a single flat-config **object** at `tailwind.configs.recommended`: drop it in as one array element, do **not** spread `...tailwind.configs['flat/recommended']` (that key is a v3 artefact, is `undefined` in v4, and spreading `undefined` throws at config load). It reads its CSS entrypoint from the mandatory `settings.tailwindcss.cssConfigPath`, which accepts a **relative** path, so the old `config:` key and the `fileURLToPath`/`dirname` absolute-path dance are both gone. The `^4.0.2` pin floats to the current 4.0.x stable: a caret anchored on a `-beta` tag (the previous `^4.0.0-beta.0`) still resolves to in-range **stable** releases, so it was already installing 4.0.x stable, which is exactly why the v3-era API above had to be corrected.
 
 ## `postcss.config.mjs`
 
@@ -370,7 +370,7 @@ export default postcssConfig;
 
 No standalone `tailwind.config.{js,ts}`. Tailwind v4 config lives inside `app/globals.css` (CSS-first config).
 
-Name the object before exporting — do not `export default { … }` anonymously. `eslint-config-next` enables `import/no-anonymous-default-export` (severity `warn`), and `postcss.config.mjs` is linted (it is not in `globalIgnores`), so under the `--max-warnings=0` gate the anonymous form **fails** the lint.
+Name the object before exporting: do not `export default { … }` anonymously. `eslint-config-next` enables `import/no-anonymous-default-export` (severity `warn`), and `postcss.config.mjs` is linted (it is not in `globalIgnores`), so under the `--max-warnings=0` gate the anonymous form **fails** the lint.
 
 ## `next.config.ts`
 
@@ -395,7 +395,7 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 ```
 
-If this package sits inside a repo that has its own lockfile in a parent directory, `next build` may warn that it inferred the wrong workspace root. Silence it by pinning `turbopack.root` in the config — `turbopack: { root: import.meta.dirname }` (must be an **absolute** path; `import.meta.dirname` works in an ESM `next.config.ts` on Node ≥ 20.11 and points at the app dir). The official docs example points one level up (`path.join(import.meta.dirname, '..')`) for a true monorepo root — pick app-dir vs parent based on where the real workspace root / stray lockfile lives.
+If this package sits inside a repo that has its own lockfile in a parent directory, `next build` may warn that it inferred the wrong workspace root. Silence it by pinning `turbopack.root` in the config: `turbopack: { root: import.meta.dirname }` (must be an **absolute** path; `import.meta.dirname` works in an ESM `next.config.ts` on Node ≥ 20.11 and points at the app dir). The official docs example points one level up (`path.join(import.meta.dirname, '..')`) for a true monorepo root, pick app-dir vs parent based on where the real workspace root / stray lockfile lives.
 
 ## `.vscode/settings.json`
 
@@ -502,7 +502,7 @@ module.exports = {
 };
 ```
 
-## Atomic Design (enforced — full doctrine in `references/atomic-design.md`)
+## Atomic Design (enforced: full doctrine in `references/atomic-design.md`)
 
 Directory model under `packages/<app>/src/components/`:
 
@@ -511,22 +511,22 @@ Directory model under `packages/<app>/src/components/`:
 - `organisms/`: may import atoms and molecules only. Example: `hero`, `faq`, `pricing`, `nav-bar`, `footer`.
 - `src/page/`: page shells consumed by `app/(lang)/page.tsx`. May import any of the above and `src/lib/*`.
 
-**Imports are strictly upward, and the design system is logic-free** (SKILL.md hard rule 21): components under `src/components/**` are stateless `const` arrow functions — no hooks, no fetching, no translation lookups, no `next/*` imports, no `'use client'`. State lives in `src/lib/hooks/` and is wired by page shells; links and images are injected as `ComponentType` props from `src/lib/layout/wrappers.tsx`.
+**Imports are strictly upward, and the design system is logic-free** (SKILL.md hard rule 21): components under `src/components/**` are stateless `const` arrow functions, no hooks, no fetching, no translation lookups, no `next/*` imports, no `'use client'`. State lives in `src/lib/hooks/` and is wired by page shells; links and images are injected as `ComponentType` props from `src/lib/layout/wrappers.tsx`.
 
 **Styling is sealed inside it** (SKILL.md hard rule 22): Tailwind utilities exist only under `src/components/**`, design tokens in `app/globals.css`. Routes, page shells, `src/lib/**`, and `src/config/**` never carry a class string; component APIs expose typed variants, not `className`. The app does not know Tailwind exists.
 
-Read `references/atomic-design.md` before any component work — layer table, component anatomy, interactivity ladder, injection pattern, styling seal, red flags.
+Read `references/atomic-design.md` before any component work: layer table, component anatomy, interactivity ladder, injection pattern, styling seal, red flags.
 
 ## Testing (what TDD means in this variant)
 
-Hard rule 11 still holds — no production logic without a failing test — and rules 21–22 are what make it tractable here: every line of logic lives in `src/lib/**` or `src/config/**`, so that is where the tests live.
+Hard rule 11 still holds (no production logic without a failing test) and rules 21–22 are what make it tractable here: every line of logic lives in `src/lib/**` or `src/config/**`, so that is where the tests live.
 
 - Runner: `bun test`, files `*.test.ts` next to source, exactly as in the Bun variant. The package script is `"test": "bun test"` and the root pre-commit runs it.
 - **TDD-mandatory:** `src/lib/**` (i18n path helpers, guides/MDX utils, SEO builders, tag utils) and `src/config/**` factories. Red-Green-Refactor, domain-language test names.
-- **Hooks stay thin.** A hook like `useNavState` is four lines of `useState` wiring — keep it that way. The moment a hook grows real logic (derivation, branching), extract that logic into a pure function in `src/lib/**` and TDD the function; the hook remains a trivial adapter.
-- **Design-system components are not unit-tested.** Rule 21 makes them deterministic prop→JSX maps: no state, no IO, no business decisions — nothing worth owning a test. They are verified by the design-system ESLint block (above), review against `references/atomic-design.md`, and the build. Do not add React Testing Library ceremony to prove that props render.
+- **Hooks stay thin.** A hook like `useNavState` is four lines of `useState` wiring: keep it that way. The moment a hook grows real logic (derivation, branching), extract that logic into a pure function in `src/lib/**` and TDD the function; the hook remains a trivial adapter.
+- **Design-system components are not unit-tested.** Rule 21 makes them deterministic prop→JSX maps: no state, no IO, no business decisions, nothing worth owning a test. They are verified by the design-system ESLint block (above), review against `references/atomic-design.md`, and the build. Do not add React Testing Library ceremony to prove that props render.
 - Page shells are wiring; when one accumulates a mapping (e.g. a `toPlanCard` transform), extract the mapping to `src/lib/**` and test it there.
-- The mock ban (hard rule 13) applies: hand-written fakes, never `mock` from `bun:test`. The `no-restricted-imports` ban is already wired into the skeleton `eslint.config.mjs` above, and deliberately appears in **two** blocks — the general unscoped rules block and the design-system block. ESLint flat config **replaces, not merges** two `no-restricted-imports` declarations that match the same file: the later object wins outright. So the design-system block must carry its own `patterns` (the `next/*` and app-code bans) **and** the mock-ban `paths` in one object; a separate trailing ban object would silently drop the design-system bans for `src/components/**`.
+- The mock ban (hard rule 13) applies: hand-written fakes, never `mock` from `bun:test`. The `no-restricted-imports` ban is already wired into the skeleton `eslint.config.mjs` above, and deliberately appears in **two** blocks: the general unscoped rules block and the design-system block. ESLint flat config **replaces, not merges** two `no-restricted-imports` declarations that match the same file: the later object wins outright. So the design-system block must carry its own `patterns` (the `next/*` and app-code bans) **and** the mock-ban `paths` in one object; a separate trailing ban object would silently drop the design-system bans for `src/components/**`.
 
 Coverage tiers and Stryker mutation are Bun-variant gates; they do not run here (SKILL.md, "What applies where").
 
@@ -543,9 +543,9 @@ The app builds with `output: 'export'` in `next.config.ts`. This means:
 
 ## Next.js server app (sub-variant)
 
-Everything above this point assumes the default shape: a **static content/marketing site** (`output: 'export'`, build-time data, no request-time code). When the app instead holds state or answers requests at runtime — route handlers like `POST /api/dossier`, an in-memory or DB-backed store, anything that reads a `Request` — you are building a **server app**, and the deltas below apply. The two shapes are **mutually exclusive**: `output: 'export'` emits static assets only and physically cannot run a request-time route handler (a build-time `GET` with no `Request` access is emitted as a static file; a `POST`, or any handler that reads the request, is not). An in-memory API needs a real server, so a server app drops static export.
+Everything above this point assumes the default shape: a **static content/marketing site** (`output: 'export'`, build-time data, no request-time code). When the app instead holds state or answers requests at runtime, route handlers like `POST /api/dossier`, an in-memory or DB-backed store, anything that reads a `Request`, you are building a **server app**, and the deltas below apply. The two shapes are **mutually exclusive**: `output: 'export'` emits static assets only and physically cannot run a request-time route handler (a build-time `GET` with no `Request` access is emitted as a static file; a `POST`, or any handler that reads the request, is not). An in-memory API needs a real server, so a server app drops static export.
 
-This is the Next.js mirror of the Bun-script **Inbound HTTP (server archetype)** — read `references/architecture.md` § Inbound HTTP and `references/result-type.md` § Inbound HTTP for the shared rules. The route handler is just another **`infra/` inbound adapter**; the domain and use-cases stay free of `next/*`.
+This is the Next.js mirror of the Bun-script **Inbound HTTP (server archetype)**: read `references/architecture.md` § Inbound HTTP and `references/result-type.md` § Inbound HTTP for the shared rules. The route handler is just another **`infra/` inbound adapter**; the domain and use-cases stay free of `next/*`.
 
 ### Deltas to the skeleton
 
@@ -560,18 +560,18 @@ This is the Next.js mirror of the Bun-script **Inbound HTTP (server archetype)**
   "build": "bun next build",
   "start": "bun next start",
   ```
-- **Vendoring Bun-script domain code** (a `Result` type, branded-id constructors, use-cases) is the normal way to share logic — add `"allowImportingTsExtensions": true` to `tsconfig.json` if that code imports with explicit `.ts` extensions (see the tsconfig note above).
-- **Logger:** server code uses the injected `Logger` **port** + Winston adapter + recording fake from the Bun variant (`references/bun-typescript.md` § Logger), **not** the client singleton. The rule-4 singleton exception is scoped to client components / static code only — a server app has a composition root, so inject the port (this is hard rule 4, not an exception to it).
+- **Vendoring Bun-script domain code** (a `Result` type, branded-id constructors, use-cases) is the normal way to share logic: add `"allowImportingTsExtensions": true` to `tsconfig.json` if that code imports with explicit `.ts` extensions (see the tsconfig note above).
+- **Logger:** server code uses the injected `Logger` **port** + Winston adapter + recording fake from the Bun variant (`references/bun-typescript.md` § Logger), **not** the client singleton. The rule-4 singleton exception is scoped to client components / static code only: a server app has a composition root, so inject the port (this is hard rule 4, not an exception to it).
 - **Client-side data fetching goes through a gateway.** When page shells fetch at runtime (from the app's own route handlers or an external API), components never call `fetch` directly: a gateway port in `src/lib/` with a real client and a canned fake, returning `Result` and mapping the wire DTO into the frontend's own model at that one point (`references/architecture.md` § API shape, the frontend gateway). The static shape needs none of this: build-time loaders play that role.
 
 ### Route handler = inbound adapter
 
-Validate the branded id at the URL boundary (rule 12), delegate to a composed use-case, and map the `Result` to an HTTP `Response`. Dynamic route `params` are **async in Next 16** (`Promise<…>`) — `await` them. `export const dynamic = 'force-dynamic'` opts a stateful route out of static optimization.
+Validate the branded id at the URL boundary (rule 12), delegate to a composed use-case, and map the `Result` to an HTTP `Response`. Dynamic route `params` are **async in Next 16** (`Promise<…>`): `await` them. `export const dynamic = 'force-dynamic'` opts a stateful route out of static optimization.
 
-The route handler **is** the inbound adapter (the Next equivalent of the Bun archetype's `src/infra/http/server.ts`), so it is the one sanctioned spot for a request-level `try/catch` if you need a safety net — but prefer total, `Result`-returning helpers so you usually don't.
+The route handler **is** the inbound adapter (the Next equivalent of the Bun archetype's `src/infra/http/server.ts`), so it is the one sanctioned spot for a request-level `try/catch` if you need a safety net, but prefer total, `Result`-returning helpers so you usually don't.
 
 ```ts
-// app/api/dossier/[id]/route.ts — thin inbound adapter, no business logic
+// app/api/dossier/[id]/route.ts: thin inbound adapter, no business logic
 import type { NextRequest } from 'next/server';
 import { deps } from '@/src/composition/build-deps';
 import { parseDossierId } from '@/src/domain/dossier-id';   // branded-id smart constructor
@@ -587,27 +587,27 @@ export const GET = async (
   const { id } = await params;
   const parsed = parseDossierId(id);
   // Precise client errors are decided HERE, at the branded checkpoint, where the
-  // error is still narrow — a 400 before any IO runs (rule 12).
+  // error is still narrow: a 400 before any IO runs (rule 12).
   if (!parsed.ok) return Response.json({ error: parsed.error.message }, { status: 400 });
   return toResponse(await getDossier(deps)(parsed.value));
 };
 ```
 
-`force-dynamic` caveat: it is the right knob in the **default** model. Under Cache Components (`cacheComponents: true`) the `dynamic` segment export is removed — delete it there. Any handler that reads the `Request` (and every non-`GET`) is already dynamic since Next 15, so `force-dynamic` is an explicit guarantee, not the only mechanism.
+`force-dynamic` caveat: it is the right knob in the **default** model. Under Cache Components (`cacheComponents: true`) the `dynamic` segment export is removed: delete it there. Any handler that reads the `Request` (and every non-`GET`) is already dynamic since Next 15, so `force-dynamic` is an explicit guarantee, not the only mechanism.
 
 ### Result → HTTP lives in `infra/`, not `presenter/`
 
-This is the exact mapper from `references/architecture.md` § Inbound HTTP — read it for the full rationale. The `Result → Response` mapper must read `StepError` (which lives in `use-cases/ports/`), and the `presenter → domain/ only` dependency rule forbids a presenter from importing it — so the mapper is an **`infra/` inbound adapter**, not a presenter. A use-case failure **defaults to `500`**: the use-case flatten already stringified the port `kind` into `cause: string`, so there is no typed discriminant left to `switch` on (per `references/result-type.md` § Mapping errors to an HTTP status). The narrow client errors (`400`) were already decided upstream at the branded checkpoint, above.
+This is the exact mapper from `references/architecture.md` § Inbound HTTP: read it for the full rationale. The `Result → Response` mapper must read `StepError` (which lives in `use-cases/ports/`), and the `presenter → domain/ only` dependency rule forbids a presenter from importing it, so the mapper is an **`infra/` inbound adapter**, not a presenter. A use-case failure **defaults to `500`**: the use-case flatten already stringified the port `kind` into `cause: string`, so there is no typed discriminant left to `switch` on (per `references/result-type.md` § Mapping errors to an HTTP status). The narrow client errors (`400`) were already decided upstream at the branded checkpoint, above.
 
 ```ts
-// src/infra/http/to-response.ts — pure, total: a use-case Result → an HTTP Response
+// src/infra/http/to-response.ts, pure and total: a use-case Result → an HTTP Response
 import type { Result } from '../../domain/result.ts';
 import type { StepError, Summary } from '../../use-cases/ports/step-error.ts';
 
 export const toResponse = <T extends Summary>(result: Result<T, StepError>): Response => {
   if (result.ok) return Response.json(result.value, { status: 200 });
   const { step, cause, message } = result.error;
-  // `cause` is a plain string after the flatten — no typed discriminant to switch on,
+  // `cause` is a plain string after the flatten: no typed discriminant to switch on,
   // so a use-case failure is a 500 by default. 400s are handled at the branded checkpoint.
   return Response.json({ step, error: cause, message }, { status: 500 });
 };
@@ -615,10 +615,10 @@ export const toResponse = <T extends Summary>(result: Result<T, StepError>): Res
 
 ### Server-side body parsing without breaking the try/catch quarantine
 
-`POST`/`PUT` handlers read the body. `JSON.parse` is a native synchronous thrower, and the branded-input smart constructor (the `400` checkpoint) needs it — so wrap it in a pure-domain helper that returns a `Result` (the sanctioned fallback pattern for native throwers from `references/result-type.md`). The branded constructor consumes it, and the route handler still carries no bare `try`.
+`POST`/`PUT` handlers read the body. `JSON.parse` is a native synchronous thrower, and the branded-input smart constructor (the `400` checkpoint) needs it, so wrap it in a pure-domain helper that returns a `Result` (the sanctioned fallback pattern for native throwers from `references/result-type.md`). The branded constructor consumes it, and the route handler still carries no bare `try`.
 
 ```ts
-// src/domain/safe-json-parse.ts — pure, no throw escapes
+// src/domain/safe-json-parse.ts, pure, no throw escapes
 import { err, ok, type Result } from './result.ts';
 
 export const safeJsonParse = (raw: string): Result<unknown, 'invalid-json'> => {
@@ -632,10 +632,10 @@ export const safeJsonParse = (raw: string): Result<unknown, 'invalid-json'> => {
 
 ### The in-session store is a composition-root singleton
 
-Process-level server state (an in-memory store) is created **once** in the composition root — the one sanctioned place for wiring — behind a port, so it stays the persistence seam. Swapping the in-memory adapter for a DB-backed one later touches only this file; use-cases never change.
+Process-level server state (an in-memory store) is created **once** in the composition root (the one sanctioned place for wiring) behind a port, so it stays the persistence seam. Swapping the in-memory adapter for a DB-backed one later touches only this file; use-cases never change.
 
 ```ts
-// src/composition/build-deps.ts — the one process-level wiring point
+// src/composition/build-deps.ts: the one process-level wiring point
 import { config } from '../config/env.ts';                 // typed-env, never process.env directly
 import { createDossierStoreMemory } from '../infra/dossier-store-memory.ts';
 import { createWinstonLogger } from '../infra/logger.ts';
@@ -647,7 +647,7 @@ export const deps = {
 } as const;
 ```
 
-The store adapter is plain infra — `createDossierStoreMemory` returns `{ get, put }` whose arrows are object-property expressions, which is why the Next eslint config relaxes `explicit-function-return-type` with `allowTypedFunctionExpressions` (and why the Winston adapter's redaction loop needs `detect-object-injection` off): both are server-side idioms the static-only config never had to admit. Tests inject a fake store and the `createLoggerFake()` recorder and assert on outcomes — no mocking library, same discipline as the Bun variant.
+The store adapter is plain infra: `createDossierStoreMemory` returns `{ get, put }` whose arrows are object-property expressions, which is why the Next eslint config relaxes `explicit-function-return-type` with `allowTypedFunctionExpressions` (and why the Winston adapter's redaction loop needs `detect-object-injection` off): both are server-side idioms the static-only config never had to admit. Tests inject a fake store and the `createLoggerFake()` recorder and assert on outcomes, no mocking library, same discipline as the Bun variant.
 
 ## Internationalisation
 
@@ -659,7 +659,7 @@ Every user-facing string lives in the catalog, keyed by meaning: error copy incl
 
 ## Secrets & config
 
-No credentials in source. Centralise env reads in `src/config/env.ts` (the same location the server-app composition root imports from) rather than sprinkling `process.env` across modules (SKILL.md, Security). Besides `NODE_ENV`, the only env vars the app consumes are `LOG_LEVEL` and `LOG_FILE` — both read inside the sanctioned logger singleton below, where `NODE_ENV` is also read to pick prod-vs-dev formatting. Treat those reads as part of the singleton, not as a precedent for new code.
+No credentials in source. Centralise env reads in `src/config/env.ts` (the same location the server-app composition root imports from) rather than sprinkling `process.env` across modules (SKILL.md, Security). Besides `NODE_ENV`, the only env vars the app consumes are `LOG_LEVEL` and `LOG_FILE`: both read inside the sanctioned logger singleton below, where `NODE_ENV` is also read to pick prod-vs-dev formatting. Treat those reads as part of the singleton, not as a precedent for new code.
 
 `.env*` is git-ignored.
 
@@ -702,7 +702,7 @@ export default logger;
 
 Import as default: `import logger from '@/src/lib/utils/logger';`.
 
-This module-level singleton is the **sanctioned rule-4 exception** for this variant (SKILL.md hard rule 4): static export plus the React client boundary leave no composition root through which to inject a `Logger` port into client components, so the variant trades injection for one well-known module. The exception is scoped to exactly that boundary — **client components and build-time/static code only**. It is *not* a licence to log through a singleton from server code: a Next.js **server app** (route handlers, use-cases, infra adapters — see the server-app sub-variant below) has a real composition root, so it uses the injected `Logger` port + Winston adapter + recording fake exactly as the Bun-script variant does. One singleton at the client boundary; the port everywhere server-side. No other module-level service objects either way.
+This module-level singleton is the **sanctioned rule-4 exception** for this variant (SKILL.md hard rule 4): static export plus the React client boundary leave no composition root through which to inject a `Logger` port into client components, so the variant trades injection for one well-known module. The exception is scoped to exactly that boundary, **client components and build-time/static code only**. It is *not* a licence to log through a singleton from server code: a Next.js **server app** (route handlers, use-cases, infra adapters, see the server-app sub-variant below) has a real composition root, so it uses the injected `Logger` port + Winston adapter + recording fake exactly as the Bun-script variant does. One singleton at the client boundary; the port everywhere server-side. No other module-level service objects either way.
 
 ## Bootstrap checklist (new package in the monorepo)
 
@@ -715,4 +715,4 @@ This module-level singleton is the **sanctioned rule-4 exception** for this vari
 7. Set up `app/globals.css` for Tailwind v4.
 8. Lay out `src/components/{atoms,molecules,organisms}/`, `src/page/`, `src/lib/`, `src/config/`, `src/types/`.
 9. Verify: `bun run --filter <package-name> test`, `bun run --filter <package-name> lint`, and `bun run --filter <package-name> build` all exit clean.
-10. Commit with Conventional Commits — once the user confirms (rule 25).
+10. Commit with Conventional Commits: once the user confirms (rule 25).

@@ -2,7 +2,7 @@
 
 Concrete before/after pairs for the four Behavioural Guidelines in `SKILL.md`, written in this repo's idiom (arrow functions, no `class`, `Result<T, E>`, branded types, fakes not mocks). Read alongside the guidelines; this file is the worked-example layer.
 
-The key framing: the "before" versions are rarely *wrong* in isolation — they follow real patterns (dispatch maps, DI factories, validation). The defect is **timing and reach**: complexity added before it is needed, or edits that travel past the request. Good code solves today's problem simply, not tomorrow's prematurely.
+The key framing: the "before" versions are rarely *wrong* in isolation, they follow real patterns (dispatch maps, DI factories, validation). The defect is **timing and reach**: complexity added before it is needed, or edits that travel past the request. Good code solves today's problem simply, not tomorrow's prematurely.
 
 ---
 
@@ -12,34 +12,34 @@ The key framing: the "before" versions are rarely *wrong* in isolation — they 
 
 **Request:** "Add a feature to export user data."
 
-✗ **Before** — silently decides scope, destination, fields, format, and ships a use-case that exports every user to a hardcoded path. Four assumptions, none surfaced.
+✗ **Before**: silently decides scope, destination, fields, format, and ships a use-case that exports every user to a hardcoded path. Four assumptions, none surfaced.
 
-✓ **After** — surface the assumptions before writing code:
+✓ **After**: surface the assumptions before writing code:
 
 ```
 Before implementing I need to pin down four things:
-1. Scope — all users, or a filtered/authorised subset? (privacy + volume)
-2. Delivery — download, an API endpoint returning JSON, or a background job + notification?
-3. Fields — which attributes? Some are PII and must cross a SafeExport checkpoint.
-4. Volume — rough row count? It decides streaming vs in-memory.
+1. Scope: all users, or a filtered/authorised subset? (privacy + volume)
+2. Delivery: download, an API endpoint returning JSON, or a background job + notification?
+3. Fields, which attributes? Some are PII and must cross a SafeExport checkpoint.
+4. Volume: rough row count? It decides streaming vs in-memory.
 
 Simplest thing that could work: an authenticated use-case returning a paginated
-Result<UserPage, ExportError>. File export is more work — confirm before I build it.
+Result<UserPage, ExportError>. File export is more work, confirm before I build it.
 ```
 
-### Multiple interpretations — present options with effort
+### Multiple interpretations, present options with effort
 
 **Request:** "Make the search faster."
 
-✗ **Before** — picks one meaning silently and writes 200 lines of caching + indexing + async.
+✗ **Before**: picks one meaning silently and writes 200 lines of caching + indexing + async.
 
-✓ **After** — name the interpretations and attach rough effort/tradeoff so the choice is informed:
+✓ **After**: name the interpretations and attach rough effort/tradeoff so the choice is informed:
 
 ```
-"Faster" could mean three different things — current search is ~500ms typical:
-1. Lower latency (cache hot queries, add an index) — ~½ day, risk: cache invalidation.
-2. More throughput (connection pooling, batch the IO port) — ~1 day, risk: pool tuning.
-3. Faster *perceived* speed (stream partial results) — ~1 day, mostly presenter-layer.
+"Faster" could mean three different things: current search is ~500ms typical:
+1. Lower latency (cache hot queries, add an index): ~½ day, risk: cache invalidation.
+2. More throughput (connection pooling, batch the IO port), ~1 day, risk: pool tuning.
+3. Faster *perceived* speed (stream partial results): ~1 day, mostly presenter-layer.
 Which matters for your use case? They pull the design in different directions.
 ```
 
@@ -47,7 +47,7 @@ Which matters for your use case? They pull the design in different directions.
 
 **Request:** "Add caching to the guides loader."
 
-✗ **Before** — fires a batch of questions the codebase already answers:
+✗ **Before**: fires a batch of questions the codebase already answers:
 
 ```
 A few questions before I start:
@@ -58,19 +58,19 @@ A few questions before I start:
 5. Is this server- or client-side?
 ```
 
-✓ **After** — answer from the code what the code can answer, then ask the *one* real question, leading with a recommendation:
+✓ **After**: answer from the code what the code can answer, then ask the *one* real question, leading with a recommendation:
 
 ```
 Checked the code: guides load in src/lib/guides/guides.ts via Bun.file at build
-time (static export — next.config.ts has output: 'export'), so the loader runs
+time (static export: next.config.ts has output: 'export'), so the loader runs
 once per build, not per request. Most "caching" is therefore moot.
 
 The one real decision: memoize the parsed-MDX result within a single build run?
-  Recommended: yes — a module-level Map keyed by slug, ~5 lines, no dependency
+  Recommended: yes, a module-level Map keyed by slug, ~5 lines, no dependency
   (lazy ladder rung 3). I'd skip a cache library entirely.
 
 Proceed with that, or did you mean per-request caching? (That implies dropping
-static export — a much bigger change, so I want to confirm before assuming it.)
+static export: a much bigger change, so I want to confirm before assuming it.)
 ```
 
 Four questions evaporated because the codebase answered them; the fifth became a one-line yes/no with a recommendation and a flagged dependency (static export). That is the difference between handing the user homework and handing them a decision.
@@ -79,11 +79,11 @@ Four questions evaporated because the codebase answered them; the fifth became a
 
 ## 2. Simplicity first
 
-### Over-abstraction — even in a class-free idiom
+### Over-abstraction, even in a class-free idiom
 
 **Request:** "Add a function to calculate a discount."
 
-✗ **Before** — a strategy dispatch map + a config record + a DI factory, for one discount type. Class-free, fully SOLID-shaped — and 25 lines of ceremony before the first number is computed:
+✗ **Before**: a strategy dispatch map + a config record + a DI factory, for one discount type. Class-free, fully SOLID-shaped, and 25 lines of ceremony before the first number is computed:
 
 ```ts
 type DiscountStrategy = (amount: Money) => Money;
@@ -103,21 +103,21 @@ export const createDiscountCalculator =
   };
 ```
 
-✓ **After** — one arrow function over the branded `Money`/`Percentage` types:
+✓ **After**: one arrow function over the branded `Money`/`Percentage` types:
 
 ```ts
 export const percentageDiscount = (amount: Money, percent: Percentage): Money => scaleMoney(amount, percent / 100);
 ```
 
-Open/Closed via a dispatch map is *correct* once you genuinely have several discount kinds (SOLID "O"). With one, it is speculation. The Rule of Three governs abstractions too — extract the strategy map at the third kind, not the first.
+Open/Closed via a dispatch map is *correct* once you genuinely have several discount kinds (SOLID "O"). With one, it is speculation. The Rule of Three governs abstractions too: extract the strategy map at the third kind, not the first.
 
 ### Speculative features
 
 **Request:** "Save user preferences to the database."
 
-✗ **Before** — a `createPreferenceManager` with optional cache, validator, and `merge`/`validate`/`notify` flags. Every branch is a feature nobody asked for, and each is now a thing to test and maintain.
+✗ **Before**: a `createPreferenceManager` with optional cache, validator, and `merge`/`validate`/`notify` flags. Every branch is a feature nobody asked for, and each is now a thing to test and maintain.
 
-✓ **After** — one use-case that saves, returning a `Result` at the IO boundary:
+✓ **After**: one use-case that saves, returning a `Result` at the IO boundary:
 
 ```ts
 export const savePreferences =
@@ -126,7 +126,7 @@ export const savePreferences =
     deps.prefs.save(userId, prefs);
 ```
 
-Add caching when a profile shows a hot path; validation when bad data actually appears — and then at a branded-type checkpoint, not behind a boolean flag.
+Add caching when a profile shows a hot path; validation when bad data actually appears, and then at a branded-type checkpoint, not behind a boolean flag.
 
 ---
 
@@ -136,7 +136,7 @@ Add caching when a profile shows a hot path; validation when bad data actually a
 
 **Request:** "Fix the bug where an empty email crashes the signup parser."
 
-✗ **Before** — fixes the crash *and* adds username length/charset rules nobody asked for:
+✗ **Before**: fixes the crash *and* adds username length/charset rules nobody asked for:
 
 ```ts
 const parseSignup = (raw: RawSignup): Result<Signup, ValidationError> => {
@@ -148,7 +148,7 @@ const parseSignup = (raw: RawSignup): Result<Signup, ValidationError> => {
 };
 ```
 
-✓ **After** — only the empty-email guard; the username path is left exactly as it was:
+✓ **After**, only the empty-email guard; the username path is left exactly as it was:
 
 ```ts
 const parseSignup = (raw: RawSignup): Result<Signup, ValidationError> => {
@@ -164,9 +164,9 @@ Every changed line traces to "empty email crashes." Username validation, if want
 
 **Request:** "Add logging to the upload use-case."
 
-✗ **Before** — reaches for `console.log` (a hard-rule violation), retypes the signature, swaps quote style, and reflows whitespace around the change.
+✗ **Before**: reaches for `console.log` (a hard-rule violation), retypes the signature, swaps quote style, and reflows whitespace around the change.
 
-✓ **After** — add the injected `Logger` port and one log line, matching the file's existing style:
+✓ **After**: add the injected `Logger` port and one log line, matching the file's existing style:
 
 ```ts
 export const uploadReport = async (deps: { storage: ReportStorage; logger: Logger }, path: SafePath): Promise<Result<void, UploadError>> => {
@@ -185,16 +185,16 @@ Only two lines moved: the `logger` dependency and the log call. No reformatting,
 
 **Request:** "Fix the authentication system."
 
-✗ **Before** — "I'll review the auth code, find issues, improve them, and test." No success criterion, so there is nothing to loop against.
+✗ **Before**: "I'll review the auth code, find issues, improve them, and test." No success criterion, so there is nothing to loop against.
 
-✓ **After** — turn it into a plan with a verifiable check per step:
+✓ **After**: turn it into a plan with a verifiable check per step:
 
 ```
 "Fix auth" needs a concrete failure. If it is "sessions survive a password change":
-1. RED   — test: changing the password revokes existing sessions   → fails (reproduces it)
-2. GREEN — revoke sessions inside the changePassword use-case       → that test passes
-3. Edge  — a second concurrent session is revoked too              → added test passes
-4. Guard — full suite stays green                                   → no regression
+1. RED   test: changing the password revokes existing sessions   → fails (reproduces it)
+2. GREEN: revoke sessions inside the changePassword use-case       → that test passes
+3. Edge: a second concurrent session is revoked too              → added test passes
+4. Guard: full suite stays green                                   → no regression
 What is the specific symptom you are seeing?
 ```
 
@@ -202,7 +202,7 @@ What is the specific symptom you are seeing?
 
 **Request:** "Sessions aren't revoked when the password changes."
 
-✓ **After** — reproduce with a failing test before touching production code. The SUT is the use-case (primary port); the domain runs real; only the secondary ports (`SessionRepo`, `Clock`) are faked:
+✓ **After**: reproduce with a failing test before touching production code. The SUT is the use-case (primary port); the domain runs real; only the secondary ports (`SessionRepo`, `Clock`) are faked:
 
 ```ts
 test('when a member changes their password, prior sessions are revoked', async () => {
@@ -229,4 +229,4 @@ Red first, then the smallest change that turns it green.
 | Surgical changes | A bug fix that also adds validation, retypes, reflows | Change only the lines that fix the reported issue |
 | Goal-driven execution | "I'll review and improve the code" | RED test reproduces → GREEN → suite stays green |
 
-The through-line is the framing from the top of this file: the "before" versions are defects of **timing and reach**, not of engineering — the simple version is the smallest thing correct today, cheap to extend when tomorrow's requirement actually shows up.
+The through-line is the framing from the top of this file: the "before" versions are defects of **timing and reach**, not of engineering, the simple version is the smallest thing correct today, cheap to extend when tomorrow's requirement actually shows up.
