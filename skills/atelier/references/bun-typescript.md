@@ -333,7 +333,7 @@ Tests are mandatory, TDD is hard rule 11, and the whole gate pipeline (tests, co
 
 - Filename convention: `*.test.ts` next to the source.
 - Runner: `bun test`.
-- See `references/tdd.md` and `references/testing.md` for the loop and the fakes-not-mocks discipline.
+- See `references/testing.md` for the loop and the fakes-not-mocks discipline.
 
 ## Secrets & config hygiene
 

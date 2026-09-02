@@ -79,7 +79,6 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 - `result-type.md`: `Result<T, E>` and helpers, per-port discriminated-union errors, `StepError` aggregation, `try/catch` quarantine, fan-out batch semantics, `retryOnErr`, fakes-with-error-injection, `captureRejection` helper
 - `security.md` | source-to-sink threat model, vulnerability categories for Bun/TypeScript + Next.js, branded types for trust boundaries, rented auth/crypto, the one security baseline, pre-merge checklist, the concrete-exploitability review filter
 - `solid-principles.md`: SRP, OCP, LSP, ISP, DIP expressed as typed records and function contracts
-- `tdd.md`: Outside-in classicist TDD (Ian Cooper), primary-port SUT, real-domain + faked-secondary-ports rule, Red-Green-Refactor, Three Laws, triangulation
 - `testing.md`: primary-port unit tests, the test-the-code-you-own principle (trust your dependencies), fakes with `errors` knob, regression + bypass + performance layers, test doubles catalogue, test builders, contract tests
 - `testing-infra.md`: three patterns for infra-adapter tests (custom-fetch DI / two-constructor / sync-builder export), production-wiring smoke test, `installFetchMock`, global-swap pattern, FS chmod tricks, ordering gotchas
 - `workflow.md`: four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, trunk-based development, fast pre-commit hook plus the full CI gate set, dependency CVE scanning in CI (`bun audit`), verification discipline (test the bypass, fix the class, compliance is not proof), Conventional Commits `commit-msg` hook, README consistency check
@@ -317,7 +316,7 @@ atelier/
     │       ├── result-type.md
     │       ├── security.md
     │       ├── solid-principles.md
-    │       ├── tdd.md
+    │       ├── tdd.md                      # redirect stub, folded into testing.md (removed next release)
     │       ├── testing.md
     │       ├── testing-infra.md
     │       └── workflow.md

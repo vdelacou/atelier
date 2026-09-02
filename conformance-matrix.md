@@ -224,7 +224,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 4.1 | Test in layers | COVERED | testing.md:107-121 | doctrine | Unit, integration, e2e, performance layers each named |
-| 4.2 | Keep unit tests in milliseconds | COVERED | tdd.md:185; testing.md:140 | doctrine | In-memory fakes, no real IO in unit tests; literal ms target not stated |
+| 4.2 | Keep unit tests in milliseconds | COVERED | testing.md:410; testing.md:140 | doctrine | In-memory fakes, no real IO in unit tests; literal ms target not stated |
 | 4.3 | Have a testing philosophy | COVERED | testing.md:184-127; SKILL.md:195 | rule | Every fixed bug becomes a permanent reproducing test |
 | 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:165; testing.md:290 | gate | Mock ban is absolute and lint-enforced, exceeding canon advisory prefer-fakes |
