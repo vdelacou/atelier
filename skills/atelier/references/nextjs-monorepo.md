@@ -690,6 +690,8 @@ Import as default: `import logger from '@/src/lib/utils/logger';`.
 
 This module-level singleton is the **sanctioned rule-4 exception** for this variant (SKILL.md hard rule 4): static export plus the React client boundary leave no composition root through which to inject a `Logger` port into client components, so the variant trades injection for one well-known module. The exception is scoped to exactly that boundary, **client components and build-time/static code only**. It is *not* a licence to log through a singleton from server code: a Next.js **server app** (route handlers, use-cases, infra adapters, see the server-app sub-variant below) has a real composition root, so it uses the injected `Logger` port + Winston adapter + recording fake exactly as the Bun-script variant does. One singleton at the client boundary; the port everywhere server-side. No other module-level service objects either way.
 
+The exception stops at the client boundary. A Next.js server app (route handlers, use-cases, infra adapters) has a composition root, so it injects the `Logger` port exactly like the Bun variant; the singleton is for client components and the static export, nothing else.
+
 ## Bootstrap checklist (new package in the monorepo)
 
 1. From repo root: `mkdir -p packages/<NN>-<name> && cd packages/<NN>-<name>`.

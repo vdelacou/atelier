@@ -401,3 +401,9 @@ const save = (order: Order, total: Money, deps: ProcessOrderDeps): ProcessResult
 ```
 
 Non-exported helpers go at the bottom or in a sibling module. Exported API stays at the top, easy to scan.
+
+### No curried arrow chains (rule 18)
+
+Never `const f = (a) => (b) => { ... }`. Use a single arrow with all parameters and wrap at the call site: `const compareByPriority = (a: X, b: X, target: number): number => { ... }`, then `arr.sort((a, b) => compareByPriority(a, b, t))`. Curried chains cause Prettier and TypeScript-formatter fights and obscure the signature.
+
+One exemption, the DI factory: `const createX = (deps: Deps): PortType => async (input) => { ... }` is sanctioned. The outer call runs once at composition and the inner arrow IS the port function the type names; that is closure over dependencies, not currying on a call path.

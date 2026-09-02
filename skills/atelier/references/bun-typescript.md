@@ -409,6 +409,8 @@ Why this and not a module-level singleton: a singleton makes the logger impossib
 
 Invariant: `grep -rn "from '.*infra" src/domain src/use-cases` must return nothing. The domain and use-cases know only about the `Logger` **type**; the Winston import lives in `infra/` only.
 
+Rule 4 in full: no `console.*` anywhere in application code, enforced by ESLint's `no-console` in both variant configs. The rule is scoped to application code: `scripts/**` gate scripts are terminal tools whose output is their interface, so the config turns it off there at the project level (never inline). The one sanctioned module-level logger is the Next.js client/static exception, `src/lib/utils/logger.ts`, because the React client boundary and the static export leave no composition root to inject through (`references/nextjs-monorepo.md`, Winston logger); a Next.js server app has a composition root and injects the port like this variant. Everywhere else a module-level logger stays banned.
+
 ## Error handling
 
 No `try/catch` anywhere outside `src/infra/**`, pure-domain fallbacks for native-synchronous throwers (`JSON.parse`, `URL` constructor), and exactly one top-level handler in `src/main.ts`. Every IO port returns `Promise<Result<T, PortError>>`. Use-cases pattern-match on `.ok` and aggregate port errors into `StepError`. See `references/result-type.md` for the full treatment, the discriminated-union error design, the fan-out batch semantics, and the `retryOnErr` + `captureRejection` helpers.
@@ -416,6 +418,19 @@ No `try/catch` anywhere outside `src/infra/**`, pure-domain fallbacks for native
 The shared `formatError(err: unknown): string` helper lives in `src/domain/utilities/format-error.ts`. Use it in every `catch (e)` block in `src/infra/**`, never `String(e)`, which returns `"[object Object]"` for non-Error throws (SonarJS S6551).
 
 `process.exit(1)` is allowed only in `src/main.ts` after the top-level catch. Never inside a use-case, adapter, or domain module.
+
+## File IO (rule 20)
+
+All **file** IO in `src/**` production code goes through the Bun file API: read with `Bun.file(path).text()` / `.json()` / `.arrayBuffer()` / `.bytes()` / `.exists()`; write with `Bun.write(path, contents)`, which creates parent directories itself, no `mkdir -p` ceremony; delete with `Bun.file(path).delete()` (Bun 1.1 and later). `node:fs` is forbidden for file operations under `src/**`.
+
+**Directories are the exception.** Bun has no native primitive for `mkdir`, `rmdir`, or directory-existence as such (`Bun.file(dir).exists()` returns `false` for a directory: that is "not a file", not "directory missing"). Two acceptable answers, in order of preference:
+
+1. **Let the library handle it.** Most SDKs that need a directory create it themselves (Playwright auto-creates `userDataDir`, better-sqlite3 creates the parent on file open). Pass the path; let the library do `mkdir`.
+2. **`node:fs` at the boundary, with a comment.** When no library is taking the call (a CLI scaffolds an output dir; a fixture cleanup removes a tree), import `mkdirSync` / `rmSync` from `node:fs` directly, isolated to a single helper in `src/infra/**`, with a one-line comment naming the gap. Permitted because Bun has no replacement; never a workaround for laziness.
+
+`node:fs` IS unconditionally allowed in `*.test.ts` and `src/test-helpers/**`, for real temp-dir setup (`mkdtempSync`, `writeFileSync`, `rmSync`) and for forcing error branches in FS adapters (`chmodSync` on a real file or directory): `Bun.file` has no `mkdtemp` equivalent and cannot force a directory-write throw. `node:path` (`join`, `dirname`, `resolve`, `basename`) is allowed anywhere; it is path manipulation, not IO.
+
+Why: keeping file IO on `Bun.file` is faster, has zero import ceremony, fits the try/catch-in-`infra/**` quarantine cleanly, and lets the project turn `security/detect-non-literal-fs-filename` off at the lint level without losing real coverage (the rule does not watch `Bun.file`). See `references/result-type.md`, `references/testing-infra.md` (filesystem patterns), and `references/workflow.md` (lint-rule rationale).
 
 ## Bootstrap checklist (fresh Bun repo)
 

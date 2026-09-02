@@ -124,7 +124,7 @@ After adopting `Result`, the repo has exactly these places that may contain `try
 | Location | What for |
 |:---|:---|
 | `src/infra/**` | Every adapter wraps its third-party call (`fetch`, `googleapis`, `Bun.file`, `twitter-api-v2`). The catch translates thrown exceptions into the port's discriminated-union error variants and returns `err(...)`. |
-| `src/domain/**` | Only for native synchronous APIs whose normal contract is to throw: `JSON.parse` (with a safe fallback), `URL` constructor (validation gate), `decodeURIComponent`. |
+| `src/domain/**` | Only for native synchronous APIs whose normal contract is to throw: `JSON.parse` (with a safe fallback), the `URL` constructor (validation gate), `Buffer.from(b64).toString()`, `decodeURIComponent`, `BigInt(...)`, `new Date(invalid).toISOString()`. The list is illustrative, not exhaustive: any built-in that throws on bad input qualifies, provided the call sits in pure domain code and the catch returns a `Result`. |
 | `src/main.ts` | Exactly one top-level catch. Sends the bug report ("crashed (unexpected)"), calls `process.exit(1)`. |
 
 `*.test.ts` files and `src/test-helpers/**` sit outside the quarantine: test code may catch (mirrors hard rule 20's test carve-out).

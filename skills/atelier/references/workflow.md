@@ -259,6 +259,16 @@ Practical loop: pull/rebase often to stay close to the trunk; run the four-check
 
 This is the default for this codebase. It overrides any tooling habit of "branch first by default": branch only when a short-lived branch genuinely helps (e.g. a PR-review gate your team requires), and merge it the same day.
 
+## Confirmation gates (rules 24 and 25)
+
+Two behavioural gates, not lint-enforced; the discipline is the enforcement, exactly as for rule 11.
+
+**Rule 24: never touch a test without explicit user confirmation.** Test files (`*.test.ts` by project convention, `*.spec.ts` too if a repo uses it) are confirmation-gated. Do not create, edit, rename, move, delete, skip (`.skip`, `.only`, `xfail`), or weaken (loosen an assertion, change an expected value, comment out a case) any test without first showing the user the exact test or diff and getting an explicit yes. Tests are the contract and the safety net; silently editing a failing test to make it pass, or deleting an inconvenient one, is the most dangerous move an agent makes, because it disables the very check that catches regressions. This holds under TDD (rule 11): the loop stays test-first, and the Red step becomes propose the failing test, get confirmation, then write it. When a test fails, the default is to fix the production code; changing the test is a last resort that needs the user's sign-off and a one-line reason. If asked to "just make the tests pass", never weaken them silently: surface the conflict and ask. The same applies to a change in `src/test-helpers/**` that would alter what existing tests assert.
+
+**Rule 25: never commit or push on your own initiative.** Producing and staging the change is the agent's job; deciding to commit it is the user's. Even when the tree is green, even when a commit is the obvious next step, even mid-flow: stop, show what would be committed (the staged-diff summary and a proposed Conventional Commits message), and wait for an explicit yes before running `git commit`, and the same for `git push`. Do not infer "commit" from a general "do it" or "go ahead" on the task; the commit needs its own confirmation. An explicit "commit and push X" is that confirmation; silence is not. Rule 23 governs the message format, rule 24 the tests; this rule governs when a commit happens: only on the user's say-so.
+
+**Unattended (headless) runs.** Both gates hold when nobody can answer. The one carve-out is creation: writing a NEW test for new code proceeds without the pause, because blocking on a question nobody can answer would make TDD impossible. Every other gated action on an EXISTING test (edit, weaken, delete, skip, rename) stays forbidden unattended, and so do commit and push; do the work, stage it, and put the gated proposals in the final report.
+
 ## Commit identity (rule 26)
 
 Every commit carries an author and a committer (each a name plus an email), taken from git config, and whatever they are becomes permanent public history the moment you push. Carrying the contributor's real identity in that metadata is normal, the default of the whole open-source world, and never a finding, an audit item, or a publish blocker.

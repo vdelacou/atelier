@@ -178,6 +178,12 @@ export const parseSafePath = (root: string, requested: string): Result<SafePath,
 
 The pattern is the same every time: one boundary factory that parses untrusted input into a `Result`, one branded type, one truthful name (`parseX` parses, `x()` asserts a value already proven; SKILL.md, Value objects at trust boundaries). Callers cannot accidentally bypass the check because TypeScript rejects the raw `string`, and the failure travels as a value the use-case pattern-matches instead of an exception it would have to catch.
 
+### The trust-zone test (rule 12 in full)
+
+Wrap every domain primitive that crosses a trust boundary or feeds a dangerous sink in a branded type with a validating factory: tokens, secrets, URLs that reach `fetch`, paths that reach the filesystem, HTML that reaches the DOM, env-var values, money amounts, emails, phone numbers, ISO codes, ids whose validity is enforced (UUID-shaped, say). The factory is the validation gate; once a value has type `Email`, downstream code trusts it.
+
+Inside a single trust boundary the rule stops: in a CLI where the user has already provided every argument through a validated Zod schema, ids that are slotted straight into a URL template may stay plain `string`, because minting one branded type per Graph-API id gives ceremony without security value when the only "source" is the user's own terminal. The test: would interpolating this value into a sink without a checkpoint create an exploitable category? If yes, brand. If no (the value already crossed a checkpoint upstream and is travelling inside one trust zone), a plain `string` is honest and lighter. The factory shapes are the two-tier pair from `references/clean-code.md` (calisthenics rule 3): `parseX` for untrusted input, returning `Result`; `x()` asserting a value already proven.
+
 ## Secrets and configuration
 
 **Never commit:**

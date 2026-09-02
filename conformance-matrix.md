@@ -102,7 +102,7 @@ skill meets all three. POST-body-not-query-string: "Personal data and any free t
 typed travel in a POST body ... Searching by someone's name is a POST, not a GET"
 (privacy.md:44). Redact-at-the-logger: a Winston `redactFormat` whose key set is
 `['password', 'token', 'authorization', 'apiKey', 'secret', 'email', 'phone']` with the note
-"secrets plus natural identifiers (rule 27)" (security.md:200), applied "once, at the logger
+"secrets plus natural identifiers (rule 27)" (security.md:206), applied "once, at the logger
 adapter, not at every call site" (privacy.md:47). Opaque-versus-natural: "Opaque internal
 identifiers are loggable ... Natural identifiers are not: email, phone, name, token, national
 id" (privacy.md:46). It goes beyond doctrine to a staged-diff tripwire,
@@ -132,9 +132,9 @@ is `{ "hono": "4.6.14", "zod": "3.24.1" }`, exact pins (global-rules-dos-and-don
 The skill permits and generates exactly the forbidden shape. `assets/check-package-json.sh`
 bans only `latest`, `*`, and bare dist-tags, and its own comment lists what it "Permits: 'x':
 '^1.2.3' / '~1.2.3' / '>=1.0.0'" (check-package-json.sh:37), while `bun add` "pins to ^X.Y.Z
-automatically" (check-package-json.sh:71) and workflow.md:364 requires "a concrete version
+automatically" (check-package-json.sh:71) and workflow.md:374 requires "a concrete version
 (X.Y.Z) or a real range (^X.Y.Z ...)". The scan clause is covered as doctrine (`bun audit` in
-CI daily and on dependency PRs, security.md:67, workflow.md:659) and the automated-update
+CI daily and on dependency PRs, security.md:67, workflow.md:669) and the automated-update
 clause is covered thinly (Renovate is named, but only in the Java reference, java-quarkus.md:19;
 the Bun side leans on a manual `bun update` cadence and ships no Renovate or dependabot config).
 But the pin clause is contradicted, and CONTRADICTS dominates. The skill's rationale (a
@@ -229,20 +229,20 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:165; testing.md:290 | gate | Mock ban is absolute and lint-enforced, exceeding canon advisory prefer-fakes |
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:117 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on a frozen lockfile as the required merge check |
-| 4.7 | Hold generated code to the same bar | COVERED | workflow.md:572 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
+| 4.7 | Hold generated code to the same bar | COVERED | workflow.md:582 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-48; SKILL.md:213 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
 
 ### Pillar 5: Secure by default
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 5.1 | Keep secrets out of the codebase | COVERED | security.md:192; assets/pre-commit gate 3 | gate | Secret manager, rotation, central control; gitleaks gate backs the ban |
+| 5.1 | Keep secrets out of the codebase | COVERED | security.md:198; assets/pre-commit gate 3 | gate | Secret manager, rotation, central control; gitleaks gate backs the ban |
 | 5.2 | Do not build authentication or crypto yourself | COVERED | security.md:35-46 | rule | OIDC plus vetted crypto, SSO and MFA on consoles (rule 33) |
 | 5.3 | Control your dependencies | COVERED | assets/check-package-json.sh:37; docs/global-rules/proposed-revisions.md | gate | P6 revision ACCEPTED 2026-07-20: canon 5.3 now allows a constrained range plus a committed lockfile, which check-package-json.sh enforces (Watchlist 4) |
 | 5.4 | Secure the supply chain | COVERED | delivery.md:71-73 | doctrine | Immutable digest-addressed artifacts, SBOM, cosign signatures |
 | 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:368 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
-| 5.6 | Expose only what has to be public | COVERED | security.md:226 | doctrine | Datastores, queues, admin panels on a private network only |
-| 5.7 | One security baseline everywhere | COVERED | security.md:221-217 | rule | Auth, TLS, rate limits, allow/deny default on every route (rule 33) |
+| 5.6 | Expose only what has to be public | COVERED | security.md:232 | doctrine | Datastores, queues, admin panels on a private network only |
+| 5.7 | One security baseline everywhere | COVERED | security.md:227-217 | rule | Auth, TLS, rate limits, allow/deny default on every route (rule 33) |
 | 5.8 | Untrusted content is not instructions | COVERED | ai.md:60; SKILL.md:213 | rule | Model input untrusted, every action authorized server-side (rule 32) (Watchlist 5) |
 | 5.9 | Cap what a caller can spend | COVERED | SKILL.md:213; ai.md:74 | rule | Per-caller spend budget before the call, refuse over bill (rule 32) |
 | 5.10 | One inspectable edge, no reachable origin | COVERED | security.md; delivery.md | doctrine | Resolved Phase 2: single filtering edge plus origin-lock doctrine, with the x-edge-secret origin check as defense in depth |
@@ -253,7 +253,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 6.1 | Know the law that follows the user | COVERED | privacy.md:13 | doctrine | Design to the strictest regime you serve; policyFor code example |
 | 6.2 | Minimize and justify collection | COVERED | privacy.md:7-38 | doctrine | Collect only stated-purpose fields; explicit consent for sensitive and minors |
-| 6.3 | Keep personal data out of logs and URLs | COVERED | privacy.md:44-47; security.md:200 | tripwire | POST body, logger redactFormat, opaque vs natural ids; check-pii-channels.sh (Watchlist 2) |
+| 6.3 | Keep personal data out of logs and URLs | COVERED | privacy.md:44-47; security.md:206 | tripwire | POST body, logger redactFormat, opaque vs natural ids; check-pii-channels.sh (Watchlist 2) |
 | 6.4 | Build for user rights from day one | COVERED | privacy.md:65-74 | doctrine | Five rights as first-class ops; erasure hard-deletes personal fields |
 | 6.5 | Map and classify your data | COVERED | privacy.md:78-85 | doctrine | Generated data map with class, purpose, crossesBorder per field |
 | 6.6 | Never copy production data into test or dev | COVERED | privacy.md:99 | rule | Deterministic synthetic fixtures, zero real subjects (rule 34) |
@@ -357,11 +357,11 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:159; assets/check-coverage.ts:148 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
 | 15.3 | No silent opt-out | COVERED | workflow.md:62-82; SKILL.md:167 | gate | Project-level severity change with a reason; inline suppressions banned |
 | 15.4 | Test the bypass, not the happy path | COVERED | testing.md:649-531 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
-| 15.5 | Compliance is not proof | COVERED | workflow.md:571; governance.md:139 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
-| 15.6 | Audit the gaps between systems | COVERED | workflow.md:563; testing.md:663 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
-| 15.7 | Fix the class, not the instance | COVERED | workflow.md:564-640 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
-| 15.8 | Make proof re-checkable | COVERED | governance.md:91-139; workflow.md:571 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
-| 15.9 | Spend human judgment where it counts | COVERED | workflow.md:620; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
+| 15.5 | Compliance is not proof | COVERED | workflow.md:581; governance.md:139 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
+| 15.6 | Audit the gaps between systems | COVERED | workflow.md:573; testing.md:663 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
+| 15.7 | Fix the class, not the instance | COVERED | workflow.md:574-640 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
+| 15.8 | Make proof re-checkable | COVERED | governance.md:91-139; workflow.md:581 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
+| 15.9 | Spend human judgment where it counts | COVERED | workflow.md:630; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
 | 15.10 | Prove the gate can fail | COVERED | SKILL.md:444; scripts/smoke-test.sh | gate | Doctrine after the variant gate table, every gate lands with a violation fixture it must reject; the repo smoke tests are the reference implementation |
 
 ### Pillar 16: Measure whether you are improving
