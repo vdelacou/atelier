@@ -80,12 +80,19 @@ The existing value-object pattern extends naturally to security. The factory is 
 const ALLOWED_HOSTS = new Set(['api.example.com', 'cdn.example.com']);
 
 export type SafeUrl = string & { readonly __brand: 'SafeUrl' };
+export type SafeUrlError = { readonly kind: 'malformed' | 'protocol' | 'host'; readonly value: string };
 
-export const safeUrl = (value: string): SafeUrl => {
-  const url = new URL(value);
-  if (url.protocol !== 'https:') throw new Error('invalid SafeUrl.protocol');
-  if (!ALLOWED_HOSTS.has(url.host)) throw new Error('invalid SafeUrl.host');
-  return url.toString() as SafeUrl;
+// A sink guard reads untrusted input, so it is the boundary tier: parseSafeUrl returns
+// Result (rules 16-17) and the try/catch around the native thrower is the rule 17 carve-out.
+export const parseSafeUrl = (value: string): Result<SafeUrl, SafeUrlError> => {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return err({ kind: 'protocol', value });
+    if (!ALLOWED_HOSTS.has(url.host)) return err({ kind: 'host', value });
+    return ok(url.toString() as SafeUrl);
+  } catch {
+    return err({ kind: 'malformed', value });
+  }
 };
 
 // only fetchers typed to accept SafeUrl can be called, grep catches every bypass
@@ -159,16 +166,17 @@ export const readConfig = (): AppConfig => ({
 import path from 'node:path';
 
 export type SafePath = string & { readonly __brand: 'SafePath' };
+export type SafePathError = { readonly kind: 'nul' | 'traversal'; readonly requested: string };
 
-export const safePath = (root: string, requested: string): SafePath => {
-  if (requested.includes('\0')) throw new Error('invalid SafePath.nul');
+export const parseSafePath = (root: string, requested: string): Result<SafePath, SafePathError> => {
+  if (requested.includes('\0')) return err({ kind: 'nul', requested });
   const resolved = path.resolve(root, requested);
-  if (!resolved.startsWith(`${path.resolve(root)}${path.sep}`)) throw new Error('invalid SafePath.traversal');
-  return resolved as SafePath;
+  if (!resolved.startsWith(`${path.resolve(root)}${path.sep}`)) return err({ kind: 'traversal', requested });
+  return ok(resolved as SafePath);
 };
 ```
 
-The pattern is the same every time: one factory, one branded type, one truthful name. Callers cannot accidentally bypass the check because TypeScript rejects the raw `string`.
+The pattern is the same every time: one boundary factory that parses untrusted input into a `Result`, one branded type, one truthful name (`parseX` parses, `x()` asserts a value already proven; SKILL.md, Value objects at trust boundaries). Callers cannot accidentally bypass the check because TypeScript rejects the raw `string`, and the failure travels as a value the use-case pattern-matches instead of an exception it would have to catch.
 
 ## Secrets and configuration
 

@@ -171,7 +171,7 @@ export const getDiscount = (user: User): number => {
 
 ### 3. Wrap all primitives and strings
 
-Primitives that carry domain meaning become branded types with validating factories.
+Primitives that carry domain meaning become branded types with validating factories where they cross a trust boundary or feed a dangerous sink; inside one trust zone a plain value is honest (SKILL.md rule 12 draws the line).
 
 ```ts
 // BAD - primitive obsession
@@ -181,8 +181,12 @@ export const createUser = (email: string, age: number): User => {
   return { email, age };
 };
 
-// GOOD - branded types
+// GOOD - branded types, two tiers per type: parseX parses untrusted input into a Result
+// (rules 16-17), x() asserts a value already proven and throws, because invalid there is a bug.
 export type Email = string & { readonly __brand: 'Email' };
+export type EmailError = { readonly kind: 'invalidEmail'; readonly value: string };
+export const parseEmail = (raw: string): Result<Email, EmailError> =>
+  raw.includes('@') ? ok(raw as Email) : err({ kind: 'invalidEmail', value: raw });
 export const email = (value: string): Email => {
   if (!value.includes('@')) throw new Error('invalid Email');
   return value as Email;

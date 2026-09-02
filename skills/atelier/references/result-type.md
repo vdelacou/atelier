@@ -33,6 +33,8 @@ export const unwrap = <T, E>(r: Result<T, E>): T => {
 
 `unwrap` is reserved for bootstrapping code and tests where the error branch is genuinely impossible. Production code pattern-matches on `.ok`.
 
+Branded-type factories at a trust boundary return `Result` too: `parseEmail(raw)` yields `Result<Email, EmailError>` and the use-case pattern-matches it, while `email(value)` stays the throwing assertion for values already proven (SKILL.md, Value objects at trust boundaries; `references/clean-code.md`, calisthenics rule 3). One shape for ports, use-cases, and parsers, so a failure never changes channel between them.
+
 ## Per-port discriminated-union errors
 
 Every secondary port declares its own error type as a discriminated union. The `kind` field is exhaustively matchable.

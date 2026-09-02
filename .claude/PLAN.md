@@ -55,9 +55,9 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 
 ## Phase C: doctrine contradictions
 
-15. [ ] rule 12 governs the value-object section. DoD: SKILL.md:283-285, README:30,
+15. [x] rule 12 governs the value-object section. DoD: SKILL.md:283-285, README:30,
         clean-code.md agree; V3 after `--lock`; V6.
-16. [ ] boundary factories return Result, constructors assert (parseX / x). DoD: every listed
+16. [x] boundary factories return Result, constructors assert (parseX / x). Landed with 15 (same section); the a2+e5 eval pass runs at the end of Phase C. DoD: every listed
         site on the two-tier form; V3 after `--lock`; conformance eval a2 + e5 one pass.
 17. [ ] money is integer cents in every example. DoD: no `amount: number` Money left; V3.
 18. [ ] rule 14 names the value-object exception. DoD: SKILL.md:166, testing.md:25, tdd.md:207,

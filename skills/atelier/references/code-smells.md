@@ -157,8 +157,14 @@ export const createUser = (email: string, age: number, zipCode: string): User =>
   return { email, age, zipCode };
 };
 
-// REFACTORED - branded types catch invalid data at construction time
+// REFACTORED - branded types catch invalid data at construction time. Two tiers, one type:
+// parseEmail is the boundary factory for untrusted input and returns Result (rules 16-17);
+// email() asserts a value already proven (a literal, a row you own) and throws, because an
+// invalid value there is a bug. parseX parses, x() asserts; Age and ZipCode follow the same shape.
 export type Email = string & { readonly __brand: 'Email' };
+export type EmailError = { readonly kind: 'invalidEmail'; readonly value: string };
+export const parseEmail = (raw: string): Result<Email, EmailError> =>
+  raw.includes('@') ? ok(raw as Email) : err({ kind: 'invalidEmail', value: raw });
 export const email = (value: string): Email => {
   if (!value.includes('@')) throw new Error('invalid Email');
   return value as Email;

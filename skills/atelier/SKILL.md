@@ -8,7 +8,7 @@ description: Senior-engineer coding standard for Bun/TypeScript, Next.js, and Ja
 You are operating as a senior software engineer. Every piece of code you produce must satisfy four commitments:
 
 1. **TDD.** No production code without a failing test first. Red-Green-Refactor on every feature.
-2. **Clean, SOLID design.** Small modules with single responsibility, domain primitives wrapped in branded types, dependencies injected as function-type contracts.
+2. **Clean, SOLID design.** Small modules with single responsibility, domain primitives branded at trust boundaries, dependencies injected as function-type contracts.
 3. **Style.** Bun-only toolchain, const arrow functions, `type` not `interface`, the `Logger` port (Winston-backed in production), no classes, no function declarations. (The Java variant translates the mechanics, not the intent; see the variant matrix.)
 4. **Production by default.** Privacy, isolation, reliability, observability, delivery, and product discipline are starting conditions, not features added later. Each binds the moment a change touches its concern; see the Production disciplines section.
 
@@ -285,19 +285,24 @@ See `references/solid-principles.md`.
 
 See `references/clean-code.md`.
 
-## Value objects are MANDATORY (branded types)
+## Value objects at trust boundaries (branded types)
 
-Wrap every domain primitive. Never pass raw `string`, `number`, or `boolean` for IDs, emails, money, dates, URLs, phone numbers, ISO codes. The factory is the validation gate; once a value has type `Email`, downstream code trusts it. This replaces the `class Email { constructor(...) }` idiom without losing any safety.
+Wrap every domain primitive that crosses a trust boundary or feeds a dangerous sink (the rule 12 test): IDs, emails, money, dates, URLs, phone numbers, ISO codes arriving from outside. The factory is the validation gate; once a value has type `Email`, downstream code trusts it. Inside one trust zone a plain `string` is honest and lighter; rule 12 says where the line falls. This replaces the `class Email { constructor(...) }` idiom without losing any safety.
 
 ```ts
 export type Email = string & { readonly __brand: 'Email' };
+export type EmailError = { readonly kind: 'invalidEmail'; readonly value: string };
+// boundary tier: untrusted input in, Result out (rules 16-17); the only entry for outside data
+export const parseEmail = (raw: string): Result<Email, EmailError> =>
+  raw.includes('@') ? ok(raw as Email) : err({ kind: 'invalidEmail', value: raw });
+// assertion tier: a value already proven (a literal, a row you own, a test); invalid here is a bug
 export const email = (value: string): Email => {
   if (!value.includes('@')) throw new Error('invalid Email');
   return value as Email;
 };
 ```
 
-The same shape applies to `UserId`, `Money`, `Url`, `IsoCountryCode`, etc. Money carries currency in the record itself, holds the amount as **integer minor units (cents), never a float** (`0.1 + 0.2 !== 0.3`, and the rounding lands on an invoice), and validates arithmetic against currency mismatch. Instants live in **UTC** behind a type; a timezone is a display concern applied only at the presentation edge. This is "parse, don't validate": the check runs once at the boundary and the type carries the proof from then on. Security-sensitive primitives (`SafeUrl`, `SanitizedHtml`, `EnvVar`, `SafePath`) follow the same pattern at trust boundaries, see `references/security.md`. The full catalogue and worked examples live in `references/clean-code.md` (object-calisthenics rule 3) and `references/object-design.md`.
+Two tiers, one type: `parseX` parses and returns `Result`, `x()` asserts and throws, and only the first ever sees outside data (`assets/java/Email.java` is the same shape in Java). The same shape applies to `UserId`, `Money`, `Url`, `IsoCountryCode`, etc. Money carries currency in the record itself, holds the amount as **integer minor units (cents), never a float** (`0.1 + 0.2 !== 0.3`, and the rounding lands on an invoice), and validates arithmetic against currency mismatch. Instants live in **UTC** behind a type; a timezone is a display concern applied only at the presentation edge. This is "parse, don't validate": the check runs once at the boundary and the type carries the proof from then on. Security-sensitive primitives (`SafeUrl`, `SanitizedHtml`, `EnvVar`, `SafePath`) follow the same pattern at trust boundaries, see `references/security.md`. The full catalogue and worked examples live in `references/clean-code.md` (object-calisthenics rule 3) and `references/object-design.md`.
 
 ## The class-to-module translation catalogue
 
