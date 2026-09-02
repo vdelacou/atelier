@@ -1,10 +1,112 @@
 # Behavioural examples (before → after)
 
-Concrete before/after pairs for the four Behavioural Guidelines in `SKILL.md`, written in this repo's idiom (arrow functions, no `class`, `Result<T, E>`, branded types, fakes not mocks). Read alongside the guidelines; this file is the worked-example layer.
+Concrete before/after pairs for the five Behavioural Guidelines in `SKILL.md`, written in this repo's idiom (arrow functions, no `class`, `Result<T, E>`, branded types, fakes not mocks). Read alongside the guidelines; this file is the worked-example layer.
 
 The key framing: the "before" versions are rarely *wrong* in isolation, they follow real patterns (dispatch maps, DI factories, validation). The defect is **timing and reach**: complexity added before it is needed, or edits that travel past the request. Good code solves today's problem simply, not tomorrow's prematurely.
 
+## The five guidelines, in full
+
+SKILL.md carries each guideline as one paragraph; this is the full text it summarises, kept here so the summary can stay short. They bias toward caution over speed; for trivial tasks, use judgment. They are working if: fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, fewer "wait, the README says X but the code does Y" follow-ups, and clarifying questions come before implementation rather than after mistakes.
+
+### 1. Think before coding
+
+Do not assume. Do not hide confusion. Surface tradeoffs.
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- Do not write against an unfamiliar external API, SDK, or config surface from memory: verify its signatures, option names, and version-specific behavior against current docs or the installed package source first. Trust what a dependency *does*; verify how it is *called*. A guessed call that happens to typecheck is still a latent bug.
+- If multiple interpretations exist, present them, with the rough effort and tradeoff of each so the choice is informed. Do not pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what is confusing. Ask.
+
+When clarification is warranted (use judgment: trivial tasks do not need an interview), ask *well*:
+- **Answer your own questions first.** If the codebase can settle a question, explore it instead of asking. Never ask what you could find out yourself.
+- **One question at a time, each led with your recommended answer**, so a clarification is a quick yes-or-correct, not homework handed back to the user.
+- **For a non-trivial plan or design, walk the decision tree one branch at a time**, resolving dependencies between decisions in order, rather than dumping every open question at once.
+
+### 2. Simplicity first
+
+Minimum code that solves the problem. Nothing speculative.
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that was not requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+**The lazy ladder: stop at the first rung that solves it.** Before writing code, walk these in order and stop as soon as one applies; the cheapest code is the code you never wrote:
+
+1. **Does it need to exist?** YAGNI: if nothing requires it, skip it.
+2. **Standard library / language feature?** Use it before hand-rolling.
+3. **Native runtime capability?** Reach for `Bun.file`/`Bun.write` (rule 20), `crypto.subtle`, `fetch`, `URL`, Web APIs before adding a dependency.
+4. **A dependency already in `package.json`?** Use it before `bun add`-ing another (rule 19).
+5. **One clear line?** Then one line.
+6. **Only then** write the minimum that works.
+
+Tiebreaker: when two stdlib options are equally sized, pick the edge-case-correct, more efficient one. Delete before adding; prefer boring over clever.
+
+**Simplicity is not negligence.** The ladder trims speculation, never safety. Never minimized: trust-boundary validation (branded value objects), `Result` error handling at IO boundaries, security (source-to-sink), accessibility in UI, and anything the user explicitly asked for. "No error handling for impossible scenarios" means skip the *impossible* cases, not the real failure modes that branded types and `Result` exist to capture. See `references/complexity.md` (The lazy ladder).
+
+### 3. Surgical changes
+
+Touch only what you must. Clean up only your own mess.
+
+When editing existing code:
+- Do not "improve" adjacent code, comments, or formatting.
+- Do not refactor things that are not broken.
+- Match existing style, even if you would do it differently.
+- If you notice unrelated dead code, mention it. Do not delete it.
+
+When your changes create orphans:
+- Remove imports, variables, and functions that YOUR changes made unused.
+- Do not remove pre-existing dead code unless asked.
+
+The test: every changed line should trace directly to the user's request.
+
+### 4. Goal-driven execution
+
+Define success criteria. Loop until verified.
+
+Transform tasks into verifiable goals:
+- "Add validation" becomes "Write tests for invalid inputs, then make them pass".
+- "Fix the bug" becomes "Write a test that reproduces it, then make it pass".
+- "Refactor X" becomes "Ensure tests pass before and after".
+
+For multi-step tasks, write the plan to a durable file, not just the chat. Chat evaporates when either party loses context; a file does not. Before executing, put the plan in `.claude/PLAN.md` with a checkable definition of done per step:
+
+```
+1. [ ] [Step]  DoD: [the concrete check that proves this step is finished]
+2. [ ] [Step]  DoD: [check]
+3. [ ] [Step]  DoD: [check]
+```
+
+Keep it live: tick each box as its DoD is met, mark steps done / in-progress / blocked, and leave enough breadcrumbs (paths, commands, decisions) that a cold reader could continue. This is the resumability contract: a returning human or a fresh session reads `.claude/PLAN.md` first and picks up at the same place with the same context. `.claude/PLAN.md` is the *mutable current plan*; it is distinct from the append-only `.claude/LESSONS.md` (which is memory, never rewritten). See `references/workflow.md` (The durable plan). Trivial one-step tasks do not need the ceremony.
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+### 5. README is part of done
+
+A change is not finished when the code compiles and the tests pass. It is finished when the next reader can install, run, and use the project without surprise. The README is the contract with that reader; if it lies, the change is broken even if the tests are green.
+
+**Audit `README.md` before declaring any task done, and again before ending the session.** Walk the user-visible surface area:
+
+- Install / setup steps and their commands
+- Scripts in `package.json` (every one the README mentions, every one the README implies should exist)
+- CLI flags, subcommands, and their argument shapes
+- Environment variables and config files (`.env.example`, `bunfig.toml`, etc.)
+- Top-level repository layout / architecture diagram
+- Public exports the README documents (functions, types, modules surfaced as the API)
+- Versioned facts (Bun version, Node version if any, framework versions where the README pins them)
+
+If anything you touched in this session changes any of those surfaces, update the README in the same commit (or stage it for the user to commit). If everything is current, say so in one sentence and move on. Skip the audit only when the change is clearly internal-only (private helpers, test-only refactors, formatting passes, dep bumps that do not change usage).
+
+The bar is "would a new contributor cloning this repo today get the same picture from the README that they would from reading the code?" If no, the README is stale.
+
 ---
+
+## Worked examples
 
 ## 1. Think before coding
 
