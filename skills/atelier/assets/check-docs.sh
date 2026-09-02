@@ -37,5 +37,10 @@ fi
 
 echo "docs-check: running the README Verify commands..."
 # -e so the first failing command fails the check; the README is the source of truth.
+#
+# Trust boundary, stated: this executes README content as shell. The README is
+# repo-controlled code run by the repo's own CI, the same trust as scripts/**;
+# a pull request from a fork runs under GitHub's read-only token. Accepted
+# risk on that basis. Never point this at a README from another tree.
 bash -eu -c "$block"
 echo "docs-check: README Verify commands passed"

@@ -29,7 +29,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 7. [x] fix(atelier): the staleness gate runs in tree mode from the shipped workflow. DoD: tree
        fixture red/green in smoke test; `--selftest` in ci.yml; no /tmp path, no handle in the
        script; V1 V4 V3.
-8. [ ] docs(atelier): check-docs.sh names its trust boundary. DoD: comment lands; V1.
+8. [x] docs(atelier): check-docs.sh names its trust boundary. DoD: comment lands; V1.
 9. [x] feat: an em-dash gate for this repo, hook and CI. DoD: `scripts/check-no-em-dash.sh
        --selftest` green; hook runs it first; ci.yml job; CLAUDE.md points at it; V7 V6.
 
