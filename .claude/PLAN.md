@@ -83,7 +83,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 
 ## Phase E: canon (each row needs a ruling)
 
-30. [ ] draft P6 rows C1-C6 in proposed-revisions.md (status proposed). DoD: V5 unchanged.
+30. [x] draft P6 rows C1-C6 in proposed-revisions.md (status proposed). DoD: V5 unchanged.
 31+. [ ] apply each ACCEPTED row: dos-and-donts (+ prose), matrix sha re-pin, lock if needed.
         DoD per row: V5 then V3.
 

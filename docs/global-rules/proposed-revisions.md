@@ -474,3 +474,105 @@ change: the two lines at :3362-3363, no count change and no index change (the ti
 forward matrix row 17.7 evidence now cites `product.md:86` and the shipped gate and stays COVERED,
 reverse matrix untouched (no hard rule maps to bundle weight), and the dos-and-donts hash re-pinned
 with the citations lock re-locked for the new anchored citation.
+
+---
+
+## 10.6 / 6.6 The restore drill never becomes a production clone (proposed 2026-09-03, status: proposed)
+
+**Current canon.** 6.6's Don't (global-rules-dos-and-donts.md:1370): "Clone a production dump into a lower environment." 10.6's Do (:2138) runs "a scheduled drill that restores the backup into a scratch database", and its example (:2145-2162) restores `latest.dump` into `$SCRATCH_DB_URL` inside a CI job and asserts `count(*) FROM receipts` is non-zero.
+
+**Defect (two Do blocks that contradict).** The 10.6 drill is, byte for byte, the operation 6.6 forbids: a production backup, full of personal data, restored into a non-production database with CI-level access. The document resolves the delete conflict between 6.4 and 10.9 explicitly (:1311, :2229) and says nothing here, so a team runs the drill believing the standard blessed it. This is the one contradiction in the file a reader will act on while feeling compliant.
+
+**Proposed revision.** Amend 10.6's Do and its example, no count change:
+
+```md
+**Do:** Run a scheduled drill that restores the backup into an isolated restore-only target under production controls (the production access tier, no lower-environment credentials, output asserted by a script and never read by a person, dropped when the drill ends), or restores a synthetic or anonymised backup produced by the same pipeline; time it against the stated recovery objective. (6.6)
+```
+
+The example's scratch database moves behind the production boundary (`$RESTORE_DRILL_URL` in the production account, the job's identity the restore role only) and the assertion stays a count, never a row. `references/delivery.md` (Backups you have restored) inherits the clause.
+
+Cascade if accepted: dos-and-donts 10.6 Do plus example, every-new-project.md's pillar-10 backup bullet gains "under production controls"; dos-and-donts and every-new-project pins re-pin; forward matrix row 10.6 evidence unchanged (delivery.md carries the same clause once edited); citations re-locked if the pinned lines shift.
+
+**Ruling.** Pending.
+
+---
+
+## 2.4 / 2.2 A seam is earned by an external dependency, not by a second implementation (proposed 2026-09-03, status: proposed)
+
+**Current canon.** 2.2's Java Don't (:231-233): "an abstract base plus one subclass, ceremony around a single behavior." 2.4's Do (:268) introduces "the interface now" and its examples (:278-279 TS, :289-290 Java) are exactly an interface plus one trivial implementation (`Cache` plus `MapCache`).
+
+**Defect (the same shape is the Don't of one sub-concept and the Do of the next).** Both are right in their own context; the distinction that reconciles them lives in 3.2 (an external thing gets a port with a real adapter and a fake) and is stated in neither. A reader of pillar 2 alone cannot tell when one implementation behind an interface is ceremony and when it is the seam.
+
+**Proposed revision.** One clause on 2.4's Do and one tag on 2.2's Java example, no count change:
+
+```md
+**Do:** Introduce the interface now, and implement only the version you actually need today, when the thing behind it is external (a database, a mailer, a queue, a model: the port of 3.2); a purely internal behaviour with one implementation stays a plain function or class (2.2).
+```
+
+and in 2.2's Java Don't comment: `// no IO behind this, so no port: the abstraction is ceremony (contrast 2.4)`.
+
+Cascade if accepted: dos-and-donts 2.2 and 2.4; the pillar-2 prose bullet "Defer the build, not the seam" (every-new-project.md:53) gains "when the thing behind it is external"; both pins re-pin; forward matrix rows 2.2 and 2.4 unchanged (the skill's complexity.md already carries the external-only condition).
+
+**Ruling.** Pending.
+
+---
+
+## 10.2 / 5.8 / 6.1 / 6.7 The Java examples throw the outcome 10.2 forbids (proposed 2026-09-03, status: proposed)
+
+**Current canon.** 10.2's Don't (:1984): never throw for an expected business outcome; the 2026-08-30 strengthening fixed where a catch may live. Three Java Do blocks throw an expected outcome: 5.8 `throw new ForbiddenException()` when the model's requested action is not authorized (:1141), 6.1 `throw new ConsentRequiredException()` (:1238), 6.7 `orElseThrow(() -> new AssessmentRequiredException(...))` (:1420). Each TypeScript twin returns a value (6.7's returns `Result<Decision, 'dpia_missing'>` at :1406).
+
+**Defect (the Java track opts out of pillar 10 by example).** A refused authorization, a missing consent and a missing impact assessment are the most expected outcomes those three flows have. The Java reader is shown the exception form as the Do, so the canon's own examples teach the anti-pattern its rule names; and the two tracks disagree on the same rule, which 1.1 (one style) forbids in spirit.
+
+**Proposed revision.** Rewrite the three Java Do blocks to return the canon's sealed `Result` / `Err` form (the shape 10.2's own Java example uses), the resource layer translating to 403 / 409 / 422 at the boundary. 5.8's `ForbiddenException` may stay only where the catch-placement clause of 10.2 lets the resource translate it, that is, thrown by the boundary and caught by the boundary, never crossing a use-case. No count change. Draft after the atelier profile's own TypeScript factory form settles (it did on 2026-09-03: `parseX` returns `Result`, `x()` asserts), so the two tracks and the profile agree.
+
+Cascade if accepted: three example blocks in dos-and-donts; the dos-and-donts pin re-pins; forward matrix rows 5.8, 6.1, 6.7 unchanged (the skill's ai.md and privacy.md already use `Result`).
+
+**Ruling.** Pending.
+
+---
+
+## 8.4 / 3.6 The slice's resource still maps at the boundary (proposed 2026-09-03, status: proposed)
+
+**Current canon.** 3.6's Do (:511, :543-547): translate at the boundary, map the domain to a response record, "DTOs never enter use-cases". 8.4's Java Do (:1755) returns `Result<Receipt>` (the domain record) straight from the JAX-RS resource.
+
+**Defect (one example breaks the rule of another pillar to make its own point).** 8.4 is about slice ownership, not about the wire shape, but its resource returns the domain type 3.6 forbids from crossing the boundary. A reader copying 8.4 ships the domain model over the wire.
+
+**Proposed revision.** 8.4's Java resource returns `ReceiptResponse.from(...)` with a `(3.6)` tag; the vertical-slice point (the slice owns its handler, its data access, its infra) is untouched. No count change.
+
+Cascade if accepted: one example block; the dos-and-donts pin re-pins; no matrix change.
+
+**Ruling.** Pending.
+
+---
+
+## Cross-reference repairs, redundancy pass (proposed 2026-09-03, status: proposed)
+
+**Current canon.** Six sub-concept pairs say the same thing in two places, two of them admitting it in text: 2.6 and 6.2 (:1246 "the general form of this rule is 2.6"), 15.5 and 15.8 (both "a runnable check, not a checkbox"), 5.6 and 5.10 (5.10 is 5.6 applied to the origin, :1186), 10.1 and 12.5 (the same SLO numbers, :1979 admits it), 11.3 and 16.4 (the identical "sustained window, not a spike" rule on two metrics), 7.7 and 10.14 (bulk reads come from the warehouse, each citing the other). Two artifacts are printed twice with different contents: the branch-protection block at :1908-1910 (`contexts = ["ci/plan", "ci/typecheck"]`) and at :2729-2733 (`require_code_owner_reviews` plus `contexts: ["build", "test", "typecheck", "lint"]`); the CI gate list at :833, :1681 (`bun test && bun run typecheck && bun run lint:strict`) and :2911 (`bun run lint:strict && bun test && bun run coverage`), three orders, three contents.
+
+**Defect (drift by duplication).** Two copies of one artifact already disagree; 12.1 names that a defect. The paired sub-concepts are not wrong, but a reader who fixes one does not know the other exists.
+
+**Proposed revision.** No merge, deliberately: a merge moves the count off 119 and triggers the full 2026-07-20 cascade plus every external scorecard that imports the ids verbatim, which 12.1 makes a defect. Instead one batched repair: reciprocal `(see N.M)` tags on the six pairs; one canonical branch-protection artifact in 13.2, with :1908-1913 reduced to a `# the required checks are the gates of 4.6; the block is in 13.2` pointer and a single `contexts` list; one canonical gate list in 4.6, with :1681 and :2911 pointing at it. No count change.
+
+Cascade if accepted: dos-and-donts only; its pin re-pins; citations re-locked if the four pinned dos-and-donts lines shift; no matrix change.
+
+**Ruling.** Pending.
+
+---
+
+## Profiles appendix, row A: the numbers move out of the sub-concepts (proposed 2026-09-03, status: proposed)
+
+**Current canon.** Eleven sub-concepts state a stack-specific number or vendor as principle: 4.4 (:745, Stryker, PIT, 100/90/80), 15.2 (`bunfig.toml`, 0.80), 1.3 (commitlint, 100 characters), 10.8 (a pinned k6 action, p99 under 300 ms at 100 VUs), 5.9 (200 000 tokens per org per day), 17.7 (180 kB and 400 kB, 44 px targets), 7.6 (UUIDv7 and a named library), 10.13 (2000 ms, 3 attempts, 200 ms jitter), 16.4 and 16.5 (50 percent week over week, CFR over 0.15 for 7 days), 14.3 (a 4-business-hour SLA, 90 percent adoption).
+
+**Defect (profile stated as principle).** The pillar prose says the rules "do not depend on any technology" and "the stack is a detail"; the sub-concepts then name the tools and the thresholds of one stack. A team that cannot hit 90 mutation on day one stops taking the whole file seriously, and once one gate reads as theatre, 15.1 is dead. The numbers are right for the atelier profile; they are not the principle.
+
+**Proposed revision.** A new file `docs/global-rules/global-rules-profiles.md` (the drift checker already accepts any `docs/global-rules/*.md`), holding one section per stack profile with the tools and thresholds; each sub-concept keeps the obligation shape ("a number exists, the pipeline enforces it, the number lives in the project's profile") and points at the appendix. Row A moves one exemplar, 4.4, to prove the shape:
+
+```md
+**Do:** Judge a suite by its mutation score, not its line coverage: core logic gates on a mutation threshold and a line-coverage floor the project's profile names, glue and adapters on an explicit looser floor, and when a gate is hard to pass the code is restructured, never the threshold lowered.
+```
+
+with `global-rules-profiles.md` § atelier carrying "Stryker (TS) and PIT (Java); core 100 percent line, 90 mutation; glue 80 percent line". Row B, proposed only once A is accepted, moves the other ten the same way.
+
+Cascade if accepted: dos-and-donts 4.4 Do; the new profiles file added to the matrix's pinned-inputs table with its sha256; the drift checker's file set (it globs the directory, so no code change, but its selftest gains the fourth file); matrix rows stay COVERED (the skill is the atelier profile) with evidence cells unchanged; both pins re-pin. The atelier hard rule 35 threshold (10) belongs to this profile too and joins in row B.
+
+**Ruling.** Pending.
