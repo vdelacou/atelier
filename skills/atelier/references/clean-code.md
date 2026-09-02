@@ -276,8 +276,9 @@ const order = createOrder(orderId('ord-1'));
 - Functions < 10 lines.
 - Modules < 50 lines.
 - Files < 100 lines.
+- Cyclomatic complexity at most 10 per function (rule 35, the one cap here a machine checks: ESLint `complexity`, PMD in Java).
 
-If larger, it is probably doing too much. Split it.
+If larger, it is probably doing too much. Split it. The complexity cap catches what the line count misses: a nine-line function can still carry a one-line chain of `&&`/`??`/ternaries, and the fix is the same, split it or dispatch on a map.
 
 ### 8. Small record shapes
 

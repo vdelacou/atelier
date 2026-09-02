@@ -40,7 +40,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 32. [x] feat(atelier): PMD cyclomatic complexity gate for the Java variant. DoD: planted method
         of complexity 11 fails `./mvnw verify` in smoke-test-java.sh; asset named by the
         bootstrap; V2 V4.
-33. [ ] docs(atelier): hard rule 35 cascaded (SKILL.md, clean-code.md, review-me, greenfield,
+33. [x] docs(atelier): hard rule 35 cascaded (SKILL.md, clean-code.md, review-me, greenfield,
         README, reverse-matrix row 35, matrix 1.2, CHANGELOG). DoD: V3 after `--lock`, V5, V6.
 
 ## Phase B: em-dash sweep (same-line replacements only)

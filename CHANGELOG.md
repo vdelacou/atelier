@@ -4,6 +4,42 @@ All notable changes to the atelier skill suite. Format follows
 [Keep a Changelog](https://keepachangelog.com/); this suite versions the standard as a
 whole, not any single skill.
 
+## [Unreleased]
+
+### Added
+- **Hard rule 35, cyclomatic complexity at most 10 per function**, lint-enforced in every
+  variant: ESLint `complexity: ['error', 10]` in both TypeScript configs, PMD
+  `CyclomaticComplexity` (`methodReportLevel` 11) bound to `verify` in the Java pom with the
+  ruleset shipped as `assets/java/pmd-ruleset.xml`. Each smoke test plants a complexity-11
+  function and sees the gate red, and a complexity-10 one green. The size caps and this cap
+  are complementary: the cap counts the one-line chain of `&&`/`??`/ternaries the size caps
+  never see. `sonarjs/cognitive-complexity` stays off; one metric.
+- An em-dash gate for the skill repo itself (`scripts/check-no-em-dash.sh`, hook and CI).
+
+### Fixed
+- `check-commit-messages.sh` and `check-commit-range.sh` checked an empty range on a push to
+  main (HEAD is origin/main there), so the CI half of rule 23 was decorative on the
+  trunk-based workflow; both now walk `github.event.before..HEAD`, which the shipped
+  workflows export.
+- `check-io-deadlines.sh` never matched `globalThis.fetch(`, the idiom the doctrine
+  prescribes, and accepted the word `timeout` in a comment as the deadline; it now checks
+  per call for `AbortSignal.timeout(`/`signal:` within eight lines, comments stripped.
+- `check-data-lifecycle.sh` exempted a hard delete on the strength of a `// retention`
+  comment and knew only DROP COLUMN and RENAME COLUMN; exemptions are path-anchored and the
+  DDL pattern covers DROP TABLE, RENAME TO, TRUNCATE, ALTER COLUMN TYPE.
+- `check-pii-channels.sh` read a logger call on one line only and four literal names; it
+  joins a call with up to three following lines and matches thirteen identifiers with any
+  casing or prefix.
+- `check-package-json.sh` blocked a manifest for a `publishConfig.tag` and passed an
+  `npm:pkg@latest` alias; it reads the four dependency blocks only.
+- `check-isolation-tests.sh` passed a route when any test in the directory contained `404`;
+  the test must be named for the route and assert 404 inside a test block.
+- `check-skill-pin.sh` compared SKILL.md alone from the shipped workflow; it now compares the
+  whole vendored tree against a cloned upstream (`SKILL_PIN_UPSTREAM`), with its selftest in
+  CI and the smoke test.
+- `check-coverage.ts` had a function of complexity 14; refactored under the new cap without
+  a behaviour change.
+
 ## [2.0.0] - 2026-07-12
 
 The production-disciplines release: the suite becomes the executable encoding of all

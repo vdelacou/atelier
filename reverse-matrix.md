@@ -1,7 +1,7 @@
 # Atelier reverse matrix (skill rules into canon)
 
 The forward audit (`conformance-matrix.md`) proves every canon sub-concept has a home in the
-skill. This is the other direction: one row per atelier hard rule 1-34, asking whether
+skill. This is the other direction: one row per atelier hard rule 1-35, asking whether
 the canon carries the rule's substance. Audited against the 117-row canon; 13.5's acceptance moved three rows the same day, and the 10.2 strengthening (accepted 2026-08-30) moved row 17. Three verdicts:
 
 - **CANON-ROW**: a canon sub-concept carries the substance at comparable strength.
@@ -19,7 +19,7 @@ re-audit when the hard-rule list changes.
 
 ## Pinned inputs
 
-- Skill: `skills/atelier/SKILL.md`, hard rules at lines 153-217, audited 2026-08-30.
+- Skill: `skills/atelier/SKILL.md`, hard rules at lines 153-221, audited 2026-08-30 (row 35 added 2026-09-03).
 - Canon: the vendored `docs/global-rules/` at the hashes pinned in `conformance-matrix.md`
   (119 sub-concepts after 1.3, 13.5, 15.10, and the 10.2 strengthening, all accepted 2026-08-30).
 
@@ -61,17 +61,18 @@ re-audit when the hard-rule list changes.
 | 32 | AI model behind a port, pinned, eval-gated | CANON-ROW | 3.9, 4.8, 5.8 | |
 | 33 | Never build auth or crypto yourself | CANON-ROW | 5.2, 9.3 | Auto-TLS clause lands in 9.3 |
 | 34 | Production data never leaves production | CANON-ROW | 6.6 | |
+| 35 | Cyclomatic complexity at most 10 per function, lint-enforced | STRICTER-THAN | 1.2 | Added 2026-09-03. The canon caps complexity and duplication (1.2); the profile fixes the number at 10 and gates it in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`). The number belongs to the profile appendix once P6 row C6 lands |
 
 ## Tally
 
 | Verdict | Count | Rules |
 |---|---|---|
 | CANON-ROW | 20 | 8, 10, 11, 12, 14, 15, 16, 17, 19, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34 |
-| STRICTER-THAN | 5 | 4, 13, 21, 22, 28 |
+| STRICTER-THAN | 6 | 4, 13, 21, 22, 28, 35 |
 | NO-COUNTERPART, stack binding | 9 | 1, 2, 3, 5, 6, 7, 9, 18, 20 |
-| Total | 34 | |
+| Total | 35 | |
 
-Counting plainly: 20 covered, 5 stricter, 9 stack bindings. The stack bindings are the point of
+Counting plainly: 20 covered, 6 stricter, 9 stack bindings. The stack bindings are the point of
 a profile and propose nothing back to the canon. The audit's one actionable finding, three
 agent-discipline rules (24-26) with no canon home, became P6 row 13.5 and was ACCEPTED the same
 day, which is why those rows read CANON-ROW with an at-audit-time note: this file caused the

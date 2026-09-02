@@ -216,6 +216,10 @@ Rules 27-34 are the production disciplines. They apply in every variant, and eac
 
 34. **Production data never leaves production.** Lower environments and tests run on deterministic synthetic fixtures that mimic shape and volume; never restore a production dump into dev, staging, a laptop, or a test. When a bug only reproduces on production data, debug production with read access and observability instead of copying the data out. See `references/privacy.md`.
 
+Rule 35 is a style rule that arrived later (2026-09); it sits after the disciplines so that no existing citation moves.
+
+35. **Cyclomatic complexity at most 10 per function.** Lint-enforced in every variant: ESLint `complexity: ['error', 10]` in both TypeScript configs, PMD `CyclomaticComplexity` (`methodReportLevel` 11) bound to `verify` in Java. It counts what the size caps (functions under 10 lines, one indentation level) cannot see: a one-line chain of `&&`/`??`/ternaries, a wide `switch`. The fix is never a bigger number; split the function or dispatch on a map. See `references/workflow.md` (Complexity gate).
+
 ## The TDD process (non-negotiable - every feature)
 
 Red-Green-Refactor is the only loop — with the test boundary confirmation-gated (rule 24):
@@ -272,6 +276,7 @@ See `references/solid-principles.md`.
 **Structure.**
 - Functions < 10 lines. Modules < 50 lines. Files < 100 lines. If larger, split.
 - One level of indentation per function. Extract when deeper.
+- Cyclomatic complexity at most 10 per function, lint-enforced (rule 35).
 - No `else`. Use early returns and guard clauses.
 - One dot per line (Law of Demeter). Do not chain through object graphs.
 - Use `Object.hasOwn(map, key)` (or `Object.prototype.hasOwnProperty.call(map, key)`) for untrusted key lookup. Never the `in` operator, which matches prototype keys.
@@ -429,6 +434,7 @@ The hard rules are universal unless this table says otherwise. Gates and tooling
 | Mock ban (rule 13) | `no-restricted-imports` in ESLint config | Same rule, added with the test setup | No Mockito/EasyMock in the pom at all; hand-written fakes implement the ports |
 | Rules 21–22 (design system, styling seal) | n/a (no UI) | Mandatory, lint-enforced (design-system ESLint block) | n/a (no UI) |
 | Rules 27–34 (production disciplines) | Apply when the concern exists | Apply when the concern exists | Apply when the concern exists (Java expressions in `references/java-quarkus.md`) |
+| Complexity cap (rule 35) | ESLint `complexity` 10 in `eslint.config.js` | The same rule in `eslint.config.mjs` | PMD `CyclomaticComplexity`, level 11, in `verify` (`assets/java/pmd-ruleset.xml`) |
 
 Whatever the variant, **every gate proves it can fail**: when you add or change a gate (a lint rule, a coverage tier, a hook, a CI check), land a violation fixture the gate must reject and keep it re-running, so a toolchain upgrade that silently disables the gate turns CI red instead of quiet. A gate only ever seen green is a hypothesis. The skill repo's own smoke tests are the reference implementation: each proves its gates pass on compliant code AND block their target violation.
 
