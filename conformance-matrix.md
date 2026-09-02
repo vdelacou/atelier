@@ -134,7 +134,7 @@ bans only `latest`, `*`, and bare dist-tags, and its own comment lists what it "
 '^1.2.3' / '~1.2.3' / '>=1.0.0'" (check-package-json.sh:37), while `bun add` "pins to ^X.Y.Z
 automatically" (check-package-json.sh:71) and workflow.md:364 requires "a concrete version
 (X.Y.Z) or a real range (^X.Y.Z ...)". The scan clause is covered as doctrine (`bun audit` in
-CI daily and on dependency PRs, security.md:67, workflow.md:731) and the automated-update
+CI daily and on dependency PRs, security.md:67, workflow.md:659) and the automated-update
 clause is covered thinly (Renovate is named, but only in the Java reference, java-quarkus.md:19;
 the Bun side leans on a manual `bun update` cadence and ships no Renovate or dependabot config).
 But the pin clause is contradicted, and CONTRADICTS dominates. The skill's rationale (a
@@ -361,7 +361,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 15.6 | Audit the gaps between systems | COVERED | workflow.md:563; testing.md:663 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
 | 15.7 | Fix the class, not the instance | COVERED | workflow.md:564-640 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
 | 15.8 | Make proof re-checkable | COVERED | governance.md:91-139; workflow.md:571 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
-| 15.9 | Spend human judgment where it counts | COVERED | workflow.md:692; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
+| 15.9 | Spend human judgment where it counts | COVERED | workflow.md:620; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
 | 15.10 | Prove the gate can fail | COVERED | SKILL.md:444; scripts/smoke-test.sh | gate | Doctrine after the variant gate table, every gate lands with a violation fixture it must reject; the repo smoke tests are the reference implementation |
 
 ### Pillar 16: Measure whether you are improving
