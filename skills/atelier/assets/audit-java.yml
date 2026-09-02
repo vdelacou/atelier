@@ -31,4 +31,8 @@ jobs:
       # A vendored standard goes stale silently while every other gate stays
       # green; this fails when the pinned copy falls behind upstream.
       - name: vendored standard is current
+        env:
+          # The repository the whole vendored tree is compared against (a
+          # shallow clone); point it at your fork if you keep one.
+          SKILL_PIN_UPSTREAM: https://github.com/vdelacou/atelier
         run: bash scripts/check-skill-pin.sh

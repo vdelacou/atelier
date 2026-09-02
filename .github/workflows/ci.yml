@@ -104,3 +104,7 @@ jobs:
       # bootstrap reference; non-preinstalled binaries get an install step.
       - run: bash scripts/check-workflow-assets.sh --selftest
       - run: bash scripts/check-workflow-assets.sh
+      # the shipped staleness gate proves itself: file, tree, and cloned-upstream
+      # modes reject a stale copy, and the degrade paths (unset or unreachable
+      # upstream) pass with a note instead of blocking.
+      - run: bash skills/atelier/assets/check-skill-pin.sh --selftest

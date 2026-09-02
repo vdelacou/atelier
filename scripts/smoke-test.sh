@@ -412,6 +412,24 @@ printf '# fixture\n\n## Verify\n```bash\ntest -f a-path-the-readme-claims-but-is
 expect_err "docs-check fails when a documented command breaks" bash scripts/check-docs.sh README.md
 rm -f README.md
 
+echo "== staleness gate (a vendored standard is a dependency; references/governance.md) =="
+# Proven on the real skill tree: a vendored copy identical to upstream passes,
+# one reference behind fails, and an unset upstream degrades with a note. The
+# selftest covers the file, tree, and cloned-upstream modes offline. Before
+# 2026-09-02 the bare invocation the shipped workflow uses compared SKILL.md
+# only, so a stale reference or asset was reported current.
+cp "$SKILL/assets/check-skill-pin.sh" scripts/
+expect_ok "check-skill-pin.sh selftest (file, tree, and cloned upstream; the degrade paths)" bash scripts/check-skill-pin.sh --selftest
+mkdir -p .claude/skills && cp -R "$SKILL" .claude/skills/atelier
+expect_ok "check-skill-pin.sh passes a vendored tree identical to upstream" \
+  env SKILL_PIN_UPSTREAM="$SKILL" bash scripts/check-skill-pin.sh
+printf '\nstale\n' >> .claude/skills/atelier/references/workflow.md
+expect_err "check-skill-pin.sh fails when one vendored reference is behind upstream" \
+  env SKILL_PIN_UPSTREAM="$SKILL" bash scripts/check-skill-pin.sh
+expect_ok "check-skill-pin.sh degrades, not blocks, when no upstream is configured" \
+  env -u SKILL_PIN_UPSTREAM bash scripts/check-skill-pin.sh
+rm -rf .claude
+
 echo "== fast pre-commit hook end-to-end (the 5 fast gates: size, package.json, gitleaks, lint:staged, typecheck) =="
 git add package.json src/domain/greeting.ts src/domain/greeting.test.ts
 expect_ok "fast pre-commit hook end-to-end" bash .githooks/pre-commit

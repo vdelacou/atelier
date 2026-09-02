@@ -39,10 +39,10 @@ doctrine and the assets that enforce it move together. Vendor it ONCE per repo: 
 of the standard in one tree is 12.1 drift with extra steps.
 
 The re-check is mechanical, not a memory exercise: `assets/check-skill-pin.sh` compares the
-vendored `SKILL.md` against upstream and fails when it has fallen behind, and it rides in
-`assets/audit.yml` beside the CVE scan rather than blocking commits, because upstream doctrine
-changes independently of your diff. It degrades when it cannot reach upstream, and says so:
-unverified is not the same as current.
+whole vendored tree (SKILL.md, references, assets) file by file against upstream, a repository
+URL cloned shallowly or a local checkout (`SKILL_PIN_UPSTREAM`, set in `assets/audit.yml`), and
+fails when any file is behind; it rides beside the CVE scan rather than blocking commits, since
+upstream moves independently of your diff, and degrades when it cannot check, saying so.
 
 ## Decision records (why is it like this)
 

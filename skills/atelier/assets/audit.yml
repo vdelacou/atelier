@@ -23,6 +23,10 @@ jobs:
       # goes stale silently while every other gate stays green. Scheduled, not
       # a commit gate, for the same reason as the CVE scan above.
       - name: vendored standard is current
+        env:
+          # The repository the whole vendored tree is compared against (a
+          # shallow clone); point it at your fork if you keep one.
+          SKILL_PIN_UPSTREAM: https://github.com/vdelacou/atelier
         run: bash scripts/check-skill-pin.sh
       # An advisory with no upstream fix is allow-listed here, project-level, with a reason:
       # - run: bun audit --audit-level=high --ignore GHSA-xxxx-xxxx-xxxx  # no patched release as of YYYY-MM-DD; tracking <link>

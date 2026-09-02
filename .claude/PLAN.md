@@ -26,7 +26,7 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 6. [x] fix(atelier): isolation tripwire wants a 404 inside a test naming the route. DoD: three
        fixtures (wrong test file red, 404 in comment red, 404 in a test block green); Java mirror;
        V1 V2.
-7. [ ] fix(atelier): the staleness gate runs in tree mode from the shipped workflow. DoD: tree
+7. [x] fix(atelier): the staleness gate runs in tree mode from the shipped workflow. DoD: tree
        fixture red/green in smoke test; `--selftest` in ci.yml; no /tmp path, no handle in the
        script; V1 V4 V3.
 8. [ ] docs(atelier): check-docs.sh names its trust boundary. DoD: comment lands; V1.
