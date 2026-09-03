@@ -26,8 +26,8 @@ C1 of the Atelier vs Global Rules conformance plan.
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 182b1daea11727fd1a12a23aa32efc4cb90d0275b5e0396ce4aebdd7fdfeecf3 | 3483 |
-| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 9aecbec33d9b9f33280bf778fb0d3f021bdb5c01332813eab733559eda04cfd2 | 285 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 6a64f4ed57ba18bbb9307357f01b03b866eb797f2ca63d7e8115fa96a2ddb125 | 3483 |
+| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 2ab24a108d291023991b7810e19ad54c3b489990158504d584a58073de01dc90 | 285 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
 
 - IDs and titles are imported verbatim from the "Every sub-concept" index of the

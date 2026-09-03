@@ -497,7 +497,7 @@ Cascade if accepted: dos-and-donts 10.6 Do plus example, every-new-project.md's 
 
 ---
 
-## 2.4 / 2.2 A seam is earned by an external dependency, not by a second implementation (proposed 2026-09-03, status: proposed)
+## 2.4 / 2.2 A seam is earned by an external dependency, not by a second implementation (proposed 2026-09-03, status: ACCEPTED 2026-09-03)
 
 **Current canon.** 2.2's Java Don't (:231-233): "an abstract base plus one subclass, ceremony around a single behavior." 2.4's Do (:268) introduces "the interface now" and its examples (:278-279 TS, :289-290 Java) are exactly an interface plus one trivial implementation (`Cache` plus `MapCache`).
 
@@ -513,7 +513,7 @@ and in 2.2's Java Don't comment: `// no IO behind this, so no port: the abstract
 
 Cascade if accepted: dos-and-donts 2.2 and 2.4; the pillar-2 prose bullet "Defer the build, not the seam" (every-new-project.md:53) gains "when the thing behind it is external"; both pins re-pin; forward matrix rows 2.2 and 2.4 unchanged (the skill's complexity.md already carries the external-only condition).
 
-**Ruling.** Pending.
+**Ruling.** ACCEPTED as drafted by the canon owner, 2026-09-03. Applied: 2.4's Do carries the external-thing condition and cites 3.2 and 2.2, its Don't names the internal-logic interface; 2.2's Java Don't comment carries the contrast; the pillar-2 prose bullet says the seam is for an external thing. Both pins re-pinned.
 
 ---
 

@@ -228,7 +228,7 @@ function apply(kind: "double" | "triple", n: number): number {
 
 Java:
 ```java
-// DON'T: an abstract base plus one subclass, ceremony around a single behavior
+// DON'T: an abstract base plus one subclass, ceremony around a single behavior (no IO behind it, so no port: contrast 2.4)
 abstract class Greeter { abstract String greet(String n); }
 class EnGreeter extends Greeter { String greet(String n) { return "Hi " + n; } }
 // DO: delete the hierarchy, the method is enough until a second language is real
@@ -265,8 +265,8 @@ String toTsv(List<Row> rows)  { return join(rows, '\t'); }
 ```
 
 ### 2.4 Defer the build, not the seam
-**Do:** Introduce the interface now and implement only the version you actually need today.
-**Don't:** Build the heavy, feature-rich implementation before there is a real requirement for it.
+**Do:** Introduce the interface now, and implement only the version you actually need today, when the thing behind it is external (a database, a mailer, a queue, a model: the port of 3.2); a purely internal behaviour with one implementation stays a plain function or class (2.2).
+**Don't:** Build the heavy, feature-rich implementation before there is a real requirement for it, or put an interface in front of internal logic that will only ever have one implementation.
 
 TypeScript:
 ```ts
