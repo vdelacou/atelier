@@ -27,6 +27,14 @@ whole, not any single skill.
   never see. `sonarjs/cognitive-complexity` stays off; one metric.
 - An em-dash gate for the skill repo itself (`scripts/check-no-em-dash.sh`, hook and CI).
 
+### Changed
+- Rule 32's eval gate is an artifact, not a sentence: a labeled case set under
+  `evals/<capability>/`, a runner that exits non-zero below `--min-score` wired as the `evals`
+  package script, and the CI job that runs it on prompt, pin, or schema changes. `ai.md` shows
+  the three files and a minimal runner; the after-change checklist, the review-me discipline
+  scan, and the red-flag list name the same shape. Found by the h6 conformance task, which
+  the skill arm missed in four runs of five by describing the eval in a comment.
+
 ### Fixed
 - `check-commit-messages.sh` and `check-commit-range.sh` checked an empty range on a push to
   main (HEAD is origin/main there), so the CI half of rule 23 was decorative on the
