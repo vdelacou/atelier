@@ -559,7 +559,7 @@ Cascade if accepted: dos-and-donts only; its pin re-pins; citations re-locked if
 
 ---
 
-## Profiles appendix, row A: the numbers move out of the sub-concepts (proposed 2026-09-03, status: proposed)
+## Profiles appendix, row A: the numbers move out of the sub-concepts (proposed 2026-09-03, status: ACCEPTED 2026-09-03)
 
 **Current canon.** Eleven sub-concepts state a stack-specific number or vendor as principle: 4.4 (:745, Stryker, PIT, 100/90/80), 15.2 (`bunfig.toml`, 0.80), 1.3 (commitlint, 100 characters), 10.8 (a pinned k6 action, p99 under 300 ms at 100 VUs), 5.9 (200 000 tokens per org per day), 17.7 (180 kB and 400 kB, 44 px targets), 7.6 (UUIDv7 and a named library), 10.13 (2000 ms, 3 attempts, 200 ms jitter), 16.4 and 16.5 (50 percent week over week, CFR over 0.15 for 7 days), 14.3 (a 4-business-hour SLA, 90 percent adoption).
 
@@ -575,4 +575,4 @@ with `global-rules-profiles.md` § atelier carrying "Stryker (TS) and PIT (Java)
 
 Cascade if accepted: dos-and-donts 4.4 Do; the new profiles file added to the matrix's pinned-inputs table with its sha256; the drift checker's file set (it globs the directory, so no code change, but its selftest gains the fourth file); matrix rows stay COVERED (the skill is the atelier profile) with evidence cells unchanged; both pins re-pin. The atelier hard rule 35 threshold (10) belongs to this profile too and joins in row B.
 
-**Ruling.** Pending.
+**Ruling.** ACCEPTED as drafted by the canon owner, 2026-09-03. Applied: `docs/global-rules/global-rules-profiles.md` created with the atelier section and 4.4 as its first row; 4.4's Do keeps the obligation and points at the profile; the matrix's pinned-inputs table carries the new file's sha256 (the drift checker verifies every pinned file, so no code change); matrix rows stay COVERED with their evidence unchanged; the reverse matrix's row 35 note points at row B. Row B (the other ten numbers plus rule 35's cap) is the next proposal.

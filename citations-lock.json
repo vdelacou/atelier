@@ -3,7 +3,7 @@
     "docs/global-rules/global-rules-dos-and-donts.md:1273": "### 6.3 Keep personal data out of logs and URLs",
     "docs/global-rules/global-rules-dos-and-donts.md:2888": "**Do:** Wire the fast gates (format, staged lint, secret scan) into a pr",
     "docs/global-rules/global-rules-dos-and-donts.md:46": "These numbers and titles are the canonical rule identifiers. External ch",
-    "docs/global-rules/global-rules-dos-and-donts.md:745": "**Do:** Judge a suite by its mutation score, using Stryker for TS and PI",
+    "docs/global-rules/global-rules-dos-and-donts.md:745": "**Do:** Judge a suite by its mutation score, not its line coverage: core",
     "skills/atelier-greenfield/SKILL.md:8": "Bring a repo into existence already conforming to the atelier standard, ",
     "skills/atelier-grill-me/SKILL.md:18": "- The plan is a new product or feature: before grilling how to build it,",
     "skills/atelier/SKILL.md:126": "Whatever the variant, **every gate proves it can fail**: when you add or",

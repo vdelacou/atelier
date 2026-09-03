@@ -742,7 +742,7 @@ class GreetTest {
 ```
 
 ### 4.4 Treat mutation testing as the real coverage KPI
-**Do:** Judge a suite by its mutation score, using Stryker for TS and PIT for Java: core gates at 100 percent line coverage and a mutation score of at least 90, glue at an explicit looser floor (80 percent line, see 15.2).
+**Do:** Judge a suite by its mutation score, not its line coverage: core logic gates on a mutation threshold and a line-coverage floor that the project's profile names (global-rules-profiles.md), glue and adapters on an explicit looser floor, and when a gate is hard to pass the code is restructured, never the threshold lowered.
 **Don't:** Trust a green line-coverage number that no assertion actually defends.
 
 TypeScript:
