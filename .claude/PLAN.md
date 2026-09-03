@@ -70,3 +70,6 @@ every assertion change (its existing idiom).
 - [x] LESSONS entries (3930609); this file to final state; final report. All four slices landed
       2026-09-03 (dcd7265, 257ee2d, dbc705b, 377ddfe, 33c972b, 2a73fd4, the fixture commit).
       Nothing pushed; push is a separate ask.
+
+- 2026-09-03, after the revamp: first tier-1 measurement of a doctrine edit (rule 32's eval
+  artifact), 16 tasks in 25 min, skill 50/50 vs frozen 32/50, h6 5/5. Main is green at cd6db72.

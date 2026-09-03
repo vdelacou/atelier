@@ -319,3 +319,15 @@ The always-on cheap companion stays in CI: the `matrix-drift` gate in `ci.yml`
 (`scripts/check-matrix-drift.py`), which holds the matrix to the vendored canon on every push.
 Re-baseline whenever `tasks.json` or the skill changes materially; the run dirs are gitignored, this
 scorecard is the committed reference.
+
+## Tier-1 runs (the log of measured doctrine edits)
+
+- 2026-09-03, rule 32's eval gate restated as an artifact (7df1523). `CONFORMANCE_SINCE=HEAD~1`
+  selected 16 of 21 tasks (the after-change checklist line names every discipline 27-34, so a
+  diff on it selects the whole discipline tier; a narrower edit selects less), skill arm, six jobs,
+  25 minutes wall clock. with_skill 50/50 against the frozen arm's 32/50. h6 read 5/5 with the
+  named artifact in the diff (an `evals/` case set, `scripts/run-evals.ts` with `--min-score`, the
+  `evals` package script, and a CI workflow), where the five earlier reruns under the sentence
+  form had 4/5 with the eval described in a comment. That h6 session exited non-zero with an
+  empty transcript after writing its files (not capped: the cap file is empty) and was graded
+  as produced, which is the harness contract; the artifact, not the exit code, is the evidence.
