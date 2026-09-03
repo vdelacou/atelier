@@ -517,7 +517,7 @@ Cascade if accepted: dos-and-donts 2.2 and 2.4; the pillar-2 prose bullet "Defer
 
 ---
 
-## 10.2 / 5.8 / 6.1 / 6.7 The Java examples throw the outcome 10.2 forbids (proposed 2026-09-03, status: proposed)
+## 10.2 / 5.8 / 6.1 / 6.7 The Java examples throw the outcome 10.2 forbids (proposed 2026-09-03, status: ACCEPTED 2026-09-03)
 
 **Current canon.** 10.2's Don't (:1984): never throw for an expected business outcome; the 2026-08-30 strengthening fixed where a catch may live. Three Java Do blocks throw an expected outcome: 5.8 `throw new ForbiddenException()` when the model's requested action is not authorized (:1141), 6.1 `throw new ConsentRequiredException()` (:1238), 6.7 `orElseThrow(() -> new AssessmentRequiredException(...))` (:1420). Each TypeScript twin returns a value (6.7's returns `Result<Decision, 'dpia_missing'>` at :1406).
 
@@ -527,7 +527,7 @@ Cascade if accepted: dos-and-donts 2.2 and 2.4; the pillar-2 prose bullet "Defer
 
 Cascade if accepted: three example blocks in dos-and-donts; the dos-and-donts pin re-pins; forward matrix rows 5.8, 6.1, 6.7 unchanged (the skill's ai.md and privacy.md already use `Result`).
 
-**Ruling.** Pending.
+**Ruling.** ACCEPTED as drafted by the canon owner, 2026-09-03. Applied: 5.8's Java Do switches over the parsed tool call and returns `Err(ToolError.FORBIDDEN)` for an unauthorized action, 6.1's returns `Err(SignupError.CONSENT_REQUIRED)`, 6.7's returns `Result<Void, TransferError>` with `DPIA_MISSING`; each comment names the boundary status the resource maps it to. The dos-and-donts pin re-pinned.
 
 ---
 

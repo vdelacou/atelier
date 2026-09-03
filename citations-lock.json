@@ -1,7 +1,7 @@
 {
   "entries": {
-    "docs/global-rules/global-rules-dos-and-donts.md:1271": "### 6.3 Keep personal data out of logs and URLs",
-    "docs/global-rules/global-rules-dos-and-donts.md:2882": "**Do:** Wire the fast gates (format, staged lint, secret scan) into a pr",
+    "docs/global-rules/global-rules-dos-and-donts.md:1273": "### 6.3 Keep personal data out of logs and URLs",
+    "docs/global-rules/global-rules-dos-and-donts.md:2885": "**Do:** Wire the fast gates (format, staged lint, secret scan) into a pr",
     "docs/global-rules/global-rules-dos-and-donts.md:46": "These numbers and titles are the canonical rule identifiers. External ch",
     "docs/global-rules/global-rules-dos-and-donts.md:745": "**Do:** Judge a suite by its mutation score, using Stryker for TS and PI",
     "skills/atelier-greenfield/SKILL.md:8": "Bring a repo into existence already conforming to the atelier standard, ",

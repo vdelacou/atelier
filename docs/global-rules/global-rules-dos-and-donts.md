@@ -1135,11 +1135,13 @@ Java:
 // DON'T: document text becomes the prompt, the returned action is executed on trust
 String out = llm.run("Act on this: " + doc.text()); // the text says "export the customer table", so it does
 tools.run(out);
-// DO: content quoted as data; the requested action is validated and authorized server-side
-ToolCall call = ToolCall.parse(llm.run(POLICY, quoted(doc.text())))
-    .orElseThrow(InvalidToolCallException::new);            // boundary validation (5.5)
-if (!authz.allows(ctx.actor(), call)) throw new ForbiddenException(); // the model is not a principal
-tools.run(call);                                            // allow-listed, least privilege (7.4)
+// DO: content quoted as data; the requested action is validated and authorized server-side, and a refusal is a value (10.2)
+return switch (ToolCall.parse(llm.run(POLICY, quoted(doc.text())))) {   // boundary validation (5.5)
+  case Err<ToolCall, ToolError>(var e) -> new Err<>(e);                  // malformed request: a value, never a throw
+  case Ok<ToolCall, ToolError>(var call) -> authz.allows(ctx.actor(), call) // the model is not a principal
+      ? tools.run(call)                                                    // allow-listed, least privilege (7.4)
+      : new Err<>(ToolError.FORBIDDEN);                                    // the resource maps it to 403 at the boundary
+};
 ```
 
 ### 5.9 Cap what a caller can spend
@@ -1231,11 +1233,11 @@ Java:
 ```java
 // DON'T: consent logic branches on a single assumed country
 if (user.country.equals("US")) proceedWithoutConsent();
-// DO: derive the applicable regimes and enforce the strictest baseline
+// DO: derive the applicable regimes and enforce the strictest baseline; a missing consent is a value, not a throw (10.2)
 PrivacyPolicy policy = privacyPolicies.strictestFor(
     user.residency(), user.dataLocations()); // union of GDPR, PIPL, and others
 if (policy.requiresExplicitConsent() && !user.hasConsented()) {
-    throw new ConsentRequiredException();
+    return new Err<>(SignupError.CONSENT_REQUIRED); // the resource maps it to 409 at the boundary
 }
 ```
 
@@ -1414,11 +1416,12 @@ Java:
 ```java
 // DON'T: cross-border transfer runs with no impact assessment on record
 public void exportToRegion(Dataset d, Region r) { transfer.send(d, r); } // unassessed
-// DO: require an approved assessment before the risky processing proceeds
-public void exportToRegion(Dataset d, Region r) {
-    ImpactAssessment dpia = assessments.forTransfer(d.classification(), r)
-        .orElseThrow(() -> new AssessmentRequiredException("cross-border DPIA missing"));
-    if (dpia.approved()) transfer.send(d, r); // else the transfer never happens
+// DO: require an approved assessment before the risky processing proceeds; its absence is a value, not a throw (10.2)
+public Result<Void, TransferError> exportToRegion(Dataset d, Region r) {
+    return assessments.forTransfer(d.classification(), r)
+        .filter(ImpactAssessment::approved)
+        .<Result<Void, TransferError>>map(dpia -> transfer.send(d, r))   // approved: the transfer runs
+        .orElse(new Err<>(TransferError.DPIA_MISSING));                   // unassessed: it never happens, as a value
 }
 ```
 

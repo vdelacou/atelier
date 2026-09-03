@@ -26,7 +26,7 @@ C1 of the Atelier vs Global Rules conformance plan.
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 6a64f4ed57ba18bbb9307357f01b03b866eb797f2ca63d7e8115fa96a2ddb125 | 3483 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | a846d512be3aa65d475755f5bd2e72d23483fa6b5ae94872e1a3e428aa8b70d9 | 3486 |
 | Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 2ab24a108d291023991b7810e19ad54c3b489990158504d584a58073de01dc90 | 285 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
 
@@ -76,7 +76,7 @@ the hook (its own list: "format, staged lint, secret scan") and every gate in CI
 violation blocks the merge while the hook stays quick enough that nobody routes around it";
 its example spells out that "the full suite, coverage, and slow scans run in CI only" because
 "a gate's home is chosen by its speed, not its importance, and a multi-minute hook trains
---no-verify (15.3)" (global-rules-dos-and-donts.md:2882, 2897-2898). The skill's hook does the
+--no-verify (15.3)" (global-rules-dos-and-donts.md:2885, 2897-2898). The skill's hook does the
 opposite. `assets/pre-commit` runs eight gates in sequence, and gates 4 through 8 are the full
 test suite, the type-aware strict lint (workflow.md:367@430c740 self-times it at about 25 seconds),
 per-tier coverage, and Stryker mutation, which workflow.md:370@430c740 self-reports at "1-3 min per
@@ -97,7 +97,7 @@ full suite, coverage, and mutation as the required merge check. This row is now 
 **2. The logger redacts personal data (6.3, COVERED, tripwire).** Present and precise. Canon
 6.3's Do has three clauses: personal data and free text travel in a POST body, redaction
 happens at the logger before anything is written, and opaque internal ids may be logged while
-natural identifiers never are (global-rules-dos-and-donts.md:1271 and the Do sentence). The
+natural identifiers never are (global-rules-dos-and-donts.md:1273 and the Do sentence). The
 skill meets all three. POST-body-not-query-string: "Personal data and any free text the user
 typed travel in a POST body ... Searching by someone's name is a POST, not a GET"
 (privacy.md:44). Redact-at-the-logger: a Winston `redactFormat` whose key set is
