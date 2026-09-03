@@ -1,75 +1,73 @@
-# Plan: conformance harness revamp (2026-09-03)
+# Plan: mutation cadence, changed files per run, full sweep daily (2026-09-03)
 
-Owner ruling 2026-09-03: harness only, no field runner. Context: a conformance run is one
-full `claude -p` coding session (opus, 6 to 11 min, no cap); the routine matrix is 21 tasks x
-2 arms x 3 passes, hours at 4 jobs; the baseline arm never reads the skill. The 2026-09-03
-reruns (r1-r5, h4/h6) spent about an hour per pass confirming two grader artifacts: 4.8 is the
-word `eval` with boundaries (r4 shipped `evals/` + `scripts/run-evals.ts --min-score` and
-scored 0) and 7.5 wants a 404 in a test on a list endpoint (all five runs ship a forged-id
-test, none can 404). Shrink the harness, do not rebuild it. No new instrument beyond the
-selection mode; the judge, the review eval and the trigger eval are untouched.
+Owner's ruling (2026-09-03): CI never runs the full mutation sweep on a commit; it mutates the
+changed files only, on pull requests and on pushes to main alike. The full sweep runs once a day
+on a schedule, outside the merge gate. Both variants.
 
-Standing rules: every grader change ships a red fixture in `grade.py --selftest`; commits
-Conventional, <=10 files / <=300 lines; commit each slice once green (standing approval from
-the previous task, push stays a separate ask); no em dashes; baseline.md gets a dated note for
-every assertion change (its existing idiom).
+## Design
 
-## Slice 1: structural assertions for 4.8 and 7.5 (grader shapes, red first)
+- Bun: `mutate:changed` resolves its base the way the commit gates do (a PR: `origin/<base>`;
+  a push: `GITHUB_EVENT_BEFORE`, zero SHA or unresolvable falls back to `HEAD~1`; elsewhere
+  `origin/main`, `BASE=` still overrides), so `assets/ci.yml` runs it on every event. Without
+  that, a push to main has HEAD == origin/main and the step passes over nothing (the hole the
+  commit gates had until 2026-09-02). New `assets/mutation.yml`: daily cron plus
+  `workflow_dispatch`, frozen install, `bun run mutate`. A red scheduled run is the signal, the
+  audit.yml pattern; it is not a required check.
+- Java: new `assets/pit-changed.sh` (the mirror of mutate-changed.sh: same base resolution,
+  untracked files in scope, fails loudly on an unknown base, exits 0 with a message when no
+  class under `domain`/`usecases` changed) runs PIT with `-Dpitest.targetClasses=<fqcn,...>`;
+  the canonical pom reads `<targetClasses>${pitest.targetClasses}</targetClasses>` with the two
+  package globs as the property default, so the CLI can narrow it. `assets/ci-java.yml` runs the
+  script; new `assets/mutation-java.yml` runs the full `mutationCoverage` daily.
+- Doctrine: the cadence is a profile value (canon 4.4 keeps the KPI; the profiles appendix row
+  carries "changed files per run, full sweep daily"). The canon's 4.4 example comment says
+  "main runs the full sweep": a P6 row proposes the scheduled sweep instead, applied on the
+  owner's ruling.
 
-- [x] tasks.json h6 4.8: one file whose path or content names an eval set
-      (`\b(evals?|evaluations?|golden|regression)\b`, so `evaluate` never matches) AND carries
-      a threshold token (`min.?score|threshold|toBeGreaterThan|>=|score`), globs `.ts .tsx
-      .json` so a package.json script counts.
-- [x] tasks.json h4 7.5: a test file with a 404 / not-found assertion OR a scenario name that
-      states the cross-owner attempt (`(forg|another|other|cross|foreign|second)` within 60
-      chars of `org|tenant|owner`), the list-endpoint shape.
-- [x] grade.py selftest, fourth scenario: synthetic run dirs prove each new shape passes on
-      the artifact (an `evals` script with `--min-score`; a forged-org test name; a 404 test)
-      and fails on the trap (a file saying `evaluate ... score` with no eval set; `evals`
-      with no threshold; a same-owner-only test).
-- [x] baseline.md dated note: what changed and why, with the r1-r5 re-read under the new
-      shapes (expected: h4 3/3 in all five, h6 5/5 in r4 only; r2 h6 stays 4/5, a real miss).
-- DoD: `python3 scripts/conformance-eval/grade.py --selftest` green and red when a shape is
-  reverted (prove by hand once); regrade r1-r5 and record; commit.
+Assumptions, named: cron `0 3 * * *` UTC for both sweeps; the scheduled workflow does not
+upload reports (one fewer action to pin; add `actions/upload-artifact` per repo if wanted);
+`pitest.targetClasses` is a comma-separated property (PIT documents the CLI form, the smoke test
+proves the narrowed run).
 
-## Slice 2: diff-targeted selection (`--since <ref>`)
+## Standing rules
 
-- [x] `CONFORMANCE_SINCE=<ref>` for run.sh, `select-tasks.py` (a module named select.py shadows the stdlib): diff `skills/atelier/**` against the
-      ref, collect touched hard-rule numbers (a `NN.` line in SKILL.md, the reference's rule
-      list from the trigger table) and canon ids, map to tasks whose assertions cite those
-      rules (tasks.json is rule-tagged; add a `hard_rules` list per task where the mapping is
-      not derivable), run only those, skill arm only, one pass, JOBS 6 default.
-- [x] calling select-tasks.py directly is the dry run; selftest: a synthetic diff touching rule 28 selects
-      h4, h5 and nothing else.
-- DoD: dry-run on this branch's SKILL.md diff selects the h tier only; selftest green; the
-  README/CLAUDE.md verify lines name the new mode.
+Commits at most 10 files / 300 lines, Conventional, each gate change with its red fixture in
+the matching smoke test, companions swept in the doctrine slice, citations re-anchored per
+slice. Commit under the standing approval; push on an explicit ask. Verify set: V1
+`smoke-test.sh`, V2 `smoke-test-java.sh`, V3 `check-citations.py`, V4
+`check-workflow-assets.sh`, V5 `check-matrix-drift.py`, V6 `validate-frontmatter.ts`, V7
+`check-no-em-dash.sh`.
 
-## Slice 3: freeze the baseline arm
+## Slices
 
-- [x] baseline arm results become a committed fixture (one opus pass, 21 tasks, unaided 39/61) (`scripts/conformance-eval/
-      baseline-arm.json`: per task/assertion pass counts, tasks.json sha256, model, date).
-- [x] grade.py `--frozen-baseline` reads it for the delta instead of baseline run dirs; a
-      tasks.json hash mismatch is an error naming the re-run command.
-- [x] run.sh default arms become `with_skill`; `CONFORMANCE_ARMS=both` re-runs the baseline.
-- DoD: grading a skill-only runs dir prints a delta against the frozen arm; hash-mismatch
-  selftest red; baseline.md documents the freeze.
-
-## Slice 4: caps and tiers
-
-- [x] run.sh: a wall-clock cap per session (portable watchdog, macOS has no timeout) and `--max-turns` 60 (default 15
-      min) around `claude -p`; a capped run is graded as produced, and the summary names it.
-- [x] incremental grading: `run.sh` prints each run's scorecard line as it finishes.
-- [x] `CONFORMANCE_MODEL` documented as the smoke lever (sonnet for tier 1, opus for tier 2).
-- [x] baseline.md and CLAUDE.md: the tier contract (tier 0 static gates in CI; tier 1
-      `--since` skill arm one pass after any doctrine edit; tier 2 full matrix both arms on a
-      description change or before a release).
-- DoD: a run with `--max-turns 1` finishes under a minute and grades; docs name the tiers.
-
-## Wrap
-
-- [x] LESSONS entries (3930609); this file to final state; final report. All four slices landed
-      2026-09-03 (dcd7265, 257ee2d, dbc705b, 377ddfe, 33c972b, 2a73fd4, the fixture commit).
-      Nothing pushed; push is a separate ask.
-
-- 2026-09-03, after the revamp: first tier-1 measurement of a doctrine edit (rule 32's eval
-  artifact), 16 tasks in 25 min, skill 50/50 vs frozen 32/50, h6 5/5. Main is green at cd6db72.
+1. [x] feat(atelier): mutate:changed resolves the CI range; ci.yml runs it on every event (fd9e653,
+       merged with slice 2 so the prose never cites an asset that does not exist yet).
+       Files: assets/mutate-changed.sh, assets/ci.yml, scripts/smoke-test.sh, workflow.md
+       (CI paragraph, the three-scopes list, the guarantees list), assets/mutate-staged.sh header.
+       Red fixture: in the smoke fixture, commit a domain change, then
+       `GITHUB_EVENT_NAME=push GITHUB_EVENT_BEFORE=$(git rev-parse HEAD~1) bun run mutate:changed`
+       must test that one file (today: exits 1 on the missing origin/main).
+       DoD: V1 green with the new case seen red before the script change; V3; V7.
+2. [x] feat(atelier): the daily full mutation sweep, `assets/mutation.yml` (in fd9e653).
+       Files: assets/mutation.yml, scripts/check-workflow-assets.sh (the loop and the bootstrap
+       case learn `mutation*.yml`), bun-typescript.md bootstrap step 14, README copy block,
+       scripts/smoke-test.sh (asset present, scheduled, runs `bun run mutate`; ci.yml no longer
+       runs the full sweep), workflow.md (Mutation testing section names the sweep).
+       DoD: V4 (with its selftest), V1, V3.
+3. [x] feat(atelier): PIT on changed classes in CI, full sweep daily (Java). V2 first run: every PIT
+       case green, two asset checks failed on a quoting slip (unexported $SKILL inside bash -c),
+       fixed, second run all green.
+       Files: assets/pit-changed.sh, assets/ci-java.yml, assets/mutation-java.yml,
+       java-quarkus.md (pom fence property + targetClasses, PIT bullet, gates list, CI paragraph,
+       bootstrap copy lines), scripts/smoke-test-java.sh (narrowed run on one changed class,
+       unknown base fails loudly, no change exits 0, workflow assets present).
+       DoD: V2 green with the narrowed case seen red before the pom change; V4; V3.
+4. [x] docs(atelier): the cadence everywhere else. SKILL.md matrix row 116 and checklist 180,
+       README commitments row 39, profiles appendix row 4.4, matrix notes 4.4/4.6/15.1, workflow.md
+       summary lines 631 and 667, review-me/greenfield if they echo the cadence, CHANGELOG.
+       DoD: V3 (`--lock` after re-anchor), V5, V6, V7.
+5. [ ] docs(canon): P6 row for the 4.4 example comment (scheduled full sweep), status proposed;
+       applied on the owner's ruling with the hash re-pin. DoD: V5.
+6. [ ] tier 1: `CONFORMANCE_SINCE=<pre-slice-1 ref> CONFORMANCE_MODEL=claude-opus-5 bash
+       scripts/conformance-eval/run.sh`, graded `--frozen-baseline`; report. LESSONS entry if a
+       gotcha surfaces; this file to final state.

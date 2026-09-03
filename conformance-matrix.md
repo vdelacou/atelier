@@ -29,7 +29,7 @@ C1 of the Atelier vs Global Rules conformance plan.
 | Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 92006e613843b894a05088a5571188e983cb58ccc4d92db97ff1e02b3fd1c3a7 | 3489 |
 | Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 2ab24a108d291023991b7810e19ad54c3b489990158504d584a58073de01dc90 | 285 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
-| Profiles, the stack's tools and thresholds (P6 row A, 2026-09-03) | docs/global-rules/global-rules-profiles.md | 3c2a7832dcc71bd7fa5a5978ff973fd3a9ba1a18f80526630359bd316e0b6ccb | 18 |
+| Profiles, the stack's tools and thresholds (P6 row A, 2026-09-03) | docs/global-rules/global-rules-profiles.md | d70176f4ce39666224451f73f6e5ef95eada69ec0ebc65f3b2ebf3766faa84a5 | 18 |
 
 - IDs and titles are imported verbatim from the "Every sub-concept" index of the
   dos-and-donts document (its lines 44-82). That document declares this the rule: the numbers
@@ -227,9 +227,9 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.1 | Test in layers | COVERED | testing.md:107-121 | doctrine | Unit, integration, e2e, performance layers each named |
 | 4.2 | Keep unit tests in milliseconds | COVERED | testing.md:410; testing.md:140 | doctrine | In-memory fakes, no real IO in unit tests; literal ms target not stated |
 | 4.3 | Have a testing philosophy | COVERED | testing.md:184-127; SKILL.md:60 | rule | Every fixed bug becomes a permanent reproducing test |
-| 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3) |
+| 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3); CI mutates the changed files per run, the full sweep is the daily assets/mutation.yml (2026-09-03) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:49; testing.md:290 | gate | Mock ban is absolute and lint-enforced, exceeding canon advisory prefer-fakes |
-| 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:117 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on a frozen lockfile as the required merge check |
+| 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:117 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on the changed files on a frozen lockfile as the required merge check; the full mutation sweep is scheduled (assets/mutation.yml) |
 | 4.7 | Hold generated code to the same bar | COVERED | workflow.md:583 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-82; behavioural-examples.md:42 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
 

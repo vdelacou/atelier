@@ -28,6 +28,12 @@ whole, not any single skill.
 - An em-dash gate for the skill repo itself (`scripts/check-no-em-dash.sh`, hook and CI).
 
 ### Changed
+- Mutation testing cadence: CI mutates the changed files only, on every pull request and
+  push (`mutate:changed` resolves the pushed range from `github.event.before` like the commit
+  gates; Java gets `pit-changed.sh`, which narrows PIT through the pom's new
+  `pitest.targetClasses` property). The full sweep is a daily scheduled workflow
+  (`assets/mutation.yml`, `assets/mutation-java.yml`, `workflow_dispatch` on demand), never a
+  commit gate. Consumers copy the two new workflows and the script; the pom fence changed.
 - Rule 32's eval gate is an artifact, not a sentence: a labeled case set under
   `evals/<capability>/`, a runner that exits non-zero below `--min-score` wired as the `evals`
   package script, and the CI job that runs it on prompt, pin, or schema changes. `ai.md` shows
