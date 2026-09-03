@@ -830,7 +830,7 @@ TypeScript:
 //   continue-on-error: true        # step warns but the job still passes
 // DO: the suite must pass, a non-zero exit fails the job and blocks the merge
 // .github/workflows/ci.yml
-// - run: bun run lint && bun run typecheck && bun test
+// - run: bun run lint:strict && bun run typecheck && bun test && bun run coverage   # the canonical gate set; 8.3 and 15.1 run this same line
 // branch protection requires this check green before merge is allowed (full hook + CI wiring: 15.1)
 ```
 
@@ -1043,7 +1043,7 @@ TypeScript (React):
 ```
 
 ### 5.6 Expose only what has to be public
-**Do:** Keep databases, caches, queues, and admin panels on a private network reachable only from your own services.
+**Do:** Keep databases, caches, queues, and admin panels on a private network reachable only from your own services (see 5.10).
 **Don't:** Give a datastore a public endpoint and rely on a password as the only barrier.
 
 Terraform / OpenTofu:
@@ -1242,7 +1242,7 @@ if (policy.requiresExplicitConsent() && !user.hasConsented()) {
 ```
 
 ### 6.2 Minimize and justify collection
-**Do:** Collect only the fields a stated purpose needs, and require explicit consent for sensitive data or minors.
+**Do:** Collect only the fields a stated purpose needs, and require explicit consent for sensitive data or minors (see 2.6).
 **Don't:** Grab everything the form could offer in case it is useful later.
 
 The general form of this rule, for every field personal or not, is 2.6.
@@ -1681,7 +1681,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: bun install --frozen-lockfile
-      - run: bun test && bun run typecheck && bun run lint:strict
+      - run: bun run lint:strict && bun run typecheck && bun test && bun run coverage   # the 4.6 gate set, one line, everywhere
       - name: Deploy canary (10% traffic)
         run: ./scripts/deploy --canary 10 --image "$IMAGE"
       - name: Watch canary SLO for 5 minutes
@@ -1913,7 +1913,7 @@ resource "github_branch_protection" "main" {
   }
   required_status_checks {
     strict   = true
-    contexts = ["ci/plan", "ci/typecheck"]
+    contexts = ["gates"]   # the one required check is the 4.6 gate job; the full protection block (reviews, code owners, no direct push) is 13.2's
   }
   enforce_admins = true             # even admins cannot push straight to main
 }
@@ -2482,7 +2482,7 @@ Timer.builder("checkout.latency")
 ```
 
 ### 11.3 Alert on what matters
-**Do:** Alert on error rate and p95/p99 latency crossing a user-visible budget, page only when a human must act, and retire any alert that pages twice without prompting a fix; after an incident slips through, fix what broke, not just the alert that missed it.
+**Do:** Alert on error rate and p95/p99 latency crossing a user-visible budget, page only when a human must act, and retire any alert that pages twice without prompting a fix; after an incident slips through, fix what broke, not just the alert that missed it (see 16.4).
 **Don't:** Wire noisy static-threshold alerts that fire nightly and train everyone to ignore the pager, or leave a useless alert standing because no one owns removing it.
 
 Stack-agnostic (Prometheus-style alert rule):
@@ -2647,7 +2647,7 @@ Guard: batch sends behind a token bucket in the mailer adapter.
 ```
 
 ### 12.5 Give real-time access and commit to measurable thresholds
-**Do:** Let stakeholders watch the repo, CI, board, and live metrics, and state targets as numbers with a window.
+**Do:** Let stakeholders watch the repo, CI, board, and live metrics, and state targets as numbers with a window (see 10.1).
 **Don't:** Report progress in adjectives ("fast", "stable") that no one can verify or falsify.
 
 Stack-agnostic (thresholds config, numbers not adjectives):
@@ -2736,7 +2736,7 @@ required_pull_request_reviews:
   dismiss_stale_reviews: true               # new commits re-open review
 required_status_checks:
   strict: true
-  contexts: ["build", "test", "typecheck", "lint"]
+  contexts: ["gates"]                       # one job runs every 4.6 gate, so one required check; the canonical gate list is 4.6's
 enforce_admins: true                        # admins are not exempt
 # required_approving_review_count: 1 already means the author cannot self-merge:
 # GitHub blocks self-approval, so a different reviewer must always sign off
@@ -2914,7 +2914,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun run lint:strict && bun test && bun run coverage
+      - run: bun run lint:strict && bun run typecheck && bun test && bun run coverage   # the 4.6 gate set, one line, everywhere
       - run: gitleaks detect --redact  # full history scan, redacted output in logs
 ```
 
@@ -2998,7 +2998,7 @@ Java:
 ```
 
 ### 15.5 Compliance is not proof
-**Do:** Produce proof anyone can independently re-check by running it, not a ticked box in an audit sheet.
+**Do:** Produce proof anyone can independently re-check by running it, not a ticked box in an audit sheet (see 15.8).
 **Don't:** Treat a green compliance checklist as evidence the control actually works.
 
 Stack-agnostic (the artifact is a runnable verification script, not app code):
@@ -3078,7 +3078,7 @@ rg -n '(db\.query|db\.execute)\(`.*\$\{' -- 'packages/**/*.ts'   # every string-
 ```
 
 ### 15.8 Make proof re-checkable
-**Do:** Ship reproducible evidence anyone accountable can run themselves, and make sure they have the access to run it.
+**Do:** Ship reproducible evidence anyone accountable can run themselves, and make sure they have the access to run it (see 15.5).
 **Don't:** Paste a screenshot of a passing run into a slide and call it verified.
 
 Stack-agnostic (the artifact is a committed, runnable check, not app code):
@@ -3201,7 +3201,7 @@ FROM deployments GROUP BY service;
 ```
 
 ### 16.4 Watch the trend, not the snapshot
-**Do:** Read the direction across several weeks and alert on a sustained change.
+**Do:** Read the direction across several weeks and alert on a sustained change (see 11.3).
 **Don't:** React to a single reading, where normal variation looks like a crisis or a win.
 
 Stack-agnostic (the artifact is the alert rule, evaluated over a window, not app code):

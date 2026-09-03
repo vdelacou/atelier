@@ -545,7 +545,7 @@ Cascade if accepted: one example block; the dos-and-donts pin re-pins; no matrix
 
 ---
 
-## Cross-reference repairs, redundancy pass (proposed 2026-09-03, status: proposed)
+## Cross-reference repairs, redundancy pass (proposed 2026-09-03, status: ACCEPTED 2026-09-03)
 
 **Current canon.** Six sub-concept pairs say the same thing in two places, two of them admitting it in text: 2.6 and 6.2 (:1246 "the general form of this rule is 2.6"), 15.5 and 15.8 (both "a runnable check, not a checkbox"), 5.6 and 5.10 (5.10 is 5.6 applied to the origin, :1186), 10.1 and 12.5 (the same SLO numbers, :1979 admits it), 11.3 and 16.4 (the identical "sustained window, not a spike" rule on two metrics), 7.7 and 10.14 (bulk reads come from the warehouse, each citing the other). Two artifacts are printed twice with different contents: the branch-protection block at :1908-1910 (`contexts = ["ci/plan", "ci/typecheck"]`) and at :2729-2733 (`require_code_owner_reviews` plus `contexts: ["build", "test", "typecheck", "lint"]`); the CI gate list at :833, :1681 (`bun test && bun run typecheck && bun run lint:strict`) and :2911 (`bun run lint:strict && bun test && bun run coverage`), three orders, three contents.
 
@@ -555,7 +555,7 @@ Cascade if accepted: one example block; the dos-and-donts pin re-pins; no matrix
 
 Cascade if accepted: dos-and-donts only; its pin re-pins; citations re-locked if the four pinned dos-and-donts lines shift; no matrix change.
 
-**Ruling.** Pending.
+**Ruling.** ACCEPTED as drafted by the canon owner, 2026-09-03. Applied: reciprocal tags on the six pairs wherever one side did not already cite the other (6.2, 15.5, 15.8, 5.6, 12.5, 11.3, 16.4 gained one; 2.6, 5.10, 10.1, 7.7 and 10.14 already cited their twin); both branch-protection blocks now require the single `gates` check and name 13.2 as the canonical block; the three CI gate lines are one line, the 4.6 set, in all three places. No merge, count 119, ids untouched. The dos-and-donts pin re-pinned.
 
 ---
 
