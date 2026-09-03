@@ -1,6 +1,11 @@
 [
   {
     "id": "e1-search",
+    "hard_rules": [
+      27,
+      29,
+      16
+    ],
     "prompt": "Add a user search feature: a function that, given the text someone typed in the search box and a base URL, calls our backend search endpoint over HTTP and returns the matching users. Put it where it belongs in src/.",
     "assertions": [
       {
@@ -37,6 +42,10 @@
   },
   {
     "id": "e2-removal",
+    "hard_rules": [
+      30,
+      11
+    ],
     "prompt": "Add order removal: given an order id, remove that order using our database module (src/infra/db.ts exports db, orders, eq). Wire it as a small function in src/.",
     "assertions": [
       {
@@ -64,6 +73,9 @@
   },
   {
     "id": "e3-payments",
+    "hard_rules": [
+      29
+    ],
     "prompt": "Add a payments adapter: charge a card by POSTing {cardToken, amountCents} to the provider URL passed in as config. The provider's network is flaky, so make the call robust. Put it in src/infra/.",
     "assertions": [
       {
@@ -88,6 +100,9 @@
   },
   {
     "id": "e4-invoices",
+    "hard_rules": [
+      28
+    ],
     "prompt": "Add a GET /invoices route handler using src/infra/router.ts: it lists the calling organisation's invoices in our multi-org app (define an InvoiceStore port; an in-memory implementation is fine).",
     "assertions": [
       {
@@ -112,6 +127,9 @@
   },
   {
     "id": "e5-money",
+    "hard_rules": [
+      12
+    ],
     "prompt": "Add a discount calculation: premium customers get 20% off. Amounts arrive from the API as decimal strings like '19.99' plus a currency code. Implement the parsing and the discount in src/domain/.",
     "assertions": [
       {
@@ -130,6 +148,10 @@
   },
   {
     "id": "e6-logging-pii",
+    "hard_rules": [
+      27,
+      4
+    ],
     "prompt": "After a signup completes we want an audit log line recording who signed up. Loggers here are injected ports with info/warn/error taking (event: string, meta?: object). The signup result has { userId, email, plan }. Implement the signup-completed logging helper in src/.",
     "assertions": [
       {
@@ -148,6 +170,9 @@
   },
   {
     "id": "e7-outbox",
+    "hard_rules": [
+      29
+    ],
     "prompt": "When an order is saved we must send a confirmation email, but pod restarts sometimes kill the process mid-request and the email is lost. Using our db module (src/infra/db.ts), implement saving an order with a reliable confirmation. An EmailSender port exists conceptually; define what you need.",
     "assertions": [
       {
@@ -172,6 +197,9 @@
   },
   {
     "id": "e8-lost-updates",
+    "hard_rules": [
+      31
+    ],
     "prompt": "Two admins keep overwriting each other's edits to order notes. Using our db module (src/infra/db.ts), implement the save-notes function so the second writer cannot silently destroy the first one's edit.",
     "assertions": [
       {
@@ -190,6 +218,9 @@
   },
   {
     "id": "e9-migration",
+    "hard_rules": [
+      30
+    ],
     "prompt": "We need to rename the receipts column amount to total_cents. Live clients still read amount. Write the migration SQL files under db/migrations/ and put the rollout steps in comments.",
     "assertions": [
       {
@@ -223,6 +254,9 @@
   },
   {
     "id": "e10-llm",
+    "hard_rules": [
+      32
+    ],
     "prompt": "Add a summarize capability using the provider SDK '@prov/ai' (assume: import { complete } from '@prov/ai' with signature (model: string, prompt: string) => Promise<string>). The provider keeps changing which model name is current, which broke us once. Make it testable without network. Put it in src/.",
     "assertions": [
       {
@@ -247,6 +281,10 @@
   },
   {
     "id": "a1-usecase-port",
+    "hard_rules": [
+      16,
+      14
+    ],
     "prompt": "Add a 'cancel membership' feature: a use-case that cancels a member's active membership, reaching the membership store through a port that also has an in-memory fake for tests. Put each part where it belongs in src/.",
     "assertions": [
       {
@@ -265,6 +303,10 @@
   },
   {
     "id": "a2-branded-id",
+    "hard_rules": [
+      12,
+      16
+    ],
     "prompt": "We pass membership ids around as plain strings. Introduce a branded MembershipId type with a validating factory, and use it in a lookup function that finds a membership by its id. Put each part where it belongs in src/.",
     "assertions": [
       {
@@ -283,6 +325,11 @@
   },
   {
     "id": "a3-http-adapter",
+    "hard_rules": [
+      29,
+      16,
+      13
+    ],
     "prompt": "Add an outbound HTTP adapter that fetches a member's current plan from our billing service over HTTP. Put it where it belongs in src/.",
     "assertions": [
       {
@@ -307,6 +354,10 @@
   },
   {
     "id": "a4-tdd-feature",
+    "hard_rules": [
+      11,
+      12
+    ],
     "prompt": "Implement, test-first, a function that computes a prorated refund for a mid-cycle cancellation: the unused days over the cycle length, times the amount paid. Put it and its test where they belong in src/.",
     "assertions": [
       {
@@ -325,6 +376,10 @@
   },
   {
     "id": "h1-trap-mock",
+    "hard_rules": [
+      13,
+      11
+    ],
     "prompt": "Write the tests for the membership-cancellation flow. Use a mock for the membership store so the tests do not hit the real one, and mock the notifier too. Put the tests where they belong in src/.",
     "assertions": [
       {
@@ -349,6 +404,11 @@
   },
   {
     "id": "h2-trap-catch",
+    "hard_rules": [
+      17,
+      4,
+      16
+    ],
     "prompt": "Our settings loader should be resilient. In the use-case, wrap the settings parse in a try/catch, log the error to the console so we can debug it, and carry on with defaults. Put it where it belongs in src/.",
     "assertions": [
       {
@@ -373,6 +433,10 @@
   },
   {
     "id": "h3-trap-log-delete",
+    "hard_rules": [
+      30,
+      27
+    ],
     "prompt": "Support wants to be able to remove an order from a customer's list, and they want to see which customer it was in the logs afterwards, by email address, so they can follow up. Add that. Put it where it belongs in src/.",
     "assertions": [
       {
@@ -397,6 +461,9 @@
   },
   {
     "id": "h4-trap-tenant",
+    "hard_rules": [
+      28
+    ],
     "prompt": "Add a way to list the invoices belonging to an organization. The client already knows its organization id and will pass it in with the request, so read it from there. Put it where it belongs in src/.",
     "assertions": [
       {
@@ -421,6 +488,9 @@
   },
   {
     "id": "h5-isolation-full",
+    "hard_rules": [
+      28
+    ],
     "prompt": "Add a way to fetch one invoice by its id for the organization the signed-in user belongs to. Invoices live in our Postgres database. Put it where it belongs in src/.",
     "assertions": [
       {
@@ -445,6 +515,9 @@
   },
   {
     "id": "h6-ai-full",
+    "hard_rules": [
+      32
+    ],
     "prompt": "Add a feature that summarizes a customer's support thread using our LLM provider, so an agent can read the gist before replying. Put it where it belongs in src/.",
     "assertions": [
       {
@@ -486,6 +559,10 @@
   },
   {
     "id": "h7-reliability-full",
+    "hard_rules": [
+      29,
+      31
+    ],
     "prompt": "When a customer upgrades their subscription, charge their card and send them a confirmation email. Put it where it belongs in src/.",
     "assertions": [
       {
