@@ -76,14 +76,14 @@ Base images are pinned like any dependency and updated on a deliberate cadence, 
 
 ## Backups you have actually restored
 
-An untested backup is a rumour. Schedule a drill (at least quarterly; weekly is cheap in CI) that restores the latest backup into a scratch database, asserts the data is really there, times the restore so you know your recovery time, and drops the scratch. A real incident should be a rehearsal, not a first attempt.
+An untested backup is a rumour. Schedule a drill (at least quarterly; weekly is cheap in CI) that restores the latest backup into a restore-only target inside the production boundary (the production access tier, the job's identity the restore role only, never a lower environment: that would be the production clone rule 34 and canon 6.6 forbid) or restores a synthetic backup from the same pipeline, asserts the data is really there by count and never by row, times the restore against the stated recovery objective, and drops the target. A real incident should be a rehearsal, not a first attempt.
 
 ```yaml
 on: { schedule: [{ cron: '0 3 * * 1' }] }
 steps:
-  - run: pg_restore --clean --dbname "$SCRATCH_DB_URL" latest.dump   # timed
-  - run: psql "$SCRATCH_DB_URL" -c "SELECT count(*) FROM receipts" | grep -qv ' 0$'
-  - run: psql "$ADMIN_URL" -c "DROP DATABASE scratch_restore"
+  - run: pg_restore --clean --dbname "$RESTORE_DRILL_URL" latest.dump   # timed; production boundary, restore role
+  - run: psql "$RESTORE_DRILL_URL" -c "SELECT count(*) FROM receipts" | grep -qv ' 0$'   # a count, never a row
+  - run: psql "$ADMIN_URL" -c "DROP DATABASE restore_drill"
 ```
 
 ## Learn from every failure (blameless postmortems)

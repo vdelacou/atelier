@@ -477,7 +477,7 @@ with the citations lock re-locked for the new anchored citation.
 
 ---
 
-## 10.6 / 6.6 The restore drill never becomes a production clone (proposed 2026-09-03, status: proposed)
+## 10.6 / 6.6 The restore drill never becomes a production clone (proposed 2026-09-03, status: ACCEPTED 2026-09-03)
 
 **Current canon.** 6.6's Don't (global-rules-dos-and-donts.md:1370): "Clone a production dump into a lower environment." 10.6's Do (:2138) runs "a scheduled drill that restores the backup into a scratch database", and its example (:2145-2162) restores `latest.dump` into `$SCRATCH_DB_URL` inside a CI job and asserts `count(*) FROM receipts` is non-zero.
 
@@ -493,7 +493,7 @@ The example's scratch database moves behind the production boundary (`$RESTORE_D
 
 Cascade if accepted: dos-and-donts 10.6 Do plus example, every-new-project.md's pillar-10 backup bullet gains "under production controls"; dos-and-donts and every-new-project pins re-pin; forward matrix row 10.6 evidence unchanged (delivery.md carries the same clause once edited); citations re-locked if the pinned lines shift.
 
-**Ruling.** Pending.
+**Ruling.** ACCEPTED as drafted by the canon owner, 2026-09-03. Applied: 10.6's Do names the restore-only target under production controls or a synthetic backup and tags 6.6; its Don't names the production-dump drill explicitly; the example restores into `$RESTORE_DRILL_URL` inside the production account and asserts by count; the pillar-10 backup bullet in the prose says the same; delivery.md's Backups section inherits the clause. Both pins re-pinned.
 
 ---
 

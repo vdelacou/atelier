@@ -2135,14 +2135,14 @@ public void createReceipt(Receipt receipt) {
 ```
 
 ### 10.6 Keep backups you have actually restored
-**Do:** Run a scheduled drill that restores the backup into a scratch database and times it.
-**Don't:** Trust a backup you have never restored and assume it works.
+**Do:** Run a scheduled drill that restores the backup into an isolated restore-only target under production controls (the production access tier, no lower-environment credentials, output asserted by a script and never read by a person, dropped when the drill ends), or restores a synthetic or anonymised backup produced by the same pipeline, and time it against the stated recovery objective (6.6).
+**Don't:** Trust a backup you have never restored and assume it works, or prove it by restoring a production dump into a lower environment.
 
-Stack-agnostic (scheduled restore drill in CI):
+Stack-agnostic (scheduled restore drill, inside the production boundary):
 ```yaml
 # DON'T: nightly dumps pile up in a bucket, never once restored. On disaster day you learn they were empty.
-
-# DO: a scheduled job restores the latest backup into a throwaway DB and asserts it is intact
+# DON'T: prove them by restoring latest.dump into staging: that is the production clone 6.6 forbids.
+# DO: a scheduled job restores the latest backup into a restore-only target in the production account (the job's identity is the restore role, nothing else) and asserts by count, never by row
 name: restore-drill
 on:
   schedule:
@@ -2151,15 +2151,15 @@ jobs:
   drill:
     runs-on: ubuntu-latest
     steps:
-      - name: Restore latest backup into a scratch database
+      - name: Restore latest backup into the restore-only target
         run: |
           START=$(date +%s)
-          pg_restore --clean --dbname "$SCRATCH_DB_URL" latest.dump
-          echo "restore_seconds=$(( $(date +%s) - START ))"   # track RTO over time
-      - name: Assert the data is really there
-        run: psql "$SCRATCH_DB_URL" -c "SELECT count(*) FROM receipts" | grep -qv ' 0$'
-      - name: Drop the scratch database
-        run: psql "$ADMIN_URL" -c "DROP DATABASE scratch_restore"
+          pg_restore --clean --dbname "$RESTORE_DRILL_URL" latest.dump   # production boundary, restore role
+          echo "restore_seconds=$(( $(date +%s) - START ))"   # track RTO over time, against the objective
+      - name: Assert the data is really there (a count, never a row)
+        run: psql "$RESTORE_DRILL_URL" -c "SELECT count(*) FROM receipts" | grep -qv ' 0$'
+      - name: Drop the restore target
+        run: psql "$ADMIN_URL" -c "DROP DATABASE restore_drill"
 ```
 
 ### 10.7 Scale with demand
