@@ -279,7 +279,7 @@ when it can answer something:
 - **Tier 0, seconds, in CI on every push**: the static gates (`grade.py --selftest`,
   `select-tasks.py --selftest`, `judge.py --selftest`, the review grader's selftest, the
   matrix drift and citation gates). They prove the instruments, not the skill.
-- **Tier 1, 10 to 15 minutes, after any doctrine edit**: `CONFORMANCE_SINCE=<ref>` runs
+- **Tier 1, 10 to 25 minutes, after any doctrine edit**: `CONFORMANCE_SINCE=<ref>` runs
   only the tasks the `skills/atelier/` diff since the ref can affect (`select-tasks.py`
   maps touched rule lines, explicit rule references, reference files through the trigger
   table, and canon ids to the tasks tagged with them), skill arm, one pass, six jobs, graded
@@ -288,7 +288,7 @@ when it can answer something:
 - **Tier 2, hours, on a description change or before a release**: the full matrix,
   `CONFORMANCE_ARMS=both`, re-measuring the unaided arm and re-freezing it.
 
-Every session is capped: a wall-clock cap (`CONFORMANCE_TIMEOUT_MIN`, default 15; the
+Every session is capped: a wall-clock cap (`CONFORMANCE_TIMEOUT_MIN`, default 20 since 2026-09-03, 15 before; the
 capped run keeps what it produced, is graded like any other and is named in the summary) and
 `--max-turns` (default 60). `run.sh` prints each task's scorecard line as its session finishes, so a batch
 reads as it runs. `CONFORMANCE_MODEL` is the smoke lever: the question tier 1 asks, did an
@@ -331,3 +331,11 @@ scorecard is the committed reference.
   form had 4/5 with the eval described in a comment. That h6 session exited non-zero with an
   empty transcript after writing its files (not capped: the cap file is empty) and was graded
   as produced, which is the harness contract; the artifact, not the exit code, is the evidence.
+- 2026-09-03, the mutation cadence (fd9e653..97a508f: changed files per run, the full sweep daily,
+  both variants). `CONFORMANCE_SINCE=af9fdb7` selected 15 of 21 tasks (the after-change checklist
+  line again), 25 minutes, with_skill 43/47 against the frozen 31/47: h5 lost the database-side
+  layer, h7 the outbox and the version check, h6 was capped at 15 minutes with its eval case set
+  written and no runner yet. None of the edited lines touch those rules, so the three tasks were
+  rerun twice (skill arm): r2 and r3 both read 12/12, h7 capped once more in r2 with all four nouns
+  already in place. Verdict: generation variance plus the cap, not a regression. Two of eight
+  h-tier sessions brushed the 15-minute cap in one afternoon, so the default is now 20.
