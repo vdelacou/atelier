@@ -577,7 +577,7 @@ Cascade if accepted: dos-and-donts 4.4 Do; the new profiles file added to the ma
 
 **Ruling.** ACCEPTED as drafted by the canon owner, 2026-09-03. Applied: `docs/global-rules/global-rules-profiles.md` created with the atelier section and 4.4 as its first row; 4.4's Do keeps the obligation and points at the profile; the matrix's pinned-inputs table carries the new file's sha256 (the drift checker verifies every pinned file, so no code change); matrix rows stay COVERED with their evidence unchanged; the reverse matrix's row 35 note points at row B. Row B (the other ten numbers plus rule 35's cap) is the next proposal.
 
-## 4.4 example: the full mutation sweep is scheduled, not a push-to-main step (proposed 2026-09-03, status: proposed)
+## 4.4 example: the full mutation sweep is scheduled, not a push-to-main step (proposed 2026-09-03, status: ACCEPTED 2026-09-03)
 
 **Current canon.** 4.4's TypeScript example closes with the comment "mutation is slow: PRs mutate changed files (--incremental), main runs the full sweep, same break either way". The Do above it (post row A) states the obligation only: a mutation threshold and a coverage floor the profile names, restructure rather than lower.
 
@@ -587,6 +587,6 @@ Cascade if accepted: dos-and-donts 4.4 Do; the new profiles file added to the ma
 
 Cascade if accepted: dos-and-donts only, one comment line; its pin re-pins; no matrix change (row 4.4 stays COVERED, evidence unchanged).
 
-**Ruling.** Pending.
+**Ruling.** ACCEPTED as drafted by the canon owner, 2026-09-03. Applied: the one comment line in 4.4's TypeScript example now reads "every run mutates the changed files (the pushed range, never an empty one), and a scheduled full sweep, not a merge, measures the whole tree, same break either way"; the atelier profile row carries the daily cadence. The dos-and-donts pin re-pinned; row 4.4 stays COVERED with its evidence unchanged.
 
 ---

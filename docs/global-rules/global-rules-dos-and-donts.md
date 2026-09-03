@@ -757,7 +757,7 @@ test("premium discount is exactly 20%", () => {
 });
 // stryker.config.json: { mutate: ['packages/core/src/**/*.ts'], thresholds: { high: 95, low: 90, break: 90 } }
 // line coverage: the core package's own runner config sets 1.0; glue packages hold the 0.80 floor (15.2)
-// mutation is slow: PRs mutate changed files (--incremental), main runs the full sweep, same break either way
+// mutation is slow: every run mutates the changed files (the pushed range, never an empty one), and a scheduled full sweep, not a merge, measures the whole tree, same break either way
 ```
 
 Java:
