@@ -6,6 +6,31 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-09-03
+
+The measured-standard release: the 2026-09-02 audit's findings closed (five doctrine
+contradictions, two gate holes, the em-dash ban made a gate, SKILL.md cut from 570 to 194 lines
+without losing a noun the evals assert), hard rule 35 (cyclomatic complexity), an eval harness
+that measures a doctrine edit in minutes instead of hours, the mutation cadence moved off the
+merge path, and seven canon revisions accepted, including the profiles appendix.
+
+### Upgrading from 2.0.0
+
+- Re-copy the shipped workflows: `ci.yml` and `ci-java.yml` now export `GITHUB_EVENT_BEFORE`
+  (the commit gates and the mutation step were vacuous on a push to main without it) and run
+  mutation on the changed files only; `audit.yml` and `audit-java.yml` run the skill-pin gate
+  in tree mode against `SKILL_PIN_UPSTREAM`. New: `mutation.yml` / `mutation-java.yml` (the
+  daily full sweep) and `pit-changed.sh` (Java, next to `mutate-changed.sh`).
+- Re-copy every `check-*.sh` you carry; six of them changed behaviour (see Fixed).
+- ESLint configs gain `complexity: ['error', 10]` (rule 35); the Java pom gains
+  `maven-pmd-plugin` with `assets/java/pmd-ruleset.xml` and the `pitest.targetClasses` property
+  the narrowed PIT run overrides. Re-extract both from their references.
+- `references/tdd.md` and `references/class-to-module.md` are redirect stubs in this release
+  (their content lives in `testing.md` and `design-patterns.md`); they are removed in 2.2.0.
+- Rule 32 asks for an eval artifact (a case set, a `--min-score` runner, the CI job), no longer a
+  sentence; rule 12 governs the value-object section; boundary factories return `Result`
+  (`parseX`), constructors assert (`x()`); Money is integer cents everywhere.
+
 ### Harness
 
 - Conformance eval: 4.8 and 7.5 assert shape, not vocabulary (an eval set with a bar in any

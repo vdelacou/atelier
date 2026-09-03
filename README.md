@@ -358,7 +358,7 @@ Inspired by the layout of [ramziddin/solid-skills](https://github.com/ramziddin/
 ## Changelog
 
 Notable changes are tracked in [CHANGELOG.md](./CHANGELOG.md); the suite is versioned as a
-whole. The current release is 2.0.0 (the production-disciplines + Java-variant release).
+whole. The current release is 2.1.0 (the measured-standard release: audit remediation, rule 35, the tiered eval harness, mutation off the merge path).
 
 ## License
 
