@@ -31,10 +31,14 @@ if [ "${1:-}" = "--selftest" ]; then
   gate=$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
   cd "$tmp" && git init -q . && git config user.email t@e.st && git config user.name t
   printf 'clean line\n' > a.md && git add a.md
-  bash "$gate" >/dev/null || { echo "selftest FAIL: a clean stage was rejected" >&2; exit 1; }
+  # The staged checks run with the Actions variables unset: under a push job the gate
+  # would otherwise take the range branch, find no HEAD~1 in this one-commit repo, and
+  # exit 0 on the staged dash (the 2026-09-03 red main).
+  staged() { env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_EVENT_BEFORE bash "$gate"; }
+  staged >/dev/null || { echo "selftest FAIL: a clean stage was rejected" >&2; exit 1; }
   git commit -qm 'chore: base'
   printf 'a line %s with a dash\n' "$DASH" > b.md && git add b.md
-  if bash "$gate" >/dev/null 2>&1; then echo "selftest FAIL: a staged em dash was accepted" >&2; exit 1; fi
+  if staged >/dev/null 2>&1; then echo "selftest FAIL: a staged em dash was accepted" >&2; exit 1; fi
   git commit -qm 'chore: dash'
   if bash "$gate" HEAD~1 HEAD >/dev/null 2>&1; then echo "selftest FAIL: an em dash in the range was accepted" >&2; exit 1; fi
   printf 'no dash any more\n' > b.md && git add b.md && git commit -qm 'chore: fixed'
