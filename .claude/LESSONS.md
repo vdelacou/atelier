@@ -377,3 +377,7 @@ and fail fixtures in the grader selftest. The 2026-08-30 entry already said this
 a3; the lesson repeats because a passing assertion looks like evidence until a run fails it.
 Also: a Python file named `select.py` shadows the stdlib module `subprocess` needs, and the
 error surfaces three frames deep in `selectors.py`.
+
+## [gotcha] 2026-09-03 | a selftest inherits the CI job's environment
+
+The first push to main after the em-dash gate landed went red on the gate's own `--selftest`, green on every developer machine. The push job exports `GITHUB_EVENT_NAME=push`, so inside the selftest's one-commit temp repo the gate took the range branch, found no `HEAD~1`, printed "nothing to compare" and exited 0 on the staged dash. A selftest that shells out to the gate under test has to run it with the Actions variables unset (`env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_EVENT_BEFORE`), and the reproduction is to run the selftest locally with the job's env exported. Same family as the awk `-v` and zsh entries: the environment is an input, and a gate proven only on one machine is proven on that machine.
