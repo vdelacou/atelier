@@ -591,7 +591,7 @@ Cascade if accepted: dos-and-donts only, one comment line; its pin re-pins; no m
 
 ---
 
-## Profiles appendix, row B: the other ten numbers and the complexity cap (proposed 2026-09-03, status: proposed)
+## Profiles appendix, row B: the other ten numbers and the complexity cap (proposed 2026-09-03, status: ACCEPTED 2026-09-03)
 
 **Current canon.** Row A (accepted 2026-09-03) moved 4.4's tools and thresholds to `global-rules-profiles.md` and left the sub-concept stating the obligation. Ten more sub-concepts still carry a stack's numbers as principle, mostly inside their examples' policy comments: 1.3 (a 100-character header, commitlint), 5.9 (100 requests a minute, 200,000 tokens a day per org), 7.6 (UUIDv7, named in the Do itself), 10.8 (k6, p99 under 300 ms, 100 virtual users for two minutes), 10.13 (a 2-second deadline, a 1-second connect, three attempts with 200 ms jitter), 14.3 (a first response under four business hours, 90 percent adoption), 15.2 (0.80 glue, 1.0 core, the 4.4 tiers restated), 16.4 (a 7-day window, 0.15 change-failure rate, sustained 24 hours), 16.5 (spend up 50 percent week over week, 7-day window, 24 hours), 17.7 (44 px targets, 180 kB of JavaScript, 400 kB total). The atelier hard rule 35 (cyclomatic complexity at most 10, accepted into the skill 2026-09-03) has no canon number at all: 1.2 says a ceiling exists and CI enforces it, which is the right shape.
 
@@ -604,6 +604,6 @@ Cascade if accepted: dos-and-donts only, one comment line; its pin re-pins; no m
 
 Cascade if accepted: dos-and-donts (ten sections, comment lines and one Do); both canon pins (dos-and-donts, profiles) re-pinned; citations re-locked if a pinned dos-and-donts line moves (7.6's Do is not pinned; 4.4's is and does not change); the reverse matrix's row 35 note flips to "landed in row B"; matrix rows stay COVERED with their evidence unchanged. No count change, no id change.
 
-**Ruling.** Pending.
+**Ruling.** ACCEPTED as drafted by the canon owner, 2026-09-03. Applied: eighteen policy numbers tagged as profile values across the ten sections, 7.6's Do restated as the obligation with UUIDv7 in the example comment, eleven rows added to the atelier profile (1.2 with rule 35's cap among them), both canon pins re-pinned, the reverse matrix's row 35 note closed. Count 119, ids untouched, matrix rows unchanged.
 
 ---

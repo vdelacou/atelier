@@ -26,10 +26,10 @@ C1 of the Atelier vs Global Rules conformance plan.
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 4869443fed473ad9bb2c57bc6affa9aef76227f4b33b4bcc7a769966841e9626 | 3489 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 2a960767ca1830f746dd8b26df661f9f625cb7a8f198eab4c100513f4471f888 | 3489 |
 | Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 2ab24a108d291023991b7810e19ad54c3b489990158504d584a58073de01dc90 | 285 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
-| Profiles, the stack's tools and thresholds (P6 row A, 2026-09-03) | docs/global-rules/global-rules-profiles.md | d70176f4ce39666224451f73f6e5ef95eada69ec0ebc65f3b2ebf3766faa84a5 | 18 |
+| Profiles, the stack's tools and thresholds (P6 row A, 2026-09-03) | docs/global-rules/global-rules-profiles.md | 19647d953d700a04c583461c41f4c0e5f7ba592139fbc04a7ce5895acefe8307 | 29 |
 
 - IDs and titles are imported verbatim from the "Every sub-concept" index of the
   dos-and-donts document (its lines 44-82). That document declares this the rule: the numbers

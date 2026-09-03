@@ -61,7 +61,7 @@ re-audit when the hard-rule list changes.
 | 32 | AI model behind a port, pinned, eval-gated | CANON-ROW | 3.9, 4.8, 5.8 | |
 | 33 | Never build auth or crypto yourself | CANON-ROW | 5.2, 9.3 | Auto-TLS clause lands in 9.3 |
 | 34 | Production data never leaves production | CANON-ROW | 6.6 | |
-| 35 | Cyclomatic complexity at most 10 per function, lint-enforced | STRICTER-THAN | 1.2 | Added 2026-09-03. The canon caps complexity and duplication (1.2); the profile fixes the number at 10 and gates it in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`). The number joins the profiles appendix in P6 row B (row A landed 2026-09-03 with 4.4 as the exemplar) |
+| 35 | Cyclomatic complexity at most 10 per function, lint-enforced | STRICTER-THAN | 1.2 | Added 2026-09-03. The canon caps complexity and duplication (1.2); the profile fixes the number at 10 and gates it in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`). The number lives in the profiles appendix (P6 row B, accepted 2026-09-03, under canon 1.2) |
 
 ## Tally
 

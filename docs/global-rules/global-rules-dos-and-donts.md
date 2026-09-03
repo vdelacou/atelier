@@ -164,7 +164,7 @@ Update UserService.java and also fixed the thing from yesterday
 feat(expenses): add receipt OCR intake
 fix(auth): refuse expired refresh tokens
 refactor(orders): extract keyset pagination helper
-# type(scope): imperative summary, 100 chars max (config-conventional's header-max-length default);
+# type(scope): imperative summary, 100 chars max (a profile value; config-conventional's header-max-length default);
 # the body explains why, the diff already shows what
 ```
 
@@ -1155,7 +1155,7 @@ app.post('/v1/ai/extract', rateLimit({ perMinute: 100 }), extract);
 // DO: the budget is a gate in front of the metered call, in tokens, per caller
 app.post('/v1/ai/extract',
   rateLimit({ perMinute: 100 }),
-  spendGuard({ maxTokensPerDay: 200_000, per: 'org' }), // denial-of-wallet gate: refuse, don't bill
+  spendGuard({ maxTokensPerDay: 200_000, per: 'org' }), // denial-of-wallet gate: refuse, don't bill (the limits are profile values)
   extract);
 // estimate input tokens before the call, meter real usage after it, return the remaining budget in a header;
 // 16.5's cost alert then confirms after the fact what this gate already prevented
@@ -1168,7 +1168,7 @@ Java:
 public Extraction extract(Doc doc) { return llm.extract(doc); }
 // DO: the spend budget is a first-class gate in front of the metered call
 @POST @Path("/v1/ai/extract") @RateLimited(value = 100, window = 1, unit = MINUTES)
-@SpendLimited(tokensPerDay = 200_000, per = ORG)       // refused before the provider is called
+@SpendLimited(tokensPerDay = 200_000, per = ORG)       // refused before the provider is called (the limits are profile values)
 public Extraction extract(Doc doc) { return llm.extract(doc); }
 // meter actual usage per caller, so 16.5's cost dashboards read per-tenant truth, not a blended bill
 ```
@@ -1581,7 +1581,7 @@ Java:
 ```
 
 ### 7.6 Make identifiers unguessable, and never the authorization
-**Do:** Use UUIDv7 for identifiers (74 random bits stop enumeration, the time-ordered prefix keeps the index local), keep internal keys internal, and where the flow allows it expose no id at all: scope routes by the verified identity.
+**Do:** Use an identifier scheme that nothing can enumerate and the index still likes (the profile names it, global-rules-profiles.md), keep internal keys internal, and where the flow allows it expose no id at all: scope routes by the verified identity.
 **Don't:** Put an auto-increment id in a URL where one loop enumerates every record, or treat an unguessable id as the access control.
 
 TypeScript:
@@ -1589,7 +1589,7 @@ TypeScript:
 // DON'T: sequential integer in the path; guessable, enumerable, and the count leaks your volume
 // GET /invoices/1041 -> /invoices/1042 is someone else's, one for-loop away if a single authz check slips
 export const invoices = pgTable('invoices', { id: serial('id').primaryKey() });
-// DO: UUIDv7 primary key; random enough that nothing enumerates, ordered enough that the index stays warm (10.4)
+// DO: UUIDv7 primary key; random enough that nothing enumerates, ordered enough that the index stays warm (10.4) (UUIDv7 is a profile value: 74 random bits stop enumeration)
 export const invoices = pgTable('invoices', {
   id: uuid('id').primaryKey().$defaultFn(() => uuidv7()),
 });
@@ -1603,7 +1603,7 @@ Java:
 ```java
 // DON'T: IDENTITY id exposed in the path; one loop walks the whole table if any check is missed
 @Entity public class Invoice { @Id @GeneratedValue(strategy = GenerationType.IDENTITY) public Long id; }
-// DO: UUIDv7 assigned at creation; time-ordered for index locality, random against enumeration
+// DO: UUIDv7 assigned at creation; time-ordered for index locality, random against enumeration (a profile value)
 @Entity public class Invoice {
   @Id public UUID id = UuidCreator.getTimeOrderedEpoch();  // UUIDv7
 }
@@ -2227,8 +2227,8 @@ jobs:
         uses: grafana/k6-action@v0.3.1
         with:
           filename: load/receipts.js
-          # receipts.js sets:  thresholds: { http_req_duration: ['p(99)<300'] }
-          # 100 virtual users for 2 minutes; build fails if p99 exceeds 300ms
+          # receipts.js sets:  thresholds: { http_req_duration: ['p(99)<300'] } (a profile value)
+          # 100 virtual users for 2 minutes; build fails if p99 exceeds 300ms (profile values)
 ```
 
 ### 10.9 Treat data as sacred
@@ -2359,9 +2359,9 @@ const res = await fetch(providerUrl, { method: 'POST', body });
 const call = () => fetch(providerUrl, {
   method: 'POST', body,
   headers: { 'idempotency-key': key },   // the provider dedupes, so a retry can never double-charge
-  signal: AbortSignal.timeout(2_000),    // the deadline: fail fast, free the caller
+  signal: AbortSignal.timeout(2_000),    // the deadline: fail fast, free the caller (a profile value)
 });
-const res = await retry(call, { attempts: 3, backoff: jittered(200) }); // bounded, never a hot loop
+const res = await retry(call, { attempts: 3, backoff: jittered(200) }); // bounded, never a hot loop (profile values)
 // the timeout is always cheap; a circuit breaker is bought when a dependency has earned one (2.4: keep the seam, defer the machinery)
 ```
 
@@ -2370,12 +2370,12 @@ Java:
 // DON'T: default HttpClient, infinite patience; one slow dependency exhausts the whole thread pool
 HttpResponse<String> res = HttpClient.newHttpClient().send(req, BodyHandlers.ofString());
 // DO: connect and per-attempt timeouts, bounded jittered retries, idempotency key on the POST (10.5)
-HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(1)).build();
+HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(1)).build(); // a profile value
 HttpRequest req = HttpRequest.newBuilder(uri)
-    .timeout(Duration.ofSeconds(2))                 // the deadline per attempt
+    .timeout(Duration.ofSeconds(2))                 // the deadline per attempt (a profile value)
     .header("Idempotency-Key", key)                 // retry-safe on the provider side
     .POST(BodyPublishers.ofString(body)).build();
-// @Retry(maxRetries = 3, jitter = 200) on the port's adapter; a breaker only for the dependency that earned it (2.4)
+// @Retry(maxRetries = 3, jitter = 200) on the port's adapter (profile values); a breaker only for the dependency that earned it (2.4)
 ```
 
 ### 10.14 Separate the analytical store from the operational one
@@ -2873,11 +2873,11 @@ Stack-agnostic (platform product manifest):
 # Platform: create-service  (v3.2.0)
 
 - Owner: @org/platform  (Accountable; see CODEOWNERS)
-- Support: #platform-help  (SLA: first response < 4 business hours)
+- Support: #platform-help  (SLA: first response < 4 business hours) (a profile value)
 - Changelog: CHANGELOG.md  (semver; breaking changes = major + migration note)
 - Feedback: open an issue with label `platform/feedback`; triaged weekly
 - Deprecation policy: two-minor-version notice before a template is removed
-- Adoption metric tracked: % of services on the current major (target > 90%)
+- Adoption metric tracked: % of services on the current major (target > 90%) (a profile value)
 ```
 
 ## Pillar 15: Enforce and verify
@@ -2932,7 +2932,7 @@ Stack-agnostic (this is a coverage tool configuration, not app code):
 # DO: force full discovery so an untested file is present in the denominator at 0 percent.
 [test.coverage]
 coverageThreshold = { line = 0.80, function = 0.80 }
-# 0.80 is the glue floor; the core package's own config sets 1.0 and adds the mutation break (4.4)
+# 0.80 is the glue floor; the core package's own config sets 1.0 and adds the mutation break (4.4) (profile values, the 4.4 profile row)
 coverageSkipTestFiles = true
 coveragePathIgnorePatterns = []   # ignore nothing by default; every source file counts
 # Java equivalent: JaCoCo runs over all classes in the module, and the
@@ -3215,7 +3215,7 @@ groups:
     rules:
       - alert: ChangeFailureRateTrendingUp
         # 7-day average, and it must hold above threshold for a day, not a moment
-        expr: avg_over_time(change_failure_rate[7d]) > 0.15
+        expr: avg_over_time(change_failure_rate[7d]) > 0.15   # window, rate, hold: profile values
         for: 24h
         annotations:
           summary: "CFR trending up over a week -- look at the process, not yesterday"
@@ -3232,7 +3232,7 @@ Stack-agnostic (the artifact is a cost-growth alert over the billing export, not
 # cloud_cost_usd_total: daily spend per service, exported from the cloud billing feed
 - alert: DailyCostAnomaly
   # spend up >50% week-over-week, sustained for a day, before anyone is paged
-  expr: avg_over_time(cloud_cost_usd_total[7d]) > 1.5 * avg_over_time(cloud_cost_usd_total[7d] offset 7d)
+  expr: avg_over_time(cloud_cost_usd_total[7d]) > 1.5 * avg_over_time(cloud_cost_usd_total[7d] offset 7d)   # growth, window, hold: profile values
   for: 24h
   annotations:
     summary: "Daily spend up >50% week-over-week -- a service is leaking money"
@@ -3380,7 +3380,7 @@ TypeScript (React):
   <button className="btn-primary">{t('expense.submit')}</button>   {/* the one thing this screen is for */}
   <OverflowMenu items={secondaryActions} />                        {/* everything else, one tap away */}
 </div>
-// small screen is the default case, not the exception; tap targets are finger-sized (~44px),
+// small screen is the default case, not the exception; tap targets are finger-sized (~44px, a profile value),
 // the primary action sits in thumb reach, and the form asks the fewest fields it can (2.6)
 ```
 
@@ -3390,7 +3390,7 @@ A light interface is also a light payload; make that measurable so it does not r
 # DO: a weight budget the pipeline enforces (Lighthouse CI budgets, or bundlesize), because light is a number (pillar 12) on a real phone network
 budgets:
   - path: /            # the entry route
-    javascript: 180kb  # gzipped; over budget fails the build (15.1)
+    javascript: 180kb  # gzipped; over budget fails the build (15.1) ; the budgets are profile values
     total:      400kb
 # measure on a throttled mid-range profile, not a developer laptop on office wifi
 ```
