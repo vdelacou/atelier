@@ -77,7 +77,7 @@ git config user.email "atelier-smoke@users.noreply.github.com"
 # --- shipped assets, per references/java-quarkus.md (Gates and hooks) ---
 cp "$SKILL/assets/pre-commit-java" .githooks/pre-commit
 cp "$SKILL/assets/commit-msg" .githooks/commit-msg
-cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/assets/check-commit-messages.sh" "$SKILL/assets/check-commit-range.sh" scripts/
+cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/assets/check-commit-messages.sh" "$SKILL/assets/check-commit-range.sh" "$SKILL/assets/pit-changed.sh" scripts/
 cp "$SKILL/assets/check-pii-channels.sh" "$SKILL/assets/check-io-deadlines.sh" \
    "$SKILL/assets/check-data-lifecycle.sh" "$SKILL/assets/check-isolation-tests.sh" scripts/
 cp "$SKILL/assets/java/pmd-ruleset.xml" pmd-ruleset.xml
@@ -276,6 +276,23 @@ expect_ok "a small conforming commit passes the fast pre-commit hook + commit-ms
   git commit -q -m "feat(domain): premium discount rule"
 expect_ok "check-commit-messages.sh passes on a conventional history" \
   bash scripts/check-commit-messages.sh
+
+# The mutation cadence (2026-09-03): CI mutates the changed classes only, on
+# every event, resolving the range the way the commit gates do; the full sweep
+# is the scheduled mutation-java.yml. The narrowed run proves the pom's
+# `${pitest.targetClasses}` property takes a comma-separated override.
+expect_ok "pit-changed.sh on a push resolves github.event.before..HEAD and runs PIT on the changed class" \
+  bash -c 'env -u BASE GITHUB_EVENT_NAME=push GITHUB_EVENT_BEFORE="$(git rev-parse HEAD~1)" bash scripts/pit-changed.sh > pit-changed.out 2>&1'
+expect_ok "pit-changed.sh targeted exactly the committed domain class" \
+  grep -q "targeting 1 class(es): com.example.app.domain.Discount" pit-changed.out
+expect_err "pit-changed.sh fails loudly when the base ref does not resolve" \
+  env BASE=no-such-ref bash scripts/pit-changed.sh
+expect_ok "pit-changed.sh exits 0 with a message when nothing in scope changed" \
+  bash -c 'BASE=HEAD bash scripts/pit-changed.sh | grep -q "no classes in mutation scope changed"'
+expect_ok "ci-java.yml mutates the changed classes only, never the full sweep" \
+  bash -c 'grep -q "pit-changed.sh" "$1" && ! grep -q "pitest-maven:mutationCoverage" "$1"' _ "$SKILL/assets/ci-java.yml"
+expect_ok "mutation-java.yml is the scheduled full sweep" \
+  bash -c 'grep -q "schedule:" "$1" && grep -q "pitest-maven:mutationCoverage" "$1" && ! grep -q "pull_request" "$1"' _ "$SKILL/assets/mutation-java.yml"
 
 echo
 echo "== each gate blocks its target violation =="
@@ -513,6 +530,10 @@ class UnassertedTest {
 EOF
 expect_err "PIT blocks surviving mutants behind green line coverage" \
   ./mvnw -q test-compile org.pitest:pitest-maven:mutationCoverage
+# The narrowed run sees the same violation: the new class is untracked, so it
+# is in pit-changed.sh's scope, and PIT on that one class alone is red.
+expect_err "pit-changed.sh catches the surviving mutants in an untracked new class" \
+  bash -c 'BASE=HEAD bash scripts/pit-changed.sh'
 rm src/main/java/com/example/app/domain/Unasserted.java src/test/java/com/example/app/domain/UnassertedTest.java
 
 echo

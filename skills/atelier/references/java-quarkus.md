@@ -45,6 +45,8 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
     <pitest.plugin.version>1.25.7</pitest.plugin.version>
     <pitest-junit5.plugin.version>1.2.3</pitest-junit5.plugin.version>
     <pitest.threads>4</pitest.threads>
+    <!-- the mutation scope; scripts/pit-changed.sh narrows it to the changed classes with -Dpitest.targetClasses= -->
+    <pitest.targetClasses>com.example.app.domain.*,com.example.app.usecases.*</pitest.targetClasses>
     <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
     <pmd.plugin.version>3.28.0</pmd.plugin.version>
   </properties>
@@ -131,7 +133,7 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
           </execution>
         </executions>
       </plugin>
-      <!-- mutation gate: CI-only (assets/ci-java.yml), never in the hook; not bound to verify -->
+      <!-- mutation gate: CI-only (assets/ci-java.yml runs the changed classes, assets/mutation-java.yml the daily sweep), never in the hook; not bound to verify -->
       <plugin>
         <groupId>org.pitest</groupId>
         <artifactId>pitest-maven</artifactId>
@@ -144,10 +146,7 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
           </dependency>
         </dependencies>
         <configuration>
-          <targetClasses>
-            <param>com.example.app.domain.*</param>
-            <param>com.example.app.usecases.*</param>
-          </targetClasses>
+          <targetClasses>${pitest.targetClasses}</targetClasses>
           <targetTests>
             <param>com.example.app.*</param>
           </targetTests>
@@ -371,7 +370,7 @@ Quarkus ships OpenTelemetry: enable it, add `@WithSpan` on application services 
 - **Integration tests** use `@QuarkusTest` + REST Assured against the real edge: the happy path, the bypass (`references/testing.md`, Test the bypass: wrong role is 403, missing token 401), the cross-tenant 404, and the forged-header seam (`references/isolation.md`). Testcontainers (or dev services) provide a real database; fixtures are synthetic (rule 34).
 - **Test names are business scenarios**: `premiumCustomerGets20PercentOff`, `crossTenantReadIsNotFound`, `regressionEmptyCartTotalsToZero`.
 - **Coverage tiers with JaCoCo**: 100% line on `domain` + `usecases`, 80% on `infra` + `api` + `composition`, enforced by per-package `<rule>` limits in the JaCoCo check goal so the build fails loudly, untested classes included in the denominator (the coverage-preload principle is native here: JaCoCo counts all classes in the module).
-- **Mutation testing with PIT**: `mutationThreshold=90` on `domain` + `usecases` packages. Incremental history is NOT free in current PIT: 1.25.7 errors `History has been enabled but no history plugin has been installed/activated` for BOTH `withHistory` and explicit `historyInputFile`/`historyOutputFile` (verified via `smoke-test-java`), and the only history plugin is Arcmutate's commercial `+arcmutate_history`. So the free speed levers are the narrow target scope (`targetClasses`/`targetTests`), parallel `threads` (set in the pom, mutation results are thread-independent), and the narrow scope itself keeps the CI run cheap (the hook never runs PIT; the gate is CI-only by design); in a multi-module repo, scope PIT per module. If incremental speed becomes a hard requirement at scale, Arcmutate is the only supplier, which makes it a licence decision, not a library swap. Same policy as Stryker: no per-file exclusions because tests feel awkward; tighten the test or refactor.
+- **Mutation testing with PIT**: `mutationThreshold=90` on `domain` + `usecases` packages. CI runs it on the changed classes only (`scripts/pit-changed.sh`, every pull request and push, `-Dpitest.targetClasses=` narrowing the pom's default scope); the full sweep is the daily `assets/mutation-java.yml`, never a commit gate. Incremental history is NOT free in current PIT: 1.25.7 errors `History has been enabled but no history plugin has been installed/activated` for BOTH `withHistory` and explicit `historyInputFile`/`historyOutputFile` (verified via `smoke-test-java`), and the only history plugin is Arcmutate's commercial `+arcmutate_history`. So the free speed levers are the narrow target scope (`targetClasses`/`targetTests`), parallel `threads` (set in the pom, mutation results are thread-independent), and the narrow scope itself keeps the CI run cheap (the hook never runs PIT; the gate is CI-only by design); in a multi-module repo, scope PIT per module. If incremental speed becomes a hard requirement at scale, Arcmutate is the only supplier, which makes it a licence decision, not a library swap. Same policy as Stryker: no per-file exclusions because tests feel awkward; tighten the test or refactor.
 - **PIT on Quarkus**: no Quarkus-specific mutation tool exists; PIT plus `pitest-junit5-plugin` is the whole story, and the plugin (1.2.3+, needs Quarkus 3.22.x+) is the only Quarkus-aware piece. It auto-disables Quarkus's JaCoCo extension, the classic thing that broke PIT there. The scoping above is also what keeps this healthy: because `domain`/`usecases` are covered by plain JUnit 5 (not `@QuarkusTest`), PIT never runs over a container-boot test, so Quarkus's build-time augmentation never triggers the `tests did not pass without mutation` failure and no Quarkus container stands up per mutant. If you widen PIT onto `@QuarkusTest` classes, expect both that failure (patch with `avoidCallsTo` on `io.quarkus.*` plus test excludes on older plugin versions) and the per-mutant container cost; the atelier design avoids both by construction. Pin the Quarkus BOM at or above 3.22.x.
 - **Evals for any LLM hole** gate the merge like PIT does (`references/ai.md`).
 
@@ -383,6 +382,8 @@ Same git hooks as the Bun variant, shell only, wired with `git config core.hooks
 - `assets/pre-commit-java`: the fast gates only, commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>`; the project's own dev version may be a SNAPSHOT) → `gitleaks protect --staged` → `./mvnw -q spotless:check`. A multi-minute hook trains `--no-verify` (canon 15.1, and 15.3), so `./mvnw verify` and PIT do not live here.
 - The four discipline tripwires (`references/workflow.md`, Discipline tripwires) are Java-aware and belong in any service that touches the matching concern, though they are not part of the core gate set: `check-pii-channels.sh` catches a `@QueryParam("email"|"phone"|"ssn"|"token")` and a logged natural identifier (rule 27), `check-io-deadlines.sh` catches an `HttpClient` built with no `.timeout(`/`connectTimeout` in the file (rule 29), `check-data-lifecycle.sh` catches `deleteById(`/`deleteAll(`/`DELETE FROM` in application code (rule 30), and `check-isolation-tests.sh` refuses a new `**/api/*.java` resource with no nearby test mentioning 404 (rule 28). Each reads the staged diff, takes `--all` for a tree-wide adopt audit, and is proven on its Java trigger by `smoke-test-java.sh`.
 - `assets/audit-java.yml`: the two watchdogs that are not gate material, the OWASP CVE scan and `check-skill-pin.sh` (a vendored standard is a dependency, `references/governance.md`; the workflow's `SKILL_PIN_UPSTREAM` env names the repository the whole vendored tree is compared against), on a daily schedule plus the pull requests that touch a pom or the vendored skill.
+- `assets/pit-changed.sh`: the mutation step of CI, PIT on the classes that changed in the event's range (the pull request's base, or `github.event.before..HEAD` on a push, which the workflow exports; an unknown base fails loudly, no change in scope exits 0), plus uncommitted and untracked sources locally.
+- `assets/mutation-java.yml`: the daily full PIT sweep over `domain` and `usecases` (`workflow_dispatch` on demand), the only run that measures the whole tree; a red run is a task, not a blocked merge.
 - `assets/ci-java.yml`: the authoritative gate set, run on every push and pull request as the required merge check. Its first step re-runs the commit-msg validator over the pushed range (`scripts/check-commit-messages.sh`, so `--no-verify` cannot slip a message past the local hook), then the pom gate, a full-history `gitleaks detect` (CI installs its own pinned copy), plus `./mvnw verify` (compile with `-Werror`, unit + integration tests, JaCoCo tier check, the PMD complexity cap of rule 35), and PIT mutation (≥90 on `domain`/`usecases`). The commit-size range check runs here too; the CVE scan does not.
 - `assets/java/pmd-ruleset.xml`: the rule 35 ruleset (`CyclomaticComplexity`, `methodReportLevel` 11, so complexity 11 and above fails and 10 passes, the same boundary as the TypeScript `complexity: ['error', 10]`), copied to the repository root where the canonical pom's `maven-pmd-plugin` reads it in `verify`. `smoke-test-java.sh` plants a complexity-11 method and sees `pmd:check` red, and a complexity-10 one green.
 
@@ -395,7 +396,9 @@ cp <skill>/assets/check-pom.sh           scripts/check-pom.sh
 cp <skill>/assets/check-commit-messages.sh scripts/check-commit-messages.sh
 cp <skill>/assets/check-commit-range.sh    scripts/check-commit-range.sh
 mkdir -p .github/workflows
+cp <skill>/assets/pit-changed.sh         scripts/pit-changed.sh
 cp <skill>/assets/ci-java.yml            .github/workflows/ci.yml
+cp <skill>/assets/mutation-java.yml      .github/workflows/mutation-java.yml
 cp <skill>/assets/audit-java.yml         .github/workflows/audit-java.yml
 cp <skill>/assets/check-skill-pin.sh     scripts/check-skill-pin.sh
 
@@ -409,7 +412,7 @@ chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh
 git config core.hooksPath .githooks
 ```
 
-CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the full history with `gitleaks detect`, then runs `spotless:check`, `./mvnw verify`, and PIT. The CVE scan and the vendored-standard check moved out to the scheduled `assets/audit-java.yml`, since both change independently of your diff, and where the repo deploys, the compose portability gate and deployment events (`references/delivery.md`).
+CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the full history with `gitleaks detect`, then runs `spotless:check`, `./mvnw verify`, and PIT on the changed classes (`scripts/pit-changed.sh`); the full PIT sweep runs daily from `assets/mutation-java.yml`. The CVE scan and the vendored-standard check moved out to the scheduled `assets/audit-java.yml`, since both change independently of your diff, and where the repo deploys, the compose portability gate and deployment events (`references/delivery.md`).
 
 ## Bootstrap checklist (fresh Java repo)
 

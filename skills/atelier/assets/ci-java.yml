@@ -22,14 +22,14 @@ jobs:
   gates:
     runs-on: ubuntu-latest
     env:
-      # The left side of the pushed range for the two commit gates. On a push to
+      # The left side of the pushed range for the two commit gates and pit-changed.sh. On a push to
       # main HEAD already equals origin/main, so without this they would check an
       # empty range and pass vacuously. Empty on a pull request (the base ref wins).
       GITHUB_EVENT_BEFORE: ${{ github.event.before }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # full history for gitleaks detect
+          fetch-depth: 0 # full history for gitleaks detect and pit-changed.sh
       - name: commit messages (Conventional Commits, rule 23 / canon 1.3)
         run: bash scripts/check-commit-messages.sh
       - name: commit size per commit in the range (gate 1 / canon 8.1)
@@ -51,5 +51,5 @@ jobs:
         run: ./mvnw -q spotless:check
       - name: verify (compile -Werror, unit + integration tests, JaCoCo tiers)
         run: ./mvnw -q verify
-      - name: mutation (PIT, >= 90 on domain and usecases)
-        run: ./mvnw -q test-compile org.pitest:pitest-maven:mutationCoverage
+      - name: mutation (PIT on the changed classes only, >= 90; the full sweep is mutation-java.yml, daily)
+        run: bash scripts/pit-changed.sh
