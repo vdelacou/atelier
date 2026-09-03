@@ -12,7 +12,8 @@ The measured-standard release: the 2026-09-02 audit's findings closed (five doct
 contradictions, two gate holes, the em-dash ban made a gate, SKILL.md cut from 570 to 194 lines
 without losing a noun the evals assert), hard rule 35 (cyclomatic complexity), an eval harness
 that measures a doctrine edit in minutes instead of hours, the mutation cadence moved off the
-merge path, and seven canon revisions accepted, including the profiles appendix.
+merge path, and eight canon revisions accepted, including the profiles appendix with every
+stack number the sub-concepts used to state.
 
 ### Upgrading from 2.0.0
 

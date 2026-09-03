@@ -13,5 +13,5 @@
 4. [ ] On a clean tier 2: push, then `git tag -a v2.1.0` on that commit and push the tag (the
        first tag in the repo; consumers pin by tag from here). Both on the owner's word.
 5. [ ] Owner: re-sync the consumer repo to v2.1.0 (`check-skill-pin.sh` compares the tree).
-6. [ ] Canon row B (the other ten numbers plus rule 35's cap into the profiles appendix), drafted
-       as a P6 row, applied on ruling.
+6. [x] Canon row B ACCEPTED and applied 2026-09-03 (104c5a0 draft, 81846e5 applied): eighteen numbers
+       tagged, 7.6's Do restated, eleven profile rows, both pins re-pinned.
