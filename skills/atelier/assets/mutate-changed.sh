@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
 #
-# Run Stryker mutation testing on files differing from `origin/main` plus any
-# uncommitted edits and untracked files. Used during iteration to catch
-# surviving mutants before staging.
+# Run Stryker mutation testing on the files that changed, plus any uncommitted
+# edits and untracked files: the mutation step of the CI gate (assets/ci.yml,
+# every pull request and push) and the iteration-time check. The full sweep
+# is never a commit gate; assets/mutation.yml runs it once a day.
 #
-# Override the base ref with the BASE env var; skip the ref refresh with
-# MUTATE_NO_FETCH=1 (offline, or when BASE is deliberately stale):
+# The base ref: BASE= wins; under GitHub Actions the range is the pull
+# request's base branch or, on a push, github.event.before..HEAD (ci.yml
+# exports it as GITHUB_EVENT_BEFORE; the zero SHA of a new branch and an
+# unresolvable SHA fall back to HEAD~1), the same resolution as the commit
+# gates. Without it a push to main has HEAD == origin/main and the run would
+# test nothing. Elsewhere the default is origin/main. Skip the ref refresh
+# with MUTATE_NO_FETCH=1 (offline, or when BASE is deliberately stale):
 #
 #   BASE=HEAD~3 bun run mutate:changed
 #
@@ -16,7 +22,21 @@
 
 set -euo pipefail
 
-BASE="${BASE:-origin/main}"
+zero_sha=0000000000000000000000000000000000000000
+if [ -n "${BASE:-}" ]; then
+  :
+elif [ -n "${GITHUB_BASE_REF:-}" ]; then
+  BASE="origin/${GITHUB_BASE_REF}"
+elif [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
+  before="${GITHUB_EVENT_BEFORE:-}"
+  if [ -n "$before" ] && [ "$before" != "$zero_sha" ] && git rev-parse --quiet --verify "${before}^{commit}" >/dev/null 2>&1; then
+    BASE="$before"
+  else
+    BASE=HEAD~1
+  fi
+else
+  BASE=origin/main
+fi
 
 # `origin/*` is a LOCAL cache of the remote, moved only by a fetch. Against a
 # stale ref, `$BASE...HEAD` still holds commits pushed long ago: the mutation

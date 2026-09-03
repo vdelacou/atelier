@@ -469,7 +469,8 @@ Why: keeping file IO on `Bun.file` is faster, has zero import ceremony, fits the
     - `cp <skill-path>/assets/check-commit-messages.sh scripts/check-commit-messages.sh` (CI re-runs the message check over the pushed range, so `--no-verify` cannot slip one past)
     - `cp <skill-path>/assets/check-commit-range.sh scripts/check-commit-range.sh` (the same for commit SIZE: the hook sees one staged diff, CI walks every commit in the range)
     - `chmod +x scripts/lint-staged.sh scripts/check-commit-messages.sh`
-    - `mkdir -p .github/workflows && cp <skill-path>/assets/ci.yml .github/workflows/ci.yml` (the authoritative gate set: strict lint, tests, coverage, mutation, secret scan on a frozen lockfile)
+    - `mkdir -p .github/workflows && cp <skill-path>/assets/ci.yml .github/workflows/ci.yml` (the authoritative gate set: strict lint, tests, coverage, mutation on the changed files, secret scan on a frozen lockfile)
+    - `cp <skill-path>/assets/mutation.yml .github/workflows/mutation.yml` (the daily full mutation sweep, `workflow_dispatch` on demand; ci.yml mutates the changed files only, so this is the only place the whole tree is measured)
     - `cp <skill-path>/assets/audit.yml .github/workflows/audit.yml` (the CVE watchdog: daily schedule plus dependency-scoped PR runs; deliberately not a gate on unrelated commits)
     - `cp <skill-path>/assets/check-skill-pin.sh scripts/check-skill-pin.sh` (only if this repo vendors or pins the skill: the audit workflow runs it against the repository named in its `SKILL_PIN_UPSTREAM` env, comparing the whole vendored tree, and fails when any file falls behind)
     - `cp <skill-path>/assets/pre-commit .githooks/pre-commit`

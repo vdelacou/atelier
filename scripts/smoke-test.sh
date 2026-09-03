@@ -70,6 +70,7 @@ cp "$SKILL/assets/check-commit-messages.sh" "$SKILL/assets/check-commit-range.sh
 cp "$SKILL/assets/pre-commit" "$SKILL/assets/commit-msg" .githooks/
 mkdir -p .github/workflows
 cp "$SKILL/assets/ci.yml" .github/workflows/ci.yml
+cp "$SKILL/assets/mutation.yml" .github/workflows/mutation.yml
 cp "$SKILL/assets/stryker.conf.json" ./
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh scripts/check-coverage.ts scripts/regenerate-coverage-preload.ts
 git config core.hooksPath .githooks
@@ -449,6 +450,12 @@ expect_ok "mutation gate (Stryker on the staged domain file)" bun run mutate:sta
 expect_ok "ci.yml asset is present" test -f .github/workflows/ci.yml
 expect_ok "ci.yml wires the package.json gate" grep -q "check-package-json.sh" .github/workflows/ci.yml
 expect_ok "ci.yml runs the full suite, coverage, and mutation" bash -c 'grep -q "bun test" .github/workflows/ci.yml && grep -q "bun run coverage" .github/workflows/ci.yml && grep -q "mutate" .github/workflows/ci.yml'
+# The cadence (2026-09-03): the merge gate mutates the changed files only, on
+# every event; the full sweep is a scheduled workflow, never a commit gate.
+expect_ok "ci.yml mutates the changed files only, never the full sweep" \
+  bash -c 'grep -q "bun run mutate:changed" .github/workflows/ci.yml && ! grep -qE "bun run mutate$" .github/workflows/ci.yml'
+expect_ok "mutation.yml is the scheduled full sweep" \
+  bash -c 'grep -q "schedule:" .github/workflows/mutation.yml && grep -qE "bun run mutate$" .github/workflows/mutation.yml && ! grep -q "pull_request" .github/workflows/mutation.yml'
 
 echo "== mutate:changed (the base ref must resolve, and untracked files are in scope) =="
 # This fixture has no remote, so the default BASE=origin/main cannot resolve.
@@ -532,6 +539,34 @@ expect_ok "mutate:changed scores an untracked new domain file" \
   bash -c 'BASE=HEAD bash scripts/mutate-changed.sh > mutate-changed.out 2>&1'
 expect_ok "mutate:changed prints the resolved base and pulls the untracked file into scope" \
   bash -c 'grep -q "mutate:changed: base HEAD" mutate-changed.out && grep -q "testing 1 file(s)" mutate-changed.out'
+
+# A push to main: the checkout has HEAD == origin/main, so the old default base
+# tested nothing. The script now resolves the pushed range from the
+# github.event.before the shipped ci.yml exports (zero SHA falls back to
+# HEAD~1), the same way as the commit gates; this fixture has no origin at
+# all, so the case is red on any script that ignores the push variables.
+git add src/domain/eligibility.ts src/domain/eligibility.test.ts
+git commit -q --no-verify -m 'feat: eligibility'
+cat > src/domain/eligibility.ts <<'EOF'
+export const isEligible = (age: number): boolean => age >= 18;
+export const isSenior = (age: number): boolean => age >= 65;
+EOF
+cat >> src/domain/eligibility.test.ts <<'EOF'
+
+test('someone at the senior boundary is a senior', () => {
+  expect(isSenior(65)).toBe(true);
+});
+
+test('someone below the senior boundary is not', () => {
+  expect(isSenior(64)).toBe(false);
+});
+EOF
+sed -i.bak 's/^import { isEligible }/import { isEligible, isSenior }/' src/domain/eligibility.test.ts && rm src/domain/eligibility.test.ts.bak
+git commit -q --no-verify -am 'feat: seniors'
+expect_ok "mutate:changed on a push resolves github.event.before..HEAD and scores the changed file" \
+  bash -c 'env -u BASE GITHUB_EVENT_NAME=push GITHUB_EVENT_BEFORE="$(git rev-parse HEAD~1)" bash scripts/mutate-changed.sh > mutate-push.out 2>&1'
+expect_ok "mutate:changed on a push prints the pushed range and one file in scope" \
+  bash -c 'grep -q "HEAD +1" mutate-push.out && grep -q "testing 1 file(s)" mutate-push.out'
 
 echo
 if [ "$FAILURES" -gt 0 ]; then

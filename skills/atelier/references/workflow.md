@@ -310,7 +310,7 @@ This is the **Bun-script variant's** mechanism. The Next.js monorepo uses `simpl
 
 Every gate here is O(staged files) or O(1). Typecheck is the one that grows with the whole codebase; if it exceeds the hook budget on your repo, move it to CI too. Never add the test suite, coverage, or mutation to the hook.
 
-**CI (`assets/ci.yml`, the authoritative merge gate):** `check-commit-messages.sh` and `check-commit-range.sh` straight after checkout (both need only git history), then install on a frozen lockfile, `check-package-json.sh`, `gitleaks detect` (full history; the workflow installs its own pinned gitleaks), `lint:strict` (type-aware, zero warnings, ~25s), `typecheck`, `bun test` (the whole suite), `bun run coverage` (per-tier), `bun run mutate:changed` on a pull request or `bun run mutate` on main (1-3 min per file). Make it a required status check in branch protection (canon 13.2) so a bypassed hook is still caught. The CVE scan is deliberately NOT in this job; it ships as its own workflow, `assets/audit.yml` (see Dependency scanning below).
+**CI (`assets/ci.yml`, the authoritative merge gate):** `check-commit-messages.sh` and `check-commit-range.sh` straight after checkout (both need only git history), then install on a frozen lockfile, `check-package-json.sh`, `gitleaks detect` (full history; the workflow installs its own pinned gitleaks), `lint:strict` (type-aware, zero warnings, ~25s), `typecheck`, `bun test` (the whole suite), `bun run coverage` (per-tier), `bun run mutate:changed` on every event (the changed files only, 1-3 min per file; on a push the range is `github.event.before..HEAD`, which the workflow exports). The full sweep is never a commit gate: `assets/mutation.yml` runs `bun run mutate` once a day on a schedule. Make it a required status check in branch protection (canon 13.2) so a bypassed hook is still caught. The CVE scan is deliberately NOT in this job; it ships as its own workflow, `assets/audit.yml` (see Dependency scanning below).
 
 A ready-to-copy hook lives in the skill at `assets/pre-commit`, the CI workflow at `assets/ci.yml`, and the staged-lint helper at `assets/lint-staged.sh`. The companion scripts (`check-commit-size.sh`, `check-package-json.sh`, `mutate-staged.sh`, `mutate-changed.sh`, `regenerate-coverage-preload.ts`) live alongside, plus `assets/commit-msg`, a separate git hook documented under *Commit message format* below.
 
@@ -400,7 +400,7 @@ Run `gitleaks detect` once before the first push to GitHub to catch anything tha
 
 [Stryker](https://stryker-mutator.io/) generates small "mutants" of the production code (e.g. `>` becomes `>=`, `&&` becomes `||`, `return x` becomes `return undefined`) and runs the test suite against each. A mutant that survives means your tests don't actually pin the behaviour they appear to.
 
-The atelier policy: **every file under `src/domain/**` or `src/use-cases/**` must score ≥90% mutation score** before it merges. CI is the enforcing home (`mutate:changed` on a pull request, full `mutate` on main); `bun run mutate:staged` is the optional local pre-check. The threshold is the `break` value in `stryker.conf.json`.
+The atelier policy: **every file under `src/domain/**` or `src/use-cases/**` must score ≥90% mutation score** before it merges. CI is the enforcing home (`mutate:changed` on every pull request and push, the changed files only; the full `mutate` sweep runs once a day from `assets/mutation.yml`, never on a commit); `bun run mutate:staged` is the optional local pre-check. The threshold is the `break` value in `stryker.conf.json`.
 
 ```jsonc
 {
@@ -432,9 +432,9 @@ There is no first-party `@stryker-mutator` Bun runner today (community plugins e
 
 **Three commands, three scopes:**
 
-- **`bun run mutate`**: full run on `src/domain/**` + `src/use-cases/**`. Slow (1–2 hr on ~150 files). Periodic audit.
+- **`bun run mutate`**: full run on `src/domain/**` + `src/use-cases/**`. Slow (1-2 hr on ~150 files). The daily scheduled sweep (`assets/mutation.yml`, plus `workflow_dispatch` after a large refactor), never a commit gate.
 - **`bun run mutate:changed`**: files differing from `origin/main`, plus uncommitted edits, plus **untracked files**. Run during iteration. Override the base ref with `BASE=HEAD~3 bun run mutate:changed`.
-- **`bun run mutate:staged`**: files staged for the next commit. An optional local pre-push check; CI is the enforcing home, running `mutate:changed` on a pull request and `mutate` on main. Skips with exit 0 when no relevant files are staged, so commits to docs, tests, or scripts are unaffected.
+- **`bun run mutate:staged`**: files staged for the next commit. An optional local pre-push check; CI is the enforcing home, running `mutate:changed` on every pull request and push. Skips with exit 0 when no relevant files are staged, so commits to docs, tests, or scripts are unaffected.
 
 **What `mutate:changed` guarantees, and the one thing it cannot.** Each guarantee exists because its absence produced a green run over unmeasured code:
 
@@ -442,6 +442,7 @@ There is no first-party `@stryker-mutator` Bun runner today (community plugins e
 - **An unresolvable base ref fails loudly.** `BASE` that does not exist makes every diff fail, and the `|| true` guarding the scope pipeline turns that into "no files changed" plus exit 0. The script now resolves `BASE` up front and exits 1. In CI this matters more than locally: `assets/ci.yml` checks out with `fetch-depth: 0`, but a consumer repo on a shallow checkout has no `origin/main` and would otherwise get a vacuously passing mutation gate on every pull request.
 - **The base ref is refreshed and printed.** `origin/main` is a *local cache* of the remote, moved only by a fetch. Against a stale one, `$BASE...HEAD` still contains long-pushed commits, so the scope fills with files nobody touched. The script fetches when `BASE` is a remote-tracking ref (`|| true`, so offline degrades gracefully; `MUTATE_NO_FETCH=1` opts out) and prints the resolved base as short SHA, relative date, and ahead count, which is what makes staleness visible when you override `BASE` or opt out.
 - **Verdicts are fresh.** The run passes `--force`. Stryker's incremental cache keys on source-file hashes, so a test-only change (a stronger assertion, same source) replays a stale score. Prefer `--force` to deleting the incremental file: `incrementalFile` is owned by `stryker.conf.json`, so a config change would silently turn a hardcoded `rm -f reports/stryker-incremental.json` into a no-op.
+- **The CI range is the event's range.** Under Actions the base is the pull request's base branch or, on a push, `github.event.before` (the zero SHA of a new branch and an unresolvable SHA fall back to `HEAD~1`), the same resolution as the commit gates. A push to main has HEAD == origin/main, so the old default would have tested nothing and exited 0. `BASE=` still wins.
 - **Greenfield, before the first push:** there is no `origin/main` yet, so pass a local base (`BASE=$(git rev-list --max-parents=0 HEAD)`) or skip the command until the remote exists. Failing loudly is the point; do not paper over it by restoring a silent exit 0.
 
 **The part no script can encode:** `mutate:changed` output is only a statement about push scope if the ref behind it is current. Fetch before reading any `origin/main`-relative output that way, and confirm what is actually unpushed with `git log --oneline origin/main..HEAD` rather than inferring it from a file list.

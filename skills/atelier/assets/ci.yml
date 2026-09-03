@@ -20,7 +20,7 @@ jobs:
   gates:
     runs-on: ubuntu-latest
     env:
-      # The left side of the pushed range for the two commit gates. On a push to
+      # The left side of the pushed range for the two commit gates and mutate:changed. On a push to
       # main HEAD already equals origin/main, so without this they would check an
       # empty range and pass vacuously. Empty on a pull request (the base ref wins).
       GITHUB_EVENT_BEFORE: ${{ github.event.before }}
@@ -52,11 +52,6 @@ jobs:
         run: bun run scripts/regenerate-coverage-preload.ts --check
       - name: coverage (per-tier thresholds)
         run: bun run coverage
-      - name: mutation (changed files on a PR, full sweep on main)
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            bun run mutate:changed
-          else
-            bun run mutate
-          fi
+      - name: mutation (the changed files only, on every event; the full sweep is mutation.yml, daily)
+        run: bun run mutate:changed
 

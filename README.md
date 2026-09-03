@@ -142,9 +142,11 @@ cp $SKILL/assets/mutate-changed.sh                scripts/
 cp $SKILL/assets/lint-staged.sh                   scripts/
 cp $SKILL/assets/stryker.conf.json                ./
 
-# The CI workflow (the authoritative gate set: full suite, coverage, mutation)
+# The CI workflow (the authoritative gate set: full suite, coverage, mutation on
+# the changed files) and the daily full mutation sweep (never a commit gate)
 mkdir -p .github/workflows
 cp $SKILL/assets/ci.yml                           .github/workflows/ci.yml
+cp $SKILL/assets/mutation.yml                     .github/workflows/mutation.yml
 
 # Stryker must be a local devDependency: without it, `bunx stryker` resolves
 # the deprecated npm package named "stryker" instead of @stryker-mutator/core

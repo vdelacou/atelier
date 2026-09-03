@@ -31,8 +31,8 @@ lint_workflow() {
   # 3. the variant's bootstrap reference must tell consumers to copy each of them
   local ref=""
   case "$(basename "$wf")" in
-    ci.yml|audit.yml) ref="${BOOTSTRAP_REF_BUN:-skills/atelier/references/bun-typescript.md}" ;;
-    ci-java.yml|audit-java.yml) ref="${BOOTSTRAP_REF_JAVA:-skills/atelier/references/java-quarkus.md}" ;;
+    ci.yml|audit.yml|mutation.yml) ref="${BOOTSTRAP_REF_BUN:-skills/atelier/references/bun-typescript.md}" ;;
+    ci-java.yml|audit-java.yml|mutation-java.yml) ref="${BOOTSTRAP_REF_JAVA:-skills/atelier/references/java-quarkus.md}" ;;
   esac
   if [ -n "$ref" ] && [ -f "$ref" ]; then
     while IFS= read -r sref; do
@@ -99,7 +99,7 @@ if [ "${1:-}" = "--selftest" ]; then
 fi
 
 status=0
-for wf in "$ASSETS_DIR"/ci*.yml "$ASSETS_DIR"/audit*.yml; do
+for wf in "$ASSETS_DIR"/ci*.yml "$ASSETS_DIR"/audit*.yml "$ASSETS_DIR"/mutation*.yml; do
   lint_workflow "$wf" "$ASSETS_DIR" || status=1
 done
 if [ "$status" -eq 0 ]; then
