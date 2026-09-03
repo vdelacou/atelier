@@ -66,7 +66,8 @@ slice. Commit under the standing approval; push on an explicit ask. Verify set: 
        README commitments row 39, profiles appendix row 4.4, matrix notes 4.4/4.6/15.1, workflow.md
        summary lines 631 and 667, review-me/greenfield if they echo the cadence, CHANGELOG.
        DoD: V3 (`--lock` after re-anchor), V5, V6, V7.
-5. [x] docs(canon): P6 row for the 4.4 example comment (scheduled full sweep), status proposed (drafted;
+5. [x] docs(canon): P6 row for the 4.4 example comment (scheduled full sweep), ACCEPTED and applied
+       2026-09-03 (15d033a, on main). Was:
        applied on the owner's ruling with the hash re-pin. DoD: V5.
 6. [x] tier 1 (r1 43/47, three misses on untouched rules; r2 and r3 12/12 on those tasks: variance
        plus the cap, which moved from 15 to 20 minutes). Done: `CONFORMANCE_SINCE=<pre-slice-1 ref> CONFORMANCE_MODEL=claude-opus-5 bash
