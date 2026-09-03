@@ -159,7 +159,47 @@ def selftest() -> None:
             print(f"SELFTEST FAILED: a 003_contract_* migration filename was not accepted as contract-step evidence: {marks}")
             sys.exit(1)
 
-    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence")
+    # Fourth scenario: shape over vocabulary. 4.8 credits an eval set that carries a
+    # bar wherever it lives (a scripts/*.ts runner, a package.json script), never a
+    # file that merely "evaluates" something and reports a score, and never an eval
+    # set with no bar. 7.5 credits the list-endpoint shape (a forged or other-owner
+    # scenario) as well as the single-resource 404, never a same-owner-only test.
+    # The 2026-09-03 reruns lost an hour per pass to the word-boundary version of
+    # 4.8 (`evals/` + `run-evals.ts --min-score` scored 0) and to a 404 demanded of
+    # a list endpoint that cannot produce one.
+    h6 = next(task for task in tasks if task["id"] == "h6-ai-full")
+    eval_gate = next(a for a in h6["assertions"] if a["rule"] == "4.8")
+    h4 = next(task for task in tasks if task["id"] == "h4-trap-tenant")
+    absence = next(a for a in h4["assertions"] if a["rule"] == "7.5")
+    shapes = [
+        ("4.8 runner with a bar", "scripts/run-evals.ts",
+         "const bar = minScoreFrom(process.argv);\nif (passed / cases.length < bar) process.exit(1);\n", eval_gate, True),
+        ("4.8 package.json script with a bar", "package.json",
+         '{ "scripts": { "evals": "bun run scripts/check-summaries.ts --min-score 0.9" } }\n', eval_gate, True),
+        ("4.8 evaluate plus score, no eval set", "src/use-cases/summarize.ts",
+         "export const evaluate = (score: number): boolean => score >= 0.5;\n", eval_gate, False),
+        ("4.8 eval set with no bar", "evals/cases.json",
+         '[{ "thread": "t1", "expected": "gist" }]\n', eval_gate, False),
+        ("7.5 forged-owner scenario", "src/infra/http/invoices.test.ts",
+         "it('when the caller forges another organisation id, only their own invoices come back', () => {});\n", absence, True),
+        ("7.5 single-resource 404", "src/infra/http/invoices.test.ts",
+         "it('returns 404 for an invoice of a different organisation', () => {});\n", absence, True),
+        ("7.5 same-owner only", "src/infra/http/invoices.test.ts",
+         "it('lists the invoices of the signed-in organisation', () => {});\n", absence, False),
+    ]
+    for label, rel, body, assertion, want in shapes:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp) / "shape"
+            shutil.copytree(FIXTURE_DIR, run_dir)
+            artifact = run_dir / rel
+            artifact.parent.mkdir(parents=True, exist_ok=True)
+            artifact.write_text(body)
+            ((_d, _r, got),) = grade_run(run_dir, [assertion])
+            if got != want:
+                print(f"SELFTEST FAILED: {label}: expected {'pass' if want else 'fail'}, got {'pass' if got else 'fail'}")
+                sys.exit(1)
+
+    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8 and 7.5 credit shape over vocabulary")
 
 
 def _flag_val(args: list[str], name: str) -> int | None:

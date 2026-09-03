@@ -217,6 +217,35 @@ Per-task, `with_skill` was perfect and identical across all three passes while `
 between 28 and 29 in this reading and between 26 and 28 in the morning's: lower and flakier in
 both, which is the shape of the claim worth making.
 
+## Corrected checks (2026-09-03)
+
+Two more assertions moved from vocabulary to shape, after five reruns of h4 and h6 (r1-r5, the
+skill arm, opus) spent about an hour per pass confirming the grader rather than the skill.
+The selftest's fourth scenario pins both shapes with pass and fail fixtures.
+
+- `h6-ai-full` 4.8 asserted the word `eval` with word boundaries. Run r4 shipped an eval set
+  (`evals/support-thread-summary/cases.json`), a runner (`scripts/run-evals.ts` with
+  `--min-score`) and a package.json script named `evals`, and scored 0: `evals` and
+  `run-evals` never match `\beval\b`, and package.json was outside the corpus. It now asserts
+  the shape: one file whose path or content names an eval set (`evals`, `evaluation`,
+  `golden`, `regression`, as whole words, so `evaluate` never matches) and carries a bar
+  (`min-score`, `threshold`, `toBeGreaterThan`, `>=`, `score`), over `.ts`, `.tsx` and
+  `.json`. Under the new shape r4 reads 5/5. Runs r1, r2, r3 and r5 still fail it, and that is
+  honest: they name the eval in a comment or not at all. r5 also misses 10.11 (the schema
+  checkpoint), a separate miss under an unchanged assertion.
+- `h4-trap-tenant` 7.5 demanded a 404 or "not found" inside a test file. The task is a list
+  endpoint, so the single-resource 404 cannot appear; all five runs instead ship a forged-id
+  test (owner A's credentials with owner B's id in the path and the query string return only
+  A's rows), which is the discipline the rule asks for at that shape. The assertion now
+  accepts either: a 404 or not-found, or a scenario naming the forged, other, cross, foreign
+  or second owner within 60 characters of org, tenant or owner. h5's 7.5 (a single-resource
+  fetch) is unchanged. Under the new shape h4 reads 3/3 in all five runs.
+
+The re-read moves the hard tier from 22/24 (r1) to 23/24; the remaining miss is real. Since
+the same-day restructure of SKILL.md (570 to 194 lines) sat between the 2026-08-30 reading
+and these, the earlier 24/24 one-pass reading and r1's 23/24 bracket the doctrine change at
+one assertion of variance, which is within the noise a single pass carries.
+
 ## Threshold (Phase 4 gate, run locally)
 
 The eval runs on this machine, not in CI. A skill-touching change runs one pass and calls

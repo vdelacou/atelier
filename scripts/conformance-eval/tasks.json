@@ -412,8 +412,8 @@
         "rule": "7.1"
       },
       {
-        "desc": "a cross-tenant absence test ships with it",
-        "pattern": "(?s)\\.test\\.ts.*?(404|not.?found)",
+        "desc": "a cross-tenant absence test ships with it (a 404, or a forged/other-owner scenario on a list endpoint)",
+        "pattern": "(?s)\\.test\\.ts.*?(404|not.?found|(?i:forg|another|other|cross|foreign|second)[^\\n]{0,60}(?i:org|tenant|owner))",
         "mode": "present",
         "rule": "7.5"
       }
@@ -466,10 +466,15 @@
         "rule": "10.11"
       },
       {
-        "desc": "the prompt or pin is gated by an eval",
-        "pattern": "(?i)\\beval\\b",
+        "desc": "the prompt or pin is gated by an eval set that carries a bar (a runner or a package.json script)",
+        "pattern": "(?is)\\b(evals?|evaluations?|golden|regression)\\b.*?(min.?score|threshold|toBeGreaterThan|>=|\\bscore\\b)",
         "mode": "present",
-        "rule": "4.8"
+        "rule": "4.8",
+        "globs": [
+          ".ts",
+          ".tsx",
+          ".json"
+        ]
       },
       {
         "desc": "the metered call is capped per caller",

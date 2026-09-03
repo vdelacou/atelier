@@ -1,100 +1,71 @@
-# Plan: audit remediation (2026-09-02)
+# Plan: conformance harness revamp (2026-09-03)
 
-Source of truth for the full design: `~/.claude/plans/oky-make-a-plan-gentle-umbrella.md`
-(context, decisions, per-slice files, fixtures, verify set). This file is the resume contract:
-one line per slice, ticked as its DoD is met. Order A, F, B, C, D, E. Every slice is one
-Conventional commit under 10 files / 300 lines; commit and push each need explicit confirmation.
+Owner ruling 2026-09-03: harness only, no field runner. Context: a conformance run is one
+full `claude -p` coding session (opus, 6 to 11 min, no cap); the routine matrix is 21 tasks x
+2 arms x 3 passes, hours at 4 jobs; the baseline arm never reads the skill. The 2026-09-03
+reruns (r1-r5, h4/h6) spent about an hour per pass confirming two grader artifacts: 4.8 is the
+word `eval` with boundaries (r4 shipped `evals/` + `scripts/run-evals.ts --min-score` and
+scored 0) and 7.5 wants a 404 in a test on a list endpoint (all five runs ship a forged-id
+test, none can 404). Shrink the harness, do not rebuild it. No new instrument beyond the
+selection mode; the judge, the review eval and the trigger eval are untouched.
 
-Verify set: V1 `bash scripts/smoke-test.sh`; V2 `bash scripts/smoke-test-java.sh`;
-V3 `python3 scripts/check-citations.py` (`--lock` first when a pinned line moved);
-V4 `bash scripts/check-workflow-assets.sh`; V5 `python3 scripts/check-matrix-drift.py`;
-V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.sh`.
+Standing rules: every grader change ships a red fixture in `grade.py --selftest`; commits
+Conventional, <=10 files / <=300 lines; commit each slice once green (standing approval from
+the previous task, push stays a separate ask); no em dashes; baseline.md gets a dated note for
+every assertion change (its existing idiom).
 
-## Phase A: gates
+## Slice 1: structural assertions for 4.8 and 7.5 (grader shapes, red first)
 
-1. [x] fix(atelier): commit-message gate walks the pushed range on main. DoD: smoke fixture
-       (origin/main == HEAD, GITHUB_EVENT_NAME=push, a `wip:` commit) seen red before, green
-       after; same push default mirrored in check-commit-range.sh; V1 V2 V4 V3 green.
-2. [x] fix(atelier): deadline tripwire sees globalThis.fetch and ignores comments. DoD:
-       `globalThis.fetch(...) // timeout upstream` fixture red; conforming adapter green; V1 V2.
-3. [x] fix(atelier): lifecycle tripwire exempts by path, catches DROP TABLE. DoD: four fixtures
-       (comment-exempt red, path-exempt green, DROP TABLE red, contract migration green); V1 V2 V3.
-4. [x] fix(atelier): pii tripwire reads a multi-line logger call and more names. DoD: two-line
-       logger fixture red; V1 V2.
-5. [x] fix(atelier): package.json gate scopes to the dependency blocks. DoD: publishConfig.tag
-       fixture green, existing latest fixtures still red; V1 V3.
-6. [x] fix(atelier): isolation tripwire wants a 404 inside a test naming the route. DoD: three
-       fixtures (wrong test file red, 404 in comment red, 404 in a test block green); Java mirror;
-       V1 V2.
-7. [x] fix(atelier): the staleness gate runs in tree mode from the shipped workflow. DoD: tree
-       fixture red/green in smoke test; `--selftest` in ci.yml; no /tmp path, no handle in the
-       script; V1 V4 V3.
-8. [x] docs(atelier): check-docs.sh names its trust boundary. DoD: comment lands; V1.
-9. [x] feat: an em-dash gate for this repo, hook and CI. DoD: `scripts/check-no-em-dash.sh
-       --selftest` green; hook runs it first; ci.yml job; CLAUDE.md points at it; V7 V6.
+- [x] tasks.json h6 4.8: one file whose path or content names an eval set
+      (`\b(evals?|evaluations?|golden|regression)\b`, so `evaluate` never matches) AND carries
+      a threshold token (`min.?score|threshold|toBeGreaterThan|>=|score`), globs `.ts .tsx
+      .json` so a package.json script counts.
+- [x] tasks.json h4 7.5: a test file with a 404 / not-found assertion OR a scenario name that
+      states the cross-owner attempt (`(forg|another|other|cross|foreign|second)` within 60
+      chars of `org|tenant|owner`), the list-endpoint shape.
+- [x] grade.py selftest, fourth scenario: synthetic run dirs prove each new shape passes on
+      the artifact (an `evals` script with `--min-score`; a forged-org test name; a 404 test)
+      and fails on the trap (a file saying `evaluate ... score` with no eval set; `evals`
+      with no threshold; a same-owner-only test).
+- [x] baseline.md dated note: what changed and why, with the r1-r5 re-read under the new
+      shapes (expected: h4 3/3 in all five, h6 5/5 in r4 only; r2 h6 stays 4/5, a real miss).
+- DoD: `python3 scripts/conformance-eval/grade.py --selftest` green and red when a shape is
+  reverted (prove by hand once); regrade r1-r5 and record; commit.
 
-## Phase F: rule 35, cyclomatic complexity
+## Slice 2: diff-targeted selection (`--since <ref>`)
 
-31. [x] feat(atelier): cyclomatic complexity gate in both ESLint configs. DoD: planted 11-branch
-        function red in smoke-test.sh and smoke-test-next.sh, conforming green.
-32. [x] feat(atelier): PMD cyclomatic complexity gate for the Java variant. DoD: planted method
-        of complexity 11 fails `./mvnw verify` in smoke-test-java.sh; asset named by the
-        bootstrap; V2 V4.
-33. [x] docs(atelier): hard rule 35 cascaded (SKILL.md, clean-code.md, review-me, greenfield,
-        README, reverse-matrix row 35, matrix 1.2, CHANGELOG). DoD: V3 after `--lock`, V5, V6.
+- [ ] `run.sh --since <ref>` (or `CONFORMANCE_SINCE`): diff `skills/atelier/**` against the
+      ref, collect touched hard-rule numbers (a `NN.` line in SKILL.md, the reference's rule
+      list from the trigger table) and canon ids, map to tasks whose assertions cite those
+      rules (tasks.json is rule-tagged; add a `hard_rules` list per task where the mapping is
+      not derivable), run only those, skill arm only, one pass, JOBS 6 default.
+- [ ] `--dry-run` prints the selection; selftest: a synthetic diff touching rule 28 selects
+      h4, h5 and nothing else.
+- DoD: dry-run on this branch's SKILL.md diff selects the h tier only; selftest green; the
+  README/CLAUDE.md verify lines name the new mode.
 
-## Phase B: em-dash sweep (same-line replacements only)
+## Slice 3: freeze the baseline arm
 
-10. [x] SKILL.md. DoD: V7 clean for the file; V3 after `--lock`; V6.
-11. [x] workflow.md, testing.md. DoD: V7; V3 after `--lock`.
-12. [x] nextjs-monorepo.md, atomic-design.md, behavioural-examples.md. DoD: V7; V3.
-13. [x] bun-typescript.md, testing-infra.md, architecture.md, security.md, result-type.md,
-        complexity.md. DoD: V7; V3 after `--lock`.
-14. [x] remaining references, three companions, assets, README. DoD: V7 zero across skills/,
-        README.md, .githooks/; V3 after `--lock`; V6; V1.
+- [ ] baseline arm results become a committed fixture (`scripts/conformance-eval/
+      baseline-arm.json`: per task/assertion pass counts, tasks.json sha256, model, date).
+- [ ] grade.py `--frozen-baseline` reads it for the delta instead of baseline run dirs; a
+      tasks.json hash mismatch is an error naming the re-run command.
+- [ ] run.sh default arms become `with_skill`; `CONFORMANCE_ARMS=both` re-runs the baseline.
+- DoD: grading a skill-only runs dir prints a delta against the frozen arm; hash-mismatch
+  selftest red; baseline.md documents the freeze.
 
-## Phase C: doctrine contradictions
+## Slice 4: caps and tiers
 
-15. [x] rule 12 governs the value-object section. DoD: SKILL.md:283-285, README:30,
-        clean-code.md agree; V3 after `--lock`; V6.
-16. [x] boundary factories return Result, constructors assert (parseX / x). Landed with 15 (same section); the a2+e5 eval pass runs at the end of Phase C. DoD: every listed
-        site on the two-tier form; V3 after `--lock`; conformance eval a2 + e5 one pass.
-17. [x] money is integer cents in every example. DoD: no `amount: number` Money left; V3.
-18. [x] rule 14 names the value-object exception. DoD: SKILL.md:166, testing.md:25, tdd.md:207,
-        review-eval baseline note; V3.
-19. [x] dotted ids are canon ids, slice 1 (SKILL.md note + 5 refs). DoD: V3 V6.
-20. [x] dotted ids, slice 2 (5 refs). DoD: V3.
-21. [x] stale mentions: canary, CI count, README layout, Java assets, Email.Error. DoD: V2 V3.
-
-## Phase D: SKILL.md restructure
-
-22. [x] fold tdd.md sections into testing.md. DoD: testing.md holds the loop; V3.
-23. [x] remove tdd.md, repoint citers, redirect stub. DoD: V3 after `--lock`; V6; V1.
-24. [x] fold class-to-module.md into design-patterns.md, stub. DoD: V3 V6.
-25. [x] drop the remaining duplicated examples. DoD: V1 (fences intact); V3 after `--lock`.
-26. [x] absorb hard-rule bodies 4, 12, 17-20, 24-25 into references. DoD: V3 after `--lock`.
-27. [x] hard rules as one-liners, red flags and four elements out. DoD: nouns for 28-32 kept;
-        V3 after `--lock`; V6.
-28. [x] interaction rewritten, guidelines compressed, companions cascaded. DoD: rules 24-25
-        bullets present; V3 after `--lock`; V6.
-29. [x] trigger table, merged checklists, workflow. DoD: SKILL.md about 210 lines; V1 V2 V3 V5
-        V6; h1-h7 with_skill 24/24; judge --ab old vs new (3 generations); trigger-eval
-        atelier-bun once.
-
-## Phase E: canon (each row needs a ruling)
-
-30. [x] draft P6 rows C1-C6 in proposed-revisions.md (status proposed). DoD: V5 unchanged.
-31+. [x] apply each ACCEPTED row: dos-and-donts (+ prose), matrix sha re-pin, lock if needed.
-        DoD per row: V5 then V3. All six rows ACCEPTED by the owner 2026-09-03 and landed one
-        commit each (9ad69df, d834e0c, da23763, 47c0207, 6010c23, 5e87c43); row 6 created
-        docs/global-rules/global-rules-profiles.md, pinned in the matrix header. Row B (the
-        other ten numbers plus rule 35's cap) is the next proposal, not drafted.
-32. [x] checklist fix for the h4/h6 misses (23a72d0): the per-discipline post-code item is
-        back as one compact list. DoD: h4 and h6 skill arm back to 3/3 and 5/5 in reruns r4-r5
-        (r1-r3 reproduced the misses with the item absent).
+- [ ] run.sh: `--max-turns` (default 60) and a wall-clock `timeout` per session (default 15
+      min) around `claude -p`; a capped run is graded as produced, and the summary names it.
+- [ ] incremental grading: `run.sh` prints each run's scorecard line as it finishes.
+- [ ] `CONFORMANCE_MODEL` documented as the smoke lever (sonnet for tier 1, opus for tier 2).
+- [ ] baseline.md and CLAUDE.md: the tier contract (tier 0 static gates in CI; tier 1
+      `--since` skill arm one pass after any doctrine edit; tier 2 full matrix both arms on a
+      description change or before a release).
+- DoD: a run with `--max-turns 1` finishes under a minute and grades; docs name the tiers.
 
 ## Wrap
 
-- [ ] propose LESSONS entries; update this file to final state.
-- Reruns r4-r5 (h4/h6, skill arm) and the atelier-bun trigger eval run in the background;
-  results go into the final report. Nothing pushed; push is a separate ask.
+- [ ] LESSONS entries (vocabulary assertions, the frozen arm, the selection mode); this file
+      to final state; final report.
