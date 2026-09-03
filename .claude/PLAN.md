@@ -84,9 +84,17 @@ V6 `bun run scripts/validate-frontmatter.ts`; V7 `bash scripts/check-no-em-dash.
 ## Phase E: canon (each row needs a ruling)
 
 30. [x] draft P6 rows C1-C6 in proposed-revisions.md (status proposed). DoD: V5 unchanged.
-31+. [ ] apply each ACCEPTED row: dos-and-donts (+ prose), matrix sha re-pin, lock if needed.
-        DoD per row: V5 then V3.
+31+. [x] apply each ACCEPTED row: dos-and-donts (+ prose), matrix sha re-pin, lock if needed.
+        DoD per row: V5 then V3. All six rows ACCEPTED by the owner 2026-09-03 and landed one
+        commit each (9ad69df, d834e0c, da23763, 47c0207, 6010c23, 5e87c43); row 6 created
+        docs/global-rules/global-rules-profiles.md, pinned in the matrix header. Row B (the
+        other ten numbers plus rule 35's cap) is the next proposal, not drafted.
+32. [x] checklist fix for the h4/h6 misses (23a72d0): the per-discipline post-code item is
+        back as one compact list. DoD: h4 and h6 skill arm back to 3/3 and 5/5 in reruns r4-r5
+        (r1-r3 reproduced the misses with the item absent).
 
 ## Wrap
 
 - [ ] propose LESSONS entries; update this file to final state.
+- Reruns r4-r5 (h4/h6, skill arm) and the atelier-bun trigger eval run in the background;
+  results go into the final report. Nothing pushed; push is a separate ask.

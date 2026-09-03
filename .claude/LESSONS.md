@@ -315,3 +315,31 @@ The eighteen global-rules pillars split two ways: concerns visible in a diff bec
 ## [decision] 2026-07-11 | pillar 16 lives in its own metrics reference
 
 DORA, flow metrics, and cost-as-a-metric were split out of `delivery.md` into `references/metrics.md` on review, so the measurement doctrine has its own consult moment instead of hiding inside the deploy file.
+
+## [decision] 2026-09-03 | em dashes are a gate, not a convention
+
+The authoring rule "never use em dashes" had held for the canon and this journal and failed for the skill: 83 in SKILL.md alone, 300-odd across skills/ and README, because a rule only a reviewer checks drifts the moment the reviewer is the same model that writes the prose. `scripts/check-no-em-dash.sh` now runs first in the pre-commit hook (staged diff), in CI (pushed range) and under `--selftest`; the sweep went in five slices before any doctrine edit so the diffs stayed readable. In a worktree the hook only bites after merge, since `core.hooksPath` points at the main checkout; CI covers the gap.
+
+## [gotcha] 2026-09-03 | the commit-message gate was vacuous on a push to main
+
+`check-commit-messages.sh` walked `origin/main..HEAD`, which is empty on a push to main, so the gate printed "no commits in range" and passed every message. The push path now takes `github.event.before` through a `GITHUB_EVENT_BEFORE` job env (the zero SHA of a new branch falls back to `HEAD~1..HEAD`); the same default went into `check-commit-range.sh` and the em-dash gate. The red fixture that proves it is a `wip:` commit with `refs/remotes/origin/main` pointed at HEAD.
+
+## [decision] 2026-09-03 | boundary factories return Result, constructors assert
+
+The branded factory threw while rules 16-17 and eval task a2 wanted a `Result`, and Money was integer cents in one reference and a float in four. The form is two-tier, mirroring `assets/java/Email.java`: `parseX(raw)` returns `Result<X, XError>` and is the only entry for untrusted input; `x(value)` asserts and throws as a programmer-bug check for values already proven. Sink guards became `parseSafeUrl` and `parseSafePath`; Money is `{ cents, currency }` with one canonical copy in object-design.md.
+
+## [gotcha] 2026-09-03 | BSD awk -v strips backslash escapes
+
+Passing a regex through `awk -v pat='\\.'` on macOS delivers `.` to the program, so the PII tripwire exited 2 on every case while the Linux CI would have been fine. Regexes live as awk literals inside the program text now; lines are lowercased once and matched against lowercase patterns. Same family: zsh does not word-split an unquoted variable and has no `PIPESTATUS`, so a gate script that must run under both shells names its paths explicitly.
+
+## [gotcha] 2026-09-03 | a pipe to tail masks a failing verifier
+
+`python3 scripts/check-citations.py | tail -1` returns tail's status, so a slice committed with two citations beyond workflow.md's end of file and the failure surfaced one slice later. Verification chains are `&&` sequences with the verifier's own exit status deciding, and the reanchor helper now treats "beyond end of file" like "content changed".
+
+## [gotcha] 2026-09-03 | re-anchor citations per slice, never in bulk
+
+`citations-lock.json` pins the first 72 characters of every `file:line` the matrix cites, so any slice that moves or rewrites a pinned line breaks V3. A bulk `--lock` at the end would have blessed wrong lines silently; the discipline that worked was a snippet-matching re-anchor per slice (same file, rule-number or heading prefix when the line was rewritten, cross-file when the text moved), exiting non-zero on anything ambiguous, and only then `--lock`. Rewriting a pinned line in place is a re-lock, not a move.
+
+## [gotcha] 2026-09-03 | a compressed checklist drops the nouns the eval asserts
+
+Cutting SKILL.md from 570 to 194 lines kept every hard-rule noun in the one-liners, yet h4 lost its cross-tenant 404 test and h6 its eval gate in three reruns out of three. The one item that had carried them was the after-change checklist's per-discipline list ("ships its cross-tenant 404 test (28)", "its eval run (32)"), compressed into "each with the concrete check its rule states". A rule stated once in the rule list is not the same as the same rule stated at the moment of checking; the compact list is back. Also honest: h4 is a list endpoint, so a forged-id test returning the caller's own rows is a defensible answer the 404 pattern does not credit.
