@@ -246,6 +246,28 @@ the same-day restructure of SKILL.md (570 to 194 lines) sat between the 2026-08-
 and these, the earlier 24/24 one-pass reading and r1's 23/24 bracket the doctrine change at
 one assertion of variance, which is within the noise a single pass carries.
 
+## Frozen baseline arm (2026-09-03)
+
+The baseline arm never reads the skill, so half of every full pass measured nothing about
+the skill edit that triggered it. It is now a fixture: `baseline-arm.json` holds per-assertion
+`[passed, total]` counts for the unaided arm, keyed by the sha256 of the prompts and
+assertions in `tasks.json` (never `hard_rules`, which only steer selection). A skill edit
+never invalidates it; an assertion edit always does, and `grade.py --frozen-baseline` then
+refuses it with the two commands that refresh it. `run.sh` defaults to the skill arm;
+`CONFORMANCE_ARMS=baseline` re-measures the unaided arm and `freeze-baseline.py <runs-dir>`
+writes the fixture, summing passes across every runs dir it is given, so the fixture grows
+by re-running and re-freezing rather than by editing.
+
+The comparison: for each graded skill-arm task the fixture's per-assertion pass rates sum to
+an expected unaided count (`frozen-bl 1.5/3` means the baseline arm passed the first
+assertion in both frozen passes, the second in one, the third in none), and the eval gate's
+delta is skill passes minus that expectation over the tasks the fixture covers. A live
+baseline run dir, when present, wins over the fixture for the delta.
+
+The fixture landing with this section is one opus pass over all 21 tasks, measured the same
+day under the corrected 4.8 and 7.5 shapes; the 3-pass e/a numbers above and the one-pass
+h-tier numbers predate those shapes and stay as the historical record.
+
 ## Threshold (Phase 4 gate, run locally)
 
 The eval runs on this machine, not in CI. A skill-touching change runs one pass and calls

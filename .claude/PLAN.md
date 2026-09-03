@@ -46,11 +46,12 @@ every assertion change (its existing idiom).
 
 ## Slice 3: freeze the baseline arm
 
-- [ ] baseline arm results become a committed fixture (`scripts/conformance-eval/
+- [~] baseline arm results become a committed fixture (code landed; the fixture lands when the
+      background baseline pass over 21 tasks finishes) (`scripts/conformance-eval/
       baseline-arm.json`: per task/assertion pass counts, tasks.json sha256, model, date).
-- [ ] grade.py `--frozen-baseline` reads it for the delta instead of baseline run dirs; a
+- [x] grade.py `--frozen-baseline` reads it for the delta instead of baseline run dirs; a
       tasks.json hash mismatch is an error naming the re-run command.
-- [ ] run.sh default arms become `with_skill`; `CONFORMANCE_ARMS=both` re-runs the baseline.
+- [x] run.sh default arms become `with_skill`; `CONFORMANCE_ARMS=both` re-runs the baseline.
 - DoD: grading a skill-only runs dir prints a delta against the frozen arm; hash-mismatch
   selftest red; baseline.md documents the freeze.
 

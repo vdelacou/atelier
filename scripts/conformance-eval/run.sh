@@ -12,14 +12,17 @@
 #
 # Env:
 #   CONFORMANCE_MODEL  model for claude -p (default: user's configured model)
-#   CONFORMANCE_ARMS   "with_skill baseline" (default) or a single arm; with_skill when
-#                      CONFORMANCE_SINCE is set
+#   CONFORMANCE_ARMS   with_skill (default: the baseline arm is frozen in baseline-arm.json,
+#                      grade with --frozen-baseline), baseline, or both
 #   CONFORMANCE_JOBS   parallel runs (default 4; 6 when CONFORMANCE_SINCE is set)
 #   CONFORMANCE_SINCE  git ref; selects tasks from the skills/atelier/ diff since it
 #
 # Results land in skills/atelier-workspace/conformance-<date>/runs/ (gitignored).
-# Grade afterwards:
-#   python3 scripts/conformance-eval/grade.py
+# Grade afterwards, against the frozen baseline arm:
+#   python3 scripts/conformance-eval/grade.py <runs-dir> --frozen-baseline
+# Refresh the frozen arm only when tasks.json changes (prompts or assertions):
+#   CONFORMANCE_ARMS=baseline bash scripts/conformance-eval/run.sh
+#   python3 scripts/conformance-eval/freeze-baseline.py <runs-dir> --model <model>
 
 set -euo pipefail
 
@@ -29,7 +32,8 @@ SKILL_PATH="${CONFORMANCE_SKILL_PATH:-$REPO_ROOT/skills/atelier}"
 OUT="$REPO_ROOT/skills/atelier-workspace/conformance-$(date +%F)/runs${CONFORMANCE_MODEL:+-$CONFORMANCE_MODEL}${CONFORMANCE_TAG:+-$CONFORMANCE_TAG}"
 SINCE="${CONFORMANCE_SINCE:-}"
 JOBS="${CONFORMANCE_JOBS:-$([ -n "$SINCE" ] && echo 6 || echo 4)}"
-ARMS="${CONFORMANCE_ARMS:-$([ -n "$SINCE" ] && echo with_skill || echo 'with_skill baseline')}"
+ARMS="${CONFORMANCE_ARMS:-with_skill}"
+[ "$ARMS" != "both" ] || ARMS="with_skill baseline"
 mkdir -p "$OUT"
 
 # bash-3.2-safe (macOS): no mapfile, no wait -n

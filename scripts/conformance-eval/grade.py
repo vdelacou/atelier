@@ -14,6 +14,7 @@ A run directory is <runs-dir>/<task-id>-<arm>/ where arm is with_skill or
 baseline. Missing directories are reported as ungraded, not failed.
 """
 
+import hashlib
 import json
 import re
 import shutil
@@ -23,6 +24,7 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 FIXTURE_DIR = HERE / "fixture"
+FROZEN_DEFAULT = HERE / "baseline-arm.json"
 # Content of every scaffolding file a run STARTS with. Grading is a property of
 # the agent's contribution only: a run-dir file whose bytes equal its fixture
 # original was never touched by the agent, so it must neither satisfy nor violate
@@ -87,6 +89,36 @@ def grade_run(run_dir: Path, assertions: list[dict]) -> list[tuple[str, bool]]:
             passed = False  # nothing produced in scope = not conforming
         marks.append((a["desc"], a.get("rule"), passed))
     return marks
+
+
+def tasks_hash(tasks: list[dict]) -> str:
+    """sha256 of what the baseline arm depends on: prompts and assertions, never hard_rules."""
+    canon = [{"id": t["id"], "prompt": t["prompt"], "assertions": t["assertions"]} for t in tasks]
+    return hashlib.sha256(json.dumps(canon, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
+def load_frozen(path: Path, tasks: list[dict]) -> dict | str:
+    """The frozen baseline-arm fixture, or the reason it cannot be used. The baseline arm
+    never reads the skill, so its results are a fixture keyed to the prompts and assertions
+    it was measured against (freeze-baseline.py); a skill edit never invalidates it, an
+    assertion edit always does."""
+    refreeze = ("re-run the baseline arm (CONFORMANCE_ARMS=baseline bash scripts/conformance-eval/run.sh) "
+                "and re-freeze it (python3 scripts/conformance-eval/freeze-baseline.py <runs-dir>)")
+    if not path.is_file():
+        return f"no frozen baseline at {path}; {refreeze}"
+    frozen = json.loads(path.read_text())
+    if frozen.get("tasks_sha256") != tasks_hash(tasks):
+        return f"the frozen baseline at {path} was measured against a different tasks.json (a prompt or an assertion changed); {refreeze}"
+    return frozen
+
+
+def frozen_expected(frozen: dict, task_id: str, n: int) -> float | None:
+    """Expected baseline passes on a task's n assertions: the sum of its frozen per-assertion
+    pass rates, so two frozen passes at 1/2 on one assertion count as half a pass."""
+    counts = frozen.get("tasks", {}).get(task_id, {}).get("assertions")
+    if not counts or len(counts) != n:
+        return None
+    return sum(p / t for p, t in counts if t)
 
 
 def selftest() -> None:
@@ -199,7 +231,24 @@ def selftest() -> None:
                 print(f"SELFTEST FAILED: {label}: expected {'pass' if want else 'fail'}, got {'pass' if got else 'fail'}")
                 sys.exit(1)
 
-    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8 and 7.5 credit shape over vocabulary")
+    # Fifth scenario: the frozen baseline arm is keyed to the assertions it was measured
+    # against. A fixture frozen against another tasks.json is refused with the re-freeze
+    # command; a matching one yields the expected count as the sum of per-assertion rates.
+    with tempfile.TemporaryDirectory() as tmp:
+        fx = Path(tmp) / "baseline-arm.json"
+        fx.write_text(json.dumps({"tasks_sha256": "0" * 64, "tasks": {}}))
+        verdict = load_frozen(fx, tasks)
+        if not isinstance(verdict, str) or "re-freeze" not in verdict:
+            print("SELFTEST FAILED: a frozen baseline measured against another tasks.json was accepted")
+            sys.exit(1)
+        fx.write_text(json.dumps({"tasks_sha256": tasks_hash(tasks), "passes": 2,
+                                  "tasks": {"h4-trap-tenant": {"assertions": [[2, 2], [1, 2], [0, 2]]}}}))
+        frozen = load_frozen(fx, tasks)
+        if isinstance(frozen, str) or frozen_expected(frozen, "h4-trap-tenant", 3) != 1.5 or frozen_expected(frozen, "h6-ai-full", 5) is not None:
+            print("SELFTEST FAILED: the frozen expected count is not the sum of per-assertion rates")
+            sys.exit(1)
+
+    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8 and 7.5 credit shape over vocabulary, the frozen baseline is keyed to its assertions")
 
 
 def _flag_val(args: list[str], name: str) -> int | None:
@@ -220,6 +269,14 @@ def main() -> None:
     # Phase 4 eval gate: block below the recorded baseline (scripts/conformance-eval/baseline.md).
     min_ws = _flag_val(args, "--min-with-skill")
     min_delta = _flag_val(args, "--min-delta")
+    # --frozen-baseline[=path]: compare the skill arm to the frozen baseline arm instead of
+    # (or next to) baseline run dirs; the default fixture is baseline-arm.json here.
+    frozen_path = None
+    for a in args:
+        if a == "--frozen-baseline":
+            frozen_path = FROZEN_DEFAULT
+        elif a.startswith("--frozen-baseline="):
+            frozen_path = Path(a.split("=", 1)[1])
     positional = [a for a in args if not a.startswith("--") and not a.lstrip("-").isdigit()]
     runs_dir = Path(positional[0]) if positional else None
     if runs_dir is None:
@@ -229,7 +286,13 @@ def main() -> None:
         runs_dir = workspaces[-1]
 
     tasks = json.loads((HERE / "tasks.json").read_text())
+    frozen = None
+    if frozen_path is not None:
+        frozen = load_frozen(frozen_path, tasks)
+        if isinstance(frozen, str):
+            sys.exit(f"FROZEN BASELINE UNUSABLE: {frozen}")
     grand = {"with_skill": [0, 0], "baseline": [0, 0]}
+    frozen_grand = [0.0, 0]  # expected baseline passes, assertions covered by the fixture
     # by_rule[rule][arm] = [passed, total], so the scorecard maps to conformance-matrix rows
     by_rule: dict[str, dict[str, list[int]]] = {}
     for task in tasks:
@@ -259,10 +322,21 @@ def main() -> None:
             score = sum(1 for _, _, p in marks if p)
             detail = "  ".join(("PASS" if p else "fail") + f"[{r}]:{d[:30]}" for d, r, p in marks)
             print(f"  {arm:<11} {score}/{len(marks)}  {detail}")
+            if frozen is not None and arm == "with_skill":
+                expected = frozen_expected(frozen, task["id"], len(marks))
+                if expected is None:
+                    print(f"  {'frozen-bl':<11} (no frozen data for this task)")
+                else:
+                    frozen_grand[0] += expected
+                    frozen_grand[1] += len(marks)
+                    print(f"  {'frozen-bl':<11} {expected:.1f}/{len(marks)}")
 
     print("\nTOTALS (graded runs only):")
     for arm, (p, t) in grand.items():
         print(f"  {arm:<11} {p}/{t}")
+    if frozen is not None:
+        print(f"  {'frozen-bl':<11} {frozen_grand[0]:.1f}/{frozen_grand[1]}  "
+              f"({frozen.get('passes', '?')} pass(es) frozen {frozen.get('frozen', '?')}, {frozen.get('model', '?')})")
 
     if by_rule:
         print("\nBY RULE (the global-rules sub-concept each check proves; with_skill vs baseline):")
@@ -273,18 +347,26 @@ def main() -> None:
     # Phase 4 eval gate: exit non-zero below the recorded baseline (see baseline.md).
     if min_ws is not None or min_delta is not None:
         ws_p, bl_p = grand["with_skill"][0], grand["baseline"][0]
+        # A live baseline arm wins when it was graded; otherwise the frozen arm stands in,
+        # over the assertions it covers.
+        if grand["baseline"][1] == 0 and frozen is not None:
+            bl_p = frozen_grand[0]
+            ws_p = sum(1 for task in tasks for _d, _r, p in (
+                grade_run(runs_dir / f"{task['id']}-with_skill", task["assertions"])
+                if (runs_dir / f"{task['id']}-with_skill").is_dir() and frozen_expected(frozen, task["id"], len(task["assertions"])) is not None else []) if p)
         delta = ws_p - bl_p
         fails = []
         if min_ws is not None and ws_p < min_ws:
             fails.append(f"with_skill {ws_p} < required {min_ws}")
         if min_delta is not None and delta < min_delta:
-            fails.append(f"delta +{delta} < required +{min_delta}")
+            fails.append(f"delta +{delta:g} < required +{min_delta}")
         if fails:
             print("\nEVAL GATE FAILED:")
             for f in fails:
                 print(f"  {f}")
             sys.exit(1)
-        print(f"\nEVAL GATE OK: with_skill {ws_p}, delta +{delta}")
+        source = "vs the frozen baseline arm" if grand["baseline"][1] == 0 and frozen is not None else "vs the live baseline arm"
+        print(f"\nEVAL GATE OK: with_skill {ws_p}, delta +{delta:g} {source}")
 
 
 if __name__ == "__main__":
