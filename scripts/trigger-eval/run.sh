@@ -31,6 +31,7 @@ RUNS="${4:-3}"
 
 [ -f "$SET" ] || SET="$HERE/sets/$SET"
 [ -f "$SET" ] || { echo "run.sh: eval set not found: $SET" >&2; exit 1; }
+SET="$(cd "$(dirname "$SET")" && pwd)/$(basename "$SET")"  # absolute: the fixture cd below would break a relative path
 [ -d "$REPO_ROOT/$SKILL" ] || { echo "run.sh: skill dir not found: $SKILL" >&2; exit 1; }
 [ -d "$HERE/$FIXTURE" ] || { echo "run.sh: fixture not found: $HERE/$FIXTURE" >&2; exit 1; }
 
