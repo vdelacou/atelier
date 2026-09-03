@@ -157,10 +157,10 @@ between source and sink" (security.md:11), with server-side authorization carrie
 `isolation.md` and reinforced at security.md:33-37. Canon 5.8's Do is treat everything an AI model
 reads as untrusted and authorize every action it requests server-side. The skill's `ai.md`
 matches clause for clause: content is "fenced as data" so "when the email says 'delete
-everything', the correct output is that the email says so" (ai.md:59), and "Every tool call or
+everything', the correct output is that the email says so" (ai.md:90), and "Every tool call or
 action the model requests is validated at the boundary ... and authorized server-side against
 the rights of the human or tenant it runs for" from an allow-list at least privilege
-(ai.md:60). Both COVERED; 5.8 is additionally a SKILL.md hard rule (rule 32), so its
+(ai.md:91). Both COVERED; 5.8 is additionally a SKILL.md hard rule (rule 32), so its
 Enforcement tier is rule rather than doctrine.
 
 **6. Frontend: the contract gateway and accessibility hold, mobile-first is missing (3.5 and
@@ -231,7 +231,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:49; testing.md:290 | gate | Mock ban is absolute and lint-enforced, exceeding canon advisory prefer-fakes |
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:117 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on a frozen lockfile as the required merge check |
 | 4.7 | Hold generated code to the same bar | COVERED | workflow.md:582 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
-| 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-48; behavioural-examples.md:42 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
+| 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-82; behavioural-examples.md:42 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
 
 ### Pillar 5: Secure by default
 
@@ -244,8 +244,8 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:92 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
 | 5.6 | Expose only what has to be public | COVERED | security.md:232 | doctrine | Datastores, queues, admin panels on a private network only |
 | 5.7 | One security baseline everywhere | COVERED | security.md:227-217 | rule | Auth, TLS, rate limits, allow/deny default on every route (rule 33) |
-| 5.8 | Untrusted content is not instructions | COVERED | ai.md:60; behavioural-examples.md:42 | rule | Model input untrusted, every action authorized server-side (rule 32) (Watchlist 5) |
-| 5.9 | Cap what a caller can spend | COVERED | behavioural-examples.md:42; ai.md:74 | rule | Per-caller spend budget before the call, refuse over bill (rule 32) |
+| 5.8 | Untrusted content is not instructions | COVERED | ai.md:91; behavioural-examples.md:42 | rule | Model input untrusted, every action authorized server-side (rule 32) (Watchlist 5) |
+| 5.9 | Cap what a caller can spend | COVERED | behavioural-examples.md:42; ai.md:105 | rule | Per-caller spend budget before the call, refuse over bill (rule 32) |
 | 5.10 | One inspectable edge, no reachable origin | COVERED | security.md; delivery.md | doctrine | Resolved Phase 2: single filtering edge plus origin-lock doctrine, with the x-edge-secret origin check as defense in depth |
 
 ### Pillar 6: Private by default

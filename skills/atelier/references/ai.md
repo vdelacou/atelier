@@ -38,14 +38,45 @@ if (!parsed.success) return err({ kind: 'llm-invalid-output', message: parsed.er
 
 A prompt or model-pin change ships on its eval score, not on how the demo felt. For each hole, keep a labeled evaluation set (real cases, expected outputs, deterministic validators: schema, sums, dates) and run it in CI on any change to a prompt, the pin, or the hole's schema, blocking below a threshold, exactly as the mutation gate blocks below 90.
 
+**The gate is an artifact, not a sentence.** A comment saying the change "has an eval run" gates nothing. Three things in the diff do: the case set, the runner that exits non-zero below the bar, and the CI job that runs it on the paths that can change the behaviour. The shape, for a hole named `<capability>`:
+
+```text
+evals/<capability>/cases.json      # labeled inputs and expected outputs, synthetic or consented (rule 34)
+scripts/run-evals.ts               # runs the port's real adapter over the set, prints the score, exits 1 below --min-score
+package.json                       # "evals": "bun run scripts/run-evals.ts"
+```
+
+```ts
+// scripts/run-evals.ts (the shape; validators are the hole's own: schema, sums, dates, fields mentioned)
+const minScoreFrom = (argv: ReadonlyArray<string>): number => {
+  const at = argv.indexOf('--min-score');
+  return at === -1 ? 0.9 : Number(argv[at + 1]);
+};
+
+const run = async (): Promise<void> => {
+  const { cases } = (await Bun.file('evals/summarize-thread/cases.json').json()) as { cases: ReadonlyArray<EvalCase> };
+  const summarize = createSummarizer(readConfig()); // the real adapter, the pinned model
+  let passed = 0;
+  for (const c of cases) {
+    const result = await summarize(c.input);
+    if (result.ok && passes(result.value, c.expect)) passed += 1;
+  }
+  const score = passed / cases.length;
+  console.log(`score ${score.toFixed(2)} over ${cases.length} cases, bar ${minScoreFrom(Bun.argv)}`);
+  if (score < minScoreFrom(Bun.argv)) process.exit(1);
+};
+```
+
+(`console.log` is allowed here: a script, not production code, per rule 4.) The CI job runs it on the paths that can change the answer:
+
 ```yaml
 on:
   pull_request:
-    paths: ["prompts/**", "src/use-cases/ports/llm.ts", "src/infra/*llm*", "datasets/**"]
+    paths: ["prompts/**", "src/use-cases/ports/llm.ts", "src/infra/*llm*", "evals/**"]
 jobs:
   evals:
     steps:
-      - run: bun run evals --set datasets/extraction-v3 --min-score 0.95
+      - run: bun run evals --min-score 0.95
 ```
 
 Keep the dataset in the repo (synthetic or consented data only: hard rule 34), version it, and grow it the way the test suite grows: every production miss becomes a labeled case, the eval-set sibling of "every bug becomes a regression test" (`references/testing.md`).
@@ -87,6 +118,6 @@ The cost-growth alert (`references/metrics.md`, Cost is a first-class metric) co
 1. Is every SDK call inside one infra adapter, behind a capability-named port with a fake?
 2. Is the model a pinned, dated snapshot read from config? No `latest`, no undated alias?
 3. Does model output cross a schema/branded checkpoint before anything consumes it?
-4. Prompt, pin, or schema changed: did the eval set run, and does the score clear the bar?
+4. Prompt, pin, or schema changed: are the case set, the `--min-score` runner, and the CI job in the diff (or already there), and does the score clear the bar?
 5. Can any content the model reads cause an action? If so, is the action validated and authorized server-side for the actual caller, from an allow-list, at least privilege?
 6. Metered route: per-caller spend gate before the call, usage metered per tenant?
