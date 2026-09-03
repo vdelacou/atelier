@@ -1755,8 +1755,11 @@ public class MegaService {
 public class CreateReceiptResource {
   @Inject ReceiptRepository receipts;           // slice owns its persistence
   @POST
-  public Result<Receipt> create(NewReceipt input) {
-    return receipts.persistReceipt(input);      // deployable on its own
+  public Result<ReceiptResponse, ReceiptError> create(NewReceipt input) {
+    return switch (receipts.persistReceipt(input)) {                       // deployable on its own
+      case Ok<Receipt, ReceiptError>(var r) -> new Ok<>(ReceiptResponse.from(r)); // the wire shape is mapped here, the domain stays inside (3.6)
+      case Err<Receipt, ReceiptError>(var e) -> new Err<>(e);
+    };
   }
 }
 ```

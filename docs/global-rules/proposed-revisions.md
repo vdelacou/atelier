@@ -531,7 +531,7 @@ Cascade if accepted: three example blocks in dos-and-donts; the dos-and-donts pi
 
 ---
 
-## 8.4 / 3.6 The slice's resource still maps at the boundary (proposed 2026-09-03, status: proposed)
+## 8.4 / 3.6 The slice's resource still maps at the boundary (proposed 2026-09-03, status: ACCEPTED 2026-09-03)
 
 **Current canon.** 3.6's Do (:511, :543-547): translate at the boundary, map the domain to a response record, "DTOs never enter use-cases". 8.4's Java Do (:1755) returns `Result<Receipt>` (the domain record) straight from the JAX-RS resource.
 
@@ -541,7 +541,7 @@ Cascade if accepted: three example blocks in dos-and-donts; the dos-and-donts pi
 
 Cascade if accepted: one example block; the dos-and-donts pin re-pins; no matrix change.
 
-**Ruling.** Pending.
+**Ruling.** ACCEPTED as drafted by the canon owner, 2026-09-03. Applied: 8.4's resource returns `Result<ReceiptResponse, ReceiptError>`, mapping `ReceiptResponse.from(r)` in the `Ok` arm with a 3.6 tag; the slice-ownership point is untouched. The dos-and-donts pin re-pinned.
 
 ---
 
