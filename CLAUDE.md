@@ -37,6 +37,9 @@ tree. What binds work HERE is the authoring and process discipline below.
   description edit (a description is a triggering contract).
 - `python3 scripts/review-eval/grade.py --selftest` (fast; the CI review-grader gate). The full
   eval: `bash scripts/review-eval/run.sh`, then grade the printed runs dir.
+- `python3 scripts/conformance-eval/select-tasks.py --selftest` (fast; the CI gate for the tier-1
+  selection). Tier 1 after any doctrine edit: `CONFORMANCE_SINCE=<ref> CONFORMANCE_MODEL=claude-opus-5
+  bash scripts/conformance-eval/run.sh` runs only the tasks the skill diff can affect, skill arm.
 - `python3 scripts/conformance-eval/judge.py --selftest` (fast; the CI judge-harness gate).
   The judging itself is local and paired: `JUDGE_MODEL=claude-opus-5 python3
   scripts/conformance-eval/judge.py <runs-dir>` over run dirs the conformance eval produced.

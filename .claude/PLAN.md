@@ -34,12 +34,12 @@ every assertion change (its existing idiom).
 
 ## Slice 2: diff-targeted selection (`--since <ref>`)
 
-- [ ] `run.sh --since <ref>` (or `CONFORMANCE_SINCE`): diff `skills/atelier/**` against the
+- [x] `CONFORMANCE_SINCE=<ref>` for run.sh, `select-tasks.py` (a module named select.py shadows the stdlib): diff `skills/atelier/**` against the
       ref, collect touched hard-rule numbers (a `NN.` line in SKILL.md, the reference's rule
       list from the trigger table) and canon ids, map to tasks whose assertions cite those
       rules (tasks.json is rule-tagged; add a `hard_rules` list per task where the mapping is
       not derivable), run only those, skill arm only, one pass, JOBS 6 default.
-- [ ] `--dry-run` prints the selection; selftest: a synthetic diff touching rule 28 selects
+- [x] calling select-tasks.py directly is the dry run; selftest: a synthetic diff touching rule 28 selects
       h4, h5 and nothing else.
 - DoD: dry-run on this branch's SKILL.md diff selects the h tier only; selftest green; the
   README/CLAUDE.md verify lines name the new mode.

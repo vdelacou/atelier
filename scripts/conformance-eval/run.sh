@@ -7,11 +7,15 @@
 # mechanical assertions to whatever code each run produced.
 #
 #   bash scripts/conformance-eval/run.sh [task-id ...]   # default: all tasks
+#   CONFORMANCE_SINCE=<ref> bash scripts/conformance-eval/run.sh   # tier 1: only the
+#       tasks the skill diff since <ref> can affect (select-tasks.py), skill arm, 6 jobs
 #
 # Env:
 #   CONFORMANCE_MODEL  model for claude -p (default: user's configured model)
-#   CONFORMANCE_ARMS   "with_skill baseline" (default) or a single arm
-#   CONFORMANCE_JOBS   parallel runs (default 4)
+#   CONFORMANCE_ARMS   "with_skill baseline" (default) or a single arm; with_skill when
+#                      CONFORMANCE_SINCE is set
+#   CONFORMANCE_JOBS   parallel runs (default 4; 6 when CONFORMANCE_SINCE is set)
+#   CONFORMANCE_SINCE  git ref; selects tasks from the skills/atelier/ diff since it
 #
 # Results land in skills/atelier-workspace/conformance-<date>/runs/ (gitignored).
 # Grade afterwards:
@@ -23,13 +27,23 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 SKILL_PATH="${CONFORMANCE_SKILL_PATH:-$REPO_ROOT/skills/atelier}"
 OUT="$REPO_ROOT/skills/atelier-workspace/conformance-$(date +%F)/runs${CONFORMANCE_MODEL:+-$CONFORMANCE_MODEL}${CONFORMANCE_TAG:+-$CONFORMANCE_TAG}"
-JOBS="${CONFORMANCE_JOBS:-4}"
-ARMS="${CONFORMANCE_ARMS:-with_skill baseline}"
+SINCE="${CONFORMANCE_SINCE:-}"
+JOBS="${CONFORMANCE_JOBS:-$([ -n "$SINCE" ] && echo 6 || echo 4)}"
+ARMS="${CONFORMANCE_ARMS:-$([ -n "$SINCE" ] && echo with_skill || echo 'with_skill baseline')}"
 mkdir -p "$OUT"
 
 # bash-3.2-safe (macOS): no mapfile, no wait -n
 TASK_IDS=()
-while IFS= read -r line; do TASK_IDS+=("$line"); done < <(python3 -c "
+if [ -n "$SINCE" ]; then
+  [ $# -eq 0 ] || { echo "run.sh: CONFORMANCE_SINCE and explicit task ids are exclusive" >&2; exit 2; }
+  while IFS= read -r line; do TASK_IDS+=("$line"); done < <(python3 "$HERE/select-tasks.py" --since "$SINCE")
+  if [ "${#TASK_IDS[@]}" -eq 0 ]; then
+    echo "no task maps to the skills/atelier/ diff since $SINCE; nothing to run (tier 2 is the full pass, by hand)"
+    exit 0
+  fi
+  echo "tier 1 since $SINCE: ${TASK_IDS[*]} (arms: $ARMS, jobs: $JOBS)"
+else
+  while IFS= read -r line; do TASK_IDS+=("$line"); done < <(python3 -c "
 import json, sys
 tasks = json.load(open('$HERE/tasks.json'))
 wanted = sys.argv[1:]
@@ -37,6 +51,7 @@ for t in tasks:
     if not wanted or t['id'] in wanted:
         print(t['id'])
 " "$@")
+fi
 
 task_prompt() { # $1 = task id
   python3 -c "

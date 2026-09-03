@@ -6,6 +6,13 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Harness
+
+- Conformance eval: 4.8 and 7.5 assert shape, not vocabulary (an eval set with a bar in any
+  `.ts`/`.json` file; a forged-owner scenario or a 404), pinned by the grader selftest; a tier-1 mode,
+  `CONFORMANCE_SINCE=<ref>`, runs only the tasks the skill diff can affect (`select-tasks.py`,
+  selftested in CI), skill arm, six jobs.
+
 ### Added
 - **Hard rule 35, cyclomatic complexity at most 10 per function**, lint-enforced in every
   variant: ESLint `complexity: ['error', 10]` in both TypeScript configs, PMD
