@@ -66,7 +66,7 @@ slice. Commit under the standing approval; push on an explicit ask. Verify set: 
        README commitments row 39, profiles appendix row 4.4, matrix notes 4.4/4.6/15.1, workflow.md
        summary lines 631 and 667, review-me/greenfield if they echo the cadence, CHANGELOG.
        DoD: V3 (`--lock` after re-anchor), V5, V6, V7.
-5. [ ] docs(canon): P6 row for the 4.4 example comment (scheduled full sweep), status proposed;
+5. [x] docs(canon): P6 row for the 4.4 example comment (scheduled full sweep), status proposed (drafted;
        applied on the owner's ruling with the hash re-pin. DoD: V5.
 6. [ ] tier 1: `CONFORMANCE_SINCE=<pre-slice-1 ref> CONFORMANCE_MODEL=claude-opus-5 bash
        scripts/conformance-eval/run.sh`, graded `--frozen-baseline`; report. LESSONS entry if a

@@ -576,3 +576,17 @@ with `global-rules-profiles.md` § atelier carrying "Stryker (TS) and PIT (Java)
 Cascade if accepted: dos-and-donts 4.4 Do; the new profiles file added to the matrix's pinned-inputs table with its sha256; the drift checker's file set (it globs the directory, so no code change, but its selftest gains the fourth file); matrix rows stay COVERED (the skill is the atelier profile) with evidence cells unchanged; both pins re-pin. The atelier hard rule 35 threshold (10) belongs to this profile too and joins in row B.
 
 **Ruling.** ACCEPTED as drafted by the canon owner, 2026-09-03. Applied: `docs/global-rules/global-rules-profiles.md` created with the atelier section and 4.4 as its first row; 4.4's Do keeps the obligation and points at the profile; the matrix's pinned-inputs table carries the new file's sha256 (the drift checker verifies every pinned file, so no code change); matrix rows stay COVERED with their evidence unchanged; the reverse matrix's row 35 note points at row B. Row B (the other ten numbers plus rule 35's cap) is the next proposal.
+
+## 4.4 example: the full mutation sweep is scheduled, not a push-to-main step (proposed 2026-09-03, status: proposed)
+
+**Current canon.** 4.4's TypeScript example closes with the comment "mutation is slow: PRs mutate changed files (--incremental), main runs the full sweep, same break either way". The Do above it (post row A) states the obligation only: a mutation threshold and a coverage floor the profile names, restructure rather than lower.
+
+**Defect (a cadence stated as principle).** The comment fixes when the full sweep runs, and it fixes it on the merge path: every push to main pays the whole sweep, one to two hours on a mature core, so the required check either blocks main for that long or gets bypassed. The atelier profile ruled otherwise on 2026-09-03: the changed files on every pull request and push, the full sweep once a day on a schedule, never a commit gate. The example now contradicts the profile that implements it, and the cadence is the kind of number row A moved out of the sub-concepts.
+
+**Proposed revision.** Rewrite the comment to state the shape without the schedule: "mutation is slow: every run mutates the changed files (the pushed range, never an empty one), and a scheduled full sweep, not a merge, measures the whole tree, same break either way". The profile row carries the cadence (daily). No other text changes; the Do and Don't stand.
+
+Cascade if accepted: dos-and-donts only, one comment line; its pin re-pins; no matrix change (row 4.4 stays COVERED, evidence unchanged).
+
+**Ruling.** Pending.
+
+---
