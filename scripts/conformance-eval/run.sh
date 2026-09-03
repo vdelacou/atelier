@@ -37,11 +37,11 @@ SINCE="${CONFORMANCE_SINCE:-}"
 JOBS="${CONFORMANCE_JOBS:-$([ -n "$SINCE" ] && echo 6 || echo 4)}"
 TIMEOUT_MIN="${CONFORMANCE_TIMEOUT_MIN:-15}"
 MAX_TURNS="${CONFORMANCE_MAX_TURNS:-60}"
-CAPPED="$OUT/.capped"
-: > "$CAPPED"
 ARMS="${CONFORMANCE_ARMS:-with_skill}"
 [ "$ARMS" != "both" ] || ARMS="with_skill baseline"
 mkdir -p "$OUT"
+CAPPED="$OUT/.capped"
+: > "$CAPPED"
 
 # bash-3.2-safe (macOS): no mapfile, no wait -n
 TASK_IDS=()
