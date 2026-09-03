@@ -343,3 +343,37 @@ Passing a regex through `awk -v pat='\\.'` on macOS delivers `.` to the program,
 ## [gotcha] 2026-09-03 | a compressed checklist drops the nouns the eval asserts
 
 Cutting SKILL.md from 570 to 194 lines kept every hard-rule noun in the one-liners, yet h4 lost its cross-tenant 404 test and h6 its eval gate in three reruns out of three. The one item that had carried them was the after-change checklist's per-discipline list ("ships its cross-tenant 404 test (28)", "its eval run (32)"), compressed into "each with the concrete check its rule states". A rule stated once in the rule list is not the same as the same rule stated at the moment of checking; the compact list is back. Also honest: h4 is a list endpoint, so a forged-id test returning the caller's own rows is a defensible answer the 404 pattern does not credit.
+
+## [gotcha] 2026-09-03 | bash reads a running script lazily, so never edit it mid-run
+
+The baseline-arm pass that feeds `baseline-arm.json` ran `run.sh` in the background while the
+same file was being edited for the caps slice. bash reads a script incrementally, so the running
+process hit the half-written text and died with "syntax error near unexpected token" after 18 of
+21 tasks; three run dirs held an empty result and would have been frozen as real zeros. Copy a
+long-running script to the scratchpad before launching it, or finish the edits first; and check
+`done:` lines against run dirs before freezing anything.
+
+## [decision] 2026-09-03 | the conformance harness has three tiers and a frozen baseline arm
+
+A full conformance pass was hours of `claude -p` sessions (21 tasks, two arms, three passes,
+6 to 11 minutes each, no cap), and half of it re-measured an arm that never reads the skill.
+The revamp shrank it rather than rebuilding it: tier 0 is the CI selftests; tier 1 after any
+doctrine edit is `CONFORMANCE_SINCE=<ref>`, which maps the skill diff to the tasks whose
+assertions exercise the touched rules (`select-tasks.py`: hard-rule lines by section, explicit
+rule references, references through the trigger table, canon ids) and runs the skill arm once
+against the frozen fixture; tier 2, both arms over the full matrix, only on a description
+change or before a release. The baseline arm is `baseline-arm.json`, keyed by the sha256 of the
+prompts and assertions, refused with the refresh commands when they change. Every session has a
+wall-clock cap and a turn cap, and each task's scorecard line prints as its session lands.
+
+## [gotcha] 2026-09-03 | a vocabulary assertion measures naming; assert the shape
+
+Five reruns of h4 and h6 (an hour per pass) confirmed the grader, not the skill: 4.8 was the
+word `eval` with boundaries, so `evals/` plus `run-evals.ts --min-score` scored 0, and 7.5
+wanted a 404 in a test on a list endpoint that cannot produce one while every run shipped the
+forged-id test the rule asks for at that shape. Both now assert shape (an eval set naming file
+that carries a bar, over `.ts` and `.json`; a 404 or a forged/other-owner scenario), with pass
+and fail fixtures in the grader selftest. The 2026-08-30 entry already said this about e10 and
+a3; the lesson repeats because a passing assertion looks like evidence until a run fails it.
+Also: a Python file named `select.py` shadows the stdlib module `subprocess` needs, and the
+error surfaces three frames deep in `selectors.py`.
