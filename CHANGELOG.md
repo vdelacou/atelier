@@ -13,7 +13,9 @@ whole, not any single skill.
   `CONFORMANCE_SINCE=<ref>`, runs only the tasks the skill diff can affect (`select-tasks.py`,
   selftested in CI), skill arm, six jobs; the baseline arm is a frozen fixture (`baseline-arm.json`,
   keyed to the prompts and assertions, `grade.py --frozen-baseline`, `freeze-baseline.py`), so a
-  skill edit no longer re-runs the arm that never reads the skill.
+  skill edit no longer re-runs the arm that never reads the skill; every session is capped
+  (`CONFORMANCE_TIMEOUT_MIN`, graded as produced) and each task's scorecard line prints as it lands;
+  the three-tier contract is in baseline.md.
 
 ### Added
 - **Hard rule 35, cyclomatic complexity at most 10 per function**, lint-enforced in every

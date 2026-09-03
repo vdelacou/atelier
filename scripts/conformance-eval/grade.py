@@ -277,6 +277,11 @@ def main() -> None:
             frozen_path = FROZEN_DEFAULT
         elif a.startswith("--frozen-baseline="):
             frozen_path = Path(a.split("=", 1)[1])
+    # --task <id>: grade one task (run.sh prints each run's line as it finishes).
+    only_task = None
+    if "--task" in args:
+        only_task = args[args.index("--task") + 1]
+        args = [a for i, a in enumerate(args) if a != "--task" and args[i - 1] != "--task"]
     positional = [a for a in args if not a.startswith("--") and not a.lstrip("-").isdigit()]
     runs_dir = Path(positional[0]) if positional else None
     if runs_dir is None:
@@ -286,6 +291,8 @@ def main() -> None:
         runs_dir = workspaces[-1]
 
     tasks = json.loads((HERE / "tasks.json").read_text())
+    if only_task is not None:
+        tasks = [task for task in tasks if task["id"] == only_task]
     frozen = None
     if frozen_path is not None:
         frozen = load_frozen(frozen_path, tasks)

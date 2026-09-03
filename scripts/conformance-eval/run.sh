@@ -16,6 +16,9 @@
 #                      grade with --frozen-baseline), baseline, or both
 #   CONFORMANCE_JOBS   parallel runs (default 4; 6 when CONFORMANCE_SINCE is set)
 #   CONFORMANCE_SINCE  git ref; selects tasks from the skills/atelier/ diff since it
+#   CONFORMANCE_TIMEOUT_MIN  wall-clock cap per session (default 15); a capped run is
+#                      graded as produced and named in the summary
+#   CONFORMANCE_MAX_TURNS    turn cap per session, passed to claude -p (default 60)
 #
 # Results land in skills/atelier-workspace/conformance-<date>/runs/ (gitignored).
 # Grade afterwards, against the frozen baseline arm:
@@ -32,6 +35,10 @@ SKILL_PATH="${CONFORMANCE_SKILL_PATH:-$REPO_ROOT/skills/atelier}"
 OUT="$REPO_ROOT/skills/atelier-workspace/conformance-$(date +%F)/runs${CONFORMANCE_MODEL:+-$CONFORMANCE_MODEL}${CONFORMANCE_TAG:+-$CONFORMANCE_TAG}"
 SINCE="${CONFORMANCE_SINCE:-}"
 JOBS="${CONFORMANCE_JOBS:-$([ -n "$SINCE" ] && echo 6 || echo 4)}"
+TIMEOUT_MIN="${CONFORMANCE_TIMEOUT_MIN:-15}"
+MAX_TURNS="${CONFORMANCE_MAX_TURNS:-60}"
+CAPPED="$OUT/.capped"
+: > "$CAPPED"
 ARMS="${CONFORMANCE_ARMS:-with_skill}"
 [ "$ARMS" != "both" ] || ARMS="with_skill baseline"
 mkdir -p "$OUT"
@@ -85,11 +92,30 @@ run_one() { # $1 = task id, $2 = arm
   else
     prompt="You are a senior engineer executing a coding task in the repo at $dir. It is a small Bun/TypeScript repo. Implement the task well, using your own judgment. Work only inside the repo directory named above. Do not run git. Do not install packages. Task: $task When done, reply with only the list of files you created or changed, one relative path per line."
   fi
+  # Wall-clock cap, portable (macOS ships no `timeout`): the session runs in the
+  # background with a sleeping watchdog; whichever finishes first kills the other.
+  # A capped run keeps whatever it produced and is graded like any other, so a
+  # wandering session costs one slot for TIMEOUT_MIN minutes, never the batch.
   ( cd "$dir" && env -u CLAUDECODE claude -p "$prompt" \
       --permission-mode acceptEdits \
+      ${MAX_TURNS:+--max-turns "$MAX_TURNS"} \
       ${CONFORMANCE_MODEL:+--model "$CONFORMANCE_MODEL"} \
-      < /dev/null > "$dir/.result.txt" 2> "$dir/.run.log" ) \
-    && echo "done: $id-$arm" || echo "FAILED: $id-$arm (see $dir/.run.log)"
+      < /dev/null > "$dir/.result.txt" 2> "$dir/.run.log" ) &
+  local session=$!
+  ( sleep $((TIMEOUT_MIN * 60)) && kill "$session" 2>/dev/null && echo "$id-$arm" >> "$CAPPED" ) &
+  local watchdog=$!
+  local status=0
+  wait "$session" || status=$?
+  kill "$watchdog" 2>/dev/null; wait "$watchdog" 2>/dev/null || true
+  if grep -qx "$id-$arm" "$CAPPED"; then
+    echo "capped: $id-$arm after ${TIMEOUT_MIN} min (graded as produced)"
+  elif [ "$status" -eq 0 ]; then
+    echo "done: $id-$arm"
+  else
+    echo "FAILED: $id-$arm (see $dir/.run.log)"
+  fi
+  # Incremental grading: the scorecard line for this task, as soon as it lands.
+  python3 "$HERE/grade.py" "$OUT" --task "$id" 2>/dev/null | grep -E "^  (with_skill|baseline) " | sed "s/^/  [$id] /" || true
 }
 
 for id in "${TASK_IDS[@]}"; do
@@ -99,4 +125,7 @@ for id in "${TASK_IDS[@]}"; do
   done
 done
 wait
+if [ -s "$CAPPED" ]; then
+  echo "capped at ${TIMEOUT_MIN} min: $(tr '\n' ' ' < "$CAPPED")"
+fi
 echo "all runs complete: $OUT"

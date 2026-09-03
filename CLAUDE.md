@@ -38,8 +38,11 @@ tree. What binds work HERE is the authoring and process discipline below.
 - `python3 scripts/review-eval/grade.py --selftest` (fast; the CI review-grader gate). The full
   eval: `bash scripts/review-eval/run.sh`, then grade the printed runs dir.
 - `python3 scripts/conformance-eval/select-tasks.py --selftest` (fast; the CI gate for the tier-1
-  selection). Tier 1 after any doctrine edit: `CONFORMANCE_SINCE=<ref> CONFORMANCE_MODEL=claude-opus-5
-  bash scripts/conformance-eval/run.sh` runs only the tasks the skill diff can affect, skill arm.
+  selection). Three tiers (baseline.md, Tiers): tier 0 is the CI selftests; tier 1 after any doctrine
+  edit is `CONFORMANCE_SINCE=<ref> CONFORMANCE_MODEL=claude-opus-5 bash scripts/conformance-eval/run.sh`
+  (only the tasks the skill diff can affect, skill arm, then `grade.py <runs-dir> --frozen-baseline`);
+  tier 2, the full matrix with `CONFORMANCE_ARMS=both`, only on a description change or before a
+  release. Sessions are capped (`CONFORMANCE_TIMEOUT_MIN`, default 15).
 - Grade against the frozen baseline arm: `python3 scripts/conformance-eval/grade.py <runs-dir>
   --frozen-baseline`. The fixture (`baseline-arm.json`) is keyed to the prompts and assertions; after
   a tasks.json change, `CONFORMANCE_ARMS=baseline bash scripts/conformance-eval/run.sh` then

@@ -57,11 +57,11 @@ every assertion change (its existing idiom).
 
 ## Slice 4: caps and tiers
 
-- [ ] run.sh: `--max-turns` (default 60) and a wall-clock `timeout` per session (default 15
+- [x] run.sh: a wall-clock cap per session (portable watchdog, macOS has no timeout) and `--max-turns` 60 (default 15
       min) around `claude -p`; a capped run is graded as produced, and the summary names it.
-- [ ] incremental grading: `run.sh` prints each run's scorecard line as it finishes.
-- [ ] `CONFORMANCE_MODEL` documented as the smoke lever (sonnet for tier 1, opus for tier 2).
-- [ ] baseline.md and CLAUDE.md: the tier contract (tier 0 static gates in CI; tier 1
+- [x] incremental grading: `run.sh` prints each run's scorecard line as it finishes.
+- [x] `CONFORMANCE_MODEL` documented as the smoke lever (sonnet for tier 1, opus for tier 2).
+- [x] baseline.md and CLAUDE.md: the tier contract (tier 0 static gates in CI; tier 1
       `--since` skill arm one pass after any doctrine edit; tier 2 full matrix both arms on a
       description change or before a release).
 - DoD: a run with `--max-turns 1` finishes under a minute and grades; docs name the tiers.

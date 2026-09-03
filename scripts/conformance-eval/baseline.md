@@ -268,6 +268,30 @@ The fixture landing with this section is one opus pass over all 21 tasks, measur
 day under the corrected 4.8 and 7.5 shapes; the 3-pass e/a numbers above and the one-pass
 h-tier numbers predate those shapes and stay as the historical record.
 
+## Tiers (2026-09-03)
+
+The harness has three tiers with an explicit contract, so the slow instrument runs only
+when it can answer something:
+
+- **Tier 0, seconds, in CI on every push**: the static gates (`grade.py --selftest`,
+  `select-tasks.py --selftest`, `judge.py --selftest`, the review grader's selftest, the
+  matrix drift and citation gates). They prove the instruments, not the skill.
+- **Tier 1, 10 to 15 minutes, after any doctrine edit**: `CONFORMANCE_SINCE=<ref>` runs
+  only the tasks the `skills/atelier/` diff since the ref can affect (`select-tasks.py`
+  maps touched rule lines, explicit rule references, reference files through the trigger
+  table, and canon ids to the tasks tagged with them), skill arm, one pass, six jobs, graded
+  with `--frozen-baseline`. A reference whose trigger-table row names no rule selects
+  nothing and is reported, so tier 2 is a conscious call, never a silent skip.
+- **Tier 2, hours, on a description change or before a release**: the full matrix,
+  `CONFORMANCE_ARMS=both`, re-measuring the unaided arm and re-freezing it.
+
+Every session is capped: a wall-clock cap (`CONFORMANCE_TIMEOUT_MIN`, default 15; the
+capped run keeps what it produced, is graded like any other and is named in the summary) and
+`--max-turns` (default 60). `run.sh` prints each task's scorecard line as its session finishes, so a batch
+reads as it runs. `CONFORMANCE_MODEL` is the smoke lever: the question tier 1 asks, did an
+obligation vanish from the produced code, shows on a smaller model faster; the recorded
+baselines stay opus.
+
 ## Threshold (Phase 4 gate, run locally)
 
 The eval runs on this machine, not in CI. A skill-touching change runs one pass and calls
