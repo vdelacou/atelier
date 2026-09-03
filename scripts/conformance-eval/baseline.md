@@ -265,8 +265,11 @@ delta is skill passes minus that expectation over the tasks the fixture covers. 
 baseline run dir, when present, wins over the fixture for the delta.
 
 The fixture landing with this section is one opus pass over all 21 tasks, measured the same
-day under the corrected 4.8 and 7.5 shapes; the 3-pass e/a numbers above and the one-pass
-h-tier numbers predate those shapes and stay as the historical record.
+day under the corrected 4.8 and 7.5 shapes: unaided 39/61, and 11/24 on the h tier where the
+same day's skill arm reads 23/24 (r1), a delta of +12 on 24 assertions. The 3-pass e/a
+numbers above and the one-pass h-tier numbers predate those shapes and stay as the historical
+record; three of the 21 sessions were re-run after a script edit broke the first pass mid-way
+(LESSONS 2026-09-03), so every task in the fixture has a completed session behind it.
 
 ## Tiers (2026-09-03)
 

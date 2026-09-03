@@ -105,7 +105,7 @@ run_one() { # $1 = task id, $2 = arm
   ( sleep $((TIMEOUT_MIN * 60)) && kill "$session" 2>/dev/null && echo "$id-$arm" >> "$CAPPED" ) &
   local watchdog=$!
   local status=0
-  wait "$session" || status=$?
+  wait "$session" 2>/dev/null || status=$?  # 2>/dev/null: no "Terminated" job notice on a capped run
   kill "$watchdog" 2>/dev/null; wait "$watchdog" 2>/dev/null || true
   if grep -qx "$id-$arm" "$CAPPED"; then
     echo "capped: $id-$arm after ${TIMEOUT_MIN} min (graded as produced)"

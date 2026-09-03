@@ -62,7 +62,13 @@ def main() -> None:
         "runs": sorted(set(graded)),
         "tasks": frozen_tasks,
     }
-    out_path.write_text(json.dumps(fixture, indent=2) + "\n")
+    # One line per task: the fixture is read by grade.py and diffed by people, and 61
+    # assertions pretty-printed as nested lists would be a 300-line file.
+    header = {k: v for k, v in fixture.items() if k != "tasks"}
+    body = ",\n".join(f'    {json.dumps(tid)}: {{"assertions": {json.dumps(counts["assertions"])}}}' for tid, counts in frozen_tasks.items())
+    text = json.dumps(header, indent=2)[:-2] + ',\n  "tasks": {\n' + body + "\n  }\n}\n"
+    json.loads(text)  # the hand-laid text must still be the same document
+    out_path.write_text(text)
     p = sum(c[0] for t in frozen_tasks.values() for c in t["assertions"])
     n = sum(c[1] for t in frozen_tasks.values() for c in t["assertions"])
     print(f"frozen {len(frozen_tasks)} of {len(tasks)} tasks, baseline {p}/{n} over {passes} pass(es), model {model} -> {out_path}")

@@ -46,8 +46,7 @@ every assertion change (its existing idiom).
 
 ## Slice 3: freeze the baseline arm
 
-- [~] baseline arm results become a committed fixture (code landed; the fixture lands when the
-      background baseline pass over 21 tasks finishes) (`scripts/conformance-eval/
+- [x] baseline arm results become a committed fixture (one opus pass, 21 tasks, unaided 39/61) (`scripts/conformance-eval/
       baseline-arm.json`: per task/assertion pass counts, tasks.json sha256, model, date).
 - [x] grade.py `--frozen-baseline` reads it for the delta instead of baseline run dirs; a
       tasks.json hash mismatch is an error naming the re-run command.
@@ -68,5 +67,6 @@ every assertion change (its existing idiom).
 
 ## Wrap
 
-- [ ] LESSONS entries (vocabulary assertions, the frozen arm, the selection mode); this file
-      to final state; final report.
+- [x] LESSONS entries (3930609); this file to final state; final report. All four slices landed
+      2026-09-03 (dcd7265, 257ee2d, dbc705b, 377ddfe, 33c972b, 2a73fd4, the fixture commit).
+      Nothing pushed; push is a separate ask.
