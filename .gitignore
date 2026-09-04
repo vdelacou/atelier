@@ -28,11 +28,11 @@ node_modules/
 __pycache__/
 .judge-last.json
 
-# swarm-forge runtime, when ./swarm runs in this checkout (the shared articles
+# swarm-forge runtime, when ./swarm runs inside the pack (the shared articles
 # and scripts come from swarm-forge main at launch; the pack ships only its own)
-.swarmforge/
-.worktrees/
-swarmforge/scripts/
-swarmforge/constitution/articles/engineering.prompt
-swarmforge/constitution/articles/workflow.prompt
-swarmforge/constitution/articles/handoffs.prompt
+packs/six-pack/.swarmforge/
+packs/six-pack/.worktrees/
+packs/six-pack/swarmforge/scripts/
+packs/six-pack/swarmforge/constitution/articles/engineering.prompt
+packs/six-pack/swarmforge/constitution/articles/workflow.prompt
+packs/six-pack/swarmforge/constitution/articles/handoffs.prompt

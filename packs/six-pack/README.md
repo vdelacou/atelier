@@ -1,25 +1,27 @@
 # Atelier six-pack
 
-The `atelier-six-packs` branch is a [SwarmForge](https://github.com/unclebob/swarm-forge) pack: six Claude Code agents that take an operator's card from a grilled specification to a rule-cited conformance verdict under the atelier coding standard, each in its own git worktree, exchanging committed work through SwarmForge's durable handoffs while the operator approves the spec, answers clarifications, and watches a local dashboard. It is the standard's four skills arranged as a pipeline: `atelier-grill-me` specifies, `atelier` and `atelier-greenfield` build, three roles refactor, restructure, and harden under the main skill's references, and `atelier-review-me` closes the card.
+This directory is a [SwarmForge](https://github.com/unclebob/swarm-forge) pack: six Claude Code agents that take an operator's card from a grilled specification to a rule-cited conformance verdict under the atelier coding standard, each in its own git worktree, exchanging committed work through SwarmForge's durable handoffs while the operator approves the spec, answers clarifications, and watches a local dashboard. It is the standard's four skills arranged as a pipeline: `atelier-grill-me` specifies, `atelier` and `atelier-greenfield` build, three roles refactor, restructure, and harden under the main skill's references, and `atelier-review-me` closes the card.
 
-SwarmForge's `main` branch supplies the runtime (launcher, handoff daemon, dashboard, board) and the three shared transport articles; this branch supplies the pack: the launcher stub, the role table, the constitution, and the six role prompts. Read the [SwarmForge README](https://github.com/unclebob/swarm-forge/blob/main/README.md) for the runtime model and the [handoff protocol](https://github.com/unclebob/swarm-forge/blob/main/swarmforge/handoff-protocol.md) for message format, audit, retry, and merge details. This file covers only the atelier pack.
+SwarmForge's `main` branch supplies the runtime (launcher, handoff daemon, dashboard, board) and the three shared transport articles; this directory supplies the pack: the launcher stub, the role table, the constitution, and the six role prompts. Read the [SwarmForge README](https://github.com/unclebob/swarm-forge/blob/main/README.md) for the runtime model and the [handoff protocol](https://github.com/unclebob/swarm-forge/blob/main/swarmforge/handoff-protocol.md) for message format, audit, retry, and merge details. This file covers only the atelier pack.
 
 ## Structure
 
-This branch contributes the pack-owned half of an installation, plus its installer and its gate:
+This directory is the pack-owned half of an installation; the installer and the gate live at the repository root:
 
 ```text
+packs/six-pack/
+  README.md                        this file, the operator manual
+  swarm                            launcher stub
+  swarmforge/
+    swarmforge.conf                the six roles, backends, worktrees, receive modes, propagation
+    constitution.prompt            entry point; the standard wins on conflict, no Gherkin tooling
+    constitution/articles/
+      project.prompt               shape, file conventions, ownership, untrusted input
+      local-engineering.prompt     where the skills live, startup install, the inner loop per variant
+      local-workflow.prompt        rules 24 and 25 in a swarm, commits, plan and lessons, handbacks
+    roles/
+      specifier.prompt  coder.prompt  cleaner.prompt  architect.prompt  hardener.prompt  reviewer.prompt
 get-atelier-six-pack               installer (compose, link the skills, seed the pointer)
-swarm                              launcher stub
-swarmforge/
-  swarmforge.conf                  the six roles, backends, worktrees, receive modes, propagation
-  constitution.prompt              entry point; the standard wins on conflict, no Gherkin tooling
-  constitution/articles/
-    project.prompt                 shape, file conventions, ownership, untrusted input
-    local-engineering.prompt       where the skills live, startup install, the inner loop per variant
-    local-workflow.prompt          rules 24 and 25 in a swarm, commits, plan and lessons, handbacks
-  roles/
-    specifier.prompt  coder.prompt  cleaner.prompt  architect.prompt  hardener.prompt  reviewer.prompt
 scripts/check-six-pack.sh          the gate: conf, prompts, handoff chain, README table (--selftest)
 skills/                            the four atelier skills, linked into ~/.claude/skills by the installer
 ```
@@ -65,12 +67,12 @@ Prerequisites: `zsh`, `git`, `tmux`, Babashka (`bb`), the `claude` CLI (Claude C
 From the project that should receive the pack (an existing repo, or an empty directory that the first card will turn into one):
 
 ```sh
-git clone -b atelier-six-packs https://github.com/vdelacou/atelier.git ~/code/atelier
+git clone https://github.com/vdelacou/atelier.git ~/code/atelier
 cd ~/code/my-project
 ~/code/atelier/get-atelier-six-pack
 ```
 
-The installer composes the pack (the shared runtime and articles from SwarmForge `main`, this branch as the pack, through `get-swarm-forge`, downloaded for the run when it is not on PATH), links the four skills into `~/.claude/skills/` (`--copy-skills` copies instead, `--skip-skills` leaves that directory alone), and seeds three files when they are missing: the atelier pointer block in `CLAUDE.md`, the `.claude/LESSONS.md` header, and `tmp/` in `.gitignore`. It writes files and never commits (rule 25). Commit what it seeded before starting the swarm: role worktrees are cut from `HEAD` and carry only committed files.
+The installer composes the pack (the shared runtime and articles from SwarmForge `main`, `packs/six-pack` as the pack, through `get-swarm-forge`, downloaded for the run when it is not on PATH), links the four skills into `~/.claude/skills/` (`--copy-skills` copies instead, `--skip-skills` leaves that directory alone), and seeds three files when they are missing: the atelier pointer block in `CLAUDE.md`, the `.claude/LESSONS.md` header, and `tmp/` in `.gitignore`. It writes files and never commits (rule 25). Commit what it seeded before starting the swarm: role worktrees are cut from `HEAD` and carry only committed files.
 
 ```sh
 git add CLAUDE.md .claude/LESSONS.md .gitignore swarm swarmforge
@@ -94,11 +96,11 @@ The atelier standard assumes a user in the conversation; the swarm has an operat
 - Commits. Conventional Commits with the swarm byline `By <role>.` in the body, at most 10 files and 300 lines each (several commits then one handoff of the last SHA is the normal shape), no person or employer named in file contents. The coder's initial scaffold is the one justified big-bang.
 - Review fixes. `atelier-review-me` reports and never edits because a user is there to say "apply the fixes"; in the swarm the reviewer applies only the narrow, rule-cited fixes that fit in one commit without a design decision, and escalates everything else to the operator with a proposed follow-up card.
 
-## Changing this branch
+## Changing this pack
 
 - Change `swarmforge/swarmforge.conf` to change the six active roles, their backends, worktrees, or queue behaviour; update the role table above in the same change, the gate compares them.
 - Change `swarmforge/roles/` to change the division of work. Keep every role's receive/send/done loop and the handoff to the next role in conf order; the gate checks both.
 - Keep six-pack additions in `project.prompt` or `local-*.prompt`. Never name a pack article `engineering.prompt`, `workflow.prompt`, or `handoffs.prompt`: those come from SwarmForge `main` and the installer drops a pack file of that name.
 - Doctrine lives in `skills/`; the role prompts point at it and do not restate it. A doctrine change on `main` reaches the swarm through the skills, not through the prompts.
 - Put runtime, dashboard, terminal, installer, or shared-constitution changes on SwarmForge `main`, not here.
-- `bash scripts/check-six-pack.sh --selftest && bash scripts/check-six-pack.sh` before proposing a commit.
+- From the repository root, `bash scripts/check-six-pack.sh --selftest && bash scripts/check-six-pack.sh` before proposing a commit.

@@ -3,7 +3,8 @@
 # Install the atelier six-pack into the current project.
 #
 # Composes the pack the way `get-swarm-forge six-pack` does (the shared runtime
-# and articles from swarm-forge main, this checkout as the pack), links the four
+# and articles from swarm-forge main, packs/six-pack of this checkout as the pack),
+# links the four
 # atelier skills where Claude Code loads them, and seeds the standard's pointer
 # block and the LESSONS journal. It writes files; it never commits (rule 25).
 #
@@ -45,8 +46,8 @@ for arg in "$@"; do
   esac
 done
 
-[ -f "$pack_dir/swarmforge/swarmforge.conf" ] || fail "no pack at $pack_dir (expected swarmforge/swarmforge.conf)"
-[ -f "$pack_dir/skills/atelier/SKILL.md" ] || fail "no skills at $pack_dir/skills (run from a full checkout of the atelier-six-packs branch)"
+[ -f "$pack_dir/packs/six-pack/swarmforge/swarmforge.conf" ] || fail "no pack at $pack_dir/packs/six-pack (expected swarmforge/swarmforge.conf there)"
+[ -f "$pack_dir/skills/atelier/SKILL.md" ] || fail "no skills at $pack_dir/skills (run from a full checkout of the atelier repository)"
 [ "$pack_dir" != "$target" ] || fail "run this from the project that should receive the pack, not from the pack checkout"
 command -v zsh >/dev/null 2>&1 || fail "zsh is required (get-swarm-forge is a zsh script)"
 
@@ -65,9 +66,9 @@ if [ -z "$helper" ]; then
 fi
 [ -x "$helper" ] || fail "get-swarm-forge at $helper is not executable"
 
-# 2. Compose: shared runtime and articles from swarm-forge main, the pack from here.
+# 2. Compose: shared runtime and articles from swarm-forge main, the pack from packs/six-pack.
 echo "get-atelier-six-pack: composing the pack into $target (composer: $helper)"
-SWARMFORGE_PACKS_DIR="$pack_dir" "$helper" six-pack
+SWARMFORGE_PACKS_DIR="$pack_dir/packs" "$helper" six-pack
 
 # 3. The skills, where Claude Code loads them for every role worktree.
 if [ "$skills_mode" != skip ]; then

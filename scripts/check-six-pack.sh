@@ -15,21 +15,21 @@
 # agrees with the conf.
 #
 # Usage:
-#   bash scripts/check-six-pack.sh                   the pack in this checkout
+#   bash scripts/check-six-pack.sh                   packs/six-pack in this checkout
 #   PACK_ROOT=<dir> bash scripts/check-six-pack.sh   another pack tree
 #   bash scripts/check-six-pack.sh --selftest        proves every rule can fail
 set -euo pipefail
 
 if [ "${1:-}" = "--selftest" ]; then
   gate="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
-  src="$(cd "$(dirname "$0")/.." && pwd)"
+  src="$(cd "$(dirname "$0")/../packs/six-pack" && pwd)"
   tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
   pack="$tmp/pack"
   conf="$pack/swarmforge/swarmforge.conf"
   roles="$pack/swarmforge/roles"
   fresh() {
     rm -rf "$pack"; mkdir -p "$pack"
-    cp -R "$src/swarm" "$src/swarmforge" "$pack/"
+    cp -R "$src/." "$pack/"
     rm -rf "$pack/swarmforge/scripts"
     rm -f "$pack/swarmforge/constitution/articles/engineering.prompt" \
           "$pack/swarmforge/constitution/articles/workflow.prompt" \
@@ -49,17 +49,17 @@ if [ "${1:-}" = "--selftest" ]; then
   fresh; edit "$roles/coder.prompt" 's/`git_handoff` to `cleaner`/`git_handoff` to `architect`/'; expect_red "a handoff that skips the next role"
   fresh; edit "$roles/reviewer.prompt" 's/`git_handoff` to `specifier,coder,cleaner,architect,hardener`/`git_handoff` to `specifier,coder`/'; expect_red "a terminal handoff that is not the full broadcast"
   fresh; touch "$pack/swarmforge/constitution/articles/engineering.prompt"; expect_red "a pack article named like a shared one"
-  fresh; edit "$pack/swarmforge/README.md" 's/^| `coder` \(.*\) | task | forward only |$/| `coder` \1 | batch | forward only |/'; expect_red "a README row that disagrees with the conf"
+  fresh; edit "$pack/README.md" 's/^| `coder` \(.*\) | task | forward only |$/| `coder` \1 | batch | forward only |/'; expect_red "a README row that disagrees with the conf"
   fresh; printf 'a dash %s here\n' "$(printf '\xe2\x80\x94')" >> "$pack/swarmforge/constitution.prompt"; expect_red "an em dash in the pack"
   echo "selftest OK: the gate accepts the shipped pack and rejects a duplicate role, two masters, an unknown agent, an underscore, a missing prompt, a broken loop, a skipped role, a partial broadcast, a shared-article name, a README mismatch, and an em dash"
   exit 0
 fi
 
-root="${PACK_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+root="${PACK_ROOT:-$(cd "$(dirname "$0")/../packs/six-pack" && pwd)}"
 conf="$root/swarmforge/swarmforge.conf"
 roles_dir="$root/swarmforge/roles"
 articles="$root/swarmforge/constitution/articles"
-readme="$root/swarmforge/README.md"
+readme="$root/README.md"
 status=0
 bad() { echo "  ╳ $*" >&2; status=1; }
 
@@ -164,7 +164,7 @@ if [ -f "$readme" ]; then
       echo "      README:"; printf '%s\n' "$table" | sed 's/^/        /'; } >&2
   fi
 else
-  bad "missing swarmforge/README.md"
+  bad "missing README.md in the pack root"
 fi
 
 if [ "$status" -eq 0 ]; then
