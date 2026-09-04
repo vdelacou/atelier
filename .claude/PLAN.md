@@ -1,17 +1,38 @@
-# Plan: release 2.1.0 (2026-09-03)
+# Plan: atelier six-pack (2026-09-04)
 
-1. [x] Tier 2 (skill 59/61, unaided 39/61, +20; five sessions lost to an API outage, re-run): the full matrix, both arms, 21 tasks (`CONFORMANCE_TAG=tier2-2.1.0`), running in
-       the background. DoD: with_skill at or above the recorded floor (`--min-with-skill 24
-       --min-delta 4` on the e/a tier; the h tier read against the frozen arm), no task below its
-       last reading without a rerun explaining it.
-2. [x] Re-freeze the baseline (78/125 over three passes, dead sessions skipped). Was: from the frozen-base and tier-2 dirs summed (two passes):
-       `python3 scripts/conformance-eval/freeze-baseline.py <frozen-base> <tier2> --model claude-opus-5`;
-       `grade.py --selftest`; commit.
-3. [x] Release text drafted locally: CHANGELOG `## [2.1.0] - 2026-09-03` with an intro and an
-       "Upgrading from 2.0.0" list (workflows, check scripts, ESLint and pom fences, the stubs,
-       the doctrine changes), README's current-release line. Not pushed, not tagged.
-4. [ ] On a clean tier 2: push, then `git tag -a v2.1.0` on that commit and push the tag (the
-       first tag in the repo; consumers pin by tag from here). Both on the owner's word.
-5. [ ] Owner: re-sync the consumer repo to v2.1.0 (`check-skill-pin.sh` compares the tree).
-6. [x] Canon row B ACCEPTED and applied 2026-09-03 (104c5a0 draft, 81846e5 applied): eighteen numbers
-       tagged, 7.6's Do restated, eleven profile rows, both pins re-pinned.
+Goal: a SwarmForge pack on branch `atelier-six-packs`: six Claude Code roles that run the
+atelier standard from card to verdict, installable into a project the way
+`get-swarm-forge six-pack` is (this branch as the pack, swarm-forge `main` as the runtime).
+
+Definition of done (whole task): `get-swarm-forge six-pack` composes this branch (via
+`SWARMFORGE_PACKS_DIR`) into a scratch project with no missing-file error; the installer
+runs end to end into a scratch project with a scratch HOME; `scripts/check-six-pack.sh`
+passes and its `--selftest` proves each rule can fail; the em-dash and frontmatter gates
+pass; the root README names the pack.
+
+1. [x] Branch from main; ignore the runtime dirs. DoD: `git branch --show-current` prints it.
+2. [x] Pack files: `swarm`, `swarmforge/swarmforge.conf`, `constitution.prompt`, three local
+       articles. DoD: the conf parses under the launcher's rules (one master, known agent,
+       unique roles without underscores, receive and propagation tokens, a prompt per role).
+3. [x] Six role prompts: specifier (grill-me), coder (atelier + greenfield), cleaner,
+       architect, hardener, reviewer (review-me). DoD: each carries the receive/send/done
+       loop, hands off to the next role in conf order, the reviewer addresses all five.
+4. [x] Installer `get-atelier-six-pack`: compose via get-swarm-forge, link the four skills,
+       seed the pointer block and LESSONS header. DoD: an end-to-end run into a scratch dir.
+5. [x] `scripts/check-six-pack.sh` with `--selftest`, wired into ci.yml. DoD: red on each
+       planted defect, green on the pack.
+6. [x] Docs: `swarmforge/README.md` (operator manual), a root README section. DoD: the role
+       table matches the conf (the gate enforces it); no em dash anywhere.
+7. [x] Four slices committed on the owner's yes; three LESSONS entries appended. Not pushed.
+
+Notes: the daemon holds a handoff for Attention only when a role is literally named
+`specifier` AND sits on the `master` worktree (handoffd.bb `should-hold?`), so that name
+stays. The launcher injects Gherkin-tool startup lines for roles named specifier, coder,
+architect, hardender, QA; the constitution overrides them. `hardener` and `reviewer` avoid
+the map. `core.hooksPath` is repo-wide, so the atelier hooks run in every role worktree.
+
+Verified 2026-09-04: gate selftest (11 planted defects red, pack green); `get-swarm-forge
+six-pack` composed offline from this branch (SWARMFORGE_BASE_DIR + SWARMFORGE_PACKS_DIR);
+installer end to end into a scratch project with a scratch HOME, second run idempotent;
+em-dash gate on the staged diff; frontmatter 4/4; ci.yml parses with the `six-pack` job.
+Not verified: `./swarm` itself (bb and tmux are not installed on this machine).

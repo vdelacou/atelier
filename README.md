@@ -100,6 +100,10 @@ The pre-land companion: a rule-aware conformance review of a diff against the at
 
 **Use when:** you want a conformance checkpoint before a change lands, a rule-cited review of staged changes, a feature branch, or a PR (covering the core rules and the production disciplines, rules 27-34), or to adopt the standard into an existing brownfield repo (adopt mode). For generic correctness bugs use `/code-review`; for reuse/simplification cleanups use `/simplify`.
 
+### atelier-six-pack (agent swarm)
+
+The `atelier-six-packs` branch turns the four skills into a [SwarmForge](https://github.com/unclebob/swarm-forge) pack: six Claude Code agents (specifier, coder, cleaner, architect, hardener, reviewer) that take an operator's card from a grilled specification to a rule-cited conformance verdict, each in its own git worktree, exchanging committed work through SwarmForge's durable handoffs while the operator approves the spec and answers clarifications from a local dashboard. Install it into a project with `get-atelier-six-pack`; the operator manual is [`swarmforge/README.md`](swarmforge/README.md).
+
 ## Installation
 
 ### 1. Install the skill (one-time, per machine)

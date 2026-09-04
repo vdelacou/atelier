@@ -2,6 +2,18 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [gotcha] 2026-09-04 | swarm-forge keys behaviour on role names, not on the role table
+
+Building the six-pack branch: the handoff daemon holds a `git_handoff` for Attention only when the sender is the master-worktree role AND a role literally named `specifier` exists (`handoffd.bb`, `should-hold?`), and the launcher injects Gherkin/APS startup lines (`swarm_tool.sh require gherkin-parser`, "run exactly ... ensure") into the system prompt of any role named specifier, coder, architect, hardender, or QA (`role-required-tools`). Neither is in the README or the conf format. So the specifier keeps its name, `hardener` and `reviewer` dodge the map, and `constitution.prompt` (which takes precedence over articles and Tool Startup lines) turns the APS lines off for the roles that keep a mapped name. Rule for next time: before naming anything a runtime consumes, grep the runtime for the literal, not only its documented config surface.
+
+## [decision] 2026-09-04 | the six-pack is a root-level product branch, and how the two gates land in a swarm
+
+`atelier-six-packs` carries the pack at the repo root (`swarm`, `swarmforge/`) beside `skills/`, so `SWARMFORGE_PACKS_DIR=<checkout> get-swarm-forge six-pack` composes it with the upstream runtime unchanged and `get-atelier-six-pack` links the four skills from the same checkout. Rules 24 and 25 without a user in the pane: the operator's Attention approval of the spec is the yes for the scenarios it names and for every commit the card's pipeline produces; no role pushes; a test older than the task is frozen. The reviewer may apply narrow rule-cited fixes (review-me is report-only because a user is there to say "apply"; in the swarm nobody is) and escalates the rest. Plans are per role and untracked (`./tmp/plan.md`) and `.claude/LESSONS.md` has one writer (the reviewer), because six roles merging one file would conflict on every handoff. Prompts point at the skills and restate no doctrine, so a doctrine change reaches the swarm through `skills/`, not through the prompts.
+
+## [gotcha] 2026-09-04 | the swarm launcher rewrites `.git/hooks/commit-msg` at every start
+
+`swarmforge.bb` `install-commit-msg-hook!` writes its byline hook into `git rev-parse --git-path hooks` unconditionally. Under `core.hooksPath=.githooks` (Bun script, Java) the file is inert and the atelier hooks run in every role worktree, since the config is repository-wide. A Next.js package on `simple-git-hooks` loses its commitlint hook on each `./swarm` until `bunx simple-git-hooks` is re-run; CI's `check-commit-messages.sh` catches it either way. Documented in the pack README and `local-engineering.prompt`; not fixable from the pack side.
+
 ## [gotcha] 2026-08-30 | check-skill-pin hashed ONE file and spoke for the whole standard
 
 Using the staleness gate on the real consumer repo showed it reporting "matches upstream" over a tree with six stale files (references/java-quarkus.md and four assets, plus a missing audit-java.yml). SKILL.md had genuinely not changed since the re-sync, so the check was right about the file it read and wrong about the claim it made, which is the gate-that-cannot-fail shape inside the gate built to catch staleness. Fixed test-first: tree mode compares every file under the vendored skill, names each stale one, and when it can only see a single upstream file it says so instead of implying the tree is current. Rule for next time: when a check reads a sample and reports on a population, the report has to name the sample.
