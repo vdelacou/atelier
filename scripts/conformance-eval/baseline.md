@@ -363,9 +363,36 @@ the task scored 4/4 five times and 2/4 or 3/4 three times, and the miss is alway
 use-case awaits the confirmation email inline instead of recording it for a separate delivery
 step. The other three assertions (idempotency key, version check, deadline) hold. Nothing in the
 2026-09-03 commits touched that doctrine, and the pre-audit runs flicker the same way, so this is
-a standing weakness in how the outbox is stated, not a regression. It is the next doctrine
-experiment: ablate the outbox paragraph in `reliability.md` and measure h7 alone, several
-generations per side, which is exactly the design the instruments note asks for.
+a standing weakness in how the outbox is stated, not a regression. It was the next doctrine
+experiment, and the experiment answered no (below).
 
 The baseline fixture was re-frozen from three passes (the 2026-09-03 base pass, the tier-2 pass,
 and the re-run), 78/125 over its per-assertion counts.
+
+## Ablation: naming the outbox in rule 29 (2026-09-04)
+
+The first pre-registered ablation this harness has run, and it is a null. Question: h7's 10.5
+assertion passed in five of eight skill-arm generations, and the outbox obligation lived only in
+`reliability.md` and one ten-item parenthetical, so the hypothesis was that a generation which
+never opened the reference had no line to follow. Intervention: one clause in hard rule 29, the
+same clause in the after-change checklist, cascaded to review-me. Design: h7 alone, skill arm,
+five generations per side, launched together, the before arm reading a snapshot of the skill at
+v2.1.0 through `CONFORMANCE_SKILL_PATH`. The bar was fixed in writing first: a win needed 5 of 5
+after AND 4 of 5 or fewer before.
+
+| Arm | 10.5 (the outbox) | All four assertions |
+|---|---|---|
+| before (v2.1.0) | 5/5 | 4/4 in every run |
+| after (rule 29 states it) | 5/5 | 4/4 in every run |
+
+The edit is not credited. What the runs do show is why the flicker looked like doctrine: the
+three failing generations produced 24 to 27 source files with transcripts of 695 to 807 bytes,
+and the ten passing ones produced 32 to 41 files with transcripts of 1.2 to 1.5 kB. A miss on
+10.5 is a session that stopped after the charge and the mail, not one that read the standard and
+chose an inline send. Session length, not doctrine, is the variable, which also explains why the
+misses cluster in passes that ran many sessions at once.
+
+Two things to carry: assertion-level flicker on a completeness task is a signal about session
+budget before it is a signal about the text, and this design (one task, one changed line, a
+snapshot through `CONFORMANCE_SKILL_PATH`, a bar written first) is the one that can answer a
+doctrine question at all. It cost about 25 minutes.
