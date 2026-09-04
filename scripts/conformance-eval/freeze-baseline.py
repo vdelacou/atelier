@@ -21,7 +21,7 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE))
-from grade import FROZEN_DEFAULT, grade_run, tasks_hash  # noqa: E402
+from grade import FROZEN_DEFAULT, grade_run, session_failed, tasks_hash  # noqa: E402
 
 
 def option(args: list[str], name: str, default: str | None) -> str | None:
@@ -45,6 +45,8 @@ def main() -> None:
             run_dir = d / f"{task['id']}-baseline"
             if not run_dir.is_dir():
                 continue
+            if session_failed(run_dir):
+                continue  # a transport error is not an unaided answer; never freeze it as one
             graded.append(str(run_dir))
             for i, (_desc, _rule, passed) in enumerate(grade_run(run_dir, task["assertions"])):
                 counts[i][0] += 1 if passed else 0

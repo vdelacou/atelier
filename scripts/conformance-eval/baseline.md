@@ -339,3 +339,33 @@ scorecard is the committed reference.
   rerun twice (skill arm): r2 and r3 both read 12/12, h7 capped once more in r2 with all four nouns
   already in place. Verdict: generation variance plus the cap, not a regression. Two of eight
   h-tier sessions brushed the 15-minute cap in one afternoon, so the default is now 20.
+
+## Tier 2 for the 2.1.0 release (2026-09-03/04)
+
+The full matrix, both arms, 21 tasks, opus, six jobs. Read it with the incident: between 00:10
+and 01:18 the machine lost the API for about an hour and five sessions came back with nothing but
+`API Error: Can't reach the API server` (h5, h6, h7 on the skill arm, h6 and h7 unaided). The
+grader scored each 0 of N, which read as three h-tier regressions on both arms until the
+transcripts were opened. `grade.py` now reports a session whose transcript is only a transport
+error and whose files are untouched, and leaves it out of the totals; `freeze-baseline.py` skips
+it too, so a dead session can never become the unaided record. The five were re-run.
+
+| Arm | Score |
+|---|---|
+| skill (49/49 in the main pass, 10/12 in the re-run) | 59/61 |
+| unaided | 39/61 |
+
+Every trap task (h1 to h4) is perfect on the skill arm, and 4.8 and 7.5 pass under the corrected
+shapes. The delta is +20 on 61 assertions.
+
+**The one real finding: h7's outbox flickers.** Across eight skill-arm readings on 2026-09-03/04
+the task scored 4/4 five times and 2/4 or 3/4 three times, and the miss is always 10.5: the
+use-case awaits the confirmation email inline instead of recording it for a separate delivery
+step. The other three assertions (idempotency key, version check, deadline) hold. Nothing in the
+2026-09-03 commits touched that doctrine, and the pre-audit runs flicker the same way, so this is
+a standing weakness in how the outbox is stated, not a regression. It is the next doctrine
+experiment: ablate the outbox paragraph in `reliability.md` and measure h7 alone, several
+generations per side, which is exactly the design the instruments note asks for.
+
+The baseline fixture was re-frozen from three passes (the 2026-09-03 base pass, the tier-2 pass,
+and the re-run), 78/125 over its per-assertion counts.
