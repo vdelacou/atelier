@@ -123,3 +123,15 @@ jobs:
       # modes reject a stale copy, and the degrade paths (unset or unreachable
       # upstream) pass with a note instead of blocking.
       - run: bash skills/atelier/assets/check-skill-pin.sh --selftest
+
+  six-pack:
+    name: six-pack (conf, roles, README table)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # swarm-forge parses swarmforge.conf on the operator's machine at ./swarm
+      # time, so a broken pack would surface after install; this applies its
+      # rules here and checks what it cannot see: the handoff chain closes in
+      # conf order, the last role broadcasts, the README table matches.
+      - run: bash scripts/check-six-pack.sh --selftest
+      - run: bash scripts/check-six-pack.sh

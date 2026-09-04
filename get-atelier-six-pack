@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+#
+# Install the atelier six-pack into the current project.
+#
+# Composes the pack the way `get-swarm-forge six-pack` does (the shared runtime
+# and articles from swarm-forge main, this checkout as the pack), links the four
+# atelier skills where Claude Code loads them, and seeds the standard's pointer
+# block and the LESSONS journal. It writes files; it never commits (rule 25).
+#
+# Usage, from the project that should receive the pack:
+#   /path/to/atelier/get-atelier-six-pack [--copy-skills] [--skip-skills]
+#
+#   --copy-skills   copy the skills instead of symlinking this checkout
+#   --skip-skills   leave ~/.claude/skills alone (already installed another way)
+#
+# Environment:
+#   GET_SWARM_FORGE       an existing get-swarm-forge helper (default: PATH, else downloaded)
+#   SWARMFORGE_REPO_URL   the swarm-forge repository to compose from (default upstream)
+#   SWARMFORGE_BASE_DIR   a local swarm-forge main checkout instead of a download
+#   CLAUDE_SKILLS_DIR     where the skills go (default ~/.claude/skills)
+set -euo pipefail
+
+pack_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+target="$(pwd)"
+skills_dir="${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}"
+skill_names=(atelier atelier-grill-me atelier-greenfield atelier-review-me)
+helper_url="https://raw.githubusercontent.com/unclebob/swarm-forge/main/get-swarm-forge"
+skills_mode=link
+
+usage() {
+  sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+fail() {
+  echo "get-atelier-six-pack: $*" >&2
+  exit 1
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    --copy-skills) skills_mode=copy ;;
+    --skip-skills) skills_mode=skip ;;
+    -h|--help) usage; exit 0 ;;
+    *) usage >&2; fail "unknown argument '$arg'" ;;
+  esac
+done
+
+[ -f "$pack_dir/swarmforge/swarmforge.conf" ] || fail "no pack at $pack_dir (expected swarmforge/swarmforge.conf)"
+[ -f "$pack_dir/skills/atelier/SKILL.md" ] || fail "no skills at $pack_dir/skills (run from a full checkout of the atelier-six-packs branch)"
+[ "$pack_dir" != "$target" ] || fail "run this from the project that should receive the pack, not from the pack checkout"
+command -v zsh >/dev/null 2>&1 || fail "zsh is required (get-swarm-forge is a zsh script)"
+
+# 1. The composer: on PATH, named, or downloaded to a temp dir for this run.
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+helper="${GET_SWARM_FORGE:-}"
+if [ -z "$helper" ] && command -v get-swarm-forge >/dev/null 2>&1; then
+  helper="$(command -v get-swarm-forge)"
+fi
+if [ -z "$helper" ]; then
+  echo "get-atelier-six-pack: downloading get-swarm-forge from $helper_url" >&2
+  curl -fsSL "$helper_url" -o "$tmp/get-swarm-forge"
+  chmod +x "$tmp/get-swarm-forge"
+  helper="$tmp/get-swarm-forge"
+fi
+[ -x "$helper" ] || fail "get-swarm-forge at $helper is not executable"
+
+# 2. Compose: shared runtime and articles from swarm-forge main, the pack from here.
+echo "get-atelier-six-pack: composing the pack into $target (composer: $helper)"
+SWARMFORGE_PACKS_DIR="$pack_dir" "$helper" six-pack
+
+# 3. The skills, where Claude Code loads them for every role worktree.
+if [ "$skills_mode" != skip ]; then
+  mkdir -p "$skills_dir"
+  for name in "${skill_names[@]}"; do
+    dest="$skills_dir/$name"
+    if [ -e "$dest" ] || [ -L "$dest" ]; then
+      echo "get-atelier-six-pack: skill $name already present at $dest, left as is"
+      continue
+    fi
+    if [ "$skills_mode" = copy ]; then
+      cp -R "$pack_dir/skills/$name" "$dest"
+      echo "get-atelier-six-pack: copied skill $name to $dest"
+    else
+      ln -s "$pack_dir/skills/$name" "$dest"
+      echo "get-atelier-six-pack: linked skill $name -> $pack_dir/skills/$name"
+    fi
+  done
+fi
+
+# 4. Deterministic repo context: the pointer block, the journal, the scratch dir.
+seeded=()
+if [ ! -f CLAUDE.md ] || ! grep -q 'atelier' CLAUDE.md; then
+  [ -f CLAUDE.md ] || printf '# CLAUDE.md\n\n' > CLAUDE.md
+  cat "$pack_dir/skills/atelier/assets/claude-md-pointer.md" >> CLAUDE.md
+  seeded+=(CLAUDE.md)
+fi
+if [ ! -f .claude/LESSONS.md ]; then
+  mkdir -p .claude
+  printf '# LESSONS\n\nAppend-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: the atelier skill, `references/lessons.md`.\n' > .claude/LESSONS.md
+  seeded+=(.claude/LESSONS.md)
+fi
+if [ ! -f .gitignore ] || ! grep -qx 'tmp/' .gitignore; then
+  printf 'tmp/\n' >> .gitignore
+  seeded+=(.gitignore)
+fi
+
+echo
+echo "Atelier six-pack installed in $target."
+if [ ${#seeded[@]} -gt 0 ]; then
+  echo "Seeded: ${seeded[*]}. Commit them before ./swarm: role worktrees are cut from HEAD and carry only committed files."
+fi
+echo "Then run ./swarm and give the specifier a card with New Task."
