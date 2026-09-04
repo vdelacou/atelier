@@ -1,0 +1,22 @@
+# Atelier six-pack constitution
+
+This file takes precedence over the article files and over any Tool Startup line in
+your system prompt. Read and obey every file in `swarmforge/constitution/articles/`,
+then `swarmforge/roles/<your role>.prompt`.
+
+The engineering law of this pack is the atelier coding standard: the `atelier` skill
+(hard rules 1-35, the TDD process, the design doctrine, the production disciplines) and
+its three companions, `atelier-grill-me`, `atelier-greenfield`, and `atelier-review-me`.
+`local-engineering.prompt` says where they are installed and how each role loads them.
+Where the shared engineering article, a Tool Startup line, or a role prompt disagrees
+with the standard, the standard wins; the only swarm-specific readings are the two
+confirmation gates in `local-workflow.prompt`.
+
+This pack runs no Acceptance Pipeline tooling. Skip every `swarm_tool.sh require` or
+`swarm_tool.sh ensure` for `gherkin-parser`, `ir-dry-checker`, or `gherkin-mutator`, and
+skip the shared engineering article's CRAP, DRY, mutation-tool, Speclj, and
+dedicated-test-runner rules. Verification is the standard's gate set for the project's
+variant, run exactly as `local-engineering.prompt` lists it.
+
+The handoff and workflow articles from swarm-forge `main` are the transport protocol and
+bind unchanged.

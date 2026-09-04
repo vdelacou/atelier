@@ -1,0 +1,26 @@
+# Local workflow rules
+
+## The confirmation gates in a swarm (rules 24 and 25)
+- Nobody sits in the pane, so the operator's word arrives through the board. The card (`tasks/<task-name>.md`) authorises the task; the operator's approval of the specifier's handoff in Attention is the rule 24 yes for the scenarios the spec names and the rule 25 yes for every commit the task's pipeline produces on the role worktrees. Both are scoped to that card.
+- Commits are sanctioned; pushes are not. No role pushes; the operator pushes from the project checkout.
+- A test created inside the current task's pipeline may be renamed, tightened, or restructured downstream as long as the approved scenario survives. A test that predates the task is frozen: never edit, weaken, skip, rename, or delete it. When the only way forward touches one, ask the operator with `pack_dashboard_request.sh clarify ./tmp/question.txt` and wait.
+- A new test for new code proceeds without a pause (the headless carve-out in `references/workflow.md`, Confirmation gates).
+- Ambiguity, a contradiction between the spec and the tree, or a card that asks for a rule violation: clarify with the operator. Never guess, never comply silently.
+
+## Commits
+- Conventional Commits, `type(scope)!: subject`, header at most 100 characters; the repo's `commit-msg` validator rejects the rest (rule 23). The swarm byline `By <role>.` goes in the body.
+- At most 10 files and 300 lines per commit (gate 1). Several small commits and then one handoff of the last SHA is the normal shape; the size gate is per commit, not per handoff. The one sanctioned big-bang is the coder's initial scaffold on an empty tree, justified in its body.
+- No person, employer, or client named in any tracked file (rule 26). Role names are fine.
+- Do not commit `./tmp/`, handoff runtime state, or generated artefacts.
+
+## Plan and lessons
+- The durable plan is per role and untracked: `./tmp/plan.md` in your worktree, steps with a definition of done each, kept live. Never `.claude/PLAN.md` here: six roles merging one file would conflict on every handoff.
+- `.claude/LESSONS.md` has one writer, the reviewer, who appends the task's `[mistake]`, `[decision]`, and `[gotcha]` entries in the terminal commit. Every other role proposes candidates as `Lesson: [kind] one sentence` lines in its commit bodies; the reviewer reads the task's log and promotes the ones that meet the bar in `references/lessons.md`.
+- Read `.claude/LESSONS.md` at startup and after every inbound merge; apply it silently.
+
+## Reviewer handoffs
+- The reviewer's terminal `git_handoff` reaches every other role as a merge-only copy. It does not interrupt current work: if the wake-up arrives while working, ignore it and let `done_with_current.sh` deliver it after the current work is complete.
+- When `ready_for_next.sh` delivers a reviewer handoff, it has already merged the commit. Run the variant's inner loop (every role except the specifier), fix any failure, then run `done_with_current.sh`. Do not send a `git_handoff` downstream, do not invent `git merge`, and apart from verification do not apply other role-specific work to that handoff.
+
+## README
+- The README is part of done (guideline 5): the coder audits it against the user-visible surface the task changed and fixes it in the same task; the reviewer checks that it happened.

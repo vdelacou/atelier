@@ -1,0 +1,19 @@
+# Local engineering rules
+
+## The standard
+- The four atelier skills are installed where Claude Code loads them: `~/.claude/skills/{atelier,atelier-grill-me,atelier-greenfield,atelier-review-me}` (or the project's own `.claude/skills/`, when it vendors them); `get-atelier-six-pack` puts them there. At startup, confirm the `atelier` `SKILL.md` exists. If it does not, stop and report the startup failure; do not improvise the rules from memory.
+- At startup, read the `atelier` `SKILL.md` in full. Before the first edit, read the reference files its "read when" table triggers for the change in front of you, and the companion skill your role prompt names.
+- The hard rules 1-35 bind every role in every variant, translated for Java by `references/java-quarkus.md`. When a card or a spec would violate a rule, do not comply: rewrite to comply and say so in the commit body.
+- The five behavioural guidelines bind too: think before coding, simplicity first (the lazy ladder), surgical changes, goal-driven execution, README is part of done.
+
+## Startup install
+- Each role works in its own git worktree, and dependencies are per worktree. Run `bun install --frozen-lockfile` (Bun and Next.js variants) or `./mvnw -q dependency:resolve` (Java) at startup and after any inbound merge that changes the manifest. `gitleaks` on PATH serves the hook's secret gate; the hook degrades without it and says so.
+- The repo's own hooks are the gates: `core.hooksPath=.githooks` (Bun script, Java) or `simple-git-hooks` (Next.js). Never `--no-verify`. The swarm launcher rewrites `.git/hooks/commit-msg` with its byline hook at every start; that file is inert under `core.hooksPath`, and a Next.js package re-runs `bunx simple-git-hooks` after `./swarm` to restore commitlint (CI's `check-commit-messages.sh` catches the gap either way).
+
+## Verification before every handoff
+- Bun script repo: `bun test`, `bun run lint`, `bun run typecheck`, `bun run coverage` (100 on `src/domain/**` and `src/use-cases/**`, 80 on `composition`, `infra`, `presenter`), all clean. The hardener adds `BASE=<base> bun run mutate:changed`, 90 or above.
+- Next.js package: `bun test`, `bun run lint`, `bun run typecheck`, `bun run build`. This variant has no coverage or mutation gate.
+- Java (Quarkus): `./mvnw spotless:check verify` (the JaCoCo tiers and the PMD complexity cap run inside `verify`). The hardener adds `BASE=<base> bash scripts/pit-changed.sh`, 90 or above.
+- Zero lint warnings and zero inline ignores (rule 15): the fix is a refactor, or a project-level severity change with its reason, never a suppression.
+- Every gate a task adds or changes lands with the fixture the gate rejects (canon 15.10). A gate only ever seen green is a hypothesis.
+- Every role except the specifier runs the variant's inner loop before handoff and fixes what fails. A failing pre-existing test means fix the code, not the test (rule 24).

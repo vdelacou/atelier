@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+#
+# Pack launcher. `get-swarm-forge six-pack` normally installs the shared runtime
+# (swarmforge/scripts/) and the three shared articles beside this pack; when
+# they are missing, fetch them from swarm-forge main first, then start the swarm.
+#
+#   SWARMFORGE_SCRIPTS_BRANCH   branch of swarm-forge to fetch from (default main)
+#   SWARMFORGE_SCRIPTS_URL      a tarball URL instead of that branch
+set -euo pipefail
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+branch="${SWARMFORGE_SCRIPTS_BRANCH:-main}"
+archive="${SWARMFORGE_SCRIPTS_URL:-https://github.com/unclebob/swarm-forge/archive/refs/heads/${branch}.tar.gz}"
+scripts="$here/swarmforge/scripts"
+articles="$here/swarmforge/constitution/articles"
+shared=(engineering.prompt workflow.prompt handoffs.prompt)
+
+missing_shared() {
+  local name
+  for name in "${shared[@]}"; do
+    [ -f "$articles/$name" ] || return 0
+  done
+  return 1
+}
+
+if [ ! -d "$scripts" ] || missing_shared; then
+  tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' EXIT
+  echo "swarm: fetching the shared runtime from $archive" >&2
+  curl -fsSL "$archive" | tar -xz --strip-components=1 -C "$tmp"
+  [ -d "$scripts" ] || cp -R "$tmp/swarmforge/scripts" "$scripts"
+  mkdir -p "$articles"
+  for name in "${shared[@]}"; do
+    [ -f "$articles/$name" ] || cp "$tmp/swarmforge/constitution/articles/$name" "$articles/$name"
+  done
+fi
+
+exec "$scripts/swarmforge.sh" "$@"
