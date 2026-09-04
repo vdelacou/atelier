@@ -76,6 +76,25 @@ def read_sources(run_dir: Path, exts: tuple[str, ...], exclude: set[str]) -> dic
     return out
 
 
+def session_failed(run_dir: Path) -> str | None:
+    """A transcript that is nothing but a transport error (the 2026-09-03 tier-2
+    pass lost five sessions overnight to "API Error: Can't reach the API server")
+    is not a conforming-or-not answer; scoring it 0 would read as a regression.
+    Only a transcript that is ONLY the error counts: a session that did its work
+    and then failed on its final message keeps its files and its score."""
+    result = run_dir / ".result.txt"
+    if not result.is_file():
+        return None
+    text = result.read_text(errors="replace").strip()
+    if not (text.startswith("API Error") and len(text) < 300):
+        return None
+    # The files decide, not the transcript: a session that wrote its work and
+    # lost only its closing message has agent files that differ from the fixture.
+    if read_sources(run_dir, (".ts", ".tsx", ".sql", ".java", ".json"), set()):
+        return None
+    return text.splitlines()[0][:80]
+
+
 def grade_run(run_dir: Path, assertions: list[dict]) -> list[tuple[str, bool]]:
     marks = []
     for a in assertions:
@@ -248,7 +267,25 @@ def selftest() -> None:
             print("SELFTEST FAILED: the frozen expected count is not the sum of per-assertion rates")
             sys.exit(1)
 
-    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8 and 7.5 credit shape over vocabulary, the frozen baseline is keyed to its assertions")
+    # Fifth scenario: a session whose transcript is only a transport error is
+    # reported as failed, never scored, while a session that worked and then hit
+    # the error on its last message keeps its score.
+    with tempfile.TemporaryDirectory() as tmp:
+        dead = Path(tmp) / "dead"
+        shutil.copytree(FIXTURE_DIR, dead)
+        (dead / ".result.txt").write_text("API Error: Can't reach the API server (ENOTFOUND)\n")
+        if session_failed(dead) is None:
+            print("SELFTEST FAILED: an API-error-only transcript was treated as a graded session")
+            sys.exit(1)
+        worked = Path(tmp) / "worked"
+        shutil.copytree(FIXTURE_DIR, worked)
+        (worked / "src" / "domain" / "worked.ts").write_text("export const worked = 1;\n")
+        (worked / ".result.txt").write_text("API Error: connection reset on the final message\n")
+        if session_failed(worked) is not None:
+            print("SELFTEST FAILED: a session that worked and then hit an API error was discarded")
+            sys.exit(1)
+
+    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8 and 7.5 credit shape over vocabulary, the frozen baseline is keyed to its assertions, a dead session is not scored")
 
 
 def _flag_val(args: list[str], name: str) -> int | None:
@@ -309,6 +346,10 @@ def main() -> None:
             if not run_dir.is_dir():
                 rows.append((arm, None))
                 continue
+            failure = session_failed(run_dir)
+            if failure:
+                rows.append((arm, failure))
+                continue
             marks = grade_run(run_dir, task["assertions"])
             grand[arm][0] += sum(1 for _, _, p in marks if p)
             grand[arm][1] += len(marks)
@@ -325,6 +366,9 @@ def main() -> None:
         for arm, marks in rows:
             if marks is None:
                 print(f"  {arm:<11} (no run)")
+                continue
+            if isinstance(marks, str):
+                print(f"  {arm:<11} (session failed, not scored: {marks})")
                 continue
             score = sum(1 for _, _, p in marks if p)
             detail = "  ".join(("PASS" if p else "fail") + f"[{r}]:{d[:30]}" for d, r, p in marks)
