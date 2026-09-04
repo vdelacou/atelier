@@ -2,6 +2,10 @@
 
 Append-only journal of mistakes, decisions, and gotchas for this repo. Never rewrite or delete entries; supersede a decision with a newer `[decision]`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [decision] 2026-09-04 | the six-pack ships on main under packs/six-pack, not on a product branch
+
+Supersedes the product-branch decision earlier today. swarm-forge's branch-per-product exists for one mechanical reason: its installer downloads `archive/refs/heads/<name>.tar.gz`, so each pack needs a branch whose root is the pack. `get-atelier-six-pack` composes through `SWARMFORGE_PACKS_DIR` instead, and `pack_tree` looks for `$SWARMFORGE_PACKS_DIR/six-pack` first, which is swarm-forge's own multi-pack layout. So the pack lives at `packs/six-pack/` on main (a two-pack or four-pack has a home beside it), the installer stays at the root, and there is no long-lived branch to rot, which the standard's trunk rule forbids anyway. Rule for next time: copy an upstream's layout only after asking which constraint produced it; a branch that exists for a tarball URL is not a reason to keep one.
+
 ## [gotcha] 2026-09-04 | swarm-forge keys behaviour on role names, not on the role table
 
 Building the six-pack branch: the handoff daemon holds a `git_handoff` for Attention only when the sender is the master-worktree role AND a role literally named `specifier` exists (`handoffd.bb`, `should-hold?`), and the launcher injects Gherkin/APS startup lines (`swarm_tool.sh require gherkin-parser`, "run exactly ... ensure") into the system prompt of any role named specifier, coder, architect, hardender, or QA (`role-required-tools`). Neither is in the README or the conf format. So the specifier keeps its name, `hardener` and `reviewer` dodge the map, and `constitution.prompt` (which takes precedence over articles and Tool Startup lines) turns the APS lines off for the roles that keep a mapped name. Rule for next time: before naming anything a runtime consumes, grep the runtime for the literal, not only its documented config surface.

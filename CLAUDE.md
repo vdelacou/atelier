@@ -20,9 +20,9 @@ tree. What binds work HERE is the authoring and process discipline below.
 - `skills/atelier/` is the main skill: `SKILL.md` (hard rules + workflow) plus `references/`
   (the doctrine, one file per concern) and `assets/` (copyable gate scripts + Java exemplars).
 - `skills/atelier-{greenfield,review-me,grill-me}/` are the companion skills.
-- `swarm`, `swarmforge/`, `get-atelier-six-pack` (branch `atelier-six-packs`) are the SwarmForge six-pack:
-  the four skills as a six-role agent pipeline; `scripts/check-six-pack.sh` is its gate and
-  `swarmforge/README.md` the operator manual. Role prompts point at the skills, never restate doctrine.
+- `packs/six-pack/` is the SwarmForge six-pack (the four skills as a six-role agent pipeline) and
+  `get-atelier-six-pack` its installer; `scripts/check-six-pack.sh` is its gate and
+  `packs/six-pack/README.md` the operator manual. Role prompts point at the skills, never restate doctrine.
 - `scripts/` holds the CI harnesses: three `smoke-test*.sh` (Bun/Next/Java, each proving the
   gates pass AND block their target violation), `trigger-eval/` (does the skill load; suite
   mode measures which skill wins a query), `conformance-eval/` (does produced code follow the

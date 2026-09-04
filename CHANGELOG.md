@@ -6,6 +6,25 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Added
+- **The atelier six-pack** (`packs/six-pack/`, `get-atelier-six-pack`): the four skills as a
+  [SwarmForge](https://github.com/unclebob/swarm-forge) pack of six Claude Code roles
+  (specifier, coder, cleaner, architect, hardener, reviewer) that take an operator's card from
+  a grilled specification to a rule-cited verdict, each in its own git worktree. The
+  constitution makes the standard the engineering law and turns off SwarmForge's Gherkin and
+  CRAP/DRY tooling; the local articles read rules 24 and 25 for a board (the Attention approval
+  of the spec is the yes; no role pushes; a test older than the card is frozen).
+  `scripts/check-six-pack.sh` is its CI gate (the launcher's parse rules, the handoff chain
+  closing in conf order, the README role table equal to the conf), with a selftest that plants
+  eleven defects. Not yet exercised live; `bb` and `tmux` were absent on the authoring machine.
+
+### Fixed
+- `assets/claude-md-pointer.md` said hard rules 1-34; rule 35 landed in 2.1.0.
+- The README's Bun install block never copied `check-commit-messages.sh` and
+  `check-commit-range.sh`, both called by the shipped `ci.yml`, nor `audit.yml`; its symlink
+  alternative linked one skill of four; the Java line named five of the variant's eleven
+  assets; the layout tree omitted nine assets and four root files; the CI job count said eight.
+
 ## [2.1.0] - 2026-09-03
 
 The measured-standard release: the 2026-09-02 audit's findings closed (five doctrine

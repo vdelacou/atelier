@@ -2,7 +2,7 @@
 
 A personal engineering standard for Bun/TypeScript, Next.js, and Java (Quarkus) repos, packaged as an [Agent Skill](https://github.com/anthropics/skills) for AI coding agents. Turns generic code generation into senior-engineer output that follows a consistent toolchain, TDD workflow, SOLID design, a class-free functional style (records and sealed types on the Java side), and the production disciplines a real system needs from day one: privacy, tenant isolation, reliability, observability, delivery, and validated product decisions.
 
-It comes two ways: four skills for a single agent session, and, on the `atelier-six-packs` branch, a six-agent [SwarmForge](https://github.com/unclebob/swarm-forge) pack that runs the whole loop unattended, from an operator's card to a rule-cited verdict ([below](#atelier-six-pack-the-standard-as-a-team-of-six)).
+It comes two ways: four skills for a single agent session, and a six-agent [SwarmForge](https://github.com/unclebob/swarm-forge) pack (`packs/six-pack/`) that runs the whole loop unattended, from an operator's card to a rule-cited verdict ([below](#atelier-six-pack-the-standard-as-a-team-of-six)).
 
 ## Available skills
 
@@ -106,7 +106,7 @@ The pre-land companion: a rule-aware conformance review of a diff against the at
 
 Write a card. Six Claude Code agents take it from a grilled specification to a rule-cited conformance verdict, and you decide once, at the spec.
 
-The `atelier-six-packs` branch packages the four skills as a [SwarmForge](https://github.com/unclebob/swarm-forge) pack. Each role runs in its own git worktree and exchanges committed work through SwarmForge's durable handoffs, holding itself to the standard exactly as a single-agent session does: the hooks run in every worktree, no test older than the card is touched, no role ever pushes.
+`packs/six-pack/` packages the four skills as a [SwarmForge](https://github.com/unclebob/swarm-forge) pack. Each role runs in its own git worktree and exchanges committed work through SwarmForge's durable handoffs, holding itself to the standard exactly as a single-agent session does: the hooks run in every worktree, no test older than the card is touched, no role ever pushes.
 
 ```text
 New Task -> specifier -> Attention -> coder -> cleaner -> architect -> hardener -> reviewer -> Done
@@ -126,14 +126,14 @@ What you get per card: a specification you approved, code that passed the hooks 
 Quick start, from the project that should receive the pack, with `zsh`, `git`, `tmux`, Babashka (`bb`), the `claude` CLI, and Bun or JDK 21 installed:
 
 ```bash
-git clone -b atelier-six-packs https://github.com/vdelacou/atelier.git ~/code/atelier
+git clone https://github.com/vdelacou/atelier.git ~/code/atelier
 cd ~/code/my-project
 ~/code/atelier/get-atelier-six-pack
 git add -A && git commit -m "chore(swarm): install the atelier six-pack"
 ./swarm
 ```
 
-Read this first: the agents run unattended with permission prompts bypassed (SwarmForge's model), inside worktrees of your project; the Attention gate on the spec is where the standard's two confirmation rules land; no role ever pushes. The operator manual, the role table a CI gate keeps equal to the conf, and the swarm reading of rules 24 and 25 are in [`swarmforge/README.md`](swarmforge/README.md).
+Read this first: the agents run unattended with permission prompts bypassed (SwarmForge's model), inside worktrees of your project; the Attention gate on the spec is where the standard's two confirmation rules land; no role ever pushes. The operator manual, the role table a CI gate keeps equal to the conf, and the swarm reading of rules 24 and 25 are in [`packs/six-pack/README.md`](packs/six-pack/README.md).
 
 ## Installation
 
@@ -302,8 +302,7 @@ atelier/
 ├── .github/workflows/canary.yml   # weekly probe of the two toolchain concessions (typescript pin, two sonarjs rules)
 ├── .githooks/                     # this repo's own hooks (em-dash gate + frontmatter check, Conventional Commits)
 ├── get-atelier-six-pack           # six-pack installer: compose the pack, link the four skills, seed the pointer block
-├── swarm                          # six-pack launcher stub (fetches the SwarmForge runtime when it is missing)
-├── swarmforge/                    # the six-pack: conf, constitution, articles, six role prompts, the operator README
+├── packs/six-pack/                # the SwarmForge six-pack: launcher stub, conf, constitution, six role prompts, operator README
 ├── scripts/
 │   ├── validate-frontmatter.ts    # frontmatter gate: name/description present + within skill limits
 │   ├── check-no-em-dash.sh        # no em dash on an added line (hook + CI)
