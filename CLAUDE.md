@@ -57,7 +57,7 @@ tree. What binds work HERE is the authoring and process discipline below.
   the three smoke tests, the two grader selftests, matrix drift with the citation, workflow-asset
   and staleness selftests, the six-pack gate); `canary.yml` weekly-probes
   the two deliberate toolchain concessions (whether the typescript pin can lift, and whether the
-  two disabled sonarjs rules can go back on).
+  three disabled sonarjs rules can go back on).
 
 ## Process
 - **Plan-first**: before multi-step work, write the plan and a per-step definition of done to

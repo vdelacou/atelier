@@ -23,6 +23,13 @@ whole, not any single skill.
   `lint:strict` gap) are folded into the pack.
 
 ### Fixed
+- `sonarjs/function-return-type` is off in the canonical Bun `eslint.config.js`
+  (`references/bun-typescript.md`), dated 2026-09-05 against sonarjs 4.2.0. It fires on every
+  function that returns through the `ok()`/`err()` helpers, because `Result<T, never>` and
+  `Result<never, E>` are two return types to it, so `lint:strict` was red on every conforming
+  consumer while this repo's smoke fixture stayed green by returning union literals under one
+  annotation. The fixture now returns through the helpers, and the weekly canary re-probes
+  three rules instead of two. Consumers: re-extract `eslint.config.js` from the reference.
 - `assets/claude-md-pointer.md` said hard rules 1-34; rule 35 landed in 2.1.0.
 - The README's Bun install block never copied `check-commit-messages.sh` and
   `check-commit-range.sh`, both called by the shipped `ci.yml`, nor `audit.yml`; its symlink

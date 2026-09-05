@@ -301,7 +301,7 @@ atelier/
 ├── docs/global-rules/             # the vendored canon the matrices audit against
 ├── docs/upstream/                 # notes on the upstream tooling this repo leans on
 ├── .github/workflows/ci.yml       # CI: nine jobs (frontmatter, em-dash gate, three smoke tests, two grader selftests, matrix drift, the six-pack gate)
-├── .github/workflows/canary.yml   # weekly probe of the two toolchain concessions (typescript pin, two sonarjs rules)
+├── .github/workflows/canary.yml   # weekly probe of the two toolchain concessions (typescript pin, three sonarjs rules)
 ├── .githooks/                     # this repo's own hooks (em-dash gate + frontmatter check, Conventional Commits)
 ├── get-atelier-six-pack           # six-pack installer: compose the pack, link the four skills, seed the pointer block
 ├── packs/six-pack/                # the SwarmForge six-pack: launcher stub, conf, constitution, six role prompts, operator README

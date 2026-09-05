@@ -209,7 +209,7 @@ When introducing a per-tier coverage gate in an existing repo, remove any global
 
 SonarLint runs IDE-side; CI and pre-commit do not see it. To keep IDE-only findings from drifting back in, ESLint is wired to catch them at lint time.
 
-In `eslint.config.js` (one config, two modes, `LINT_STRICT=1` switches on the type-aware block). The canonical, complete flat config is printed once, in `references/bun-typescript.md` (§ `eslint.config.js`): `sonarjsPlugin.configs.recommended` is on, the type-aware lane adds `@typescript-eslint/no-unnecessary-type-assertion` and `prefer-promise-reject-errors`, and the five SonarJS rules turned off are each justified beside the switch there (the two dated 2026-08-29 are re-probed weekly by the skill repository's canary). Copy from that file, never from memory.
+In `eslint.config.js` (one config, two modes, `LINT_STRICT=1` switches on the type-aware block). The canonical, complete flat config is printed once, in `references/bun-typescript.md` (§ `eslint.config.js`): `sonarjsPlugin.configs.recommended` is on, the type-aware lane adds `@typescript-eslint/no-unnecessary-type-assertion` and `prefer-promise-reject-errors`, and the six SonarJS rules turned off are each justified beside the switch there (the three dated ones, 2026-08-29 and 2026-09-05, are re-probed weekly by the skill repository's canary). Copy from that file, never from memory.
 
 The conditional block runs only when `process.env['LINT_STRICT']` is set, so the inner-loop `bun run lint` skips it entirely. `bun run lint:strict` is just `LINT_STRICT=1 eslint`.
 
