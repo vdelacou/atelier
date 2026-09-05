@@ -60,6 +60,10 @@ Because the specifier is the project-root role, its forward handoff is held in *
 
 Batch mode lets the four downstream roles process compatible queued handoffs together while specification and implementation stay task-focused.
 
+## A first run
+
+Measured on 2026-09-05, an empty repository and one card (a Bun CLI totalling invoices per customer from a CSV that carries names and emails): card to Done in one hour fifty-six, one Attention approval, zero clarifications. 35 commits by six roles (specifier 3, coder 8, cleaner 5, architect 6, hardener 9, reviewer 4), 88 tests, coverage 100 on every tier, mutation score 100 with 168 mutants killed, two ADRs, a verdict of conformant with one Low finding fixed by the reviewer and two accepted deviations. Every gate re-run by hand on the merged main agreed. Along the way the cleaner found a SonarJS rule that fires on every `Result`-returning function under `lint:strict` and turned it off at project level with its reason, the hardener found an unpinned regex by mutation and a crash on an empty file, and the reviewer re-audited its own verdict twice before broadcasting.
+
 ## Install and run
 
 Prerequisites: `zsh`, `git`, `tmux`, Babashka (`bb`), the `claude` CLI (Claude Code, signed in), and the variant's toolchain, Bun for a Bun-script repo or a Next.js package, JDK 21 with the Maven wrapper for Java. `gitleaks` on PATH serves the hooks' secret gate; the hook degrades without it and says so.
@@ -80,7 +84,9 @@ git commit -m "chore(swarm): install the atelier six-pack"
 ./swarm
 ```
 
-`./swarm` starts the configured agents, the handoff daemon, and the local dashboard. The roles run in invisible tmux sessions; open their live panes from the dashboard. Use **New Task** to give the specifier a card: write the card as intent (what and why, the users, the constraints), not as a design; the specifier grills it. **Attention** holds the specification for your approval (approve, or reject with comments the specifier reads as findings) and surfaces clarifications from any role. **Teardown** stops the swarm without deleting the project.
+`./swarm` starts the configured agents, the handoff daemon, and the local dashboard. The roles run in invisible tmux sessions; open their live panes from the dashboard.
+
+First start: Claude Code asks two questions in every pane the first time it runs in a new path, whether to trust the folder and whether to accept bypass-permissions mode. Six panes, twelve answers, from the dashboard's pane view or with `tmux -S <socket> send-keys -t swarmforge-<role> Down Enter` (the socket path is printed by `./swarm`). Until they are answered the roles idle. Use **New Task** to give the specifier a card: write the card as intent (what and why, the users, the constraints), not as a design; the specifier grills it. **Attention** holds the specification for your approval (approve, or reject with comments the specifier reads as findings) and surfaces clarifications from any role. **Teardown** stops the swarm without deleting the project.
 
 Environment for offline or forked installs: `SWARMFORGE_BASE_DIR` (a local SwarmForge `main` checkout instead of a download), `SWARMFORGE_REPO_URL` (a fork), `GET_SWARM_FORGE` (an existing helper), `CLAUDE_SKILLS_DIR` (another skills directory).
 

@@ -29,4 +29,5 @@ You are the coder.
 - If the inbound `git_handoff` is from the reviewer, run the inner loop, fix failures, and run `done_with_current.sh`. Do not send a `git_handoff`.
 - When every scenario passes and the loop is clean, commit and send a `git_handoff` to `cleaner`.
 - Queue it with `swarm_handoff.sh <draft-file>`. Draft headers are `type`, `to`, `priority`, and `task` only. Do not type a SHA or `SWARMFORGE_ROLE`.
+- The first `swarm_handoff.sh` call answers `AUDIT_REQUIRED` by design: re-read the inbound payload and the spec, trace each requirement to your work, fix what you find, then run the same command again unchanged. Do not read the helper's source to understand it.
 - Then run `done_with_current.sh`.

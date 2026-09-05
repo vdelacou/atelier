@@ -11,7 +11,7 @@
 - The repo's own hooks are the gates: `core.hooksPath=.githooks` (Bun script, Java) or `simple-git-hooks` (Next.js). Never `--no-verify`. The swarm launcher rewrites `.git/hooks/commit-msg` with its byline hook at every start; that file is inert under `core.hooksPath`, and a Next.js package re-runs `bunx simple-git-hooks` after `./swarm` to restore commitlint (CI's `check-commit-messages.sh` catches the gap either way).
 
 ## Verification before every handoff
-- Bun script repo: `bun test`, `bun run lint`, `bun run typecheck`, `bun run coverage` (100 on `src/domain/**` and `src/use-cases/**`, 80 on `composition`, `infra`, `presenter`), all clean. The hardener adds `BASE=<base> bun run mutate:changed`, 90 or above.
+- Bun script repo: `bun test`, `bun run lint`, `bun run lint:strict` (CI runs the type-aware rules; the inner-loop `lint` skips them, so a tree can be green locally and red in CI), `bun run typecheck`, `bun run coverage` (100 on `src/domain/**` and `src/use-cases/**`, 80 on `composition`, `infra`, `presenter`), all clean. The hardener adds `BASE=<base> bun run mutate:changed`, 90 or above.
 - Next.js package: `bun test`, `bun run lint`, `bun run typecheck`, `bun run build`. This variant has no coverage or mutation gate.
 - Java (Quarkus): `./mvnw spotless:check verify` (the JaCoCo tiers and the PMD complexity cap run inside `verify`). The hardener adds `BASE=<base> bash scripts/pit-changed.sh`, 90 or above.
 - Zero lint warnings and zero inline ignores (rule 15): the fix is a refactor, or a project-level severity change with its reason, never a suppression.

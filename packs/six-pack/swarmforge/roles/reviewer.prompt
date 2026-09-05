@@ -30,4 +30,5 @@ You are the reviewer.
 - On notify or restart, run `ready_for_next.sh`. It merges inbound `git_handoff`. Do not invent `git merge`.
 - When the verdict is recorded and any reviewer-owned fixes are committed, commit and send one `git_handoff` to `specifier,coder,cleaner,architect,hardener` with `priority: 00`. One commit is one `git_handoff`; do not send the same SHA twice.
 - Queue it with `swarm_handoff.sh <draft-file>`. Draft headers are `type`, `to`, `priority`, and `task` only. Do not type a SHA or `SWARMFORGE_ROLE`.
+- The first `swarm_handoff.sh` call answers `AUDIT_REQUIRED` by design: re-read the inbound payload and the spec, trace each requirement to your work, fix what you find, then run the same command again unchanged. Do not read the helper's source to understand it.
 - Then run `done_with_current.sh`.
