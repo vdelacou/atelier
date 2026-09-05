@@ -110,8 +110,31 @@ coverageReporter = ["text"]
 EOF
 
 # --- minimal atelier-style source: branded domain + fetch adapter, fully tested ---
+# The Result helpers exactly as references/result-type.md writes them (hard rule 16).
+# parseName below returns through them, the idiom every consumer uses; a fixture
+# that only returned union literals satisfied sonarjs/function-return-type by
+# accident and proved nothing about it (found 2026-09-05 on a consumer tree).
+cat > src/domain/result.ts <<'EOF'
+export type Result<T, E> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly error: E };
+
+export const ok = <T>(value: T): Result<T, never> => ({ ok: true, value });
+export const err = <E>(error: E): Result<never, E> => ({ ok: false, error });
+EOF
+
 cat > src/domain/greeting.ts <<'EOF'
+import { err, ok, type Result } from './result.ts';
+
 export type Name = string & { readonly __brand: 'Name' };
+export type NameError = { readonly kind: 'empty' };
+
+// The two-tier boundary form: parseName returns Result for untrusted input,
+// name asserts for values already proven (hard rules 12 and 16).
+export const parseName = (raw: string): Result<Name, NameError> => {
+  if (raw.trim().length === 0) return err({ kind: 'empty' });
+  return ok(raw as Name);
+};
 
 export const name = (value: string): Name => {
   if (value.trim().length === 0) throw new Error('invalid Name');
@@ -124,10 +147,18 @@ EOF
 cat > src/domain/greeting.test.ts <<'EOF'
 import { expect, test } from 'bun:test';
 import { captureRejection } from '../test-helpers/capture-rejection.ts';
-import { greet, name } from './greeting.ts';
+import { greet, name, parseName } from './greeting.ts';
 
 test('when a visitor gives their name, they are greeted by it', () => {
   expect(greet(name('Ada'))).toBe('Hello, Ada!');
+});
+
+test('a name from untrusted input parses into the branded type', () => {
+  expect(parseName('Ada')).toEqual({ ok: true, value: name('Ada') });
+});
+
+test('a blank name from untrusted input is an error value, not a throw', () => {
+  expect(parseName(' ')).toEqual({ ok: false, error: { kind: 'empty' } });
 });
 
 test('an empty name is rejected at the trust boundary', async () => {
@@ -197,10 +228,10 @@ expect_ok "bun add -d toolchain" bun add -d eslint @eslint/js globals typescript
   eslint-plugin-security eslint-plugin-sonarjs eslint-plugin-unicorn eslint-plugin-prettier \
   prettier "${SMOKE_TS_SPEC:-typescript@^5}" @types/bun @stryker-mutator/core
 
-# The four fixture-authored files above are test scaffolding, not shipped assets, 
+# The fixture-authored files above are test scaffolding, not shipped assets,
 # normalise THEIR formatting only, so a formatting regression in a shipped asset
 # still fails the lint step below.
-bunx eslint --fix src/domain/greeting.ts src/domain/greeting.test.ts \
+bunx eslint --fix src/domain/result.ts src/domain/greeting.ts src/domain/greeting.test.ts \
   src/infra/fetch-greeting.ts src/infra/fetch-greeting.test.ts >/dev/null 2>&1 || true
 
 echo "== positive path: every gate green on a conforming tree =="
@@ -442,11 +473,11 @@ expect_ok "check-skill-pin.sh degrades, not blocks, when no upstream is configur
 rm -rf .claude
 
 echo "== fast pre-commit hook end-to-end (the 5 fast gates: size, package.json, gitleaks, lint:staged, typecheck) =="
-git add package.json src/domain/greeting.ts src/domain/greeting.test.ts
+git add package.json src/domain/result.ts src/domain/greeting.ts src/domain/greeting.test.ts
 expect_ok "fast pre-commit hook end-to-end" bash .githooks/pre-commit
 
 echo "== CI-only gates run directly (the full suite, coverage, and mutation are CI's job, not the hook's) =="
-expect_ok "mutation gate (Stryker on the staged domain file)" bun run mutate:staged
+expect_ok "mutation gate (Stryker on the staged domain files)" bun run mutate:staged
 expect_ok "ci.yml asset is present" test -f .github/workflows/ci.yml
 expect_ok "ci.yml wires the package.json gate" grep -q "check-package-json.sh" .github/workflows/ci.yml
 expect_ok "ci.yml runs the full suite, coverage, and mutation" bash -c 'grep -q "bun test" .github/workflows/ci.yml && grep -q "bun run coverage" .github/workflows/ci.yml && grep -q "mutate" .github/workflows/ci.yml'
