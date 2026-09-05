@@ -1,16 +1,15 @@
-# Plan: the six-pack onto main (2026-09-04)
+# Plan: the six-pack, first live run (2026-09-05)
 
-Goal: the SwarmForge six-pack ships on main under `packs/six-pack/`, no product branch.
+Goal: prove the pack end to end on a real swarm and fold what it taught back into the pack.
 
-Definition of done (whole task): the gate passes from the new location; outside the LESSONS
-history nothing says the pack lives on a branch; CHANGELOG `Unreleased` names the pack and the
-two fixes; main fast-forwards to the branch tip; the branch is deleted.
+1. [x] Prerequisites: tmux and Babashka via Homebrew, the four skills linked into `~/.claude/skills`.
+2. [x] Scratch project `~/Documents/CODE/six-pack-live`, pack installed, seeds committed, `./swarm`.
+3. [x] One card (invoice totals CLI) through the six roles; the spec approved in Attention; Done at 01:41.
+4. [x] Independent verification on the merged main: 88 tests, lint, lint:strict, typecheck, coverage,
+       mutation 100, the tool run by hand. Swarm torn down; project and worktrees kept.
+5. [x] Folded back: first-start prompts in the pack README, the audit-gate hint in every role prompt,
+       `lint:strict` in the pre-handoff loop, the numbers in both READMEs and the CHANGELOG, two LESSONS.
+6. [x] Two commits on the owner's yes, main fast-forwarded, pushed.
 
-1. [x] Move `swarm`, `swarmforge/`, and the pack README under `packs/six-pack/`; the installer,
-       the gate, and `.gitignore` follow. DoD: `check-six-pack.sh --selftest` and the gate green.
-2. [x] Wording pass (root README, CLAUDE.md, pack README), CHANGELOG `Unreleased`, a superseding
-       LESSONS decision. DoD: `grep -r atelier-six-packs` hits only LESSONS history.
-3. [x] Two commits (move; wording), then `git merge --ff-only` in the main checkout and
-       `git branch -d`. Executes right after the wording commit lands.
-
-Still not exercised: `./swarm` itself (bb and tmux absent here). First live run is the next step.
+Open for the standard, not the pack: `sonarjs/function-return-type` fires on `ok()`/`err()` returns
+under `lint:strict`; the canonical config and the smoke fixture need the 2026-08-29 treatment.

@@ -123,6 +123,8 @@ New Task -> specifier -> Attention -> coder -> cleaner -> architect -> hardener 
 
 What you get per card: a specification you approved, code that passed the hooks and the inner loop on every commit, mutation-proven tests, a verdict that cites rule numbers, and a `.claude/LESSONS.md` that remembers. What you do: write the card as intent, approve the spec in Attention, answer a clarification when a role asks, push when you are ready.
 
+Measured on its first run (2026-09-05, an empty repository, a small CLI card): one hour fifty-six from card to Done, one Attention approval, zero clarifications, 35 commits by six roles, 88 tests, coverage 100 on every tier, mutation score 100, a verdict of conformant with one Low finding fixed by the reviewer.
+
 Quick start, from the project that should receive the pack, with `zsh`, `git`, `tmux`, Babashka (`bb`), the `claude` CLI, and Bun or JDK 21 installed:
 
 ```bash

@@ -16,7 +16,11 @@ whole, not any single skill.
   of the spec is the yes; no role pushes; a test older than the card is frozen).
   `scripts/check-six-pack.sh` is its CI gate (the launcher's parse rules, the handoff chain
   closing in conf order, the README role table equal to the conf), with a selftest that plants
-  eleven defects. Not yet exercised live; `bb` and `tmux` were absent on the authoring machine.
+  eleven defects. First live run 2026-09-05 on an empty repository with a small CLI card:
+  card to Done in 1h56, one Attention approval, zero clarifications, 35 commits, 88 tests,
+  coverage 100 on every tier, mutation 100, verdict conformant with one Low finding fixed by
+  the reviewer; the run's three costs (the first-start prompts, the audit-gate detour, the
+  `lint:strict` gap) are folded into the pack.
 
 ### Fixed
 - `assets/claude-md-pointer.md` said hard rules 1-34; rule 35 landed in 2.1.0.
