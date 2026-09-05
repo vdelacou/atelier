@@ -241,23 +241,27 @@ expect_ok "bun test" bun test
 expect_ok "lint (fast)" bun run lint
 expect_ok "lint:strict (type-aware)" bun run lint:strict
 
-# Weekly re-probe of the two sonarjs rules the canonical config turns off
-# (no-useless-intersection reports every branded type, null-dereference reports
-# non-nullable values; both dated 2026-08-29 against sonarjs 4.2.0). `--rule`
-# overrides flat config, so this needs no shipped-config env branch. Purely
-# informational: it is EXPECTED to fail until upstream fixes them, so it never
-# touches FAILURES. Set by .github/workflows/canary.yml.
+# Weekly re-probe of the three sonarjs rules the canonical config turns off
+# (no-useless-intersection reports every branded type and null-dereference
+# reports non-nullable values, both dated 2026-08-29; function-return-type
+# reports every function returning through the ok()/err() helpers, dated
+# 2026-09-05; all against sonarjs 4.2.0). `--rule` overrides flat config, so
+# this needs no shipped-config env branch. Purely informational: it is EXPECTED
+# to fail until upstream fixes them, so it never touches FAILURES. Set by
+# .github/workflows/canary.yml.
 if [ -n "${SMOKE_SONARJS_PROBE:-}" ]; then
   if LINT_STRICT=1 bunx eslint --max-warnings=0 \
-       --rule '{"sonarjs/no-useless-intersection":"error","sonarjs/null-dereference":"error"}' \
+       --rule '{"sonarjs/no-useless-intersection":"error","sonarjs/null-dereference":"error","sonarjs/function-return-type":"error"}' \
        >"$LOG" 2>&1; then
-    echo "  PROBE: sonarjs no longer flags the branded-type idiom."
-    echo "         Re-enable both rules in references/bun-typescript.md and drop this probe."
+    echo "  PROBE: sonarjs no longer flags the branded-type and Result idioms."
+    echo "         Re-enable the three rules in references/bun-typescript.md and drop this probe."
   else
-    echo "  probe: sonarjs still flags conforming code, both rules stay off:"
+    echo "  probe: sonarjs still flags conforming code, the three rules stay off:"
+    # File headers (eslint prints each offending path on its own line) plus the
+    # rule lines, so the verdict names WHICH fixture function each rule hit.
     # `|| true`: if the run failed for some OTHER reason the grep matches nothing,
     # and under `set -e` a non-zero grep here would abort the whole smoke test.
-    grep -E 'sonarjs/(no-useless-intersection|null-dereference)' "$LOG" | sed 's/^/         /' || true
+    grep -E '^/|sonarjs/(no-useless-intersection|null-dereference|function-return-type)' "$LOG" | sed 's/^/         /' || true
   fi
 fi
 expect_ok "typecheck" bun run typecheck

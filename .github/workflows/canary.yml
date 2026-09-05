@@ -7,10 +7,12 @@ name: toolchain-canary
 #    under TypeScript 7 (see .claude/LESSONS.md, 2026-07-12). unpinned-typescript
 #    runs the same smoke test UNPINNED, so the week sonarjs ships TS 7 support
 #    the job turns green and the pin can be lifted.
-# 2. The canonical eslint config turns off sonarjs/no-useless-intersection and
-#    sonarjs/null-dereference, which flag conforming code (see LESSONS.md,
-#    2026-08-29). sonarjs-rule-probe turns them back on and reports whether
-#    upstream has fixed the false positives.
+# 2. The canonical eslint config turns off three sonarjs rules that flag
+#    conforming code: no-useless-intersection and null-dereference (see
+#    LESSONS.md, 2026-08-29) and function-return-type, which reports every
+#    function returning through the ok()/err() helpers (2026-09-05).
+#    sonarjs-rule-probe turns them back on and reports whether upstream has
+#    fixed the false positives.
 
 on:
   schedule:
@@ -35,8 +37,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
-      # The probe re-enables both disabled rules and prints its verdict in the
-      # smoke-test output. Read the "PROBE:" line: it says whether they can go
-      # back on. The job itself stays green either way.
+      # The probe re-enables the three disabled rules and prints its verdict in
+      # the smoke-test output. Read the "PROBE:" line: it says whether they can
+      # go back on. The job itself stays green either way.
       - name: smoke test with the disabled sonarjs rules re-enabled
         run: SMOKE_SONARJS_PROBE=1 bash scripts/smoke-test.sh
