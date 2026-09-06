@@ -2,7 +2,81 @@
 
 A personal engineering standard for Bun/TypeScript, Next.js, and Java (Quarkus) repos, packaged as an [Agent Skill](https://github.com/anthropics/skills) for AI coding agents. Turns generic code generation into senior-engineer output that follows a consistent toolchain, TDD workflow, SOLID design, a class-free functional style (records and sealed types on the Java side), and the production disciplines a real system needs from day one: privacy, tenant isolation, reliability, observability, delivery, and validated product decisions.
 
-It comes two ways: four skills for a single agent session, and a six-agent [SwarmForge](https://github.com/unclebob/swarm-forge) pack (`packs/six-pack/`) that runs the whole loop unattended, from an operator's card to a rule-cited verdict ([below](#atelier-six-pack-the-standard-as-a-team-of-six)).
+It comes two ways: four skills for a single agent session, and a six-agent [SwarmForge](https://github.com/unclebob/swarm-forge) pack (`packs/six-pack/`) that runs the whole loop unattended, from an operator's card to a rule-cited verdict ([below](#start-here-with-the-six-pack)).
+
+## What changes once it is installed
+
+Once installed, the agent consults `atelier` on every code task in a Bun/TypeScript, Next.js, or Java project: you do not need to mention it by name. It will:
+
+- Refuse generated code that uses `class`, `function` declarations, `interface`, `console.*`, or `npm`/`pnpm`/`yarn` and rewrite it in the class-free style (on the Java side: refuse Mockito, `@SuppressWarnings`, version ranges, and business failures thrown as exceptions).
+- Write a failing test before production code when implementing a feature.
+- Promote raw domain primitives to branded types with validating factories.
+- Apply the production disciplines when the change touches them: keep personal data out of logs and URLs, derive tenants from the verified token and ship the cross-tenant test, put deadlines on outbound calls, version mutable records, keep migrations additive, pin AI-model snapshots behind ports.
+- Read `.claude/LESSONS.md` and `.claude/lessons.local.md` at session start and propose new entries at session end.
+
+Behind those five habits stand 35 hard rules and the production disciplines, all in
+[`skills/atelier/SKILL.md`](skills/atelier/SKILL.md), with one reference file per concern. The
+table that summarises them is under [The four skills](#the-four-skills) below.
+
+## Start here with one agent
+
+**1. Install the skills, once per machine.** Use the [`skills`](https://www.npmjs.com/package/skills) CLI by Vercel Labs: it discovers `skills/atelier/SKILL.md` in this repo automatically:
+
+```bash
+bunx skills add vdelacou/atelier
+```
+
+(`npx skills add vdelacou/atelier` works the same.) By default it installs into Claude Code's user skills directory (`~/.claude/skills/atelier`). Use `-g` for project-local install or `-a <agent>` to target another supported agent (`opencode`, `cursor`, etc.).
+
+**2. Point your repo at the standard.** Skill triggering is probabilistic; a pointer block at the top of your repo's `CLAUDE.md` is deterministic, so every session loads the standard whatever you type:
+
+```bash
+SKILL=~/.claude/skills/atelier
+printf '# CLAUDE.md\n\n' > CLAUDE.md
+cat "$SKILL/assets/claude-md-pointer.md" >> CLAUDE.md
+```
+
+**3. Ask.** The agent consults the standard on its own; you do not name it. Example prompts:
+
+- "Add a CSV export use case for the orders feature."
+- "Add a pricing section with a monthly/yearly toggle to the landing page."
+- "Refactor `user-service.ts` to follow SOLID principles."
+- "Scaffold a new Bun script repo for a Firebase admin job."
+- "Add a paginated invoices endpoint to the Quarkus service." (Java variant: keyset pagination, cross-tenant 404 test, REST Assured)
+- "Review this module for code smells."
+- "Wrap the `email`, `userId`, and `money` primitives as branded types."
+
+**The gates are the agent's job.** A new repo: say "scaffold a new Bun repo" (or a Next.js package, or a Java service) and `atelier-greenfield` lays the layout, copies the gate scripts, wires the hooks and proves every gate green before the first commit. An existing repo: say "adopt the standard into this repo" and `atelier-review-me` scans it and hands you a staged plan whose first slice installs the gates without tripping them on the legacy tree. The copy block for doing it by hand is under [Install the gates by hand](#install-the-gates-by-hand-bun-script-repos).
+
+## Start here with the six-pack
+
+Write a card. Six Claude Code agents take it from a grilled specification to a rule-cited conformance verdict, and you decide once, at the spec.
+
+Quick start, from the project that should receive the pack, with `zsh`, `git`, `tmux`, Babashka (`bb`), the `claude` CLI, and Bun or JDK 21 installed:
+
+```bash
+git clone https://github.com/vdelacou/atelier.git ~/code/atelier
+cd ~/code/my-project
+~/code/atelier/get-atelier-six-pack
+git add -A && git commit -m "chore(swarm): install the atelier six-pack"
+./swarm
+```
+
+The pack needs this clone whichever way the skills were installed: the installer lives in it and, by default, symlinks its four skills into `~/.claude/skills`, leaving any skill already there (step 1 of the single-agent start, or an earlier link) untouched and saying so. Pass `--skip-skills` to leave that directory alone, or `--copy-skills` to copy instead of symlinking.
+
+### Your first card
+
+1. `./swarm` starts the six roles, the handoff daemon and the dashboard, prints `Dashboard: http://127.0.0.1:<port>` and opens it. On a first start Claude Code asks two questions in every pane, whether to trust the folder and whether to accept bypass-permissions mode: six panes, twelve answers, from the dashboard's pane view.
+2. **New Task**: write the card as intent, not as a design. The first run's card, `invoice-totals`, in full:
+
+   > Bun script CLI that reads a CSV of invoices and prints the total amount per customer as a table. The CSV columns are customer name, customer email, invoice id, amount in EUR cents. The file holds personal data (names, emails). Single user, no tenants, no network, no database. Scope: parse the file, sum per customer, print the table; nothing else. Start with the walking skeleton.
+
+3. The specifier grills the card one question at a time, each led by a recommendation, after exploring the tree; any question it cannot settle itself reaches you in **Attention**, answer it there (the first run needed none). When the specification is written, its handoff waits in Attention too: read `docs/specs/<card>.md`, then approve. That approval is your one decision, and it is where the standard's two confirmation rules land (rules 24 and 25).
+4. The board moves on its own from there. **Work Queue** opens any role's live pane; a clarification from any role lands in Attention with the same answer control.
+5. **Done**: the specification in `docs/specs/<card>.md`, the rule-cited verdict in `docs/reviews/<card>.md`, the task's lessons appended to `.claude/LESSONS.md`, and every commit on your project's `main`. Push when you are ready; no role ever pushes.
+6. **Teardown** stops the swarm and keeps the project; `./swarm` starts it again.
+
+Read this first: the agents run unattended with permission prompts bypassed (SwarmForge's model), inside worktrees of your project; the Attention gate on the spec is where the standard's two confirmation rules land; no role ever pushes. The operator manual, the role table a CI gate keeps equal to the conf, and the swarm reading of rules 24 and 25 are in [`packs/six-pack/README.md`](packs/six-pack/README.md).
 
 ## Available skills
 
@@ -104,8 +178,6 @@ The pre-land companion: a rule-aware conformance review of a diff against the at
 
 ## Atelier six-pack: the standard as a team of six
 
-Write a card. Six Claude Code agents take it from a grilled specification to a rule-cited conformance verdict, and you decide once, at the spec.
-
 `packs/six-pack/` packages the four skills as a [SwarmForge](https://github.com/unclebob/swarm-forge) pack. Each role runs in its own git worktree and exchanges committed work through SwarmForge's durable handoffs, holding itself to the standard exactly as a single-agent session does: the hooks run in every worktree, no test older than the card is touched, no role ever pushes.
 
 ```text
@@ -124,20 +196,6 @@ New Task -> specifier -> Attention -> coder -> cleaner -> architect -> hardener 
 What you get per card: a specification you approved, code that passed the hooks and the inner loop on every commit, mutation-proven tests, a verdict that cites rule numbers, and a `.claude/LESSONS.md` that remembers. What you do: write the card as intent, approve the spec in Attention, answer a clarification when a role asks, push when you are ready.
 
 Measured on its first run (2026-09-05, an empty repository, a small CLI card): one hour fifty-six from card to Done, one Attention approval, zero clarifications, 35 commits by six roles, 88 tests, coverage 100 on every tier, mutation score 100, a verdict of conformant with one Low finding fixed by the reviewer.
-
-Quick start, from the project that should receive the pack, with `zsh`, `git`, `tmux`, Babashka (`bb`), the `claude` CLI, and Bun or JDK 21 installed:
-
-```bash
-git clone https://github.com/vdelacou/atelier.git ~/code/atelier
-cd ~/code/my-project
-~/code/atelier/get-atelier-six-pack
-git add -A && git commit -m "chore(swarm): install the atelier six-pack"
-./swarm
-```
-
-The pack needs this clone whichever way the skills were installed: the installer lives in it and, by default, symlinks its four skills into `~/.claude/skills`, leaving any skill already there (step 1 below, or an earlier link) untouched and saying so. Pass `--skip-skills` to leave that directory alone, or `--copy-skills` to copy instead of symlinking.
-
-Read this first: the agents run unattended with permission prompts bypassed (SwarmForge's model), inside worktrees of your project; the Attention gate on the spec is where the standard's two confirmation rules land; no role ever pushes. The operator manual, the role table a CI gate keeps equal to the conf, and the swarm reading of rules 24 and 25 are in [`packs/six-pack/README.md`](packs/six-pack/README.md).
 
 ## Installation
 
@@ -256,37 +314,11 @@ model tiers under-invoke. The deterministic path is a pointer block at the top o
 repo's `CLAUDE.md`, which every session loads as context regardless of what the user types. Treat
 the block as the primary distribution mechanism and skill triggering as the fallback.
 
-```bash
-SKILL=~/.claude/skills/atelier
-printf '# CLAUDE.md\n\n' > CLAUDE.md
-cat "$SKILL/assets/claude-md-pointer.md" >> CLAUDE.md
-```
-
 The canonical text lives in [`assets/claude-md-pointer.md`](skills/atelier/assets/claude-md-pointer.md);
 copy it rather than retyping it, so every repo carries the same block and an upstream wording change
 propagates by re-copy. `atelier-greenfield` seeds it at repo birth (step 6) and `atelier-review-me`
-adopt mode seeds it in the first migration slice; this section is for an already-conforming repo
-that predates the block. Extend `CLAUDE.md` freely below it; the block stays at the top.
-
-## Usage
-
-Once installed, the agent consults `atelier` on every code task in a Bun/TypeScript, Next.js, or Java project: you do not need to mention it by name. It will:
-
-- Refuse generated code that uses `class`, `function` declarations, `interface`, `console.*`, or `npm`/`pnpm`/`yarn` and rewrite it in the class-free style (on the Java side: refuse Mockito, `@SuppressWarnings`, version ranges, and business failures thrown as exceptions).
-- Write a failing test before production code when implementing a feature.
-- Promote raw domain primitives to branded types with validating factories.
-- Apply the production disciplines when the change touches them: keep personal data out of logs and URLs, derive tenants from the verified token and ship the cross-tenant test, put deadlines on outbound calls, version mutable records, keep migrations additive, pin AI-model snapshots behind ports.
-- Read `.claude/LESSONS.md` and `.claude/lessons.local.md` at session start and propose new entries at session end.
-
-**Example prompts:**
-
-- "Add a CSV export use case for the orders feature."
-- "Add a pricing section with a monthly/yearly toggle to the landing page."
-- "Refactor `user-service.ts` to follow SOLID principles."
-- "Scaffold a new Bun script repo for a Firebase admin job."
-- "Add a paginated invoices endpoint to the Quarkus service." (Java variant: keyset pagination, cross-tenant 404 test, REST Assured)
-- "Review this module for code smells."
-- "Wrap the `email`, `userId`, and `money` primitives as branded types."
+adopt mode seeds it in the first migration slice; the command is step 2 of the single-agent quick start above, for an already-conforming
+repo that predates the block. Extend `CLAUDE.md` freely below it; the block stays at the top.
 
 ## Repository layout
 
