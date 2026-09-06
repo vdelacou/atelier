@@ -78,7 +78,7 @@ the README's Bun install steps; the two must stay in agreement.
        stubs, and the six-pack install for those who want the pipeline. README's "current
        release" line (now 429) says 2.2.0 with the same lead. DoD: headings follow Keep a
        Changelog; the em-dash gate; `git diff --stat` within gate 1.
-4. [~] (started 2026-09-06, log in the session scratchpad tier2.log) Tier 2. From a clean tree with steps 1-3 landed: `CONFORMANCE_ARMS=both
+4. [x] (skill 61/61, unaided 43/61, 19:52 to 20:50, none capped; recorded in baseline.md; no re-freeze) Tier 2. From a clean tree with steps 1-3 landed: `CONFORMANCE_ARMS=both
        CONFORMANCE_MODEL=claude-opus-5 bash scripts/conformance-eval/run.sh`, detached (`nohup bash
        -c '...; echo exit=$?' >> log &`, no setsid on macOS) with a Monitor on the log; hours, so
        start it early in the day (2.1.0's ran 17:44 to 01:18 and lost the API). Never edit
@@ -101,6 +101,32 @@ the README's Bun install steps; the two must stay in agreement.
 7. [ ] After the tag: LESSONS `[decision]` on the README fold rule (value and quick starts before
        the catalogue) if the guided review confirms it as a convention; memory
        `conformance-audit-phases` still says "2.1.0 release pending", correct it to 2.2.0 shipped.
+
+After the tag, the first 2.3.0 change: the random-order rule (decided 2026-09-06; drafts in
+`.claude/rule-36-drafts.md`, untracked until they land, verified on bun 1.4.0: `--randomize` shuffles within a
+file, prints `--seed=<n>`, and an order-dependent pair fails under six of eight seeds).
+
+8. [ ] Canon 4.9 "Run the tests in random order": the dos-and-donts section with the TS and Java
+       examples, the pillar-4 index link, the pillar prose bullet, the proposed-revisions entry
+       (ACCEPTED by the owner 2026-09-06), count 119 to 120 and PER_PILLAR pillar 4 from 8 to 9 in
+       `check-matrix-drift.py`, both sha256 and line pins in the matrix header. DoD:
+       `python3 scripts/check-matrix-drift.py` green; the forward row 4.9 cites the doctrine lines
+       step 9 lands (same commit as step 9, or the row reads GAP for one commit).
+9. [ ] Doctrine: hard rule 36 in SKILL.md, the testing.md section and the smells row, the test
+       script `bun test --randomize` in bun-typescript.md and nextjs-monorepo.md, `ci.yml` and
+       `stryker.conf.json`, the JUnit properties file in java-quarkus.md, the pointer block and
+       README counting 36, the companions swept for 35. DoD: `check-citations.py` re-anchored per
+       slice then `--lock`; frontmatter 4/4; the reverse matrix row for 36; SKILL.md description
+       untouched (no trigger eval owed).
+10. [ ] Gates prove red: the counter pair in each smoke test (Bun, Next, Java), green in declaration
+       order, red under at least one seed of eight, the conforming fixture green under all eight;
+       every `bun test` in the smoke tests carries `--randomize`. DoD: the three smoke tests green
+       locally (Java needs JDK 21 and mvn), CI nine jobs green on the push.
+11. [ ] Tier 1: `CONFORMANCE_SINCE=v2.2.0 CONFORMANCE_MODEL=claude-opus-5 bash
+       scripts/conformance-eval/run.sh`, graded `--frozen-baseline`; tasks.json unchanged. DoD: no
+       miss on a rule the diff touched; misses elsewhere rerun twice before they are called.
+12. [ ] CHANGELOG Unreleased (2.3.0): Added rule 36 and canon 4.9, the consumer action; LESSONS
+       `[decision]`; commits gate-1 sized in canon, doctrine, gates order, each waiting for the yes.
 
 Not in scope: any SKILL.md description edit (it would owe tier 2 anyway plus the trigger eval;
 none is planned); the six-pack's second live run; folding the eval harness docs into the README.

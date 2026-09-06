@@ -396,3 +396,27 @@ Two things to carry: assertion-level flicker on a completeness task is a signal 
 budget before it is a signal about the text, and this design (one task, one changed line, a
 snapshot through `CONFORMANCE_SKILL_PATH`, a bar written first) is the one that can answer a
 doctrine question at all. It cost about 25 minutes.
+
+## Tier 2 for the 2.2.0 release (2026-09-06)
+
+The full matrix, both arms, 21 tasks, opus, six jobs, 19:52 to 20:50, no session capped and no
+transport error. A first launch at 16:22 died in seconds on every session with `401 OAuth access
+token has been revoked` on both arms at once (the environmental tell of the 2026-09-04 entry); the
+CLI had been logged out since the midday tier-1 pass. Deleted, logged in, relaunched.
+
+| Arm | Score |
+|---|---|
+| skill | 61/61 |
+| unaided | 43/61 |
+
+Every task is full marks on the skill arm, h7's outbox included (4/4 in this reading). The unaided
+arm reads 43 against 39 on 2026-09-04 and 12.5 of 19 on the frozen fixture's slice: the same
+generator variance the fixture exists to absorb, and no reason to re-freeze, since tasks.json is
+unchanged (same sha as the 2026-09-04 freeze). The skill tree under test is main at 610f7de: the
+2.2.0 notes, the redirect stubs removed, the sonarjs function-return-type switch, the README fold.
+
+One reading note for the live scorecard: `run.sh` grades a task as soon as either arm lands, so
+the line it prints for the arm still running is a snapshot of a half-written tree (h4's skill arm
+read 2/3 at the baseline's landing and 3/3 at its own). The grade over the finished runs directory
+is the number; the live lines are progress.
+
