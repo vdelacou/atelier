@@ -52,17 +52,25 @@ cat "$SKILL/assets/claude-md-pointer.md" >> CLAUDE.md
 
 Write a card. Six Claude Code agents take it from a grilled specification to a rule-cited conformance verdict, and you decide once, at the spec.
 
-Quick start, from the project that should receive the pack, with `zsh`, `git`, `tmux`, Babashka (`bb`), the `claude` CLI, and Bun or JDK 21 installed:
+### Install the pack
+
+Prerequisites on the machine that runs the swarm: `zsh`, `git`, `tmux`, Babashka (`bb`), the `claude` CLI signed in, and the variant's toolchain (Bun, or JDK 21 with the Maven wrapper for Java). `gitleaks` on PATH serves the hooks' secret gate; the hook degrades without it and says so.
+
+The pack is installed into the project that will receive it, an existing repo or an empty directory the first card turns into one. The installer lives in a clone of this repository, whichever way the skills were installed:
 
 ```bash
 git clone https://github.com/vdelacou/atelier.git ~/code/atelier
 cd ~/code/my-project
 ~/code/atelier/get-atelier-six-pack
-git add -A && git commit -m "chore(swarm): install the atelier six-pack"
-./swarm
 ```
 
-The pack needs this clone whichever way the skills were installed: the installer lives in it and, by default, symlinks its four skills into `~/.claude/skills`, leaving any skill already there (step 1 of the single-agent start, or an earlier link) untouched and saying so. Pass `--skip-skills` to leave that directory alone, or `--copy-skills` to copy instead of symlinking.
+The installer writes four things and commits nothing (rule 25): the `swarm` launcher and the `swarmforge/` runtime (SwarmForge's shared runtime and articles from its `main`, this repository's `packs/six-pack` as the pack, fetched through `get-swarm-forge`, downloaded for the run when it is not on PATH); the standard's pointer block at the top of `CLAUDE.md`; an empty `.claude/LESSONS.md`; and the runtime's ignore rules in `.gitignore`. By default it symlinks the four skills into `~/.claude/skills`, leaving any skill already there (step 1 of the single-agent start, or an earlier link) untouched and saying so; `--skip-skills` leaves that directory alone, `--copy-skills` copies instead of symlinking. Commit what it wrote, then start:
+
+```bash
+git add CLAUDE.md .claude/LESSONS.md .gitignore swarm swarmforge
+git commit -m "chore(swarm): install the atelier six-pack"
+./swarm
+```
 
 ### Your first card
 
