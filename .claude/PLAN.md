@@ -89,16 +89,16 @@ the README's Bun install steps; the two must stay in agreement.
        with the same table shape as 2.1.0's. DoD: skill arm at or above 59/61, or each miss
        explained and rerun; unaided arm within a few points of 39/61 (it cannot regress; a move
        is variance or an outage); no re-freeze (tasks.json sha unchanged), stated in the entry.
-5. [ ] Commits, each proposed and each waiting for the yes (rule 25): (a) `docs(readme): value
+5. [x] Commits, each proposed and each waiting for the yes (rule 25): (a) `docs(readme): value
        and two quick starts above the fold` plus the section-move slices, (b) `chore(references):
        remove the two redirect stubs`, (c) `docs(release): 2.2.0 changelog and upgrade notes`,
        (d) `chore(conformance-eval): the 2.2.0 tier-2 pass`. Land through the worktree flow:
        commit on `claude/hello-962356`, `git -C ~/Documents/CODE/atelier merge --ff-only
        claude/hello-962356`, `git push origin main`; push waits for its own yes.
-6. [ ] Tag and push. `git tag -a v2.2.0 -m 'atelier 2.2.0, the six-pack release' -m '<the
+6. [x] (v2.2.0 on c406ec5, pushed 2026-09-06) Tag and push. `git tag -a v2.2.0 -m 'atelier 2.2.0, the six-pack release' -m '<the
        CHANGELOG lead>'` on the tier-2-recorded commit, `git push origin v2.2.0`. DoD: `git tag
        -n1 v2.2.0` prints the lead; the GitHub release page shows the tag; CI green on main.
-7. [ ] After the tag: LESSONS `[decision]` on the README fold rule (value and quick starts before
+7. [~] (LESSONS decision written; memory corrected) After the tag: LESSONS `[decision]` on the README fold rule (value and quick starts before
        the catalogue) if the guided review confirms it as a convention; memory
        `conformance-audit-phases` still says "2.1.0 release pending", correct it to 2.2.0 shipped.
 
@@ -106,26 +106,26 @@ After the tag, the first 2.3.0 change: the random-order rule (decided 2026-09-06
 `.claude/rule-36-drafts.md`, untracked until they land, verified on bun 1.4.0: `--randomize` shuffles within a
 file, prints `--seed=<n>`, and an order-dependent pair fails under six of eight seeds).
 
-8. [ ] Canon 4.9 "Run the tests in random order": the dos-and-donts section with the TS and Java
+8. [x] Canon 4.9 "Run the tests in random order": the dos-and-donts section with the TS and Java
        examples, the pillar-4 index link, the pillar prose bullet, the proposed-revisions entry
        (ACCEPTED by the owner 2026-09-06), count 119 to 120 and PER_PILLAR pillar 4 from 8 to 9 in
        `check-matrix-drift.py`, both sha256 and line pins in the matrix header. DoD:
        `python3 scripts/check-matrix-drift.py` green; the forward row 4.9 cites the doctrine lines
        step 9 lands (same commit as step 9, or the row reads GAP for one commit).
-9. [ ] Doctrine: hard rule 36 in SKILL.md, the testing.md section and the smells row, the test
+9. [x] Doctrine: hard rule 36 in SKILL.md, the testing.md section and the smells row, the test
        script `bun test --randomize` in bun-typescript.md and nextjs-monorepo.md, `ci.yml` and
        `stryker.conf.json`, the JUnit properties file in java-quarkus.md, the pointer block and
        README counting 36, the companions swept for 35. DoD: `check-citations.py` re-anchored per
        slice then `--lock`; frontmatter 4/4; the reverse matrix row for 36; SKILL.md description
        untouched (no trigger eval owed).
-10. [ ] Gates prove red: the counter pair in each smoke test (Bun, Next, Java), green in declaration
-       order, red under at least one seed of eight, the conforming fixture green under all eight;
+10. [x] (Bun 78, Next 15, Java 41 checks green 2026-09-06; the fixture is a three-step chain, a pair was green for the wrong reason in Java) Gates prove red: the counter pair in each smoke test (Bun, Next, Java), green in declaration
+       order, red under at least one seed of eight, the conforming fixture green under the same eight (three seeds in Java, each a full Maven run);
        every `bun test` in the smoke tests carries `--randomize`. DoD: the three smoke tests green
        locally (Java needs JDK 21 and mvn), CI nine jobs green on the push.
-11. [ ] Tier 1: `CONFORMANCE_SINCE=v2.2.0 CONFORMANCE_MODEL=claude-opus-5 bash
+11. [x] (2026-09-06 21:14 to 21:23, five tasks e2, a1, a3, a4, h1: skill 13/13 vs frozen 6.5/13; ran untagged into the tier-2 directory, see LESSONS) Tier 1: `CONFORMANCE_SINCE=v2.2.0 CONFORMANCE_MODEL=claude-opus-5 bash
        scripts/conformance-eval/run.sh`, graded `--frozen-baseline`; tasks.json unchanged. DoD: no
        miss on a rule the diff touched; misses elsewhere rerun twice before they are called.
-12. [ ] CHANGELOG Unreleased (2.3.0): Added rule 36 and canon 4.9, the consumer action; LESSONS
+12. [x] (six slices landed 2026-09-06 after the yes; push pending) CHANGELOG Unreleased (2.3.0): Added rule 36 and canon 4.9, the consumer action; LESSONS
        `[decision]`; commits gate-1 sized in canon, doctrine, gates order, each waiting for the yes.
 
 Not in scope: any SKILL.md description edit (it would owe tier 2 anyway plus the trigger eval;

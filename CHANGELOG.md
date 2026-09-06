@@ -4,6 +4,20 @@ All notable changes to the atelier skill suite. Format follows
 [Keep a Changelog](https://keepachangelog.com/); this suite versions the standard as a
 whole, not any single skill.
 
+## [Unreleased]
+
+### Added
+- **Hard rule 36 and canon 4.9: tests run in random order, no test depends on another.**
+  `bun test --randomize` is the `test` script in the Bun and Next.js skeletons, the CI step in
+  `assets/ci.yml` and Stryker's command runner; a red run prints `--seed=<n>` and the seed replays
+  the order. Java carries `src/test/resources/junit-platform.properties` with the random method
+  and class orderers. `references/testing.md` gains the section (what the rule forbids, what it
+  asks for), the smells row names the shuffle, and the three smoke tests prove the gate can fail
+  with an order-dependent pair (green in declaration order, red under a seed). The canon gains
+  sub-concept 4.9 under pillar 4 (count 120), accepted 2026-09-06. Consumers: change the `test`
+  script, re-copy `ci.yml` and `stryker.conf.json`, add the properties file in Java, and re-copy
+  the pointer block (rules 1-36).
+
 ## [2.2.0] - 2026-09-06
 
 The six-pack release: the standard as a team of six (the SwarmForge pack, its installer and its
