@@ -285,7 +285,8 @@ def selftest() -> None:
             print("SELFTEST FAILED: a session that worked and then hit an API error was discarded")
             sys.exit(1)
 
-    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8 and 7.5 credit shape over vocabulary, the frozen baseline is keyed to its assertions, a dead session is not scored")
+    assert tasks_hash(tasks[:1]) != tasks_hash(tasks), "a filtered task list must not hash like the whole file (the --task path checks the fixture before filtering)"
+    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8 and 7.5 credit shape over vocabulary, the frozen baseline is keyed to its assertions and checked before any --task filter, a dead session is not scored")
 
 
 def _flag_val(args: list[str], name: str) -> int | None:
@@ -328,13 +329,15 @@ def main() -> None:
         runs_dir = workspaces[-1]
 
     tasks = json.loads((HERE / "tasks.json").read_text())
-    if only_task is not None:
-        tasks = [task for task in tasks if task["id"] == only_task]
     frozen = None
     if frozen_path is not None:
+        # The fixture is keyed to the whole tasks.json, so it is checked before any
+        # --task filter: hashing the filtered list refused a valid fixture (2026-09-06).
         frozen = load_frozen(frozen_path, tasks)
         if isinstance(frozen, str):
             sys.exit(f"FROZEN BASELINE UNUSABLE: {frozen}")
+    if only_task is not None:
+        tasks = [task for task in tasks if task["id"] == only_task]
     grand = {"with_skill": [0, 0], "baseline": [0, 0]}
     frozen_grand = [0.0, 0]  # expected baseline passes, assertions covered by the fixture
     # by_rule[rule][arm] = [passed, total], so the scorecard maps to conformance-matrix rows
