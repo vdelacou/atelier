@@ -14,7 +14,7 @@ Once installed, the agent consults `atelier` on every code task in a Bun/TypeScr
 - Apply the production disciplines when the change touches them: keep personal data out of logs and URLs, derive tenants from the verified token and ship the cross-tenant test, put deadlines on outbound calls, version mutable records, keep migrations additive, pin AI-model snapshots behind ports.
 - Read `.claude/LESSONS.md` and `.claude/lessons.local.md` at session start and propose new entries at session end.
 
-Behind those five habits stand 35 hard rules and the production disciplines, all in
+Behind those five habits stand 36 hard rules and the production disciplines, all in
 [`skills/atelier/SKILL.md`](skills/atelier/SKILL.md), with one reference file per concern. The
 table that summarises them is under [The four skills](#the-four-skills) below.
 

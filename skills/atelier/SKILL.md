@@ -75,6 +75,7 @@ Rules 27-34 are the production disciplines. They apply in every variant, and eac
 Rule 35 is a style rule that arrived later (2026-09); it sits after the disciplines so that no existing citation moves.
 
 35. **Cyclomatic complexity at most 10 per function.** Lint-enforced in every variant (ESLint `complexity: ['error', 10]`, PMD `CyclomaticComplexity` at level 11); it counts what the size caps cannot see, a one-line chain of `&&`/`??`/ternaries or a wide `switch`; the fix is never a bigger number, split the function or dispatch on a map (`references/workflow.md`, Complexity gate).
+36. **Tests run in random order; no test depends on another.** `bun test --randomize` is the test script in every Bun and Next.js repo, in CI, in Stryker's runner and in the inner loop alike; Java sets `MethodOrderer$Random` and `ClassOrderer$Random` in `junit-platform.properties`. A red run prints its seed and `--seed=<n>` replays it. Each test owns its setup and teardown; state shared between tests is a defect, never a flake (`references/testing.md`, Random order).
 
 ## The TDD process (non-negotiable, every feature)
 
@@ -122,6 +123,7 @@ The hard rules are universal unless this table says otherwise. Gates and tooling
 | Rules 21–22 (design system, styling seal) | n/a (no UI) | Mandatory, lint-enforced (design-system ESLint block) | n/a (no UI) |
 | Rules 27–34 (production disciplines) | Apply when the concern exists | Apply when the concern exists | Apply when the concern exists (Java expressions in `references/java-quarkus.md`) |
 | Complexity cap (rule 35) | ESLint `complexity` 10 in `eslint.config.js` | The same rule in `eslint.config.mjs` | PMD `CyclomaticComplexity`, level 11, in `verify` (`assets/java/pmd-ruleset.xml`) |
+| Random test order (rule 36) | `bun test --randomize` as the `test` script, in CI and Stryker | The same script per package | `MethodOrderer$Random` and `ClassOrderer$Random` in `junit-platform.properties` |
 
 Whatever the variant, **every gate proves it can fail**: when you add or change a gate (a lint rule, a coverage tier, a hook, a CI check), land a violation fixture the gate must reject and keep it re-running, so a toolchain upgrade that silently disables the gate turns CI red instead of quiet. A gate only ever seen green is a hypothesis. The skill repo's own smoke tests are the reference implementation: each proves its gates pass on compliant code AND block their target violation.
 
