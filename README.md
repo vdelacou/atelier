@@ -294,7 +294,17 @@ propagates by re-copy. `atelier-greenfield` seeds it at repo birth (step 6) and 
 adopt mode seeds it in the first migration slice; the command is step 2 of the single-agent quick start above, for an already-conforming
 repo that predates the block. Extend `CLAUDE.md` freely below it; the block stays at the top.
 
-## Repository layout
+## Variant references
+
+The skill covers three repo shapes and picks the right reference automatically:
+
+- **Next.js monorepo**: Bun workspaces, Atomic Design with a logic-free design system, Tailwind v4, i18n route groups, static export. Identifiable by `packages/*` and `next.config.ts`.
+- **Bun TypeScript script**: Clean Architecture (`src/{domain,use-cases,infra,presenter,composition,test-helpers}`), strict ESLint (SonarJS + type-aware), Logger port + Winston adapter. Identifiable by `"module": "src/main.ts"` in `package.json`.
+- **Java (Quarkus)** | the same commitments in Java 21+ idiom: records + sealed `Result`, ports as small interfaces with hand-written fakes (no Mockito), Maven wrapper with exact pins, Spotless, JaCoCo coverage tiers, PIT mutation, Flyway expand-contract migrations, authenticated-by-default JAX-RS resources. Identifiable by `pom.xml` with `src/main/java/**`.
+
+## Working on this repository
+
+### Repository layout
 
 ```
 atelier/
@@ -402,7 +412,7 @@ atelier/
         └── SKILL.md           # standalone rule-aware pre-land diff-review skill
 ```
 
-## Repository CI
+### Repository CI
 
 Every push and pull request runs nine GitHub Actions jobs, each guarding against the same failure mode: a toolchain major or a doc edit silently breaking what the skill ships:
 
@@ -416,14 +426,6 @@ Every push and pull request runs nine GitHub Actions jobs, each guarding against
 - **`scripts/smoke-test-java.sh` (Java variant)** | scaffolds a Maven repo from the canonical `pom.xml` in `references/java-quarkus.md` plus the shipped hook assets, proves the gates pass on a conforming skeleton (spotless, `verify` with the JaCoCo tiers, PIT, a real hooked commit through `pre-commit-java`), and that each gate blocks its target violation (a version range, a `-SNAPSHOT` dependency, an oversized commit, a junk commit message, a misformatted file, a warning under `-Werror`, an untested domain class, a covered-but-unasserted mutant survivor).
 
 A new ESLint/TypeScript/Stryker/Next/Maven-plugin major that breaks a shipped asset (or doc drift in the canonical configs) fails CI before a user hits it. Run them locally with `bash scripts/smoke-test.sh`, `bash scripts/smoke-test-next.sh`, and `bash scripts/smoke-test-java.sh`.
-
-## Variant references
-
-The skill covers three repo shapes and picks the right reference automatically:
-
-- **Next.js monorepo**: Bun workspaces, Atomic Design with a logic-free design system, Tailwind v4, i18n route groups, static export. Identifiable by `packages/*` and `next.config.ts`.
-- **Bun TypeScript script**: Clean Architecture (`src/{domain,use-cases,infra,presenter,composition,test-helpers}`), strict ESLint (SonarJS + type-aware), Logger port + Winston adapter. Identifiable by `"module": "src/main.ts"` in `package.json`.
-- **Java (Quarkus)** | the same commitments in Java 21+ idiom: records + sealed `Result`, ports as small interfaces with hand-written fakes (no Mockito), Maven wrapper with exact pins, Spotless, JaCoCo coverage tiers, PIT mutation, Flyway expand-contract migrations, authenticated-by-default JAX-RS resources. Identifiable by `pom.xml` with `src/main/java/**`.
 
 ## Credits
 
