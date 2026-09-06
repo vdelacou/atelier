@@ -62,14 +62,14 @@ the README's Bun install steps; the two must stay in agreement.
        (`grep -o '](\S*)' README.md` targets exist); the guided section-by-section review ran
        before the commit, one decision question per section (memory: guided review before
        landing). Commit in gate-1 slices if the moves exceed 300 lines: one slice per section move.
-2. [ ] Remove the stubs. `git rm` `references/tdd.md` and `references/class-to-module.md`; drop
+2. [x] Remove the stubs. `git rm` `references/tdd.md` and `references/class-to-module.md`; drop
        README's two tree lines; CHANGELOG Unreleased gains a Removed entry naming both and the
        files that hold their content (`testing.md`, `design-patterns.md`); the 2.1.0 entry stays.
        DoD: `grep -rn 'tdd\.md\|class-to-module\.md' --include='*.md' --include='*.json'
        --include='*.sh' --include='*.ts' --include='*.py' .` returns CHANGELOG lines only;
        `python3 scripts/check-citations.py` 160 intact; `bun run scripts/validate-frontmatter.ts`
        4/4; `bash scripts/check-workflow-assets.sh` green.
-3. [ ] CHANGELOG and README name the release. Unreleased becomes `[2.2.0] - <date>` with a
+3. [x] CHANGELOG and README name the release. Unreleased becomes `[2.2.0] - <date>` with a
        one-paragraph lead (the six-pack release: the standard as a team of six, its first
        measured run, the third re-probed sonarjs rule) and "Upgrading from 2.1.0": re-extract
        `eslint.config.js` (function-return-type off), re-copy `assets/claude-md-pointer.md`
@@ -78,7 +78,7 @@ the README's Bun install steps; the two must stay in agreement.
        stubs, and the six-pack install for those who want the pipeline. README's "current
        release" line (now 429) says 2.2.0 with the same lead. DoD: headings follow Keep a
        Changelog; the em-dash gate; `git diff --stat` within gate 1.
-4. [ ] Tier 2. From a clean tree with steps 1-3 landed: `CONFORMANCE_ARMS=both
+4. [~] (started 2026-09-06, log in the session scratchpad tier2.log) Tier 2. From a clean tree with steps 1-3 landed: `CONFORMANCE_ARMS=both
        CONFORMANCE_MODEL=claude-opus-5 bash scripts/conformance-eval/run.sh`, detached (`nohup bash
        -c '...; echo exit=$?' >> log &`, no setsid on macOS) with a Monitor on the log; hours, so
        start it early in the day (2.1.0's ran 17:44 to 01:18 and lost the API). Never edit

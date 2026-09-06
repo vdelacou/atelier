@@ -4,7 +4,24 @@ All notable changes to the atelier skill suite. Format follows
 [Keep a Changelog](https://keepachangelog.com/); this suite versions the standard as a
 whole, not any single skill.
 
-## [Unreleased]
+## [2.2.0] - 2026-09-06
+
+The six-pack release: the standard as a team of six (the SwarmForge pack, its installer and its
+CI gate, the first live run measured), the README rebuilt around the value and two quick starts,
+the third sonarjs rule turned off and re-probed weekly, and the two redirect stubs removed.
+
+### Upgrading from 2.1.0
+
+- Re-extract `eslint.config.js` from `references/bun-typescript.md`: `sonarjs/function-return-type`
+  is off, with its reason beside the two 2026-08-29 switches.
+- Re-copy `assets/claude-md-pointer.md` into your `CLAUDE.md`: the block names hard rules 1-35.
+- If your repo was installed from the 2.1.0 README's Bun block, copy the three assets it skipped:
+  `check-commit-messages.sh` and `check-commit-range.sh` into `scripts/` (the shipped `ci.yml`
+  calls both) and `audit.yml` into `.github/workflows/`.
+- `references/tdd.md` and `references/class-to-module.md` are gone; re-point any pinned path at
+  `references/testing.md` and `references/design-patterns.md`.
+- Optional: the six-pack. From a clone of this repository, `get-atelier-six-pack` composes the
+  pack into your project; the README's "Start here with the six-pack" walks the first card.
 
 ### Added
 - **The atelier six-pack** (`packs/six-pack/`, `get-atelier-six-pack`): the four skills as a
@@ -21,6 +38,11 @@ whole, not any single skill.
   coverage 100 on every tier, mutation 100, verdict conformant with one Low finding fixed by
   the reviewer; the run's three costs (the first-start prompts, the audit-gate detour, the
   `lint:strict` gap) are folded into the pack.
+
+### Removed
+- `references/tdd.md` and `references/class-to-module.md`, the redirect stubs 2.1.0 kept for one
+  release. Their content lives in `references/testing.md` and `references/design-patterns.md`;
+  re-point any pinned path.
 
 ### Fixed
 - `sonarjs/function-return-type` is off in the canonical Bun `eslint.config.js`

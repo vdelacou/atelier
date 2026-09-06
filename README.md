@@ -380,7 +380,6 @@ atelier/
     │       ├── atomic-design.md
     │       ├── behavioural-examples.md
     │       ├── bun-typescript.md
-    │       ├── class-to-module.md          # redirect stub, folded into design-patterns.md (removed in 2.2.0)
     │       ├── clean-code.md
     │       ├── code-smells.md
     │       ├── complexity.md
@@ -400,7 +399,6 @@ atelier/
     │       ├── result-type.md
     │       ├── security.md
     │       ├── solid-principles.md
-    │       ├── tdd.md                      # redirect stub, folded into testing.md (removed in 2.2.0)
     │       ├── testing.md
     │       ├── testing-infra.md
     │       └── workflow.md
@@ -434,7 +432,7 @@ Inspired by the layout of [ramziddin/solid-skills](https://github.com/ramziddin/
 ## Changelog
 
 Notable changes are tracked in [CHANGELOG.md](./CHANGELOG.md); the suite is versioned as a
-whole. The current release is 2.1.0 (the measured-standard release: audit remediation, rule 35, the tiered eval harness, mutation off the merge path).
+whole. The current release is 2.2.0 (the six-pack release: the standard as a team of six, the README rebuilt around two quick starts, the third re-probed sonarjs rule, the redirect stubs removed).
 
 ## License
 
