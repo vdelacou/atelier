@@ -135,6 +135,8 @@ git add -A && git commit -m "chore(swarm): install the atelier six-pack"
 ./swarm
 ```
 
+The pack needs this clone whichever way the skills were installed: the installer lives in it and, by default, symlinks its four skills into `~/.claude/skills`, leaving any skill already there (step 1 below, or an earlier link) untouched and saying so. Pass `--skip-skills` to leave that directory alone, or `--copy-skills` to copy instead of symlinking.
+
 Read this first: the agents run unattended with permission prompts bypassed (SwarmForge's model), inside worktrees of your project; the Attention gate on the spec is where the standard's two confirmation rules land; no role ever pushes. The operator manual, the role table a CI gate keeps equal to the conf, and the swarm reading of rules 24 and 25 are in [`packs/six-pack/README.md`](packs/six-pack/README.md).
 
 ## Installation
