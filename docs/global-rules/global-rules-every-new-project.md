@@ -82,6 +82,7 @@ What good looks like: you can replace the database, the web framework, or the en
 - Gate every merge. Static analysis and the full test suite run on every change, and nothing merges with a critical defect or a red pipeline.
 - Hold generated code to the same bar. Code produced by a tool (a scaffolder, a generator, or an AI assistant) is still code: it runs through the identical suite and review a human's would. Provenance is not proof; the checks are.
 - Gate non-determinism behind evals. Keep the core deterministic and give an AI model only narrow, well-shaped holes (the few fixed points where its output is allowed to enter the system); for each hole, maintain a labeled evaluation set that runs in the pipeline and blocks the merge below a score threshold, exactly as mutation score does for tests. A prompt or model change ships on its eval score, not on how the demo felt.
+- Run the tests in random order. A suite that only passes in one order is hiding a dependency between tests; shuffle on every run, print the seed, and make each test own its setup and teardown so any order is green.
 
 What good looks like: you can deploy on a Friday afternoon without fear, because the pipeline, not a nervous human, decides what is safe to ship.
 

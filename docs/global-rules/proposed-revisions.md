@@ -607,3 +607,15 @@ Cascade if accepted: dos-and-donts (ten sections, comment lines and one Do); bot
 **Ruling.** ACCEPTED as drafted by the canon owner, 2026-09-03. Applied: eighteen policy numbers tagged as profile values across the ten sections, 7.6's Do restated as the obligation with UUIDv7 in the example comment, eleven rows added to the atelier profile (1.2 with rule 35's cap among them), both canon pins re-pinned, the reverse matrix's row 35 note closed. Count 119, ids untouched, matrix rows unchanged.
 
 ---
+
+## 4.9 Run the tests in random order (proposed 2026-09-06, status: ACCEPTED 2026-09-06)
+
+**Gap.** Pillar 4 asks for layered, fast, behaviour-facing, mutation-proven tests (4.1 to 4.5) and never says that the order they run in must not matter. A suite green only in declaration order hides a dependency between tests and fails the day a file is renamed, a runner shuffles, or a test is deleted. The atelier reference carried the idea as one smells-table row and enforced nothing.
+
+**Proposed revision.** One new sub-concept, 4.9, under pillar 4 (Proof over hope): Do "Run the suite in a random order on every run, in the inner loop and in the pipeline, and print the seed so a failing order can be replayed. Each test builds what it needs and tears down what it made." Don't "Let one test depend on another's leftovers, or rely on declaration order, file order, or a run-this-first convention." With a TypeScript pair (a counter read across tests versus a counter per test) and a Java pair (`@Order` sequencing versus the random orderers in `junit-platform.properties`).
+
+Cascade if accepted: index line for pillar 4, pillar prose bullet, count 119 to 120, the drift checker's PER_PILLAR pillar-4 count 8 to 9, forward matrix row 4.9 (COVERED by atelier hard rule 36: `bun test --randomize` as the test script, the CI step and Stryker's runner, the JUnit random orderers in Java), reverse matrix row 36 as CANON-ROW 4.9, both prose pins.
+
+**Ruling.** ACCEPTED as drafted by the canon owner, same day; the cascade above is applied in the same change.
+
+---

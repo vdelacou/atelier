@@ -51,7 +51,7 @@ These numbers and titles are the canonical rule identifiers. External checklists
 
 **3 Keep clean boundaries:** [3.1 Point dependencies inward](#31-point-dependencies-inward) · [3.2 Put every external thing behind a port](#32-put-every-external-thing-behind-a-port) · [3.3 Seal the presentation behind a design system](#33-seal-the-presentation-behind-a-design-system) · [3.4 The backend is a client-agnostic API](#34-the-backend-is-a-client-agnostic-api) · [3.5 Build the frontend against a contract, not a running backend](#35-build-the-frontend-against-a-contract-not-a-running-backend) · [3.6 The internal model is yours, not the API's shape](#36-the-internal-model-is-yours-not-the-apis-shape) · [3.7 The domain model is not the database model](#37-the-domain-model-is-not-the-database-model) · [3.8 Make the boundary testable](#38-make-the-boundary-testable) · [3.9 The AI model is a dependency](#39-the-ai-model-is-a-dependency)
 
-**4 Proof over hope:** [4.1 Test in layers](#41-test-in-layers) · [4.2 Keep unit tests in milliseconds](#42-keep-unit-tests-in-milliseconds) · [4.3 Have a testing philosophy](#43-have-a-testing-philosophy) · [4.4 Treat mutation testing as the real coverage KPI](#44-treat-mutation-testing-as-the-real-coverage-kpi) · [4.5 Test behavior, not internals](#45-test-behavior-not-internals) · [4.6 Gate every merge](#46-gate-every-merge) · [4.7 Hold generated code to the same bar](#47-hold-generated-code-to-the-same-bar) · [4.8 Gate non-determinism behind evals](#48-gate-non-determinism-behind-evals)
+**4 Proof over hope:** [4.1 Test in layers](#41-test-in-layers) · [4.2 Keep unit tests in milliseconds](#42-keep-unit-tests-in-milliseconds) · [4.3 Have a testing philosophy](#43-have-a-testing-philosophy) · [4.4 Treat mutation testing as the real coverage KPI](#44-treat-mutation-testing-as-the-real-coverage-kpi) · [4.5 Test behavior, not internals](#45-test-behavior-not-internals) · [4.6 Gate every merge](#46-gate-every-merge) · [4.7 Hold generated code to the same bar](#47-hold-generated-code-to-the-same-bar) · [4.8 Gate non-determinism behind evals](#48-gate-non-determinism-behind-evals) · [4.9 Run the tests in random order](#49-run-the-tests-in-random-order)
 
 **5 Secure by default:** [5.1 Keep secrets out of the codebase](#51-keep-secrets-out-of-the-codebase) · [5.2 Do not build authentication or crypto yourself](#52-do-not-build-authentication-or-crypto-yourself) · [5.3 Control your dependencies](#53-control-your-dependencies) · [5.4 Secure the supply chain](#54-secure-the-supply-chain) · [5.5 Validate at the boundary, authorize on the server](#55-validate-at-the-boundary-authorize-on-the-server) · [5.6 Expose only what has to be public](#56-expose-only-what-has-to-be-public) · [5.7 One security baseline everywhere](#57-one-security-baseline-everywhere) · [5.8 Untrusted content is not instructions](#58-untrusted-content-is-not-instructions) · [5.9 Cap what a caller can spend](#59-cap-what-a-caller-can-spend) · [5.10 One inspectable edge, no reachable origin](#510-one-inspectable-edge-no-reachable-origin)
 
@@ -879,6 +879,39 @@ jobs:
       - run: bun run evals --set datasets/extraction-v3 --min-score 0.95
       # labeled cases with deterministic validators (schema, sums, dates) checked before scoring;
       # the build fails below the bar, exactly as a mutation score would (4.4)
+```
+
+### 4.9 Run the tests in random order
+**Do:** Run the suite in a random order on every run, in the inner loop and in the pipeline, and print the seed so a failing order can be replayed. Each test builds what it needs and tears down what it made; nothing it asserts depends on which test ran before it.
+**Don't:** Let one test depend on another's leftovers (a row it inserted, a counter it bumped, a global it set), or rely on declaration order, file order, or a "run this first" convention to keep the suite green.
+
+TypeScript:
+```ts
+// DON'T: the second test only passes because the first ran before it
+let counter = 0;
+test('first increments', () => { counter += 1; expect(counter).toBe(1); });
+test('second sees the first', () => { expect(counter).toBe(1); });
+// DO: each test owns its state; the test script is `bun test --randomize`, and a red run prints --seed=<n> to replay it
+test('an increment from zero reads one', () => { const c = createCounter(); c.increment(); expect(c.value()).toBe(1); });
+test('a fresh counter reads zero', () => { expect(createCounter().value()).toBe(0); });
+```
+
+Java:
+```java
+// DON'T: @Order pins a sequence so a later test can read what an earlier one wrote
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+class OrderRepoTest {
+  @Test @Order(1) void insert() { repo.save(ORDER); }
+  @Test @Order(2) void read() { assertTrue(repo.find(ORDER.id()).isPresent()); }
+}
+// DO: junit-platform.properties sets MethodOrderer$Random and ClassOrderer$Random; each test seeds its own repository
+class OrderRepoTest {
+  @Test void aSavedOrderIsFound() {
+    var repo = new InMemoryOrderRepo();
+    repo.save(ORDER);
+    assertTrue(repo.find(ORDER.id()).isPresent());
+  }
+}
 ```
 
 ## Pillar 5: Secure by default

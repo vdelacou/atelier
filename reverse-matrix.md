@@ -21,7 +21,7 @@ re-audit when the hard-rule list changes.
 
 - Skill: `skills/atelier/SKILL.md`, hard rules at lines 153-221, audited 2026-08-30 (row 35 added 2026-09-03).
 - Canon: the vendored `docs/global-rules/` at the hashes pinned in `conformance-matrix.md`
-  (119 sub-concepts after 1.3, 13.5, 15.10, and the 10.2 strengthening, all accepted 2026-08-30).
+  (119 sub-concepts after 1.3, 13.5, 15.10, and the 10.2 strengthening, all accepted 2026-08-30; 120 after 4.9, accepted 2026-09-06).
 
 ## Rows
 
@@ -62,17 +62,18 @@ re-audit when the hard-rule list changes.
 | 33 | Never build auth or crypto yourself | CANON-ROW | 5.2, 9.3 | Auto-TLS clause lands in 9.3 |
 | 34 | Production data never leaves production | CANON-ROW | 6.6 | |
 | 35 | Cyclomatic complexity at most 10 per function, lint-enforced | STRICTER-THAN | 1.2 | Added 2026-09-03. The canon caps complexity and duplication (1.2); the profile fixes the number at 10 and gates it in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`). The number lives in the profiles appendix (P6 row B, accepted 2026-09-03, under canon 1.2) |
+| 36 | Tests run in random order; no test depends on another | CANON-ROW | 4.9 | Added 2026-09-06 together with canon 4.9, which this rule caused: `bun test --randomize` everywhere the suite runs, JUnit random orderers in Java, the seed printed and replayable |
 
 ## Tally
 
 | Verdict | Count | Rules |
 |---|---|---|
-| CANON-ROW | 20 | 8, 10, 11, 12, 14, 15, 16, 17, 19, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34 |
+| CANON-ROW | 21 | 8, 10, 11, 12, 14, 15, 16, 17, 19, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 36 |
 | STRICTER-THAN | 6 | 4, 13, 21, 22, 28, 35 |
 | NO-COUNTERPART, stack binding | 9 | 1, 2, 3, 5, 6, 7, 9, 18, 20 |
-| Total | 35 | |
+| Total | 36 | |
 
-Counting plainly: 20 covered, 6 stricter, 9 stack bindings. The stack bindings are the point of
+Counting plainly: 21 covered, 6 stricter, 9 stack bindings. The stack bindings are the point of
 a profile and propose nothing back to the canon. The audit's one actionable finding, three
 agent-discipline rules (24-26) with no canon home, became P6 row 13.5 and was ACCEPTED the same
 day, which is why those rows read CANON-ROW with an at-audit-time note: this file caused the

@@ -21,13 +21,14 @@ C1 of the Atelier vs Global Rules conformance plan.
   commitlint config it prescribes. P6 row 13.5 (agent working agreements, from the reverse-matrix
   audit) was accepted 2026-08-30 as well, so the canonical count is 118 and both pins moved again. P6 rows 15.10 (Prove the gate can fail, distilled from this repo's own
   smoke-test discipline) and the 10.2 catch-placement strengthening were accepted 2026-08-30 too,
-  taking the count to 119.
+  taking the count to 119. P6 row 4.9 (Run the tests in random order) was accepted 2026-09-06 with
+  hard rule 36, taking the count to 120; both prose pins moved again.
   The drift check pins the hashes below and runs against these copies:
 
 | Canon document | Vendored path | SHA-256 | Lines |
 |---|---|---|---|
-| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 2a960767ca1830f746dd8b26df661f9f625cb7a8f198eab4c100513f4471f888 | 3489 |
-| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | 2ab24a108d291023991b7810e19ad54c3b489990158504d584a58073de01dc90 | 285 |
+| Do and Don't, with Examples (normative) | docs/global-rules/global-rules-dos-and-donts.md | 5dfc5717768d0fa7d2107ea85171a28c50775a967d7c348d5e019942814dbc63 | 3522 |
+| Every New Project Should Have (pillar prose) | docs/global-rules/global-rules-every-new-project.md | be4909810688e651d2c751611d2305bc670631da8e45ee9604ab00ebb69fb8bf | 286 |
 | Core Values behind the Global Rules | docs/global-rules/core-values-one-pager.md | 1ffd172f81b00c35a669c05783c9b0477bf0ec6789d11b3e98478c24ac34cdd1 | 48 |
 | Profiles, the stack's tools and thresholds (P6 row A, 2026-09-03) | docs/global-rules/global-rules-profiles.md | 19647d953d700a04c583461c41f4c0e5f7ba592139fbc04a7ce5895acefe8307 | 29 |
 
@@ -77,7 +78,7 @@ the hook (its own list: "format, staged lint, secret scan") and every gate in CI
 violation blocks the merge while the hook stays quick enough that nobody routes around it";
 its example spells out that "the full suite, coverage, and slow scans run in CI only" because
 "a gate's home is chosen by its speed, not its importance, and a multi-minute hook trains
---no-verify (15.3)" (global-rules-dos-and-donts.md:2888, 2897-2898). The skill's hook does the
+--no-verify (15.3)" (global-rules-dos-and-donts.md:2921, 2897-2898). The skill's hook does the
 opposite. `assets/pre-commit` runs eight gates in sequence, and gates 4 through 8 are the full
 test suite, the type-aware strict lint (workflow.md:367@430c740 self-times it at about 25 seconds),
 per-tier coverage, and Stryker mutation, which workflow.md:370@430c740 self-reports at "1-3 min per
@@ -98,7 +99,7 @@ full suite, coverage, and mutation as the required merge check. This row is now 
 **2. The logger redacts personal data (6.3, COVERED, tripwire).** Present and precise. Canon
 6.3's Do has three clauses: personal data and free text travel in a POST body, redaction
 happens at the logger before anything is written, and opaque internal ids may be logged while
-natural identifiers never are (global-rules-dos-and-donts.md:1273 and the Do sentence). The
+natural identifiers never are (global-rules-dos-and-donts.md:1306 and the Do sentence). The
 skill meets all three. POST-body-not-query-string: "Personal data and any free text the user
 typed travel in a POST body ... Searching by someone's name is a POST, not a GET"
 (privacy.md:44). Redact-at-the-logger: a Winston `redactFormat` whose key set is
@@ -232,6 +233,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:117 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on the changed files on a frozen lockfile as the required merge check; the full mutation sweep is scheduled (assets/mutation.yml) |
 | 4.7 | Hold generated code to the same bar | COVERED | workflow.md:583 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-82; behavioural-examples.md:42 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
+| 4.9 | Run the tests in random order | COVERED | SKILL.md:78; testing.md:692; bun-typescript.md:35; assets/ci.yml:50; assets/stryker.conf.json:8; java-quarkus.md:382 | gate | Added 2026-09-06 with hard rule 36: `bun test --randomize` is the test script, the CI step and Stryker's runner; JUnit random method and class order in Java; the seed prints on red and replays |
 
 ### Pillar 5: Secure by default
 
@@ -405,12 +407,12 @@ None. Every sub-concept is COVERED or STRICTER, so there is no CONTRADICTS or GA
 
 | Verdict | Count |
 |---|---|
-| COVERED | 117 |
+| COVERED | 118 |
 | STRICTER | 2 |
 | GAP | 0 |
 | CONTRADICTS | 0 |
 | OUT-OF-SCOPE | 0 |
-| Total | 119 |
+| Total | 120 |
 
 No row is OUT-OF-SCOPE: the skill carries doctrine references for every organizational pillar (metrics.md, governance.md, delivery.md, observability.md, product.md, privacy.md), so infra, metrics, ownership, and product concerns are expressed as prose that shapes generated code rather than punted. After Phase 2 and the accepted 5.3 P6 revision, no row diverges: every sub-concept is covered, two of them more strictly than the canon asks. The last contradiction (5.3) closed when the canon accepted that a constrained range plus a committed lockfile satisfies the pin requirement (docs/global-rules/proposed-revisions.md); 15.1 and 4.6 were resolved by splitting the hook from CI (assets/ci.yml), and the five gaps by adding the missing doctrine. The 2026-08-30 canon addition, 1.3, landed COVERED: the grammar and its hook were already rule 23, and the CI re-check the row asks for shipped with it (assets/check-commit-messages.sh, proven both ways in both smoke tests). The same day, P6 rows 15.10 (Prove the gate can fail) and the 10.2 catch-placement strengthening were accepted: 15.10 lands COVERED via the new doctrine paragraph after the variant gate table (SKILL.md:128), which also slims 15.4 back to COVERED because its surplus was exactly this discipline, and 10.2 was already rule 17. The canonical count is 119 and both pins moved again.
 
