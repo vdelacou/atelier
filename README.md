@@ -78,7 +78,7 @@ The pack needs this clone whichever way the skills were installed: the installer
 
 Read this first: the agents run unattended with permission prompts bypassed (SwarmForge's model), inside worktrees of your project; the Attention gate on the spec is where the standard's two confirmation rules land; no role ever pushes. The operator manual, the role table a CI gate keeps equal to the conf, and the swarm reading of rules 24 and 25 are in [`packs/six-pack/README.md`](packs/six-pack/README.md).
 
-## Available skills
+## The four skills
 
 ### atelier
 
@@ -96,7 +96,7 @@ A single, opinionated skill covering the whole coding loop. Applies to every cod
 - Discussing architecture, design patterns, or code smells
 - Capturing cross-session lessons (`.claude/LESSONS.md`)
 
-**Core commitments:**
+**What the standard covers**, one row per area (the hard rules and their references hold the letter):
 
 | Area | Rule |
 |------|------|
@@ -176,7 +176,7 @@ The pre-land companion: a rule-aware conformance review of a diff against the at
 
 **Use when:** you want a conformance checkpoint before a change lands, a rule-cited review of staged changes, a feature branch, or a PR (covering the core rules and the production disciplines, rules 27-34), or to adopt the standard into an existing brownfield repo (adopt mode). For generic correctness bugs use `/code-review`; for reuse/simplification cleanups use `/simplify`.
 
-## Atelier six-pack: the standard as a team of six
+## The six-pack in detail
 
 `packs/six-pack/` packages the four skills as a [SwarmForge](https://github.com/unclebob/swarm-forge) pack. Each role runs in its own git worktree and exchanges committed work through SwarmForge's durable handoffs, holding itself to the standard exactly as a single-agent session does: the hooks run in every worktree, no test older than the card is touched, no role ever pushes.
 
@@ -197,33 +197,7 @@ What you get per card: a specification you approved, code that passed the hooks 
 
 Measured on its first run (2026-09-05, an empty repository, a small CLI card): one hour fifty-six from card to Done, one Attention approval, zero clarifications, 35 commits by six roles, 88 tests, coverage 100 on every tier, mutation score 100, a verdict of conformant with one Low finding fixed by the reviewer.
 
-## Installation
-
-### 1. Install the skill (one-time, per machine)
-
-Use the [`skills`](https://www.npmjs.com/package/skills) CLI by Vercel Labs: it discovers `skills/atelier/SKILL.md` in this repo automatically:
-
-```bash
-bunx skills add vdelacou/atelier
-```
-
-(`npx skills add vdelacou/atelier` works the same.) By default it installs into Claude Code's user skills directory (`~/.claude/skills/atelier`). Use `-g` for project-local install or `-a <agent>` to target another supported agent (`opencode`, `cursor`, etc.).
-
-#### Alternative: clone and symlink (track upstream)
-
-If you'd rather follow the repo via `git pull`:
-
-```bash
-git clone https://github.com/vdelacou/atelier.git ~/code/atelier
-mkdir -p ~/.claude/skills
-for s in atelier atelier-greenfield atelier-grill-me atelier-review-me; do
-  ln -s ~/code/atelier/skills/$s ~/.claude/skills/$s
-done
-```
-
-The skill becomes available automatically the next time Claude Code starts. Verify it's loaded with `/skills` (or your client's equivalent).
-
-### 2. Install the gate scripts (Bun-script repos)
+## Install the gates by hand (Bun-script repos)
 
 The skill ships executable assets in [`skills/atelier/assets/`](skills/atelier/assets/) implementing the fast pre-commit hook and the full CI gate set (`ci.yml`) for the **Bun-script variant**. Next.js monorepos use `simple-git-hooks` (test + lint + commitlint) instead, see `references/nextjs-monorepo.md`; never install both hook mechanisms. For a Bun-script repo, copy the scripts and wire the hook:
 
