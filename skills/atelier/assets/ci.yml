@@ -47,7 +47,7 @@ jobs:
       - name: typecheck
         run: bun run typecheck
       - name: tests
-        run: bun test
+        run: bun test --randomize
       - name: coverage-preload sync (an out-of-sync preload lies about coverage)
         run: bun run scripts/regenerate-coverage-preload.ts --check
       - name: coverage (per-tier thresholds)

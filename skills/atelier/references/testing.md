@@ -689,6 +689,14 @@ const withItems = buildOrder({ items: [item({ sku: 'ABC', price: money(10_000, '
 
 ---
 
+## Random order: no test waits for another
+
+The suite runs in a random order on every run, and every test is written so any order is green. The test script is `bun test --randomize` (Bun and Next.js variants), the same command in `package.json`, `ci.yml`, Stryker's command runner and the inner loop, so the shuffle is never something a developer opts into. A red run prints `--seed=<n>`; rerun with that seed to replay the order that failed, fix the dependency, then drop the seed. Java: `src/test/resources/junit-platform.properties` carries `junit.jupiter.testmethod.order.default=org.junit.jupiter.api.MethodOrderer$Random` and `junit.jupiter.testclass.order.default=org.junit.jupiter.api.ClassOrderer$Random`; `junit.jupiter.execution.order.random.seed=<n>` replays a failing order.
+
+What the rule forbids in practice: a module-level `let` one test mutates and a later test reads; a fake shared across tests without a fresh instance per test; a file whose tests assume the previous file ran; `@Order` or `@TestMethodOrder(OrderAnnotation.class)` used to sequence a read after a write. What it asks for: fresh fakes per test (the `errors` knob pattern above), builders that create the state each test needs, and cleanup in the test that made the mess. State shared between tests is a defect the next shuffle exposes, never a flake to retry (hard rule 36).
+
+---
+
 ## Common testing mistakes
 
 | Mistake | Problem | Fix |
@@ -702,7 +710,7 @@ const withItems = buildOrder({ items: [item({ sku: 'ABC', price: money(10_000, '
 | Using mocks | Tests prove call sequences instead of outcomes; break on refactor | Never use mocks: write a fake for the contract |
 | Testing only the happy path of a guard | A missing role/tenant check still passes every test | Ship the refusal tests: 403 wrong role, 401 no token, 404 cross-tenant (Bypass tests above) |
 | Fixing a bug without a test | The same defect returns unnoticed | Reproduce red first; keep it as a permanent `regression:` test |
-| Shared state between tests | Flaky tests | Isolate each test (fresh fakes per test) |
+| Shared state between tests | A test that only passes in one order; rule 36 makes it fail on the next shuffle | Fresh fakes and state per test; replay the printed seed, fix the dependency |
 | No assertions | False confidence | Always assert something meaningful |
 | Testing trivial code | Wasted effort | Focus on logic, edge cases, boundaries |
 | Slow tests | Reduced feedback | Move integration concerns to integration tests |

@@ -5,7 +5,7 @@
   "packageManager": "npm",
   "testRunner": "command",
   "commandRunner": {
-    "command": "bun test"
+    "command": "bun test --randomize"
   },
   "_mutate_comment": "Core only: src/domain + src/use-cases. Test files have no logic to mutate; ports/ files are type-only (zero mutable code).",
   "mutate": [

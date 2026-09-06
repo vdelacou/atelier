@@ -229,6 +229,8 @@ src/main/resources/
 ├── application.properties
 └── db/migration/      # Flyway V*__*.sql, versioned, expand-contract (rule 30)
 src/test/java/...      # tests mirror the tree; fakes in a shared testsupport package
+src/test/resources/
+└── junit-platform.properties   # random method and class order (rule 36)
 ```
 
 Dependency rule unchanged: `domain` imports nothing from the framework; `usecases` sees domain + its own ports; `infra` and `api` implement/consume them; only `composition` (and the CDI container) sees everything. The check is mechanical: `grep -rn "import jakarta.ws.rs\|import io.quarkus" src/main/java/com/example/app/domain src/main/java/com/example/app/usecases` returns nothing (framework annotations on use-case classes are tolerated only for `@ApplicationScoped`; prefer producing them from `composition` when practical).
@@ -374,6 +376,15 @@ Quarkus ships OpenTelemetry: enable it, add `@WithSpan` on application services 
 - **PIT on Quarkus**: no Quarkus-specific mutation tool exists; PIT plus `pitest-junit5-plugin` is the whole story, and the plugin (1.2.3+, needs Quarkus 3.22.x+) is the only Quarkus-aware piece. It auto-disables Quarkus's JaCoCo extension, the classic thing that broke PIT there. The scoping above is also what keeps this healthy: because `domain`/`usecases` are covered by plain JUnit 5 (not `@QuarkusTest`), PIT never runs over a container-boot test, so Quarkus's build-time augmentation never triggers the `tests did not pass without mutation` failure and no Quarkus container stands up per mutant. If you widen PIT onto `@QuarkusTest` classes, expect both that failure (patch with `avoidCallsTo` on `io.quarkus.*` plus test excludes on older plugin versions) and the per-mutant container cost; the atelier design avoids both by construction. Pin the Quarkus BOM at or above 3.22.x.
 - **Evals for any LLM hole** gate the merge like PIT does (`references/ai.md`).
 
+**Random order (rule 36).** `src/test/resources/junit-platform.properties`:
+
+```properties
+junit.jupiter.testmethod.order.default=org.junit.jupiter.api.MethodOrderer$Random
+junit.jupiter.testclass.order.default=org.junit.jupiter.api.ClassOrderer$Random
+```
+
+Every `mvn test` then shuffles methods and classes; JUnit logs the seed, and `-Djunit.jupiter.execution.order.random.seed=<n>` replays a failing order. No `@Order`, no `@TestMethodOrder(OrderAnnotation.class)`, no static state read across tests: each test builds its own fixture.
+
 ## Gates and hooks
 
 Same git hooks as the Bun variant, shell only, wired with `git config core.hooksPath .githooks`, plus the CI workflow. All five artifacts ship in the skill's `assets/`; copy them, never hand-write:
@@ -424,7 +435,7 @@ CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the fu
    # Result/Ok/Err are the sealed Result union (rule 16); Email is the value-record
    # exemplar (rule 12) to copy for Money, UserId, and every other domain primitive.
    ```
-4. `application.properties`: authenticated-by-default policy, OIDC config placeholders, OTel enabled, JSON logging with the redaction filter, datasource for the constrained runtime role.
+4. `src/test/resources/junit-platform.properties` with the two random orderers (rule 36), then `application.properties`: authenticated-by-default policy, OIDC config placeholders, OTel enabled, JSON logging with the redaction filter, datasource for the constrained runtime role.
 5. Flyway: `src/main/resources/db/migration/V1__init.sql`; dev services or Testcontainers for the integration ring.
 6. Test support: `testsupport` package with the first hand-written fakes (logger recorder, clock); **no Mockito in the pom**.
 7. Hooks and CI scripts: copy the assets as above (add the four discipline tripwires when the service handles personal data, calls the network, owns a schema, or serves more than one tenant) (`pre-commit-java`, `commit-msg`, `check-commit-size.sh`, `check-pom.sh`, `check-commit-messages.sh`, `check-commit-range.sh`); `git config core.hooksPath .githooks`; optional local `gitleaks` install (CI installs its own). Verify the pom gate once: `bash scripts/check-pom.sh`.

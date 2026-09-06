@@ -87,7 +87,7 @@ Activate hooks after install: `bun run prepare`.
     "dev": "bun next dev",
     "build": "rimraf out && bun next build",
     "start": "bunx serve ./out",
-    "test": "bun test",
+    "test": "bun test --randomize",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --max-warnings=0"
   },
@@ -521,7 +521,7 @@ Read `references/atomic-design.md` before any component work: layer table, compo
 
 Hard rule 11 still holds (no production logic without a failing test) and rules 21–22 are what make it tractable here: every line of logic lives in `src/lib/**` or `src/config/**`, so that is where the tests live.
 
-- Runner: `bun test`, files `*.test.ts` next to source, exactly as in the Bun variant. The package script is `"test": "bun test"` and the root pre-commit runs it.
+- Runner: `bun test --randomize`, files `*.test.ts` next to source, exactly as in the Bun variant. The package script is `"test": "bun test --randomize"` (rule 36) and the root pre-commit runs it.
 - **TDD-mandatory:** `src/lib/**` (i18n path helpers, guides/MDX utils, SEO builders, tag utils) and `src/config/**` factories. Red-Green-Refactor, domain-language test names.
 - **Hooks stay thin.** A hook like `useNavState` is four lines of `useState` wiring: keep it that way. The moment a hook grows real logic (derivation, branching), extract that logic into a pure function in `src/lib/**` and TDD the function; the hook remains a trivial adapter.
 - **Design-system components are not unit-tested.** Rule 21 makes them deterministic prop→JSX maps: no state, no IO, no business decisions, nothing worth owning a test. They are verified by the design-system ESLint block (above), review against `references/atomic-design.md`, and the build. Do not add React Testing Library ceremony to prove that props render.

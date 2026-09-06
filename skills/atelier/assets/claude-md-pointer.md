@@ -1,5 +1,5 @@
 This repo follows the atelier coding standard. Consult the `atelier` skill for every
-code task here; its hard rules 1-35 bind (TDD with hand-written fakes, `Result` at IO
+code task here; its hard rules 1-36 bind (TDD with hand-written fakes, `Result` at IO
 boundaries, branded types at trust boundaries, and the production disciplines: privacy,
 isolation, reliability, observability). Run the `atelier-review-me` skill before landing
 changes. Journals: `.claude/LESSONS.md` (append-only memory), `.claude/PLAN.md` (current plan).

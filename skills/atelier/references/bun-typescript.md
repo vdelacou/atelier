@@ -32,7 +32,7 @@ Minimal skeleton:
     "lint": "eslint --cache --max-warnings=0",
     "lint:strict": "LINT_STRICT=1 eslint --max-warnings=0",
     "lint:staged": "bash scripts/lint-staged.sh",
-    "test": "bun test",
+    "test": "bun test --randomize",
     "typecheck": "tsc --noEmit",
     "coverage": "bun run scripts/check-coverage.ts",
     "mutate": "stryker run",
@@ -338,7 +338,7 @@ For throwaway scripts, one-off CLIs, or prototypes with a single integration, a 
 Tests are mandatory, TDD is hard rule 11, and the whole gate pipeline (tests, coverage tiers, mutation) assumes they exist:
 
 - Filename convention: `*.test.ts` next to the source.
-- Runner: `bun test`.
+- Runner: `bun test --randomize` (rule 36: the suite runs in a random order on every run and prints its seed on red; `--seed=<n>` replays it).
 - See `references/testing.md` for the loop and the fakes-not-mocks discipline.
 
 ## Secrets & config hygiene
