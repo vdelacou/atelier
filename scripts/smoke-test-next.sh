@@ -76,7 +76,7 @@ cat > package.json <<'EOF'
   "type": "module",
   "scripts": {
     "build": "rimraf out && bun next build",
-    "test": "bun test",
+    "test": "bun test --randomize",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --max-warnings=0"
   },
@@ -255,7 +255,30 @@ echo "== install current Next.js toolchain =="
 expect_ok "bun install" bun install
 
 echo "== positive path: a conforming package passes every gate =="
-expect_ok "bun test (src/lib TDD gate)" bun test
+expect_ok "bun test --randomize (src/lib TDD gate, rule 36)" bun test --randomize
+
+# Rule 36 in this variant: the same order-dependent three-step chain, under src/lib.
+cat > src/lib/order-dependent.test.ts <<'EOF'
+import { expect, test } from 'bun:test';
+
+let step = 0;
+test('a first', () => {
+  step += 1;
+  expect(step).toBe(1);
+});
+test('b second', () => {
+  step += 1;
+  expect(step).toBe(2);
+});
+test('c third', () => {
+  step += 1;
+  expect(step).toBe(3);
+});
+EOF
+expect_ok "an order-dependent chain passes in declaration order" bun test src/lib/order-dependent.test.ts
+expect_ok "random order exposes the chain under at least one of eight seeds (rule 36)" \
+  bash -c 'for s in 1 2 3 4 5 6 7 8; do bun test --randomize --seed=$s src/lib/order-dependent.test.ts >/dev/null 2>&1 || exit 0; done; exit 1'
+rm src/lib/order-dependent.test.ts
 expect_ok "eslint (design system + shell clean)" bun run lint
 
 # Rule 35 in this variant's config: ten guards are complexity 11 (red), nine

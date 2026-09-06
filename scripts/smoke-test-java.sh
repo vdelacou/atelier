@@ -229,6 +229,14 @@ class RegisterUserTest {
 }
 EOF
 
+# Rule 36: the suite runs in a random order. The two orderers live in the test
+# resources, as references/java-quarkus.md (Testing, Random order) writes them.
+mkdir -p src/test/resources
+cat > src/test/resources/junit-platform.properties <<'EOF'
+junit.jupiter.testmethod.order.default=org.junit.jupiter.api.MethodOrderer$Random
+junit.jupiter.testclass.order.default=org.junit.jupiter.api.ClassOrderer$Random
+EOF
+
 # Formatting is machine-owned: normalise the skeleton once, then check must hold.
 expect_ok "spotless:apply normalises the skeleton" ./mvnw -q spotless:apply
 
@@ -236,6 +244,51 @@ echo
 echo "== gates pass on a conforming tree =="
 expect_ok "spotless:check (rule 8)" ./mvnw -q spotless:check
 expect_ok "verify: -Werror compile, tests, JaCoCo tiers (rules 11, 15, coverage)" ./mvnw -q verify
+
+# Rule 36 proves it can fail: a three-step chain, each test reading the step
+# the previous one left in a static field, is green in declaration order
+# (MethodName order, forced on the command line, which overrides the properties
+# file) and red under five of the six orders the random orderer can pick, so
+# at least one of eight seeds shows it. Each seed is a full Maven run: the trap
+# stops at its first red, the conforming green loop takes three seeds. A
+# two-test pair is not enough: java.util.Random shuffles two elements the same
+# way for many small seeds (found 2026-09-06).
+cat > src/test/java/com/example/app/domain/OrderDependentTest.java <<'EOF'
+package com.example.app.domain;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+
+class OrderDependentTest {
+  private static int step = 0;
+
+  @Test
+  void aFirst() {
+    step += 1;
+    assertEquals(1, step);
+  }
+
+  @Test
+  void bSecond() {
+    step += 1;
+    assertEquals(2, step);
+  }
+
+  @Test
+  void cThird() {
+    step += 1;
+    assertEquals(3, step);
+  }
+}
+EOF
+expect_ok "an order-dependent chain passes in declaration order (the trap is real)" \
+  ./mvnw -q test -Dtest=OrderDependentTest '-Djunit.jupiter.testmethod.order.default=org.junit.jupiter.api.MethodOrderer$MethodName'
+expect_ok "random order exposes the order-dependent chain under at least one of eight seeds (rule 36)" \
+  bash -c 'for s in 1 2 3 4 5 6 7 8; do ./mvnw -q test -Dtest=OrderDependentTest -Djunit.jupiter.execution.order.random.seed=$s >/dev/null 2>&1 || exit 0; done; exit 1'
+rm src/test/java/com/example/app/domain/OrderDependentTest.java
+expect_ok "the conforming suite is green under three seeds of the random orderer" \
+  bash -c 'for s in 1 2 3; do ./mvnw -q test -Djunit.jupiter.execution.order.random.seed=$s >/dev/null 2>&1 || exit 1; done'
 expect_ok "PIT mutation >= 90 on domain+usecases (rule 14 analogue)" ./mvnw -q test-compile org.pitest:pitest-maven:mutationCoverage
 expect_ok "check-pom.sh on the canonical pom (rule 19)" bash scripts/check-pom.sh
 expect_ok "commit-msg accepts a Conventional Commit (rule 23)" \

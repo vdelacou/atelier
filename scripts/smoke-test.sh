@@ -237,7 +237,35 @@ bunx eslint --fix src/domain/result.ts src/domain/greeting.ts src/domain/greetin
 echo "== positive path: every gate green on a conforming tree =="
 expect_ok "regenerate coverage preload" bun run scripts/regenerate-coverage-preload.ts
 expect_ok "preload --check in sync" bun run scripts/regenerate-coverage-preload.ts --check
-expect_ok "bun test" bun test
+expect_ok "bun test --randomize (the test script, rule 36)" bun test --randomize
+
+# Rule 36: the suite runs in a random order and no test waits for another. A
+# three-step chain, each test reading the step the previous one left, is green
+# in declaration order and red under five of the six orders, so at least one of
+# eight seeds shows it; the conforming suite is green under every seed.
+cat > src/domain/order-dependent.test.ts <<'EOF'
+import { expect, test } from 'bun:test';
+
+let step = 0;
+test('a first', () => {
+  step += 1;
+  expect(step).toBe(1);
+});
+test('b second', () => {
+  step += 1;
+  expect(step).toBe(2);
+});
+test('c third', () => {
+  step += 1;
+  expect(step).toBe(3);
+});
+EOF
+expect_ok "an order-dependent chain passes in declaration order (the trap is real)" bun test src/domain/order-dependent.test.ts
+expect_ok "random order exposes the order-dependent chain under at least one of eight seeds (rule 36)" \
+  bash -c 'for s in 1 2 3 4 5 6 7 8; do bun test --randomize --seed=$s src/domain/order-dependent.test.ts >/dev/null 2>&1 || exit 0; done; exit 1'
+rm src/domain/order-dependent.test.ts
+expect_ok "the conforming suite is green under the same eight seeds" \
+  bash -c 'for s in 1 2 3 4 5 6 7 8; do bun test --randomize --seed=$s >/dev/null 2>&1 || exit 1; done'
 expect_ok "lint (fast)" bun run lint
 expect_ok "lint:strict (type-aware)" bun run lint:strict
 
@@ -484,7 +512,7 @@ echo "== CI-only gates run directly (the full suite, coverage, and mutation are 
 expect_ok "mutation gate (Stryker on the staged domain files)" bun run mutate:staged
 expect_ok "ci.yml asset is present" test -f .github/workflows/ci.yml
 expect_ok "ci.yml wires the package.json gate" grep -q "check-package-json.sh" .github/workflows/ci.yml
-expect_ok "ci.yml runs the full suite, coverage, and mutation" bash -c 'grep -q "bun test" .github/workflows/ci.yml && grep -q "bun run coverage" .github/workflows/ci.yml && grep -q "mutate" .github/workflows/ci.yml'
+expect_ok "ci.yml runs the full suite in random order, coverage, and mutation" bash -c 'grep -q "bun test --randomize" .github/workflows/ci.yml && grep -q "bun run coverage" .github/workflows/ci.yml && grep -q "mutate" .github/workflows/ci.yml'
 # The cadence (2026-09-03): the merge gate mutates the changed files only, on
 # every event; the full sweep is a scheduled workflow, never a commit gate.
 expect_ok "ci.yml mutates the changed files only, never the full sweep" \
