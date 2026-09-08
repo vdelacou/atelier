@@ -43,6 +43,17 @@ whole, not any single skill.
   `check-pom.sh` rejects a declared mock coordinate in the fast hook. The Java smoke test proves both red
   on a planted `mockito-core`. Consumers: re-extract the enforcer block of the canonical pom and re-copy
   `check-pom.sh`.
+- **Rule 15 is lint: no inline ignore survives.** Probed 2026-09-08, five of seven suppression forms passed
+  the canonical config and a file-level `/* eslint-disable */` switched off every other ban. Both TypeScript
+  configs gain `linterOptions.noInlineConfig: true` (every ESLint directive comment is inert and reported,
+  so `--max-warnings=0` fails on the comment and the hidden violation surfaces beside it),
+  `@typescript-eslint/ban-ts-comment` on every `@ts-` form (a described `@ts-expect-error` included) and
+  core `no-warning-comments` on the markers other tools read (`prettier-ignore`, `stryker disable`,
+  `nosonar`, `sonar-ignore`, `snyk-ignore`, `deepcode ignore`, `biome-ignore`, `oxlint-disable`, the `c8`,
+  `v8` and `istanbul` coverage ignores). The Bun smoke test proves eight forms red on their own messages,
+  the Next smoke test three. Consumers: re-extract `eslint.config.js` or `eslint.config.mjs`; every
+  suppression comment in the tree becomes a finding to refactor or to turn into a project-level severity
+  change with a reason. The Java half (`@SuppressWarnings`, `NOPMD`, `NOSONAR`) is the next slice.
 
 ### Changed
 - The Bun config's mock-ban message (`MOCK_BAN`, hard rule 13) ends with the rule number like the Next
