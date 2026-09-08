@@ -49,6 +49,7 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
     <pitest.targetClasses>com.example.app.domain.*,com.example.app.usecases.*</pitest.targetClasses>
     <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
     <pmd.plugin.version>3.28.0</pmd.plugin.version>
+    <archunit.version>1.5.0</archunit.version>
   </properties>
 
   <dependencies>
@@ -56,6 +57,13 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
       <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- the dependency rule as a test (rule 37): assets/java/LayerRulesTest.java -->
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5</artifactId>
+      <version>${archunit.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -229,11 +237,12 @@ src/main/resources/
 ├── application.properties
 └── db/migration/      # Flyway V*__*.sql, versioned, expand-contract (rule 30)
 src/test/java/...      # tests mirror the tree; fakes in a shared testsupport package
+└── architecture/LayerRulesTest.java   # the dependency rule as an ArchUnit test (rule 37), a shipped asset
 src/test/resources/
 └── junit-platform.properties   # random method and class order (rule 36)
 ```
 
-Dependency rule unchanged: `domain` imports nothing from the framework; `usecases` sees domain + its own ports; `infra` and `api` implement/consume them; only `composition` (and the CDI container) sees everything. The check is mechanical: `grep -rn "import jakarta.ws.rs\|import io.quarkus" src/main/java/com/example/app/domain src/main/java/com/example/app/usecases` returns nothing (framework annotations on use-case classes are tolerated only for `@ApplicationScoped`; prefer producing them from `composition` when practical).
+Dependency rule unchanged: `domain` imports nothing from the framework; `usecases` sees domain + its own ports; `infra` and `api` implement/consume them; only `composition` (and the CDI container) sees everything. The check is a test (hard rule 37): `assets/java/LayerRulesTest.java`, copied into `src/test/java/<pkg>/architecture/`, runs ArchUnit's layered architecture over the five packages plus two framework bans (domain sees no `jakarta`, `io.quarkus`, `org.hibernate` or `org.jboss` class; use-cases see none of `jakarta.ws.rs`, `jakarta.persistence`, `io.quarkus`, `org.hibernate`, so `@ApplicationScoped` on a use-case stays tolerated; prefer producing beans from `composition` when practical), test classes excluded, empty layers allowed for a walking skeleton. It runs in every `mvn test`, so `verify` and CI carry it. `grep -rn "import jakarta.ws.rs\|import io.quarkus" src/main/java/com/example/app/domain src/main/java/com/example/app/usecases` stays the adopt-mode audit for a tree that has no test yet.
 
 ## The hard rules, translated
 
@@ -261,6 +270,7 @@ Dependency rule unchanged: `domain` imports nothing from the framework; `usecase
 | 23-26 commits, tests, identity | Unchanged: same hooks, same confirmation gates |
 | 27-34 production disciplines | Unchanged; Java expressions in their references and below |
 | 35 cyclomatic complexity at most 10 | PMD `CyclomaticComplexity` with `methodReportLevel` 11 (PMD flags at or above the level) through `maven-pmd-plugin` bound to `verify`; the ruleset is `assets/java/pmd-ruleset.xml`, copied to the repo root. Never raise the level: split the method or dispatch on a map |
+| 37 dependencies point inward | The shipped `LayerRulesTest` (ArchUnit, `archunit-junit5` in the canonical pom, test scope): a layered architecture over `domain`, `usecases`, `infra`, `api`, `composition` plus the two framework bans (domain sees no `jakarta`, `io.quarkus`, `org.hibernate`, `org.jboss` class; use-cases none of `jakarta.ws.rs`, `jakarta.persistence`, `io.quarkus`, `org.hibernate`), test classes excluded, empty layers allowed; red on the first import against the table in every `mvn test`, so `verify` and CI carry it |
 
 ## `Result` in Java (rule 16)
 
@@ -396,6 +406,7 @@ Same git hooks as the Bun variant, shell only, wired with `git config core.hooks
 - `assets/pit-changed.sh`: the mutation step of CI, PIT on the classes that changed in the event's range (the pull request's base, or `github.event.before..HEAD` on a push, which the workflow exports; an unknown base fails loudly, no change in scope exits 0), plus uncommitted and untracked sources locally.
 - `assets/mutation-java.yml`: the daily full PIT sweep over `domain` and `usecases` (`workflow_dispatch` on demand), the only run that measures the whole tree; a red run is a task, not a blocked merge.
 - `assets/ci-java.yml`: the authoritative gate set, run on every push and pull request as the required merge check. Its first step re-runs the commit-msg validator over the pushed range (`scripts/check-commit-messages.sh`, so `--no-verify` cannot slip a message past the local hook), then the pom gate, a full-history `gitleaks detect` (CI installs its own pinned copy), plus `./mvnw verify` (compile with `-Werror`, unit + integration tests, JaCoCo tier check, the PMD complexity cap of rule 35), and PIT mutation (≥90 on `domain`/`usecases`). The commit-size range check runs here too; the CVE scan does not.
+- `assets/java/LayerRulesTest.java`: the rule 37 test (ArchUnit); copied into `src/test/java/<pkg>/architecture/` with its package and `@AnalyzeClasses` root renamed to yours; needs `archunit-junit5` in the pom, which the canonical pom carries.
 - `assets/java/pmd-ruleset.xml`: the rule 35 ruleset (`CyclomaticComplexity`, `methodReportLevel` 11, so complexity 11 and above fails and 10 passes, the same boundary as the TypeScript `complexity: ['error', 10]`), copied to the repository root where the canonical pom's `maven-pmd-plugin` reads it in `verify`. `smoke-test-java.sh` plants a complexity-11 method and sees `pmd:check` red, and a complexity-10 one green.
 
 ```bash
@@ -432,6 +443,8 @@ CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the fu
 3. Scaffold packages: `domain`, `usecases/ports`, `infra`, `api`, `composition`; copy the shipped domain assets into `domain` rather than hand-writing them, then rename their package to your own groupId:
    ```bash
    cp <skill>/assets/java/{Result,Ok,Err,Email}.java src/main/java/<pkg>/domain/
+   cp <skill>/assets/java/LayerRulesTest.java src/test/java/<pkg>/architecture/
+   # LayerRulesTest is the dependency rule as a test (rule 37): rename its package and @AnalyzeClasses root.
    # Result/Ok/Err are the sealed Result union (rule 16); Email is the value-record
    # exemplar (rule 12) to copy for Money, UserId, and every other domain primitive.
    ```
@@ -440,7 +453,7 @@ CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the fu
 6. Test support: `testsupport` package with the first hand-written fakes (logger recorder, clock); **no Mockito in the pom**.
 7. Hooks and CI scripts: copy the assets as above (add the four discipline tripwires when the service handles personal data, calls the network, owns a schema, or serves more than one tenant) (`pre-commit-java`, `commit-msg`, `check-commit-size.sh`, `check-pom.sh`, `check-commit-messages.sh`, `check-commit-range.sh`); `git config core.hooksPath .githooks`; optional local `gitleaks` install (CI installs its own). Verify the pom gate once: `bash scripts/check-pom.sh`.
 8. Walking skeleton: one use-case returning `Ok` through its port, its value record, its JUnit test (propose the test first, rule 24), one resource with its REST Assured test including the 401 case.
-9. Verify green: `./mvnw spotless:check verify`, PIT on the skeleton, hooks reject a junk message and an oversized commit.
+9. Verify green: `./mvnw spotless:check verify`, PIT on the skeleton, hooks reject a junk message and an oversized commit, and a planted domain class that imports a use-case fails `./mvnw test` on `LayerRulesTest` (rule 37); revert the plant.
 10. `.claude/LESSONS.md` header; verify no scaffolded file names a person, an employer, or a client (rule 26); stage and propose the first commit (rule 25).
 
 ## Red flags (Java-specific)
