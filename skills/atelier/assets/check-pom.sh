@@ -9,6 +9,11 @@
 #      a snapshot is mutable upstream, so the same commit builds differently
 #      over time. The project's own <version> may be a SNAPSHOT during
 #      development; third-party coordinates may not.
+#   3. A mock library (rule 13): Mockito, EasyMock, PowerMock, JMockit or the
+#      Quarkus mockito and panache-mock extensions, as a <groupId> or an
+#      <artifactId>. Hand-written fakes implement the ports. The enforcer's
+#      bannedDependencies is the build-time authority (it sees transitives too);
+#      this is the fast echo that stops the declaration before the commit.
 #
 # The maven-enforcer-plugin (requireUpperBoundDeps, banSnapshots on release)
 # is the build-time authority; this hook is the fast pre-commit echo of it.
@@ -38,6 +43,13 @@ while IFS= read -r pom; do
   if [ -n "$snapshot_hits" ]; then
     echo "  ╳ $pom pins a -SNAPSHOT dependency; use a released version (rule 19)" >&2
     echo "$snapshot_hits" >&2
+    status=1
+  fi
+
+  # 3. A mock library declared anywhere in the pom (rule 13). <exclude> entries
+  #    of the enforcer's own ban list are not declarations and do not match.
+  if grep -nE '<groupId>(org\.mockito|org\.easymock|org\.powermock|org\.jmockit)</groupId>|<artifactId>(mockito-[a-z0-9-]+|easymock|easymockclassextension|powermock-[a-z0-9-]+|jmockit|quarkus-junit5-mockito|quarkus-panache-mock)</artifactId>' "$pom"; then
+    echo "  ╳ $pom declares a mock library; hand-written fakes implement the ports (rule 13)" >&2
     status=1
   fi
 # --others --exclude-standard: a brand-new pom is checked before its first

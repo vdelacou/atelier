@@ -15,7 +15,7 @@ Pick this variant when the repo has a `pom.xml` (or `build.gradle`) and Java sou
 
 - **Exact versions only.** Never a version range (`[1.0,)`) and never a `-SNAPSHOT` dependency in `main`. Maven resolves ranges to whatever is newest that day, which is the `"latest"` footgun with different syntax.
 - All versions live in `<properties>` or the parent pom / BOM; children declare nothing loose. One formatter version, one runtime BOM, inherited everywhere (the one-committed-config rule).
-- **maven-enforcer-plugin** makes it executable: `requireJavaVersion` (a bare `21` means "at least 21"; avoid the `[21,)` range form, which `check-pom.sh` would flag as a version range), `requireReleaseDeps` (no `-SNAPSHOT` dependencies), `requireUpperBoundDeps`.
+- **maven-enforcer-plugin** makes it executable: `requireJavaVersion` (a bare `21` means "at least 21"; avoid the `[21,)` range form, which `check-pom.sh` would flag as a version range), `requireReleaseDeps` (no `-SNAPSHOT` dependencies), `requireUpperBoundDeps`, and `bannedDependencies` for the mock libraries (rule 13: `org.mockito`, `org.easymock`, `org.powermock`, `org.jmockit`, `quarkus-junit5-mockito`, `quarkus-panache-mock`; enforcer 3.x walks the whole tree, so a transitive Mockito is caught too).
 - Renovate (or equivalent) keeps pins current so a pinned version never rots into a known-vulnerable one; **OWASP dependency-check** (or the platform's scanner) runs in CI and fails on high CVSS, the `bun audit` analogue: daily schedule plus a PR run scoped to `pom.xml`.
 - **google-java-format on JDK 16+** needs the `jdk.compiler` exports: commit a one-line `.mvn/jvm.config` (shown under the canonical pom below). Harmless where unneeded.
 
@@ -183,6 +183,18 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
                   <message>No -SNAPSHOT dependencies (rule 19)</message>
                 </requireReleaseDeps>
                 <requireUpperBoundDeps />
+                <!-- rule 13: hand-written fakes implement the ports; no mock library, direct or transitive -->
+                <bannedDependencies>
+                  <message>No mock library in the pom, hand-written fakes implement the ports (rule 13)</message>
+                  <excludes>
+                    <exclude>org.mockito:*</exclude>
+                    <exclude>org.easymock:*</exclude>
+                    <exclude>org.powermock:*</exclude>
+                    <exclude>org.jmockit:*</exclude>
+                    <exclude>io.quarkus:quarkus-junit5-mockito</exclude>
+                    <exclude>io.quarkus:quarkus-panache-mock</exclude>
+                  </excludes>
+                </bannedDependencies>
               </rules>
             </configuration>
           </execution>
@@ -258,7 +270,7 @@ Dependency rule unchanged: `domain` imports nothing from the framework; `usecase
 | 10 no custom error classes | Business failures are `Err` values, never bespoke exception types. Exceptions are for bugs and framework edges; never use checked exceptions on domain surfaces |
 | 11 TDD | Unchanged (JUnit 5) |
 | 12 branded types | Value **records with validating compact constructors** plus a `parse(...)` factory returning `Result` (below) |
-| 13 no `mock` | **No Mockito, no EasyMock, no `@InjectMock`.** Hand-written fakes implement the port interface; enforce by keeping mock libraries out of the pom entirely |
+| 13 no `mock` | **No Mockito, no EasyMock, no `@InjectMock`.** Hand-written fakes implement the port interface; two gates keep the libraries out of the pom: the enforcer's `bannedDependencies` (direct or transitive, in every `mvn` run) and `check-pom.sh`'s third check in the fast hook (a declared mock coordinate) |
 | 14 outside-in classicist | Unchanged: the SUT is the application service; domain runs real; only secondary ports get fakes |
 | 15 zero warnings, no inline ignores | No `@SuppressWarnings`, ever. Compile with `-Xlint:all -Werror`; SonarJava/Error Prone severities change at project level with a comment |
 | 16 `Result` at IO boundaries | `Result<T, E>` as a sealed interface (below); every port method returns it |
@@ -401,7 +413,7 @@ Every `mvn test` then shuffles methods and classes; JUnit logs the seed, and `-D
 Same git hooks as the Bun variant, shell only, wired with `git config core.hooksPath .githooks`, plus the CI workflow. All five artifacts ship in the skill's `assets/`; copy them, never hand-write:
 
 - `assets/commit-msg`: the shipped Conventional Commits validator, unchanged (rule 23; it is dependency-free shell).
-- `assets/pre-commit-java`: the fast gates only, commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>`; the project's own dev version may be a SNAPSHOT) → `gitleaks protect --staged` → `./mvnw -q spotless:check`. A multi-minute hook trains `--no-verify` (canon 15.1, and 15.3), so `./mvnw verify` and PIT do not live here.
+- `assets/pre-commit-java`: the fast gates only, commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>`, the project's own dev version may be a SNAPSHOT; no mock library declared, rule 13) → `gitleaks protect --staged` → `./mvnw -q spotless:check`. A multi-minute hook trains `--no-verify` (canon 15.1, and 15.3), so `./mvnw verify` and PIT do not live here.
 - The four discipline tripwires (`references/workflow.md`, Discipline tripwires) are Java-aware and belong in any service that touches the matching concern, though they are not part of the core gate set: `check-pii-channels.sh` catches a `@QueryParam("email"|"phone"|"ssn"|"token")` and a logged natural identifier (rule 27), `check-io-deadlines.sh` catches an `HttpClient` built with no `.timeout(`/`connectTimeout` in the file (rule 29), `check-data-lifecycle.sh` catches `deleteById(`/`deleteAll(`/`DELETE FROM` in application code (rule 30), and `check-isolation-tests.sh` refuses a new `**/api/*.java` resource with no nearby test mentioning 404 (rule 28). Each reads the staged diff, takes `--all` for a tree-wide adopt audit, and is proven on its Java trigger by `smoke-test-java.sh`.
 - `assets/audit-java.yml`: the two watchdogs that are not gate material, the OWASP CVE scan and `check-skill-pin.sh` (a vendored standard is a dependency, `references/governance.md`; the workflow's `SKILL_PIN_UPSTREAM` env names the repository the whole vendored tree is compared against), on a daily schedule plus the pull requests that touch a pom or the vendored skill.
 - `assets/pit-changed.sh`: the mutation step of CI, PIT on the classes that changed in the event's range (the pull request's base, or `github.event.before..HEAD` on a push, which the workflow exports; an unknown base fails loudly, no change in scope exits 0), plus uncommitted and untracked sources locally.
@@ -451,7 +463,7 @@ CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the fu
    ```
 4. `src/test/resources/junit-platform.properties` with the two random orderers (rule 36), then `application.properties`: authenticated-by-default policy, OIDC config placeholders, OTel enabled, JSON logging with the redaction filter, datasource for the constrained runtime role.
 5. Flyway: `src/main/resources/db/migration/V1__init.sql`; dev services or Testcontainers for the integration ring.
-6. Test support: `testsupport` package with the first hand-written fakes (logger recorder, clock); **no Mockito in the pom**.
+6. Test support: `testsupport` package with the first hand-written fakes (logger recorder, clock); **no Mockito in the pom** (the enforcer's `bannedDependencies` and `check-pom.sh` keep it out).
 7. Hooks and CI scripts: copy the assets as above (add the four discipline tripwires when the service handles personal data, calls the network, owns a schema, or serves more than one tenant) (`pre-commit-java`, `commit-msg`, `check-commit-size.sh`, `check-pom.sh`, `check-commit-messages.sh`, `check-commit-range.sh`); `git config core.hooksPath .githooks`; optional local `gitleaks` install (CI installs its own). Verify the pom gate once: `bash scripts/check-pom.sh`.
 8. Walking skeleton: one use-case returning `Ok` through its port, its value record, its JUnit test (propose the test first, rule 24), one resource with its REST Assured test including the 401 case.
 9. Verify green: `./mvnw spotless:check verify`, PIT on the skeleton, hooks reject a junk message and an oversized commit, and a planted domain class that imports a use-case fails `./mvnw test` on `LayerRulesTest` (rule 37); revert the plant.
