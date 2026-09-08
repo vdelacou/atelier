@@ -28,10 +28,15 @@ whole, not any single skill.
   `eslint.config.mjs` carries `STYLE_BANS` and `TRY_BAN`; no `fs` ban there (Node runtime) and no zones
   yet. Rules 1, 7, 10, 17, 18, 20 cite their lint rule in SKILL.md; the Bun smoke test proves each ban red
   with its rule number in the message and the exemptions green, the Next smoke test the three universal
-  bans. The Java layer gate (ArchUnit) is the next slice. Consumers: re-extract `eslint.config.js` or
-  `eslint.config.mjs` from the reference, run `bun run lint` and expect reds on inline `type` specifiers
-  (the standard's own smoke fixture carried one) and on any hidden class or curried helper, then re-copy
-  the pointer block (rules 1-37).
+  bans. Java gets the same rule as a shipped test: `assets/java/LayerRulesTest.java` (ArchUnit 1.5.0,
+  `archunit-junit5` in the canonical pom, test scope) runs the layered architecture over `domain`,
+  `usecases`, `infra`, `api`, `composition` plus two framework bans in every `mvn test`, so `verify` and
+  CI carry it; the Java smoke test proves a domain class importing a use-case red. Consumers: re-extract
+  `eslint.config.js` or `eslint.config.mjs` from the reference, run `bun run lint` and expect reds on
+  inline `type` specifiers (the standard's own smoke fixture carried one) and on any hidden class or
+  curried helper; on Java add the `archunit-junit5` dependency, copy `LayerRulesTest.java` into
+  `src/test/java/<pkg>/architecture/` and rename its package and root; then re-copy the pointer block
+  (rules 1-37).
 
 ## [2.2.0] - 2026-09-06
 
