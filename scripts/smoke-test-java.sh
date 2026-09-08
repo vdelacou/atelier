@@ -12,7 +12,8 @@
 #     (size, pom sanity, gitleaks, spotless) as a real hooked commit, plus the
 #     CI gates (verify with the JaCoCo tiers, PIT) run directly, and commit-msg
 #   - every gate FAILS on the violation it exists to block: a version range,
-#     a -SNAPSHOT dependency, an oversized commit, a junk commit message, a
+#     a -SNAPSHOT dependency, a mock library in the pom (hook and enforcer),
+#     an oversized commit, a junk commit message, a
 #     misformatted file, a warning under -Werror, a domain class importing a
 #     use-case (ArchUnit, rule 37), a complexity-11 method (PMD), an order-
 #     dependent test chain, an untested domain class (JaCoCo 100 tier), and a
@@ -366,6 +367,21 @@ git checkout -q pom.xml
 # 2. check-pom.sh blocks a -SNAPSHOT dependency.
 sed -i.bak 's|<version>${junit.version}</version>|<version>5.11.0-SNAPSHOT</version>|' pom.xml && rm pom.xml.bak
 expect_err "check-pom.sh blocks a -SNAPSHOT dependency" bash scripts/check-pom.sh
+git checkout -q pom.xml
+
+# 2b. Rule 13: a mock library in the pom. check-pom.sh rejects the declaration in
+# the fast hook; the enforcer's bannedDependencies rejects it (and any transitive
+# route) in every mvn run, on its own message, so a red for another reason is not
+# proof. The clean pom was green through verify above.
+python3 - <<'PYEOF2'
+import pathlib
+p = pathlib.Path('pom.xml')
+p.write_text(p.read_text().replace('\n  <dependencies>\n', '\n  <dependencies>\n    <dependency>\n      <groupId>org.mockito</groupId>\n      <artifactId>mockito-core</artifactId>\n      <version>5.20.0</version>\n      <scope>test</scope>\n    </dependency>\n', 1))
+PYEOF2
+expect_err "check-pom.sh blocks a mock library in the pom (rule 13)" bash scripts/check-pom.sh
+if ./mvnw -q validate >"$LOG" 2>&1; then cat "$LOG"; fail "enforcer bannedDependencies rejects mockito-core (rule 13) (expected non-zero exit)"
+elif grep -q "(rule 13)" "$LOG"; then pass "enforcer bannedDependencies rejects mockito-core (rule 13)"
+else cat "$LOG"; fail "enforcer: validate failed, but not on the rule 13 ban"; fi
 git checkout -q pom.xml
 
 # 3. The size gate blocks an oversized staged change.
