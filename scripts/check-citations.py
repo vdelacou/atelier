@@ -15,6 +15,9 @@ A citation suffixed with @<sha> (e.g. pre-commit:21@430c740) is historical by
 declaration and skipped. Prose-form references ("lines 153-217") are not scanned.
 Scanned extensions: md, sh, ts, yml, yaml, json, py, js, java, xml, properties (the
 Java assets joined on 2026-09-08, when a `.java:18` citation had sat unpinned).
+A citation whose target line is blank is a failure, and --lock refuses to pin it: an
+empty snippet pins nothing, and three range citations had sat on the blank line after
+a heading since the lock was created (found 2026-09-08).
 """
 from __future__ import annotations
 
@@ -91,6 +94,9 @@ def run_verify() -> int:
         if current is None:
             print(f"FAIL {where}: {key} is beyond end of file", file=sys.stderr)
             fails += 1
+        elif current == "":
+            print(f"FAIL {where}: {key} cites a blank line, not evidence (re-anchor to the line the row quotes)", file=sys.stderr)
+            fails += 1
         elif key not in lock:
             print(f"FAIL {where}: {key} not in citations-lock.json (run --lock after verifying it)", file=sys.stderr)
             fails += 1
@@ -114,6 +120,10 @@ def run_lock() -> int:
         s = snippet(target, start)
         if s is None:
             print(f"FAIL {where}: {target}:{start} beyond end of file, not locking", file=sys.stderr)
+            bad += 1
+            continue
+        if s == "":
+            print(f"FAIL {where}: {target}:{start} is a blank line, not locking (re-anchor it first)", file=sys.stderr)
             bad += 1
             continue
         entries[f"{target}:{start}"] = s
@@ -151,7 +161,12 @@ def run_selftest() -> int:
         src.write_text("| row | doc.md:1@430c740 | historical, skipped |\n")
         (root / "lock.json").write_text('{"entries": {}}')
         assert run_verify() == 0, "historical @sha citation must be skipped"
-    print("selftest OK: gate rejects a drifted line (in a .md and in a .java), an unlocked citation, and an out-of-range one")
+        target.write_text("alpha\n\ngamma\n")
+        src.write_text("| row | doc.md:2 | a blank line |\n")
+        assert run_lock() == 1, "a citation to a blank line must be refused by --lock"
+        (root / "lock.json").write_text('{"entries": {"doc.md:2": ""}}')
+        assert run_verify() == 1, "a citation to a blank line must fail verify even when the lock holds the empty snippet"
+    print("selftest OK: gate rejects a drifted line (in a .md and in a .java), an unlocked citation, an out-of-range one, and a blank line")
     return 0
 
 

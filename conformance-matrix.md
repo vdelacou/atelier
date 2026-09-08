@@ -318,7 +318,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 11.1 | Instrument everything with correlated traces | COVERED | observability.md:21-22 | doctrine | Logs, metrics, traces share a trace id; OpenTelemetry not a vendor SDK |
+| 11.1 | Instrument everything with correlated traces | COVERED | observability.md:22 | doctrine | Logs, metrics, traces share a trace id; OpenTelemetry not a vendor SDK |
 | 11.2 | Watch behavior, not just health | COVERED | observability.md:60 | doctrine | Instrument product outcomes split by success and failure |
 | 11.3 | Alert on what matters | COVERED | observability.md:89-92 | doctrine | Alert on error rate and p95/p99 SLO burn; page only on action; retire noisy alerts |
 
@@ -384,8 +384,8 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 17.1 | Treat the whole journey as the product | COVERED | product.md:7-9 | doctrine | Whole journey is the product; error copy names cause and next step over a stable code |
 | 17.2 | Earn trust rather than extract a sale | COVERED | product.md:25-28 | doctrine | Honest over conversion, symmetric cancel, no dark patterns |
 | 17.3 | Design for real behavior, not the demo | COVERED | product.md:33-39 | doctrine | Ground flows in observed behavior per market, re-ranked on evidence |
-| 17.4 | Let technology serve the person, not replace them | COVERED | product.md:47-48 | doctrine | Automation removes friction; the human path stays visible |
-| 17.5 | Speak the user's language | COVERED | product.md:51-52; nextjs-monorepo.md:655 | rule | Every string in a meaning-keyed catalog; localization is a data change |
+| 17.4 | Let technology serve the person, not replace them | COVERED | product.md:48 | doctrine | Automation removes friction; the human path stays visible |
+| 17.5 | Speak the user's language | COVERED | product.md:52; nextjs-monorepo.md:655 | rule | Every string in a meaning-keyed catalog; localization is a data change |
 | 17.6 | Accessible by default | COVERED | atomic-design.md:234-239; nextjs-monorepo.md:340 | gate | Semantic, keyboard, token contrast; jsx-a11y error-level gate; axe optional (Watchlist 6) |
 | 17.7 | Mobile first, and a light interface | COVERED | product.md:86; assets/check-bundle-size.sh; atomic-design.md:206 | gate | Resolved Phase 2: smallest-screen-first, one-primary-action, progressive-disclosure; the bundle budget is a shipped gate. P6 ACCEPTED 2026-08-30, canon 17.7 gained the budget clause the pillar prose already asked for (Watchlist 6) |
 
