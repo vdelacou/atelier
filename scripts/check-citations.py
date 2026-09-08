@@ -18,6 +18,9 @@ Java assets joined on 2026-09-08, when a `.java:18` citation had sat unpinned).
 A citation whose target line is blank is a failure, and --lock refuses to pin it: an
 empty snippet pins nothing, and three range citations had sat on the blank line after
 a heading since the lock was created (found 2026-09-08).
+A range `file.md:N-M` pins both N and M (since 2026-09-08): a range guards a section,
+and a section has two ends. Before, only N was pinned, and re-anchoring by hand moved
+starts and never ends, so three ranges had inverted (end before start) unseen.
 """
 from __future__ import annotations
 
@@ -70,6 +73,8 @@ def collect(root: Path) -> list[tuple[str, str, int]]:
                 if m.group("hist"):
                     continue
                 starts = [int(m.group("start"))]
+                if m.group("end"):
+                    starts.append(int(m.group("end")))
                 starts += [int(x) for x in m.group("more").strip("/").split("/") if x]
                 for s in starts:
                     out.append((f"{src}:{lineno}", m.group("name"), s))
@@ -161,12 +166,18 @@ def run_selftest() -> int:
         src.write_text("| row | doc.md:1@430c740 | historical, skipped |\n")
         (root / "lock.json").write_text('{"entries": {}}')
         assert run_verify() == 0, "historical @sha citation must be skipped"
+        target.write_text("alpha\nbeta\ngamma\n")
+        src.write_text("| row | doc.md:1-3 | a range |\n")
+        assert run_lock() == 0
+        assert run_verify() == 0, "an intact range must verify"
+        target.write_text("alpha\nbeta\nCHANGED\n")
+        assert run_verify() == 1, "a drifted range END must fail: both ends of a range are pinned"
         target.write_text("alpha\n\ngamma\n")
         src.write_text("| row | doc.md:2 | a blank line |\n")
         assert run_lock() == 1, "a citation to a blank line must be refused by --lock"
         (root / "lock.json").write_text('{"entries": {"doc.md:2": ""}}')
         assert run_verify() == 1, "a citation to a blank line must fail verify even when the lock holds the empty snippet"
-    print("selftest OK: gate rejects a drifted line (in a .md and in a .java), an unlocked citation, an out-of-range one, and a blank line")
+    print("selftest OK: gate rejects a drifted line (in a .md and in a .java), a drifted range end, an unlocked citation, an out-of-range one, and a blank line")
     return 0
 
 

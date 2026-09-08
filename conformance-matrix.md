@@ -227,7 +227,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 4.1 | Test in layers | COVERED | testing.md:107-121 | doctrine | Unit, integration, e2e, performance layers each named |
 | 4.2 | Keep unit tests in milliseconds | COVERED | testing.md:410; testing.md:140 | doctrine | In-memory fakes, no real IO in unit tests; literal ms target not stated |
-| 4.3 | Have a testing philosophy | COVERED | testing.md:184-127; SKILL.md:60 | rule | Every fixed bug becomes a permanent reproducing test |
+| 4.3 | Have a testing philosophy | COVERED | testing.md:184-186; SKILL.md:60 | rule | Every fixed bug becomes a permanent reproducing test |
 | 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3); CI mutates the changed files per run, the full sweep is the daily assets/mutation.yml (2026-09-03) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:49; testing.md:290; java-quarkus.md:187; check-pom.sh:52 | gate | Mock ban is absolute and gated in every variant (ESLint in TypeScript; the enforcer's `bannedDependencies` plus `check-pom.sh` in Java since 2026-09-08), exceeding canon advisory prefer-fakes |
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; assets/ci-java.yml; assets/ci-next.yml; governance.md:117 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on the changed files on a frozen lockfile as the required merge check; the full mutation sweep is scheduled (assets/mutation.yml) |
@@ -245,7 +245,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 5.4 | Secure the supply chain | COVERED | delivery.md:71-73 | doctrine | Immutable digest-addressed artifacts, SBOM, cosign signatures |
 | 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:94 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
 | 5.6 | Expose only what has to be public | COVERED | security.md:232 | doctrine | Datastores, queues, admin panels on a private network only |
-| 5.7 | One security baseline everywhere | COVERED | security.md:227-217 | rule | Auth, TLS, rate limits, allow/deny default on every route (rule 33) |
+| 5.7 | One security baseline everywhere | COVERED | security.md:225-232 | rule | Auth, TLS, rate limits, allow/deny default on every route (rule 33) |
 | 5.8 | Untrusted content is not instructions | COVERED | ai.md:91; behavioural-examples.md:42 | rule | Model input untrusted, every action authorized server-side (rule 32) (Watchlist 5) |
 | 5.9 | Cap what a caller can spend | COVERED | behavioural-examples.md:42; ai.md:105 | rule | Per-caller spend budget before the call, refuse over bill (rule 32) |
 | 5.10 | One inspectable edge, no reachable origin | COVERED | security.md; delivery.md | doctrine | Resolved Phase 2: single filtering edge plus origin-lock doctrine, with the x-edge-secret origin check as defense in depth |
@@ -300,7 +300,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 10.1 | Set explicit reliability targets | COVERED | observability.md:7-15 | doctrine | SLO-as-code: availability, latency, error-rate targets with windows |
-| 10.2 | Errors as values, not exceptions | COVERED | result-type.md:3; SKILL.md:52-169 | rule | Every IO port and use-case returns Result; exceptions for bugs (rule 16); the 2026-08-30 catch-placement strengthening was already rule 17, catch quarantined to infra adapters |
+| 10.2 | Errors as values, not exceptions | COVERED | result-type.md:3; SKILL.md:52-53 | rule | Every IO port and use-case returns Result; exceptions for bugs (rule 16); the 2026-08-30 catch-placement strengthening was already rule 17, catch quarantined to infra adapters |
 | 10.3 | Keep read paths explicit | COVERED | reliability.md:30 | doctrine | Explicit, tunable hot-path reads (hand SQL or a visible-SQL query builder); the ORM owns writes. P6 ACCEPTED 2026-07-20, widened to match the canon's own 10.4 builder DO |
 | 10.4 | Keep reads fast as the table grows | COVERED | reliability.md:49-50 | doctrine | Keyset cursor with composite index, never OFFSET; stream large sets |
 | 10.5 | Do not fire and forget | COVERED | reliability.md:66-68 | doctrine | Transactional outbox, retrying worker, idempotent on a dedupe key |
@@ -358,8 +358,8 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 15.1 | Make the standard executable | COVERED | assets/pre-commit; assets/ci.yml; assets/ci-java.yml; assets/ci-next.yml | gate | Resolved Phase 2: hook restructured to 5 fast gates, full suite/coverage/mutation/strict-lint relocated to CI as the required merge gate (Watchlist 1) |
 | 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:162; assets/check-coverage.ts:148 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
-| 15.3 | No silent opt-out | COVERED | workflow.md:62-82; SKILL.md:51; bun-typescript.md:181; bun-typescript.md:200; assets/java/pmd-ruleset.xml:36; check-no-suppressions.sh:43; java-quarkus.md:217 | gate | Project-level severity change with a reason; inline suppressions banned, and since 2026-09-08 gated in every variant: both TypeScript configs (`noInlineConfig` makes directives inert and reported, `ban-ts-comment` every `@ts-` form, `no-warning-comments` the other tools' markers) and Java (`check-no-suppressions.sh` in hook and CI, the `NoSuppressWarnings` PMD rule, an inert `NOPMD` marker) |
-| 15.4 | Test the bypass, not the happy path | COVERED | testing.md:649-531 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
+| 15.3 | No silent opt-out | COVERED | workflow.md:62-83; SKILL.md:51; bun-typescript.md:181; bun-typescript.md:200; assets/java/pmd-ruleset.xml:36; check-no-suppressions.sh:43; java-quarkus.md:217 | gate | Project-level severity change with a reason; inline suppressions banned, and since 2026-09-08 gated in every variant: both TypeScript configs (`noInlineConfig` makes directives inert and reported, `ban-ts-comment` every `@ts-` form, `no-warning-comments` the other tools' markers) and Java (`check-no-suppressions.sh` in hook and CI, the `NoSuppressWarnings` PMD rule, an inert `NOPMD` marker) |
+| 15.4 | Test the bypass, not the happy path | COVERED | testing.md:647-655; testing.md:531-538 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
 | 15.5 | Compliance is not proof | COVERED | workflow.md:585; governance.md:139 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
 | 15.6 | Audit the gaps between systems | COVERED | workflow.md:577; testing.md:663 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
 | 15.7 | Fix the class, not the instance | COVERED | workflow.md:578-640 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
