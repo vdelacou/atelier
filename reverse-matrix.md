@@ -1,7 +1,7 @@
 # Atelier reverse matrix (skill rules into canon)
 
 The forward audit (`conformance-matrix.md`) proves every canon sub-concept has a home in the
-skill. This is the other direction: one row per atelier hard rule 1-35, asking whether
+skill. This is the other direction: one row per atelier hard rule 1-37, asking whether
 the canon carries the rule's substance. Audited against the 117-row canon; 13.5's acceptance moved three rows the same day, and the 10.2 strengthening (accepted 2026-08-30) moved row 17. Three verdicts:
 
 - **CANON-ROW**: a canon sub-concept carries the substance at comparable strength.
@@ -19,7 +19,7 @@ re-audit when the hard-rule list changes.
 
 ## Pinned inputs
 
-- Skill: `skills/atelier/SKILL.md`, hard rules at lines 153-221, audited 2026-08-30 (row 35 added 2026-09-03).
+- Skill: `skills/atelier/SKILL.md`, hard rules at lines 37-79, audited 2026-08-30 (row 35 added 2026-09-03, row 36 on 2026-09-06, row 37 on 2026-09-08).
 - Canon: the vendored `docs/global-rules/` at the hashes pinned in `conformance-matrix.md`
   (119 sub-concepts after 1.3, 13.5, 15.10, and the 10.2 strengthening, all accepted 2026-08-30; 120 after 4.9, accepted 2026-09-06).
 
@@ -27,13 +27,13 @@ re-audit when the hard-rule list changes.
 
 | Rule | Substance | Verdict | Canon row(s) | Category / note |
 |---|---|---|---|---|
-| 1 | No `class` keyword | NO-COUNTERPART | nearest 1.1 | Stack binding; the canon mandates one enforced style, the profile fixes which |
+| 1 | No `class` keyword | NO-COUNTERPART | nearest 1.1 | Stack binding; the canon mandates one enforced style, the profile fixes which. Lint since 2026-09-08 (`no-restricted-syntax`, `ClassDeclaration` and `ClassExpression`, both TypeScript configs) |
 | 2 | No `function` declarations | NO-COUNTERPART | nearest 1.1 | Stack binding |
 | 3 | No `interface`, always `type` | NO-COUNTERPART | nearest 1.1 | Stack binding; inverts in the Java translation, which is the proof it is profile, not principle |
 | 4 | No `console.*`, injected Logger port | STRICTER-THAN | 3.2, 6.3 | Port discipline is 3.2 and redaction is 6.3; the absolute ban plus one Winston wiring is profile excess |
 | 5 | Bun-only toolchain | NO-COUNTERPART | nearest 1.1 | Stack binding; determinism rationale echoes 5.3 |
 | 6 | Explicit return types on exports | NO-COUNTERPART | nearest 1.1 | Stack binding |
-| 7 | Type-only imports on their own line | NO-COUNTERPART | nearest 1.1 | Stack binding |
+| 7 | Type-only imports on their own line | NO-COUNTERPART | nearest 1.1 | Stack binding. Lint since 2026-09-08 (`ImportSpecifier[importKind="type"]`; `consistent-type-imports` alone accepted the inline form) |
 | 8 | Quotes, semicolons, formatting values | CANON-ROW | 1.1 | This IS the committed config 1.1 demands, instantiated |
 | 9 | ESM only | NO-COUNTERPART | nearest 1.1 | Stack binding |
 | 10 | No custom error classes | CANON-ROW | 10.2 | Bespoke exception types are the anti-pattern both name; Java translation says it verbatim |
@@ -44,9 +44,9 @@ re-audit when the hard-rule list changes.
 | 15 | Zero warnings, no inline ignores | CANON-ROW | 15.3, 15.1 | No-silent-opt-out made executable |
 | 16 | `Result<T, E>` at IO boundaries | CANON-ROW | 10.2 | Errors as values |
 | 17 | `try/catch` quarantined to infra | CANON-ROW | 10.2, 3.1 | Was STRICTER-THAN at audit time; the 10.2 strengthening (accepted 2026-08-30, from this audit) fixes the catch's place at the boundary |
-| 18 | No curried arrow chains | NO-COUNTERPART | nearest 1.1, 1.2 | Stack binding |
+| 18 | No curried arrow chains | NO-COUNTERPART | nearest 1.1, 1.2 | Stack binding. Lint since 2026-09-08 (an arrow whose body is an arrow, `create[A-Z]` declarators exempt) |
 | 19 | No `latest`/`*`; constrained versions | CANON-ROW | 5.3 | Post-P6 5.3 says exactly this: constrained range plus committed lockfile |
-| 20 | `Bun.file` in production, `node:fs` at edges | NO-COUNTERPART | nearest 3.1 | Stack binding |
+| 20 | `Bun.file` in production, `node:fs` at edges | NO-COUNTERPART | nearest 3.1 | Stack binding. Lint since 2026-09-08 (an `fs` import under `src/**` outside tests, `src/test-helpers/**`, `src/infra/**`; Bun config only, Next runs on Node) |
 | 21 | Design system independent and logic-free | STRICTER-THAN | 3.3 | The canon seals presentation behind a design system; Atomic Design taxonomy, no-hooks, and the import bans are profile mechanics |
 | 22 | Styling sealed, no Tailwind in app code | STRICTER-THAN | 3.3 | The seal made mechanical for one styling system |
 | 23 | Conventional Commits, hook-enforced | CANON-ROW | 1.3 | Added to canon 2026-08-30; the hook plus CI re-check is its gate |
@@ -63,6 +63,7 @@ re-audit when the hard-rule list changes.
 | 34 | Production data never leaves production | CANON-ROW | 6.6 | |
 | 35 | Cyclomatic complexity at most 10 per function, lint-enforced | STRICTER-THAN | 1.2 | Added 2026-09-03. The canon caps complexity and duplication (1.2); the profile fixes the number at 10 and gates it in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`). The number lives in the profiles appendix (P6 row B, accepted 2026-09-03, under canon 1.2) |
 | 36 | Tests run in random order; no test depends on another | CANON-ROW | 4.9 | Added 2026-09-06 together with canon 4.9, which this rule caused: `bun test --randomize` everywhere the suite runs, JUnit random orderers in Java, the seed printed and replayable |
+| 37 | Dependencies point inward, lint-enforced per layer | CANON-ROW | 3.1 | Added 2026-09-08. The canon says dependencies point inward (3.1); the profile makes the dependency table of `architecture.md` lint, one `no-restricted-imports` zone per layer in the canonical Bun config (`layerZone`, the mock ban repeated in each because ESLint replaces a rule's options per block), tests excepted. Found when a domain file importing infra passed every gate; six-pack-live's first run had hand-rolled the same zones. Java's table stays review-checked until its ArchUnit gate lands |
 
 ## Tally
 
