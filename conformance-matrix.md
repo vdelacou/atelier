@@ -211,7 +211,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 3.1 | Point dependencies inward | COVERED | architecture.md:96; architecture.md:235; SKILL.md:92; SKILL.md:79; bun-typescript.md:152; bun-typescript.md:217 | gate | Domain has zero infra dependencies; imports point inward; hard rule 37 (2026-09-08) makes the dependency table lint, one `no-restricted-imports` zone per layer |
+| 3.1 | Point dependencies inward | COVERED | architecture.md:96; architecture.md:235; SKILL.md:92; SKILL.md:79; bun-typescript.md:152; bun-typescript.md:217; java-quarkus.md:245; assets/java/LayerRulesTest.java:18 | gate | Domain has zero infra dependencies; imports point inward; hard rule 37 (2026-09-08) makes the dependency table lint, one `no-restricted-imports` zone per layer, and a shipped ArchUnit test in the Java variant |
 | 3.2 | Put every external thing behind a port | COVERED | architecture.md:257-258; SKILL.md:49 | gate | Port plus real adapter plus in-memory fake at composition root; mock ban lint-enforced |
 | 3.3 | Seal the presentation behind a design system | COVERED | SKILL.md:57; atomic-design.md:236 | gate | Props-in JSX-out, tokens only, no fetching; design-system eslint block |
 | 3.4 | The backend is a client-agnostic API | COVERED | architecture.md:321 | doctrine | Resource-shaped API every client consumes the same way |
@@ -233,7 +233,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; governance.md:117 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on the changed files on a frozen lockfile as the required merge check; the full mutation sweep is scheduled (assets/mutation.yml) |
 | 4.7 | Hold generated code to the same bar | COVERED | workflow.md:583 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-82; behavioural-examples.md:42 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
-| 4.9 | Run the tests in random order | COVERED | SKILL.md:78; testing.md:692; bun-typescript.md:35; assets/ci.yml:50; assets/stryker.conf.json:8; java-quarkus.md:382 | gate | Added 2026-09-06 with hard rule 36: `bun test --randomize` is the test script, the CI step and Stryker's runner; JUnit random method and class order in Java; the seed prints on red and replays |
+| 4.9 | Run the tests in random order | COVERED | SKILL.md:78; testing.md:692; bun-typescript.md:35; assets/ci.yml:50; assets/stryker.conf.json:8; java-quarkus.md:392 | gate | Added 2026-09-06 with hard rule 36: `bun test --randomize` is the test script, the CI step and Stryker's runner; JUnit random method and class order in Java; the seed prints on red and replays |
 
 ### Pillar 5: Secure by default
 
