@@ -16,7 +16,22 @@ whole, not any single skill.
   with an order-dependent pair (green in declaration order, red under a seed). The canon gains
   sub-concept 4.9 under pillar 4 (count 120), accepted 2026-09-06. Consumers: change the `test`
   script, re-copy `ci.yml` and `stryker.conf.json`, add the properties file in Java, and re-copy
-  the pointer block (rules 1-36).
+  the pointer block (rules 1-37).
+- **Hard rule 37 and the style rules as lint: a `class`, an inline `type` specifier, a `try/catch` in a
+  use-case, a curried arrow chain, `node:fs` in the domain and a domain file importing infra now fail
+  `bun run lint`.** Found 2026-09-08: SKILL.md said the hard rules were enforced by ESLint, and the
+  canonical config caught only rules 2, 3, 6, 13 and 35 of the style set. The `eslint.config.js` of
+  `references/bun-typescript.md` gains `STYLE_BANS` (rules 1 and 10, 7, 18; the `create[A-Z]` DI factory
+  exempt), `TRY_BAN` under `src/use-cases/**` (17), `FS_BAN` over `src/**` outside tests,
+  `src/test-helpers/**` and `src/infra/**` (20), and one `layerZone` per layer under `src/` (rule 37, the
+  dependency table of `references/architecture.md` as `no-restricted-imports`, tests excepted). The Next
+  `eslint.config.mjs` carries `STYLE_BANS` and `TRY_BAN`; no `fs` ban there (Node runtime) and no zones
+  yet. Rules 1, 7, 10, 17, 18, 20 cite their lint rule in SKILL.md; the Bun smoke test proves each ban red
+  with its rule number in the message and the exemptions green, the Next smoke test the three universal
+  bans. The Java layer gate (ArchUnit) is the next slice. Consumers: re-extract `eslint.config.js` or
+  `eslint.config.mjs` from the reference, run `bun run lint` and expect reds on inline `type` specifiers
+  (the standard's own smoke fixture carried one) and on any hidden class or curried helper, then re-copy
+  the pointer block (rules 1-37).
 
 ## [2.2.0] - 2026-09-06
 

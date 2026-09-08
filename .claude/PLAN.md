@@ -1,132 +1,123 @@
-# Plan: cut 2.2.0, with the README made readable first (2026-09-06)
+# Plan: the style bans and the layer zones become lint (2026-09-08)
 
-Goal: the 2.2.0 release (the six-pack release) with a README a newcomer understands in one
-screen: what atelier is, what it changes in the code an agent writes, and how to use it, alone or
-as the six-pack. The two redirect stubs due for removal go, the tier-2 pass runs before the tag,
-and consumers get an "Upgrading from 2.1.0" list.
+Goal: close the gap found on 2026-09-08. SKILL.md line 10 says the hard rules "are enforced by
+ESLint and by the review bar", yet in the canonical Bun config a `class`, a custom error class, an
+inline `type` import, a `try/catch` in `src/use-cases/**`, a curried arrow chain, `node:fs` in the
+domain and a domain file importing infra all pass `bun run lint` (probe on eslint 10, typescript-eslint
+8.68, sonarjs 4.2; only `require` and complexity 11 fail, as claimed). Same shape as rule 36: prose plus
+habit, no gate. Canon 1.1 and 15.1 say the style is machine-enforced and the reverse matrix files rules
+1, 7, 18, 20 as stack bindings whose enforcement is the profile's job. Decisions taken 2026-09-08 with
+the owner: all seven bans in one closure; the dependency rule becomes hard rule 37 (canon 3.1 already
+exists, no canon change); TypeScript now, the Java layer gate (ArchUnit) is the follow-up slice.
 
-Definition of done (whole task): README's first screen carries the value and two copy-paste
-quick starts; `references/tdd.md` and `references/class-to-module.md` are gone and nothing
-points at them but CHANGELOG history; CHANGELOG has `[2.2.0]` with an upgrade list and README
-names 2.2.0; tier 2 (both arms, 21 tasks, opus) is recorded in `baseline.md` at or above the
-2.1.0 skill arm (59/61) or with every miss explained by the variance rule; CI nine jobs green
-on the push; annotated tag `v2.2.0` after the pass, as `v2.1.0` was after b1ac83a.
+Definition of done (whole task): both canonical configs (`bun-typescript.md` and `nextjs-monorepo.md`)
+carry the bans; SKILL.md has rule 37 and rules 1, 7, 10, 17, 18, 20 cite their lint rule the way 2, 3, 6,
+13 and 35 do; every ban has a red fixture in the Bun smoke test (Next: the three universal bans) and the
+doctrine's exemptions stay green there; the reverse matrix has row 37 and the forward row 3.1 reads
+"gate"; tier 1 shows no miss on a rule the diff touched; CHANGELOG Unreleased names the consumer action;
+CI nine jobs green on the push. No SKILL.md description edit (no trigger eval owed, no tier 2).
 
-Facts (verified 2026-09-06): README is 431 lines; the value proposition is a two-line intro,
-then a 98-line skill catalogue (use-when bullets, the pillar table, the reference list) before
-any quick start; the six-pack quick start sits at line 105-140, Installation at 140-250, Usage at
-269-289, and a 108-line repository layout tree follows. The stubs are pointed at only by
-README.md:367 and :387 (tree lines) and CHANGELOG.md:59 (2.1.0 history); citations-lock.json,
-SKILL.md, scripts/ and the eval sets never name them. The frozen baseline (2026-09-04, opus, 3
-passes) is keyed to tasks.json, which is unchanged, so no re-freeze is due. No SKILL.md
-description changes are planned, so the trigger eval is not owed. smoke-test.sh:62-76 hand-copies
-the README's Bun install steps; the two must stay in agreement.
+Facts (verified 2026-09-08):
+- Probe tree: `scratchpad/lint-gap-probe` (session scratchpad). Its `eslint.config.js` spreads the
+  extracted canonical config and adds the draft blocks; nine violations red with their rule number in
+  the message, seven conforming files green, among them the DI factory `createLoader = (deps) =>
+  async (id) =>`, an infra `try`, the commented infra `mkdirSync` helper, `node:fs` in a `*.test.ts`,
+  and composition wiring that imports infra and use-cases.
+- Draft selectors (`no-restricted-syntax`): `ClassDeclaration`, `ClassExpression` (rule 1, covers 10);
+  `ImportSpecifier[importKind="type"]` (rule 7; `consistent-type-imports` alone accepts the inline
+  form, verified); `VariableDeclarator[id.name!=/^create[A-Z]/] > ArrowFunctionExpression >
+  ArrowFunctionExpression.body` (rule 18, the DI factory exempt by name); `TryStatement` scoped to
+  `src/use-cases/**` minus tests (rule 17: domain fallback, infra and `main.ts` stay review-checked);
+  `ImportDeclaration[source.value=/^(node:)?fs(\/promises)?$/]` over `src/**` minus `*.test.ts`,
+  `src/test-helpers/**`, `src/infra/**` (rule 20's carve-outs are path conventions). Layer zones:
+  six-pack-live's `layerZone` (`no-restricted-imports` patterns per layer, the mock ban repeated).
+- The trap: ESLint replaces a rule's options per matching block, never merges, so every scoped
+  `no-restricted-syntax` block spreads the shared `STYLE_BANS` list and every zone repeats `MOCK_BAN`
+  (the live repo learned this with rule 13; the Next config already documents it for rule 13).
+- The Bun smoke fixture itself violates rule 7 (`smoke-test.sh:127`, `import { err, ok, type Result }`)
+  and its adapter is the sanctioned `createFetchGreeting` factory; `format-error.ts` (shipped, copied
+  into `src/domain/utilities/`) carries a domain `try`, outside the use-cases scope. No shipped `.ts`
+  asset declares a class or a curried chain (`check-coverage.ts:119` is an arrow returning a ternary).
+- Next runs on the Node runtime in production, so rule 20 (`Bun.file`) does not bind there: no FS ban in
+  `eslint.config.mjs`. The static layout has no `src/use-cases`, so its `TryStatement` block is inert
+  until the server archetype adds one; the layer zones for that archetype are a follow-up, not this slice.
+  Its base block currently sets `'no-restricted-syntax': ['off', 'ForOfStatement']`; the two scoped
+  blocks (rule 21 hooks/'use client', rule 22 className) each own a list and must spread the bans.
+- Echoes of the count: `assets/claude-md-pointer.md` "1-36", `README.md:17` "36 hard rules", SKILL.md
+  Red flags "(1-35)" (already one behind), the "What applies where" table (rows 35 and 36 are the shape),
+  `atelier-review-me/SKILL.md:40` (lists 1-4, 6, 18, 15, 35, 26 as the universal checks),
+  `atelier-greenfield/SKILL.md:42` (prove green then red).
+- Citations: `conformance-matrix.md` and `reverse-matrix.md` cite `file:line`; `check-citations.py`
+  fails on a shift and `--lock` re-pins after a deliberate re-anchor. Forward row 3.1 cites
+  `architecture.md:96; SKILL.md:91`, kind "rule". Row 1.1 cites `workflow.md:55` and gate 5.
+- Tier 1: `CONFORMANCE_SINCE=8223cf8` (main before this work). The tasks whose assertions the diff can
+  touch are a1, a3, h2 (10.2 and 3.2, the Result and port rules); the style bans carry no assertion, so
+  the selection may be small. `CONFORMANCE_TAG=lint-gates` so the run gets its own directory.
 
-1. [x] (reviewed section by section 2026-09-06; three commits) README, the fold. Reshape, not rewrite; keep every fact and the existing voice. First
-       screen (about 60 lines): one paragraph on what atelier is; the value in concrete terms,
-       what the agent refuses and what it does instead (lift the five bullets from Usage: no
-       class/function/interface/console, test first, branded primitives, the disciplines,
-       LESSONS); then two quick starts side by side, single agent (`bunx skills add`, the
-       pointer block, one example prompt) and six-pack (the existing clone + installer + `./swarm`
-       block, "write a card, approve the spec"). Install simply: the single-agent quick start
-       is three commands at most (install the skills, seed the pointer block, ask), and the
-       gates are the agent's job, not a 50-line copy block: a new repo asks for
-       atelier-greenfield (it copies the assets and wires the hooks), an existing one asks for
-       atelier-review-me adopt mode (its first slice installs the gates and the pointer block).
-       The manual gate block survives as "By hand", below, since smoke-test.sh:62-76 mirrors it.
-       Guided-review decision: whether a `get-atelier` installer (the single-agent twin of
-       `get-atelier-six-pack`: copy the assets, wire the hooks, seed the block) should replace
-       that appendix; default is no new tooling in this release. Six-pack, the operator's loop:
-       a "Your first card" walkthrough of about 15 lines right after the six-pack quick start,
-       since neither README nor the pack manual says what the operator does once `./swarm` runs:
-       where the card is written (the dashboard's New Task form and its address after
-       `./swarm`), one example card in full (the invoice-totals card of the first run, from
-       six-pack-live's `docs/specs/` and `tasks/`), how the Attention approval of the spec is
-       given and where it appears, how a clarification reaches the operator and how it is
-       answered, how Done shows and where the spec, the verdict and the LESSONS append land,
-       then push; plus one line on stopping and restarting the swarm. Take the mechanics from
-       SwarmForge's own README (unclebob/swarm-forge, the dashboard and board) and the first
-       run's paper trail in `~/Documents/CODE/six-pack-live`; verify any step the sources
-       leave implicit on a throwaway project before writing it, never from memory. The pack
-       manual keeps the details and gains nothing it does not already say. Everything else moves below: the four skills
-       with their use-when, the pillar table under one heading that links to SKILL.md, the
-       six-pack roles and the measured run, the gate scripts (Installation step 2), the pointer
-       block section. Repository layout, Repository CI and Variant references go last under one
-       "Working on this repository" heading (splitting them into CONTRIBUTING.md is a guided-review
-       decision, not a default). DoD: `sed -n 1,60p README.md` answers what, value, how for both
-       paths with no forward reference; the single-agent quick start is at most three commands
-       and names where the gates come from; the "Your first card" walkthrough covers card, Attention,
-       clarification, Done and push in order, with every mechanical step verified against the
-       runtime or a live run; each install command appears once; the Bun install block
-       still matches smoke-test.sh:62-76 line for line; the em-dash gate and the links resolve
-       (`grep -o '](\S*)' README.md` targets exist); the guided section-by-section review ran
-       before the commit, one decision question per section (memory: guided review before
-       landing). Commit in gate-1 slices if the moves exceed 300 lines: one slice per section move.
-2. [x] Remove the stubs. `git rm` `references/tdd.md` and `references/class-to-module.md`; drop
-       README's two tree lines; CHANGELOG Unreleased gains a Removed entry naming both and the
-       files that hold their content (`testing.md`, `design-patterns.md`); the 2.1.0 entry stays.
-       DoD: `grep -rn 'tdd\.md\|class-to-module\.md' --include='*.md' --include='*.json'
-       --include='*.sh' --include='*.ts' --include='*.py' .` returns CHANGELOG lines only;
-       `python3 scripts/check-citations.py` 160 intact; `bun run scripts/validate-frontmatter.ts`
-       4/4; `bash scripts/check-workflow-assets.sh` green.
-3. [x] CHANGELOG and README name the release. Unreleased becomes `[2.2.0] - <date>` with a
-       one-paragraph lead (the six-pack release: the standard as a team of six, its first
-       measured run, the third re-probed sonarjs rule) and "Upgrading from 2.1.0": re-extract
-       `eslint.config.js` (function-return-type off), re-copy `assets/claude-md-pointer.md`
-       (rules 1-35), copy `check-commit-messages.sh`, `check-commit-range.sh` and `audit.yml` if
-       the old README install block skipped them, re-point any pinned path at the two removed
-       stubs, and the six-pack install for those who want the pipeline. README's "current
-       release" line (now 429) says 2.2.0 with the same lead. DoD: headings follow Keep a
-       Changelog; the em-dash gate; `git diff --stat` within gate 1.
-4. [x] (skill 61/61, unaided 43/61, 19:52 to 20:50, none capped; recorded in baseline.md; no re-freeze) Tier 2. From a clean tree with steps 1-3 landed: `CONFORMANCE_ARMS=both
-       CONFORMANCE_MODEL=claude-opus-5 bash scripts/conformance-eval/run.sh`, detached (`nohup bash
-       -c '...; echo exit=$?' >> log &`, no setsid on macOS) with a Monitor on the log; hours, so
-       start it early in the day (2.1.0's ran 17:44 to 01:18 and lost the API). Never edit
-       run.sh or skills/atelier while it runs. Grade with `python3 scripts/conformance-eval/grade.py
-       <runs-dir>` (both arms present); check `.result.txt` sizes before believing any cliff; a
-       miss on a rule no diff touched is rerun twice before it is called anything. Record the
-       result as a "Tier 2 for the 2.2.0 release" section in `scripts/conformance-eval/baseline.md`
-       with the same table shape as 2.1.0's. DoD: skill arm at or above 59/61, or each miss
-       explained and rerun; unaided arm within a few points of 39/61 (it cannot regress; a move
-       is variance or an outage); no re-freeze (tasks.json sha unchanged), stated in the entry.
-5. [x] Commits, each proposed and each waiting for the yes (rule 25): (a) `docs(readme): value
-       and two quick starts above the fold` plus the section-move slices, (b) `chore(references):
-       remove the two redirect stubs`, (c) `docs(release): 2.2.0 changelog and upgrade notes`,
-       (d) `chore(conformance-eval): the 2.2.0 tier-2 pass`. Land through the worktree flow:
-       commit on `claude/hello-962356`, `git -C ~/Documents/CODE/atelier merge --ff-only
-       claude/hello-962356`, `git push origin main`; push waits for its own yes.
-6. [x] (v2.2.0 on c406ec5, pushed 2026-09-06) Tag and push. `git tag -a v2.2.0 -m 'atelier 2.2.0, the six-pack release' -m '<the
-       CHANGELOG lead>'` on the tier-2-recorded commit, `git push origin v2.2.0`. DoD: `git tag
-       -n1 v2.2.0` prints the lead; the GitHub release page shows the tag; CI green on main.
-7. [~] (LESSONS decision written; memory corrected) After the tag: LESSONS `[decision]` on the README fold rule (value and quick starts before
-       the catalogue) if the guided review confirms it as a convention; memory
-       `conformance-audit-phases` still says "2.1.0 release pending", correct it to 2.2.0 shipped.
+1. [x] (verified on the probe 2026-09-08, nine red, seven green) `bun-typescript.md`: the `eslint.config.js` fence gains `MOCK_BAN`, `STYLE_BANS`, `TRY_BAN`,
+       `FS_BAN` and `layerZone` as consts above `export default`, the base `**/*.ts` block uses
+       `'no-restricted-syntax': ['error', ...STYLE_BANS]` and `paths: [MOCK_BAN]`, then the use-cases block
+       (`STYLE_BANS, TRY_BAN, FS_BAN`), the `src/**` FS block (ignores tests, test-helpers, infra,
+       use-cases), and the seven zones (domain, use-cases, presenter, infra, composition, test-helpers,
+       `main.ts`), each commented in the file's voice (rule number, reference, the replace-not-merge
+       trap once). After the fence, a short "Style bans and layer zones" paragraph. The File IO section
+       (rule 20) names the lint and its path carve-outs. `result-type.md` quarantine section: one
+       sentence, the use-cases scope is lint, the rest is review. `clean-code.md` rule 18: the selector
+       and the `create[A-Z]` name exemption. `architecture.md` dependency rule: the zones are the rule as
+       lint (rule 37); the grep stays as the adopt-mode audit line. DoD: `extract_fence` of the fence is
+       valid (copy into the probe, `bunx eslint` reproduces nine red, seven green); frontmatter 4/4;
+       `check-citations.py` shows only line shifts, then `--lock`; em-dash gate; diff within gate 1.
+2. [x] (fence parses; the one shifted citation, matrix row 17.6 to nextjs-monorepo.md, re-anchored and locked) `nextjs-monorepo.md`: `STYLE_BANS` and `TRY_BAN` consts, the base block turns
+       `no-restricted-syntax` on with `...STYLE_BANS`, the rule 21 and rule 22 blocks spread it before
+       their own selectors, a `src/use-cases/**` block for `TRY_BAN`; the mock-ban comment gains the
+       same note for `no-restricted-syntax`. DoD: frontmatter; citations; the Next smoke test's extracted
+       config lints its fixture green (step 5 proves it).
+3. [x] (description byte-identical, SKILL.md 199 lines, four shifted citations re-anchored and locked) SKILL.md and the cascade. Rules 1, 7, 10, 17, 18, 20 each gain a parenthetical naming the lint
+       (`no-restricted-syntax` selector or block, a few words); rule 37 after 36: "Dependencies point
+       inward, lint-enforced per layer." with the dependency table's substance in two sentences and the
+       `references/architecture.md` cite; a "Rule 37 arrived 2026-09" note only if the 35 note's shape
+       needs it (it does not: 36 has none). "What applies where" gains two rows: style bans (Bun
+       `eslint.config.js` blocks, Next `eslint.config.mjs`, Java n/a: rules 1-3, 7, 18, 20 are TypeScript
+       bindings, 17's Java translation stays review) and layer zones (Bun zones, Next follow-up, Java
+       ArchUnit follow-up). Red flags "(1-35)" becomes "(1-37)". Reference table: `architecture.md` row
+       adds "rule 37". Companions: review-me step 3 says which of its universal checks are now lint in the
+       TypeScript variants (so a config missing the block is the finding) and adds 37; greenfield step 8
+       adds one red proof ("a `class` in `src/domain` fails `bun run lint`"); grill-me swept, likely no
+       echo. `assets/claude-md-pointer.md` and `README.md:17` count 37. DoD: SKILL.md description
+       byte-identical (`git diff` shows no change in lines 1-4); frontmatter 4/4; `grep -rn "1-36"` returns
+       CHANGELOG and .claude only; citations re-anchored; em-dash gate; SKILL.md stays under 200 lines.
+4. [x] (171 citations locked, drift green, 120 rows) Matrices. `reverse-matrix.md`: row 37 (CANON-ROW, 3.1, "Added 2026-09-08: the dependency table as
+       ESLint zones per layer, the mock ban repeated in each"), rows 1, 7, 18, 20 notes gain "lint since
+       2026-09-08", header "1-35" becomes "1-37" where it counts rows. `conformance-matrix.md`: row 3.1
+       evidence adds the `bun-typescript.md` zone lines and the SKILL.md rule 37 line, kind "gate"; row
+       1.1 note mentions the style bans. DoD: `python3 scripts/check-matrix-drift.py` green (120 rows,
+       pins intact: no canon edit); `python3 scripts/check-citations.py --lock` then a clean verify.
+5. [x] (Bun 85 checks, Next 18 checks green 2026-09-08; first Bun run red on a prettier warning in the DI-factory fixture, reformatted) Gates prove red. `smoke-test.sh`: fix the fixture's inline type import first (a real rule 7 hit the
+       new gate would otherwise turn into a false fixture failure), then after the rule 35 block one
+       negative path per ban, each a one-file write, `expect_err "... (rule N)" bun run lint`, `rm`:
+       `class` in `src/domain`, `import { type X }`, `try` in `src/use-cases/`, a curried export in
+       `src/domain`, `node:fs` in `src/domain`, `src/domain` importing `../infra/fetch-greeting.ts`
+       (rule 37), plus `expect_ok` for a `createX` factory in `src/use-cases/` and `node:fs` in a
+       `*.test.ts` (the exemptions, so a tightened selector cannot pass silently). `smoke-test-next.sh`:
+       `class`, curried and inline type import in `src/lib`, `expect_err` each. DoD: `bash
+       scripts/smoke-test.sh` and `bash scripts/smoke-test-next.sh` green locally (minutes each; never
+       edit scripts/ or skills/ while one runs); the Java smoke test untouched.
+6. [x] (h2 3/3, a1 2/2, a3 3/3, 8/8 vs frozen 4.0/8, no capped or dead session; the CONFORMANCE_SINCE dry run over-selected 21 of 21: the Red flags line now reads "(1-37)" and select-tasks.py reads a range as every rule in it; killed after 35 s, partial runs dir removed, rerun with explicit ids h2-trap-catch a1-usecase-port a3-http-adapter, the only task whose hard_rules the diff touched being h2 for rule 17) Tier 1: `CONFORMANCE_SINCE=8223cf8 CONFORMANCE_MODEL=claude-opus-5 CONFORMANCE_TAG=lint-gates
+       bash scripts/conformance-eval/run.sh` detached (nohup, no setsid, a Monitor on the log), graded
+       `python3 scripts/conformance-eval/grade.py <runs-dir> --frozen-baseline`. DoD: no miss on a rule
+       the diff touched; a miss elsewhere rerun twice before it is called anything; tasks.json unchanged,
+       no re-freeze.
+7. [x] (six slices committed 2026-09-08 on the owner's yes, push on its own yes the same day) CHANGELOG Unreleased (2.3.0): Added, hard rule 37 and the seven bans as lint, consumer action
+       (re-extract `eslint.config.js` / `eslint.config.mjs`, expect reds on inline type imports and hidden
+       classes, re-copy the pointer block for 1-37). LESSONS `[decision]` (the gap, the probe, the
+       replace-not-merge trap, the fixture that violated rule 7 for months). This plan's final state; the
+       previous plan's step 7 flip rides along. Commits, each waiting for the yes, gate-1 sized:
+       (a) `docs(references): the style bans and layer zones as lint`, (b) `docs(references): the Next
+       config carries the style bans`, (c) `docs(skill): rule 37 and the lint citations` with companions,
+       pointer block and README, (d) `docs(matrix): row 37 and the re-anchored citations`, (e) `test(smoke):
+       the seven bans prove red`, (f) `docs: changelog, lessons and plan for rule 37`. Push once after (f),
+       waiting for its own yes; CI nine jobs green.
 
-After the tag, the first 2.3.0 change: the random-order rule (decided 2026-09-06; drafts in
-`.claude/rule-36-drafts.md`, untracked until they land, verified on bun 1.4.0: `--randomize` shuffles within a
-file, prints `--seed=<n>`, and an order-dependent pair fails under six of eight seeds).
-
-8. [x] Canon 4.9 "Run the tests in random order": the dos-and-donts section with the TS and Java
-       examples, the pillar-4 index link, the pillar prose bullet, the proposed-revisions entry
-       (ACCEPTED by the owner 2026-09-06), count 119 to 120 and PER_PILLAR pillar 4 from 8 to 9 in
-       `check-matrix-drift.py`, both sha256 and line pins in the matrix header. DoD:
-       `python3 scripts/check-matrix-drift.py` green; the forward row 4.9 cites the doctrine lines
-       step 9 lands (same commit as step 9, or the row reads GAP for one commit).
-9. [x] Doctrine: hard rule 36 in SKILL.md, the testing.md section and the smells row, the test
-       script `bun test --randomize` in bun-typescript.md and nextjs-monorepo.md, `ci.yml` and
-       `stryker.conf.json`, the JUnit properties file in java-quarkus.md, the pointer block and
-       README counting 36, the companions swept for 35. DoD: `check-citations.py` re-anchored per
-       slice then `--lock`; frontmatter 4/4; the reverse matrix row for 36; SKILL.md description
-       untouched (no trigger eval owed).
-10. [x] (Bun 78, Next 15, Java 41 checks green 2026-09-06; the fixture is a three-step chain, a pair was green for the wrong reason in Java) Gates prove red: the counter pair in each smoke test (Bun, Next, Java), green in declaration
-       order, red under at least one seed of eight, the conforming fixture green under the same eight (three seeds in Java, each a full Maven run);
-       every `bun test` in the smoke tests carries `--randomize`. DoD: the three smoke tests green
-       locally (Java needs JDK 21 and mvn), CI nine jobs green on the push.
-11. [x] (2026-09-06 21:14 to 21:23, five tasks e2, a1, a3, a4, h1: skill 13/13 vs frozen 6.5/13; ran untagged into the tier-2 directory, see LESSONS) Tier 1: `CONFORMANCE_SINCE=v2.2.0 CONFORMANCE_MODEL=claude-opus-5 bash
-       scripts/conformance-eval/run.sh`, graded `--frozen-baseline`; tasks.json unchanged. DoD: no
-       miss on a rule the diff touched; misses elsewhere rerun twice before they are called.
-12. [x] (six slices landed 2026-09-06 after the yes; push pending) CHANGELOG Unreleased (2.3.0): Added rule 36 and canon 4.9, the consumer action; LESSONS
-       `[decision]`; commits gate-1 sized in canon, doctrine, gates order, each waiting for the yes.
-
-Not in scope: any SKILL.md description edit (it would owe tier 2 anyway plus the trigger eval;
-none is planned); the six-pack's second live run; folding the eval harness docs into the README.
+Not in scope: the Java layer gate (ArchUnit test in the skeleton plus its smoke fixture, the next slice);
+Next server-archetype zones; any SKILL.md description edit; lint for `main.ts` "exactly one catch" or the
+domain fallback (review-checked, stated in the rule text); rule 5 (Bun only) and the size caps.
