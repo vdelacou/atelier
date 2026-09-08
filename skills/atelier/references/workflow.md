@@ -66,9 +66,12 @@ The `package.json` scripts behind the four commands (`lint`, `lint:strict`, `typ
 - `// eslint-disable`, `// eslint-disable-next-line`, `// eslint-disable-line`
 - `// @ts-ignore`, `// @ts-expect-error`
 - `// deepcode ignore`, `// snyk-ignore`, `// sonar-ignore`, `// istanbul ignore`
+- `// prettier-ignore`, `// Stryker disable`, `// NOSONAR`, `/* c8 ignore */`, `/* v8 ignore */`, `// biome-ignore`, `// oxlint-disable`
 - Any equivalent from another tool
 
 If a rule needs suppression for a single line, the suppression is a lie: either the rule is wrong for this codebase (change severity at the project level) or the code is wrong for this codebase (refactor). A per-line suppression hides both.
+
+The lint enforces this in both TypeScript configs (hard rule 15, since 2026-09-08). `linterOptions.noInlineConfig: true` makes every ESLint directive comment inert and reports it, so `--max-warnings=0` fails on the comment and the violation it hid surfaces beside it; `@typescript-eslint/ban-ts-comment` rejects every `@ts-` form, a described `@ts-expect-error` included; core `no-warning-comments` rejects the markers other tools read (the list above) anywhere in a comment. A tool that gains a new marker joins that list, and the smoke tests plant each form and require the red.
 
 ### Project-level rule disabling: a two-part test
 

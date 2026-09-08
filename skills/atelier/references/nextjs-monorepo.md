@@ -214,6 +214,13 @@ const TRY_BAN = {
 const eslintConfig = defineConfig([
   securityPlugin.configs.recommended,
   {
+    // Hard rule 15: no inline ignore, ever. Directive comments (eslint-disable*, eslint-enable,
+    // globals, exported) are inert AND each one is reported, so `--max-warnings=0` fails on the
+    // comment and the violation it hid surfaces beside it. A finding is a refactor or a
+    // project-level severity change with a reason, never a suppression.
+    linterOptions: { noInlineConfig: true },
+  },
+  {
     files: ['**/*.ts', '**/*.tsx'],
     rules: {
       // false-positive-heavy security rules on this codebase's idioms; disabled
@@ -268,6 +275,10 @@ const eslintConfig = defineConfig([
         'error',
         { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
       ],
+      // Hard rule 15, the other tools' escape hatches: every @ts- form (the recommended preset
+      // allows a described @ts-expect-error) and the markers other tools read, anywhere in a comment.
+      '@typescript-eslint/ban-ts-comment': ['error', { 'ts-expect-error': true, 'ts-ignore': true, 'ts-nocheck': true, 'ts-check': false }],
+      'no-warning-comments': ['error', { terms: ['prettier-ignore', 'stryker disable', 'nosonar', 'sonar-ignore', 'snyk-ignore', 'deepcode ignore', 'biome-ignore', 'oxlint-disable', 'c8 ignore', 'v8 ignore', 'istanbul ignore'], location: 'anywhere' }],
     },
   },
   {
