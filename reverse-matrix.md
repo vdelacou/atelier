@@ -41,7 +41,7 @@ re-audit when the hard-rule list changes.
 | 12 | Branded types at trust boundaries | CANON-ROW | 10.11, 5.5 | Parse-don't-validate plus validate-at-the-boundary |
 | 13 | No `mock`, the entire namespace | STRICTER-THAN | 4.5 | Absolute, gated ban where the canon advises prefer-fakes (forward matrix STRICTER row): ESLint `no-restricted-imports` in TypeScript, and since 2026-09-08 the enforcer's `bannedDependencies` (transitives included) plus `check-pom.sh` in Java, both proven red in the smoke tests |
 | 14 | Primary-port SUT, outside-in classicist | CANON-ROW | 4.5, 4.1 | Behavior-not-internals plus layered testing |
-| 15 | Zero warnings, no inline ignores | CANON-ROW | 15.3, 15.1 | No-silent-opt-out made executable |
+| 15 | Zero warnings, no inline ignores | CANON-ROW | 15.3, 15.1 | No-silent-opt-out made executable. Lint since 2026-09-08: before that, five of seven inline-ignore forms passed the canonical config and a file-level `eslint-disable` switched off every other ban; now directives are inert and reported (`noInlineConfig`), every `@ts-` comment and the other tools' markers are errors, eight forms proven red in the Bun smoke test |
 | 16 | `Result<T, E>` at IO boundaries | CANON-ROW | 10.2 | Errors as values |
 | 17 | `try/catch` quarantined to infra | CANON-ROW | 10.2, 3.1 | Was STRICTER-THAN at audit time; the 10.2 strengthening (accepted 2026-08-30, from this audit) fixes the catch's place at the boundary |
 | 18 | No curried arrow chains | NO-COUNTERPART | nearest 1.1, 1.2 | Stack binding. Lint since 2026-09-08 (an arrow whose body is an arrow, `create[A-Z]` declarators exempt) |
