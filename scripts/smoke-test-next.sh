@@ -289,6 +289,35 @@ expect_err "complexity gate rejects a function of cyclomatic complexity 11 (rule
 gen_guards 9 src/lib/branchy.ts
 expect_ok "complexity gate accepts complexity 10, the cap itself" bun run lint
 rm src/lib/branchy.ts
+
+# Rules 1, 7 and 18 as lint in this variant's config (2026-09-08).
+# A ban fixture is red for its own reason: the lint must fail AND the message must carry
+# the rule number, otherwise a formatting slip in the fixture would pass as proof.
+ban_red() { # $1 description, $2 path, $3 the rule tag the message must carry; stdin the file body
+  cat > "$2"
+  if bun run lint >"$LOG" 2>&1; then cat "$LOG"; fail "$1 (expected non-zero exit)"
+  elif grep -q "$3" "$LOG"; then pass "$1"
+  else cat "$LOG"; fail "$1 (lint failed, but not on $3)"; fi
+  rm "$2"
+}
+ban_red "style ban rejects a class (rule 1)" src/lib/classy.ts "hard rule 1;" <<'EOF'
+export class Classy {
+  greet(): string {
+    return 'no';
+  }
+}
+EOF
+ban_red "style ban rejects an inline type specifier (rule 7)" src/lib/inline-type.ts "hard rule 7)" <<'EOF'
+import { type FormattedDelta, formatPercent } from './format-percent.ts';
+
+export const shout = (ratio: number): FormattedDelta => formatPercent(ratio);
+EOF
+ban_red "style ban rejects a curried arrow chain (rule 18)" src/lib/curried.ts "hard rule 18," <<'EOF'
+export const add =
+  (a: number): ((b: number) => number) =>
+  (b: number): number =>
+    a + b;
+EOF
 expect_ok "tsc --noEmit" bun run typecheck
 expect_ok "next build (static export)" env NODE_ENV=production bun run build
 

@@ -12,7 +12,9 @@
 #     end-to-end, plus the CI gates run directly, Stryker included)
 #   - every gate FAILS on the violation it exists to block (untested infra
 #     file, stale preload, oversized commit, "latest" version, junk commit
-#     message)
+#     message, complexity 11, an order-dependent test chain, and the style
+#     bans: a class, an inline type specifier, a use-case try/catch, a curried
+#     chain, node:fs in the domain, a domain import of infra)
 #
 # Run locally: bash scripts/smoke-test.sh
 # Run in CI:   .github/workflows/ci.yml
@@ -124,7 +126,8 @@ export const err = <E>(error: E): Result<never, E> => ({ ok: false, error });
 EOF
 
 cat > src/domain/greeting.ts <<'EOF'
-import { err, ok, type Result } from './result.ts';
+import type { Result } from './result.ts';
+import { err, ok } from './result.ts';
 
 export type Name = string & { readonly __brand: 'Name' };
 export type NameError = { readonly kind: 'empty' };
@@ -306,6 +309,80 @@ expect_err "complexity gate rejects a function of cyclomatic complexity 11 (rule
 gen_guards 9 src/domain/branchy.ts
 expect_ok "complexity gate accepts complexity 10, the cap itself" bun run lint
 rm src/domain/branchy.ts
+
+# Rules 1, 7, 17, 18, 20 and 37 as lint (2026-09-08): before that date the canonical config
+# accepted a class, an inline `type` specifier, a try/catch in a use-case, a curried chain,
+# node:fs in the domain and a domain file importing infra. The exemptions go first, so a
+# tightened selector cannot pass by rejecting everything.
+mkdir -p src/use-cases
+cat > src/use-cases/greet-visitor.ts <<'EOF'
+type Deps = { readonly load: (visitor: string) => Promise<string> };
+export type GreetVisitor = (visitor: string) => Promise<string>;
+
+// The DI factory is the one sanctioned arrow that returns an arrow (rule 18).
+export const createGreetVisitor =
+  (deps: Deps): GreetVisitor =>
+  async (visitor) =>
+    deps.load(visitor);
+EOF
+cat > src/domain/fs-in-a-test.test.ts <<'EOF'
+import { expect, test } from 'bun:test';
+import { existsSync } from 'node:fs';
+
+test('a test may reach node:fs (the rule 20 carve-out)', () => {
+  expect(existsSync('.')).toBe(true);
+});
+EOF
+expect_ok "the DI factory, node:fs in a test and the adapter's try/catch stay green" bun run lint
+rm src/use-cases/greet-visitor.ts src/domain/fs-in-a-test.test.ts
+
+# A ban fixture is red for its own reason: the lint must fail AND the message must carry
+# the rule number, otherwise a formatting slip in the fixture would pass as proof.
+ban_red() { # $1 description, $2 path, $3 the rule tag the message must carry; stdin the file body
+  cat > "$2"
+  if bun run lint >"$LOG" 2>&1; then cat "$LOG"; fail "$1 (expected non-zero exit)"
+  elif grep -q "$3" "$LOG"; then pass "$1"
+  else cat "$LOG"; fail "$1 (lint failed, but not on $3)"; fi
+  rm "$2"
+}
+ban_red "style ban rejects a class (rule 1)" src/domain/classy.ts "hard rule 1;" <<'EOF'
+export class Classy {
+  greet(): string {
+    return 'no';
+  }
+}
+EOF
+ban_red "style ban rejects an inline type specifier (rule 7)" src/domain/inline-type.ts "hard rule 7)" <<'EOF'
+import { type Name, greet } from './greeting.ts';
+
+export const shout = (n: Name): string => greet(n).toUpperCase();
+EOF
+ban_red "the quarantine rejects try/catch in a use-case (rule 17)" src/use-cases/catchy.ts "hard rule 17," <<'EOF'
+export const catchy = (parse: (s: string) => number, s: string): number => {
+  try {
+    return parse(s);
+  } catch {
+    return -1;
+  }
+};
+EOF
+ban_red "style ban rejects a curried arrow chain (rule 18)" src/domain/curried.ts "hard rule 18," <<'EOF'
+export const add =
+  (a: number): ((b: number) => number) =>
+  (b: number): number =>
+    a + b;
+EOF
+ban_red "file IO ban rejects node:fs in the domain (rule 20)" src/domain/reads-fs.ts "hard rule 20," <<'EOF'
+import { readFileSync } from 'node:fs';
+
+export const read = (p: string): string => readFileSync(p, 'utf8');
+EOF
+ban_red "layer zone rejects a domain file importing infra (rule 37)" src/domain/reaches-infra.ts "hard rule 37," <<'EOF'
+import { createFetchGreeting } from '../infra/fetch-greeting.ts';
+
+export const wired = createFetchGreeting('https://svc.test');
+EOF
+rmdir src/use-cases
 cat > src/infra/orphan.ts <<'EOF'
 export const orphan = (n: number): number => n * 2;
 EOF
