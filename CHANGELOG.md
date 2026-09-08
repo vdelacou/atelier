@@ -83,6 +83,10 @@ whole, not any single skill.
   5 of 21 tasks instead of 21; each fix has a selftest case that fails without it.
 - `check-citations.py` scans `.java`, `.xml` and `.properties` citations too; the `LayerRulesTest.java:18`
   evidence in matrix row 3.1 had sat unpinned for a day. The selftest now drifts a cited `.java` line.
+- `check-citations.py` fails a citation whose target line is blank and refuses to lock one; three range
+  citations had pinned the blank line after a heading since the lock was created, and twice on 2026-09-08 a
+  shifted pin was re-locked onto a blank before the lock diff caught it. The three rows now cite the
+  paragraph they quote.
 
 ## [2.2.0] - 2026-09-06
 
