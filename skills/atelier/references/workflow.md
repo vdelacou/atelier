@@ -306,7 +306,7 @@ This is the **Bun-script variant's** mechanism. The Next.js monorepo uses `simpl
 | # | Gate | Purpose | Typical time |
 |:--:|:---|:---|:--:|
 | 1 | `scripts/check-commit-size.sh` | <=10 files AND <=300 lines | <1s |
-| 2 | `scripts/check-package-json.sh` | no `"latest"` / `"*"` / bare dist-tag | <1s |
+| 2 | `scripts/check-package-json.sh` | no `"latest"` / `"*"` / bare dist-tag (rule 19); no foreign lockfile, no `scripts` entry calling `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite` directly (rule 5) | <1s |
 | 3 | `gitleaks protect --staged` | secret scan on the staged diff | ~50ms |
 | 4 | `bun run lint:staged` | ESLint on the staged TS files only | ~1-2s |
 | 5 | `bun run typecheck` | `tsc --noEmit` clean | seconds |
@@ -374,7 +374,7 @@ When working on a feature, **commit as you go**: one focused slice at a time. Th
 
 ### Dependency hygiene (gate 2)
 
-`scripts/check-package-json.sh` blocks any commit where `package.json` declares a version as `"latest"` or `"*"`. Every entry under `dependencies`, `devDependencies`, and `peerDependencies` must use a concrete version (`X.Y.Z`) or a real range (`^X.Y.Z`, `~X.Y.Z`, `>=X.Y.Z`).
+`scripts/check-package-json.sh` blocks any commit where `package.json` declares a version as `"latest"` or `"*"`, and, since 2026-09-08, any commit that tracks or stages a `package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock` or `pnpm-lock.yaml`, or whose `scripts` call `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite` directly (rule 5; an env prefix and a segment after `&&` count, `bunx vite` does not). Every entry under `dependencies`, `devDependencies`, and `peerDependencies` must use a concrete version (`X.Y.Z`) or a real range (`^X.Y.Z`, `~X.Y.Z`, `>=X.Y.Z`).
 
 Why:
 - `"latest"` and `"*"` are non-deterministic. `bun install` on different days gives different `node_modules/` trees. The lockfile only partially mitigates this.

@@ -1,49 +1,38 @@
-# Plan: the Java half of rule 15 (2026-09-08)
+# Plan: rule 5 is a gate (2026-09-08)
 
-Goal: rule 15 became lint in the TypeScript variants this afternoon; the Java row still reads "No
-`@SuppressWarnings`, ever" with nothing behind it. Probed on the Maven skeleton: `@SuppressWarnings`
-compiles under `-Werror`, `// NOPMD` silences a complexity-11 method, `// NOSONAR` is free text.
+Goal: rule 5, "Bun only, never npm, pnpm, yarn, node or vite directly", has no gate of any kind: a tracked
+`package-lock.json` or a `scripts` entry that calls `node` passes every hook and CI step. Queued this
+afternoon behind rule 15; the natural home is gate 2, `check-package-json.sh`, which already walks every
+manifest in the repo and runs in the fast hook and in `ci.yml`.
 
-Definition of done: three layers, each with a red fixture in the Java smoke test. (1) `pmd-ruleset.xml`
-gains an XPath rule `NoSuppressWarnings` (`//Annotation[pmd-java:typeIs('java.lang.SuppressWarnings')]`),
-red in `verify` on `@SuppressWarnings("unchecked")`; the rule cannot see `@SuppressWarnings("PMD")`,
-which suppresses its own report (probed), so it is defence in depth, not the authority. (2) The canonical
-pom sets `<suppressMarker>ATELIER-NEVER-SUPPRESS</suppressMarker>` on the PMD plugin, so a `// NOPMD`
-comment is inert and the finding it hid resurfaces (probed: complexity 11 behind NOPMD green with the
-default marker, red with the impossible one). (3) A new asset `check-no-suppressions.sh`, the Java rule 15
-tripwire in the tripwire idiom (staged added lines in `*.java` by default, `--all` scans `src/`), rejects
-`@SuppressWarnings`, `@SuppressFBWarnings`, `NOPMD`, `NOSONAR`, `CHECKSTYLE:OFF` and `noinspection`; it is
-gate 3 of 5 in `pre-commit-java` and a `--all` step in `ci-java.yml`, so the bypass has nowhere to go.
-Docs: java-quarkus.md row 15, the gates list, the cp block, the pom fence; SKILL.md rule 15 gains the Java
-clause and "What applies where" a rule 15 row; review-me; matrices; CHANGELOG. Java smoke green locally,
-CI green on the push. No SKILL.md description change; no tier 1 (Java only).
+Definition of done: `check-package-json.sh` reports three kinds of finding (the existing rule 19 version
+strings; a non-bun lockfile tracked or staged anywhere: `package-lock.json`, `npm-shrinkwrap.json`,
+`yarn.lock`, `pnpm-lock.yaml`; a `scripts` entry whose command, or a segment after `&&`, `||`, `;` or
+`|`, starts with `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite`, an env prefix like `LINT_STRICT=1`
+allowed), all in one run, exit 1 on any; `bunx vite` and `bun run node-thing` stay green (the rule says
+"directly"); the Bun smoke test proves a lockfile, a `node` script, a `vite` script and an env-prefixed
+`npx` red and the fixture's own scripts green; SKILL.md rule 5, workflow.md's gate table and the asset
+header name the checks; reverse row 5 and forward row 1.1 updated; CHANGELOG bullet; CI green. No
+SKILL.md description change; no tier 1 (no conformance task carries rule 5).
 
-Facts (verified 2026-09-08, Maven 3.9.16, PMD 7.17.0 through maven-pmd-plugin 3.28.0, JDK 26): the XPath
-rule is green on the clean skeleton and red on a method-level `@SuppressWarnings("unchecked")`; with `-q`
-the console says only "has found 1 violation", the rule name is in `target/pmd.xml` (`rule="..."`), so the
-fixture greps that file; `@SuppressWarnings("PMD")` on the class is green (self-suppressed); PMD prints
-about 21 "Parsing failed in ParseLock ClassStub" lines on every run under JDK 26, noise that predates
-this slice. No shipped Java asset or smoke fixture carries a suppression form.
+Facts (2026-09-08): the asset exits 0 early when the version check is clean, so the new checks need the
+structure changed to collect-then-report; the fixture's `package.json` is committed in the scaffold
+commit and the rule 19 cases restore it with `git checkout -q package.json` (verify at lines 462-515);
+the Next variant does not run `check-package-json.sh` at all (its hook is `simple-git-hooks`: test,
+lint, commitlint), so rules 19 and 5 are ungated there, a separate follow-up.
 
-1. [x] (probe: pmd:check green clean and red on unchecked; tripwire red on staged @SuppressWarnings("PMD") and NOSONAR, green clean) Assets and fence: `pmd-ruleset.xml` (rule, header comment names the hole), the pom's PMD block
-       (`suppressMarker`), `check-no-suppressions.sh` (new), `pre-commit-java` gate 3 of 5, `ci-java.yml`
-       step after pom sanity. DoD: the probe's `pmd:check` green clean, red on unchecked; the script red on
-       a staged `@SuppressWarnings("PMD")` and `// NOSONAR`, green on the clean skeleton.
-2. [x] (description byte-identical; a SKILL.md pin shifted by the new table row was caught re-locked to an empty line and re-anchored) Docs: java-quarkus.md row 15, gates bullets (pre-commit-java sequence, pmd-ruleset, the new asset),
-       cp block; SKILL.md rule 15 Java clause, a "No inline ignores (rule 15)" row in What applies where;
-       review-me's (15) clause gains the Java gates. DoD: description byte-identical; frontmatter;
-       citations re-anchored and locked; em-dash gate.
-3. [x] (green locally 2026-09-08, 51 checks; the first run aborted on a fixture calling gen_guards before its definition, block moved) `smoke-test-java.sh`: scaffold copies the asset; positive path runs the script on the clean tree;
-       negative paths: unchecked annotation red in `pmd:check` with `rule="NoSuppressWarnings"` in
-       `target/pmd.xml`; complexity 11 behind `// NOPMD` red (marker inert); staged
-       `@SuppressWarnings("PMD")` and `// NOSONAR` red in the script; header comment. The hooked-commit
-       check exercises gate 3 of 5. DoD: green locally.
-4. [x] (five slices committed and pushed 2026-09-08 on the owner's yes) Matrices (forward 15.3 evidence: ruleset line, asset line; reverse row 15 Java note), lock, drift.
-       CHANGELOG: the rule 15 bullet gains the Java sentence and consumer action (re-copy the ruleset,
-       re-extract the PMD block, copy the tripwire, wire hook and CI). LESSONS `[decision]`. Commits on the
-       yes: (a) `feat(java): rule 15 as PMD rule, inert NOPMD and a suppression tripwire`, (b) `docs(skill):
-       rule 15 covers the Java variant`, (c) `test(smoke): the Java suppression forms prove red`,
-       (d) `docs(matrix): the Java evidence for rule 15`, (e) `docs: changelog, lessons and plan`. Push on
-       its own yes.
+1. [x] (probe matrix 11 of 11 as designed) `check-package-json.sh`: restructure into three collectors and one report; header documents the
+       rule 5 checks. Probe in a scratch git repo: clean skeleton green; `package-lock.json` staged red;
+       `"dev": "node src/main.ts"` red; `"build": "vite build"` red; `"x": "LINT_STRICT=1 npx eslint"`
+       red; `"y": "bun run node-fetch"` and `"z": "bunx vite build"` green; a `yarn.lock` in a workspace
+       dir red. DoD: the probe matrix; `bash -n`.
+2. [x] (first run red on node_modules/uri-js/yarn.lock, the fixture does not ignore node_modules; the gate now excludes node_modules; rerun green 2026-09-08) `smoke-test.sh`: after the rule 19 cases, the four red fixtures and one green (`bunx vite`), each
+       restoring the manifest. DoD: Bun smoke green locally.
+3. [x] (three slices committed and pushed 2026-09-08 on the owner's yes) Docs: SKILL.md rule 5 names gate 2; workflow.md gate row 2 and the sentence at line 377; reverse
+       row 5, forward row 1.1 evidence; citations re-anchored and locked; CHANGELOG Added bullet (consumer:
+       re-copy `check-package-json.sh`); LESSONS short `[decision]`; plan final. Commits on the yes:
+       (a) `feat(gates): rule 5 in check-package-json.sh, no foreign lockfile, no node or npm in scripts`,
+       (b) `test(smoke): the rule 5 forms prove red`, (c) `docs: skill, workflow, matrices, changelog for
+       the rule 5 gate`. Push on its own yes.
 
-Not in scope: rule 5 (the next slice); Error Prone or SpotBugs (not in the toolchain).
+Not in scope: the Next variant's missing package.json gate (follow-up); the blank citation pins.

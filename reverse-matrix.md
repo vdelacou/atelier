@@ -31,7 +31,7 @@ re-audit when the hard-rule list changes.
 | 2 | No `function` declarations | NO-COUNTERPART | nearest 1.1 | Stack binding |
 | 3 | No `interface`, always `type` | NO-COUNTERPART | nearest 1.1 | Stack binding; inverts in the Java translation, which is the proof it is profile, not principle |
 | 4 | No `console.*`, injected Logger port | STRICTER-THAN | 3.2, 6.3 | Port discipline is 3.2 and redaction is 6.3; the absolute ban plus one Winston wiring is profile excess |
-| 5 | Bun-only toolchain | NO-COUNTERPART | nearest 1.1 | Stack binding; determinism rationale echoes 5.3 |
+| 5 | Bun-only toolchain | NO-COUNTERPART | nearest 1.1 | Stack binding; determinism rationale echoes 5.3. Gated since 2026-09-08: `check-package-json.sh` rejects a foreign lockfile anywhere and a `scripts` entry calling `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite` directly, proven red in the Bun smoke test |
 | 6 | Explicit return types on exports | NO-COUNTERPART | nearest 1.1 | Stack binding |
 | 7 | Type-only imports on their own line | NO-COUNTERPART | nearest 1.1 | Stack binding. Lint since 2026-09-08 (`ImportSpecifier[importKind="type"]`; `consistent-type-imports` alone accepted the inline form) |
 | 8 | Quotes, semicolons, formatting values | CANON-ROW | 1.1 | This IS the committed config 1.1 demands, instantiated |

@@ -61,6 +61,11 @@ whole, not any single skill.
   impossible token, so a `// NOPMD` comment is inert and the finding it hid resurfaces. Consumers on Java:
   copy `check-no-suppressions.sh` into `scripts/`, re-copy `pre-commit-java`, `ci-java.yml` and
   `pmd-ruleset.xml`, re-extract the PMD block of the canonical pom.
+- **Rule 5 is a gate.** `check-package-json.sh` (gate 2 of the fast hook, re-run in CI) also rejects a
+  foreign lockfile tracked or staged anywhere (`package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`,
+  `pnpm-lock.yaml`) and a `scripts` entry that calls `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite`
+  directly, an env prefix and a segment after `&&` included; `bunx vite` passes, the rule says directly.
+  Until 2026-09-08 a tracked npm lockfile passed every hook. Consumers: re-copy `check-package-json.sh`.
 
 ### Changed
 - The Bun config's mock-ban message (`MOCK_BAN`, hard rule 13) ends with the rule number like the Next

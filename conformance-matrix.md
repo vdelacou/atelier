@@ -133,8 +133,8 @@ TypeScript example is unambiguous: the Don't is `{ "dependencies": { "hono": "^4
 is `{ "hono": "4.6.14", "zod": "3.24.1" }`, exact pins (global-rules-dos-and-donts.md:933-938@edb98a7).
 The skill permits and generates exactly the forbidden shape. `assets/check-package-json.sh`
 bans only `latest`, `*`, and bare dist-tags, and its own comment lists what it "Permits: 'x':
-'^1.2.3' / '~1.2.3' / '>=1.0.0'" (check-package-json.sh:37), while `bun add` "pins to ^X.Y.Z
-automatically" (check-package-json.sh:71) and workflow.md:377 requires "a concrete version
+'^1.2.3' / '~1.2.3' / '>=1.0.0'" (check-package-json.sh:101), while `bun add` "pins to ^X.Y.Z
+automatically" (check-package-json.sh:135) and workflow.md:377 requires "a concrete version
 (X.Y.Z) or a real range (^X.Y.Z ...)". The scan clause is covered as doctrine (`bun audit` in
 CI daily and on dependency PRs, security.md:67, workflow.md:673) and the automated-update
 clause is covered thinly (Renovate is named, but only in the Java reference, java-quarkus.md:19;
@@ -192,7 +192,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 1.1 | One committed config for style | COVERED | workflow.md:55; bun-typescript.md:127; assets/pre-commit gate 5 | gate | One flat eslint.config.js embeds prettier; lint:strict is gate 5; since 2026-09-08 the style rules themselves are lint (`STYLE_BANS`, rules 1, 7, 10, 18; `TRY_BAN` 17; `FS_BAN` 20) |
+| 1.1 | One committed config for style | COVERED | workflow.md:55; bun-typescript.md:127; check-package-json.sh:42; check-package-json.sh:61; assets/pre-commit gate 5 | gate | One flat eslint.config.js embeds prettier; lint:strict is gate 5; since 2026-09-08 the style rules themselves are lint (`STYLE_BANS`, rules 1, 7, 10, 18; `TRY_BAN` 17; `FS_BAN` 20) |
 | 1.2 | Cap complexity and duplication | COVERED | SKILL.md:88; SKILL.md:59; SKILL.md:57 | gate | Size caps and Rule-of-Three are generation-time rules; rule 35 gates cyclomatic complexity at 10 in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`); sonarjs cognitive stays off, one metric |
 | 1.3 | One grammar for the history | COVERED | SKILL.md:59; assets/commit-msg; assets/check-commit-messages.sh | gate | Conventional Commits grammar enforced by the commit-msg hook and re-checked in CI over the pushed range, so a --no-verify bypass is still caught (gate added 2026-08-30 with the canon row). The 72-vs-100 divergence closed the same day: P6 1.3 ACCEPTED 2026-08-30, canon now states 100, the documented default of @commitlint/config-conventional, which the row's own gate snippet prescribes |
 
@@ -241,7 +241,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 5.1 | Keep secrets out of the codebase | COVERED | security.md:198; assets/pre-commit gate 3 | gate | Secret manager, rotation, central control; gitleaks gate backs the ban |
 | 5.2 | Do not build authentication or crypto yourself | COVERED | security.md:35-46 | rule | OIDC plus vetted crypto, SSO and MFA on consoles (rule 33) |
-| 5.3 | Control your dependencies | COVERED | assets/check-package-json.sh:37; docs/global-rules/proposed-revisions.md | gate | P6 revision ACCEPTED 2026-07-20: canon 5.3 now allows a constrained range plus a committed lockfile, which check-package-json.sh enforces (Watchlist 4) |
+| 5.3 | Control your dependencies | COVERED | assets/check-package-json.sh:98; docs/global-rules/proposed-revisions.md | gate | P6 revision ACCEPTED 2026-07-20: canon 5.3 now allows a constrained range plus a committed lockfile, which check-package-json.sh enforces (Watchlist 4) |
 | 5.4 | Secure the supply chain | COVERED | delivery.md:71-73 | doctrine | Immutable digest-addressed artifacts, SBOM, cosign signatures |
 | 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:94 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
 | 5.6 | Expose only what has to be public | COVERED | security.md:232 | doctrine | Datastores, queues, admin panels on a private network only |

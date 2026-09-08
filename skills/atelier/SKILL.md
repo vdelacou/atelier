@@ -38,7 +38,7 @@ Two append-only journals, `.claude/LESSONS.md` (committed, team) and `.claude/le
 2. **No `function` declarations.** Always `export const fn = (...) => {...}` (`func-style: expression`).
 3. **No `interface`.** Always `type Foo = {...}` (`consistent-type-definitions: type`).
 4. **No `console.*`.** The injected `Logger` port, Winston-backed in production; `scripts/**` gate scripts are off the rule at project level; the one sanctioned singleton is the Next.js client/static `src/lib/utils/logger.ts` (`references/bun-typescript.md`, Logger).
-5. **Bun only.** Never `npm`, `pnpm`, `yarn`, `node`, or `vite` directly: `bun install`, `bun run`, `bunx`, `bun run src/main.ts`.
+5. **Bun only.** Never `npm`, `pnpm`, `yarn`, `node`, or `vite` directly: `bun install`, `bun run`, `bunx`, `bun run src/main.ts`; gate 2 (`check-package-json.sh`) rejects a foreign lockfile and a `scripts` entry that calls them (`references/workflow.md`, Dependency hygiene).
 6. **Explicit return types on every exported function** (`explicit-function-return-type`).
 7. **Type-only imports on their own line.** `import type { Foo } from './foo';` never an inline `type` specifier; lint-enforced (`no-restricted-syntax`, `ImportSpecifier[importKind="type"]`).
 8. **Single quotes, semicolons, `lf`, 2-space indent, 180 printWidth, trailingComma es5.**
