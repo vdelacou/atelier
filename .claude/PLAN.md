@@ -1,29 +1,13 @@
-# Plan: the citation gate scans Java citations (2026-09-08)
+# Plan: the Java rules table gains row 36 (2026-09-08)
 
-Goal: `scripts/check-citations.py` pins `file:line` evidence in the two matrices, but its `CITE`
-pattern only knows `.md .sh .ts .yml .yaml .json .py .js` (plus the three hook names), so the
-`assets/java/LayerRulesTest.java:18` evidence added to forward row 3.1 on 2026-09-08 is invisible to
-it: unpinned, free to rot. Extend the pattern to the asset kinds the Java variant ships and pin the
-citation.
+Goal: `java-quarkus.md`'s "The hard rules, translated" table runs 1-35 then 37; rule 36 (random test
+order) lives only in the Testing section, so a reader scanning the table for a rule's Java expression
+finds a hole. Add the row, pointing at the Testing section and the smoke proof.
 
-Definition of done: the pattern accepts `.java`, `.xml` and `.properties` (the Java assets and the
-files the Java reference names); the selftest proves a `.java` citation is locked and fails when its
-line changes; `--lock` pins the row 3.1 asset citation (173 entries); CI green on the push. No skill
-content changes.
+Definition of done: row 36 between rows 35 and 37 (the properties file, the two orderers, the seed
+replay flag, what it forbids, "Testing, Random order" as the pointer); the one citation the insertion
+shifts (`java-quarkus.md:392`, the properties line cited by forward row 4.9) re-anchored and locked;
+frontmatter 4/4; em-dash gate; CI green. No CHANGELOG entry (no consumer action).
 
-Facts (2026-09-08): one unscanned citation exists (`assets/java/LayerRulesTest.java:18`, the
-`@AnalyzeClasses` line); `resolve()` already searches `skills/atelier/` so the `assets/java/...` name
-resolves; the selftest builds a temp tree with `doc.md` and a `matrix.md` source, locks, mutates, and
-asserts the verdicts.
-
-1. [x] (selftest green; the mixed copy with the old pattern fails on the .java case) `check-citations.py`: extension alternation gains `java|xml|properties`; docstring names them;
-       selftest adds `Layer.java` cited as `Layer.java:2`, locked with the rest, red when line 2 changes.
-       DoD: `--selftest` green and red against a copy with the old pattern (the new `.java` case is
-       what fails).
-2. [x] (173 locked, drift green) `python3 scripts/check-citations.py` fails on the unpinned `.java` citation, `--lock` pins it
-       (173), verify green; `check-matrix-drift.py` green.
-3. [x] (two slices committed and pushed 2026-09-08 on the owner's yes) CHANGELOG Unreleased Harness bullet, one sentence; plan final. Commits on the yes:
-       (a) `fix(check-citations): pin Java, XML and properties citations too`,
-       (b) `docs: changelog and plan for the citation pattern`. Push on its own yes.
-
-Not in scope: the Java rules-table row 36; a Java rule 13 gate.
+1. [x] (row in, 173 citations intact after the re-anchor; committed and pushed 2026-09-08 on the owner's yes) Insert the row; re-anchor and lock; gates. Commit on the yes: `docs(java): the rules table
+       names rule 36`. Push on its own yes.
