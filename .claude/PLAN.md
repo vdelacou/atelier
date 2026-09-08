@@ -1,21 +1,28 @@
-# Plan: the workflow-asset gate parses the workflows (2026-09-08)
+# Plan: the citation lock pins both ends of a range (2026-09-08)
 
-Goal: `check-workflow-assets.sh` proves each shipped workflow calls only shipped scripts, copies them in
-its bootstrap doc, and installs its binaries first, by grepping the file; it never parses it. Tonight's
-first `ci-next.yml` draft did not parse (a colon-space inside a step name) and only a hand check caught it.
-Add the parse.
+Goal: `check-citations.py` pins the start line of every `file:N-M` citation and nothing else, so the end
+of a range is free to rot; the preview found 56 ranges, two ending on a blank line (`SKILL.md:52-169`,
+`workflow.md:62-82`) and three inverted, end before start (`testing.md:184-127`, `security.md:227-217`,
+`testing.md:649-531`), all invisible to the gate today. Pin the end too, and repair the five.
 
-Definition of done: every `assets/ci*.yml`, `audit*.yml`, `mutation*.yml` must parse as YAML or the gate
-fails naming the file and the parser's message; the parser is `python3` with PyYAML, else `ruby` with Psych (both here and on the ubuntu runner), and
-a machine with none of them gets a loud note and no false green; the selftest rejects the colon-space
-fixture and fails against the old gate; the seven shipped workflows pass; CHANGELOG Harness bullet; CI
-green. No skill content change.
+Definition of done: `collect()` yields the end line of a range as a pinned target beside the start;
+the selftest proves a drifted end line fails; the five broken ranges are re-anchored to the lines their
+row means (checked against the target text, not guessed); `--lock` pins every end with no blank
+snippet; verify green; drift green; CHANGELOG Harness bullet; CI green. The lock grows by about 56
+entries, which is the accepted cost: a range guards a section, and a section has two ends.
 
-1. [x] (python and ruby paths proven, a crashed parser fails loudly, the no-parser path prints the note and the selftest refuses to pass without a parser) `check-workflow-assets.sh`: `parse_yaml()` with the three-parser chain; step 0 of `lint_workflow`;
-       selftest case `- name: gate (rules 5 and 19: no latest)`; the selftest itself requires a parser.
-       DoD: selftest green; the mixed copy (old lint, new selftest) fails; the gate green on the assets.
-2. [x] (two slices committed and pushed 2026-09-08 on the owner's yes) CHANGELOG Harness bullet; LESSONS one line; plan final. Commits on the yes: (a) `fix(check-workflow-
-       assets): parse every shipped workflow`, (b) `docs: changelog, lessons and plan for the parse step`.
-       Push on its own yes.
+Facts (2026-09-08): the re-anchoring done by hand today rewrote `file:N` starts and never the `-M` ends,
+which is how three ranges inverted; `SKILL.md:52-169` (row 10.2) spans rule 16 to a blank line before
+the workflow steps and means rules 16 and 17 (lines 52-53); `workflow.md:62-82` (row 15.3) ends on the
+blank before the section's last paragraph at 83.
 
-Not in scope: range-end pinning in the citation gate.
+1. [x] (selftest green; the mixed copy with the old collect fails the new case) `check-citations.py`: pin the range end; docstring; selftest (`doc.md:1-3`, drift line 3, fail).
+       DoD: selftest green, the mixed copy with the old collect fails the new case.
+2. [x] (52 end pins added, 233 locked, zero blank, drift green) Repair the five ranges in `conformance-matrix.md` from the target text; verify reports only the
+       new end pins as unlocked; lock; verify; zero blank snippets; drift green.
+3. [x] (two slices committed and pushed 2026-09-08 on the owner's yes) CHANGELOG Harness bullet; LESSONS short `[gotcha]`; plan final. Commits on the yes: (a) `fix(check-
+       citations): pin both ends of a range citation`, (b) `docs: changelog, lessons and plan for range
+       ends`. Push on its own yes.
+
+Not in scope: a `--reanchor` helper that moves starts and ends by snippet (today's hand scripts did it
+eight times; a real candidate for the next harness slice).

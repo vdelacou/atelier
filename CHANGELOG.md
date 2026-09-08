@@ -103,6 +103,10 @@ whole, not any single skill.
 - `check-workflow-assets.sh` parses every shipped workflow (python3 with PyYAML, else ruby) before grepping
   it; the first `ci-next.yml` draft did not parse and only a hand check caught it. A parser that says no
   fails the gate, a machine with no parser prints a note, and the selftest rejects the colon-space fixture.
+- `check-citations.py` pins both ends of a `file:N-M` range citation. Only the start was pinned, so range
+  ends rotted unseen: the preview found two ranges ending on a blank line and three inverted (end before
+  start) after starts had been re-anchored without their ends. The five are repaired from the target
+  text and the lock grows from 183 to 233 entries.
 
 ## [2.2.0] - 2026-09-06
 
