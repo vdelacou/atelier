@@ -14,7 +14,9 @@
 #                 inside a component
 #       rule 22: a className / class / style attribute outside src/components/**
 #     and the package.json gate (rules 5, 19), copied from assets and run first
-#     in the simple-git-hooks pre-commit, rejects "latest" and a node script
+#     in the simple-git-hooks pre-commit, rejects "latest" and a node script;
+#     the shipped ci-next.yml carries commitlint, the range gates, gate 2, the
+#     frozen lockfile, test/lint/typecheck/build and the bundle budget
 #
 # The negative half is the point: it locks in the rules 21-22 enforcement so a
 # future ESLint / Next / typescript-eslint major cannot silently disable it.
@@ -118,6 +120,17 @@ cp "$REPO_ROOT/skills/atelier/assets/check-package-json.sh" scripts/
 extract_fence "$DOC" '## Root `package.json`' | grep -q 'check-package-json.sh && bun run' \
   && pass "the root package.json fence runs check-package-json.sh first in pre-commit" \
   || fail "the root package.json fence does not run check-package-json.sh in pre-commit (doc drift)"
+
+# The CI workflow (2026-09-08; before, this variant shipped none). Actions do not run
+# here: the asset is copied as the CI section says and its gates are checked as text;
+# scripts/check-workflow-assets.sh proves in the skill repo that every script it calls
+# ships and that the bootstrap copies it.
+mkdir -p .github/workflows
+cp "$REPO_ROOT/skills/atelier/assets/ci-next.yml" .github/workflows/ci.yml
+expect_ok "ci-next.yml re-checks the commit messages with commitlint over the range" grep -q "commitlint --from" .github/workflows/ci.yml
+expect_ok "ci-next.yml runs the commit-size range gate and gate 2" bash -c 'grep -q "check-commit-range.sh" .github/workflows/ci.yml && grep -q "check-package-json.sh" .github/workflows/ci.yml'
+expect_ok "ci-next.yml installs on a frozen lockfile and runs test, lint, typecheck, build for every workspace" bash -c 'grep -q "bun install --frozen-lockfile" .github/workflows/ci.yml && grep -q "filter .\*. test" .github/workflows/ci.yml && grep -q "filter .\*. build" .github/workflows/ci.yml'
+expect_ok "ci-next.yml enforces the bundle budget on each export" grep -q "check-bundle-size.sh" .github/workflows/ci.yml
 
 cat > app/globals.css <<'EOF'
 @import 'tailwindcss';
