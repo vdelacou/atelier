@@ -15,7 +15,8 @@
 #     message, complexity 11, an order-dependent test chain, and the style
 #     bans: a class, an inline type specifier, a use-case try/catch, a curried
 #     chain, node:fs in the domain, a domain import of infra, a mock import,
-#     an inline ignore in each of eight forms)
+#     an inline ignore in each of eight forms, a foreign lockfile, a script
+#     calling node, vite or npx)
 #
 # Run locally: bash scripts/smoke-test.sh
 # Run in CI:   .github/workflows/ci.yml
@@ -511,6 +512,35 @@ cat > packages/widget/package.json <<'EOF'
 EOF
 expect_err "package.json gate rejects an npm: alias resolving to latest" bash scripts/check-package-json.sh
 rm -rf packages
+
+# Rule 5 had no gate until 2026-09-08: a tracked npm lockfile or a script calling
+# node passed every hook. The same gate now rejects a foreign lockfile anywhere
+# and a scripts entry that calls node, npm, npx, pnpm, yarn or vite directly
+# (an env prefix and a segment after && included); bunx vite is not direct.
+echo '{}' > package-lock.json
+git add package-lock.json
+expect_err "package.json gate rejects a staged package-lock.json (rule 5)" bash scripts/check-package-json.sh
+git rm -q --cached package-lock.json && rm package-lock.json
+set_script() { python3 - "$1" "$2" <<'PYEOF2'
+import json, sys
+p = json.load(open('package.json'))
+if sys.argv[2] == '-':
+    p['scripts'].pop(sys.argv[1], None)
+else:
+    p['scripts'][sys.argv[1]] = sys.argv[2]
+json.dump(p, open('package.json', 'w'), indent=2)
+PYEOF2
+}
+set_script dev 'node src/main.ts'
+expect_err "package.json gate rejects a script calling node (rule 5)" bash scripts/check-package-json.sh
+set_script dev 'vite build'
+expect_err "package.json gate rejects a script calling vite (rule 5)" bash scripts/check-package-json.sh
+set_script dev 'LINT_STRICT=1 npx eslint . && bun test'
+expect_err "package.json gate rejects npx behind an env prefix (rule 5)" bash scripts/check-package-json.sh
+set_script dev 'bunx vite build'
+expect_ok "package.json gate accepts bunx vite, not a direct call (rule 5)" bash scripts/check-package-json.sh
+set_script dev -
+expect_ok "package.json gate green again on the fixture's own scripts" bash scripts/check-package-json.sh
 
 check_msg() { printf '%s\n' "$1" > .msg; bash .githooks/commit-msg .msg; }
 expect_ok  "commit-msg accepts feat(scope)!: subject" check_msg "feat(auth)!: rotate refresh tokens"
