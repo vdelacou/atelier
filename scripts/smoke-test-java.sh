@@ -13,8 +13,10 @@
 #     CI gates (verify with the JaCoCo tiers, PIT) run directly, and commit-msg
 #   - every gate FAILS on the violation it exists to block: a version range,
 #     a -SNAPSHOT dependency, an oversized commit, a junk commit message, a
-#     misformatted file, a warning under -Werror, an untested domain class
-#     (JaCoCo 100 tier), and a covered-but-unasserted method (PIT threshold)
+#     misformatted file, a warning under -Werror, a domain class importing a
+#     use-case (ArchUnit, rule 37), a complexity-11 method (PMD), an order-
+#     dependent test chain, an untested domain class (JaCoCo 100 tier), and a
+#     covered-but-unasserted method (PIT threshold)
 #
 # Scope: this proves OUR canonical config and shipped assets against the
 # current JDK + Maven toolchain. It does not boot Quarkus (test the code you
@@ -81,6 +83,9 @@ cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/ass
 cp "$SKILL/assets/check-pii-channels.sh" "$SKILL/assets/check-io-deadlines.sh" \
    "$SKILL/assets/check-data-lifecycle.sh" "$SKILL/assets/check-isolation-tests.sh" scripts/
 cp "$SKILL/assets/java/pmd-ruleset.xml" pmd-ruleset.xml
+# The dependency rule as a test (rule 37): a shipped asset, copied as a real bootstrap does.
+mkdir -p src/test/java/com/example/app/architecture
+cp "$SKILL/assets/java/LayerRulesTest.java" src/test/java/com/example/app/architecture/
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh
 git config core.hooksPath .githooks
 
@@ -244,6 +249,8 @@ echo
 echo "== gates pass on a conforming tree =="
 expect_ok "spotless:check (rule 8)" ./mvnw -q spotless:check
 expect_ok "verify: -Werror compile, tests, JaCoCo tiers (rules 11, 15, coverage)" ./mvnw -q verify
+expect_ok "the three ArchUnit layer rules ran green inside verify (rule 37)" \
+  grep -q "Tests run: 3, Failures: 0, Errors: 0" target/surefire-reports/com.example.app.architecture.LayerRulesTest.txt
 
 # Rule 36 proves it can fail: a three-step chain, each test reading the step
 # the previous one left in a static field, is green in declaration order
@@ -535,6 +542,28 @@ public interface Raw {
 EOF
 expect_err "-Werror blocks a rawtypes warning (rule 15)" ./mvnw -q compile
 rm src/main/java/com/example/app/domain/Raw.java
+
+# 6a. Rule 37: the dependency rule as a test. A domain class that imports a
+# use-case compiles (javac knows no layers) and fails LayerRulesTest on the
+# first `mvn test`; the log must carry the violation, so a red for another
+# reason is not proof.
+cat > src/main/java/com/example/app/domain/Leaky.java <<'EOF'
+package com.example.app.domain;
+
+import com.example.app.usecases.RegisterUser;
+
+public final class Leaky {
+  private Leaky() {}
+
+  public static Class<?> peek() {
+    return RegisterUser.class;
+  }
+}
+EOF
+if ./mvnw -q test >"$LOG" 2>&1; then cat "$LOG"; fail "LayerRulesTest rejects a domain class importing a use-case (rule 37) (expected non-zero exit)"
+elif grep -q "Architecture Violation" "$LOG"; then pass "LayerRulesTest rejects a domain class importing a use-case (rule 37)"
+else cat "$LOG"; fail "LayerRulesTest: mvn test failed, but not on an Architecture Violation"; fi
+rm src/main/java/com/example/app/domain/Leaky.java
 
 # 6b. Rule 35: PMD blocks a method of cyclomatic complexity 11 (ten guards)
 # and passes complexity 10 (nine), pinning the boundary. pmd:check alone, so
