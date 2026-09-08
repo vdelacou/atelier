@@ -192,6 +192,25 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 import tsPlugin from 'typescript-eslint';
 
+// The style rules as lint (hard rules 1, 7, 10, 18), the same list as the Bun variant's
+// eslint.config.js. ESLint REPLACES a rule's options when a second block matches the same
+// file, it never merges them, so the design-system and app-shell blocks below spread this
+// list before their own selectors.
+const STYLE_BANS = [
+  { selector: 'ClassDeclaration', message: 'No class keyword (hard rule 1; rule 10 for error classes): a module of arrow functions and typed records (references/design-patterns.md).' },
+  { selector: 'ClassExpression', message: 'No class keyword (hard rule 1): a module of arrow functions and typed records (references/design-patterns.md).' },
+  { selector: 'ImportSpecifier[importKind="type"]', message: 'Type-only imports on their own line: `import type { Foo } from ...` (hard rule 7).' },
+  {
+    selector: 'VariableDeclarator[id.name!=/^create[A-Z]/] > ArrowFunctionExpression > ArrowFunctionExpression.body',
+    message: 'No curried arrow chains: one arrow with all its parameters, wrapped at the call site; the DI factory `createX = (deps) => (input) => ...` is the one exemption (hard rule 18, references/clean-code.md).',
+  },
+];
+// Hard rule 17 for the server archetype: a use-case pattern-matches the Result a port returns.
+const TRY_BAN = {
+  selector: 'TryStatement',
+  message: 'try/catch is quarantined to the inbound adapter (the route handler), src/infra/** and the pure-domain fallback; a use-case pattern-matches the Result (hard rule 17, references/result-type.md).',
+};
+
 const eslintConfig = defineConfig([
   securityPlugin.configs.recommended,
   {
@@ -218,13 +237,15 @@ const eslintConfig = defineConfig([
       // miss a one-line chain of `&&`/`??`/ternaries and a wide `switch`).
       complexity: ['error', 10],
       'no-console': 'error',
-      'no-restricted-syntax': ['off', 'ForOfStatement'],
+      // Hard rules 1, 7, 10, 18 (STYLE_BANS above); the rule 21 and rule 22 blocks spread it again.
+      'no-restricted-syntax': ['error', ...STYLE_BANS],
       'prefer-template': 'error',
       quotes: ['error', 'single', { avoidEscape: true }],
       // Mock ban (hard rule 13). Lives in this unscoped block (which precedes the
       // design-system block) AND is re-declared inside the design-system block:
       // ESLint flat config REPLACES (never merges) two `no-restricted-imports`
-      // objects that match the same file, so each scope must carry its full set.
+      // objects that match the same file, so each scope must carry its full set. The
+      // same holds for `no-restricted-syntax`, hence `...STYLE_BANS` in every scoped block.
       'no-restricted-imports': [
         'error',
         {
@@ -248,6 +269,13 @@ const eslintConfig = defineConfig([
         { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
       ],
     },
+  },
+  {
+    // Hard rule 17 for the one layer where the count is zero (server archetype); inert in
+    // the static layout, which has no src/use-cases.
+    files: ['src/use-cases/**/*.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: { 'no-restricted-syntax': ['error', ...STYLE_BANS, TRY_BAN] },
   },
   {
     plugins: { unicorn: unicornPlugin },
@@ -288,6 +316,7 @@ const eslintConfig = defineConfig([
       ],
       'no-restricted-syntax': [
         'error',
+        ...STYLE_BANS,
         { selector: 'CallExpression[callee.name=/^use[A-Z]/]', message: 'No hooks inside the design system: hoist state to the page shell via src/lib/hooks (hard rule 21).' },
         { selector: 'Program > ExpressionStatement[directive="use client"]', message: "The 'use client' boundary belongs to page shells, not design-system components (hard rule 21)." },
       ],
@@ -314,6 +343,7 @@ const eslintConfig = defineConfig([
     rules: {
       'no-restricted-syntax': [
         'error',
+        ...STYLE_BANS,
         { selector: "JSXAttribute[name.name='className']", message: 'No className outside the design system. Tailwind is sealed under src/components/** (hard rule 22). Move the styling into a design-system component with a typed variant.' },
         { selector: "JSXAttribute[name.name='class']", message: 'No class attribute outside the design system: styling is sealed under src/components/** (hard rule 22).' },
         { selector: "JSXAttribute[name.name='style']", message: 'No inline style outside the design system: styling is sealed under src/components/** (hard rule 22).' },
