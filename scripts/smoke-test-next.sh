@@ -333,6 +333,25 @@ import { mock } from 'bun:test';
 
 export const fake = mock(() => 1);
 EOF
+# Rule 15 in this variant's config: directives inert and reported, every @ts- form and the
+# other tools' markers rejected (2026-09-08).
+ban_red "eslint-disable-next-line is inert and reported (rule 15)" src/lib/loud.ts "noInlineConfig" <<'EOF'
+export const shout = (s: string): void => {
+  // eslint-disable-next-line no-console
+  console.log(s);
+};
+EOF
+ban_red "a described @ts-expect-error is rejected (rule 15)" src/lib/coerced.ts "@ts-expect-error" <<'EOF'
+export const n = (): number => {
+  // @ts-expect-error: the value is a number at runtime, trust me
+  const x: number = '1';
+  return x;
+};
+EOF
+ban_red "prettier-ignore is rejected (rule 15)" src/lib/unformatted.ts "'prettier-ignore'" <<'EOF'
+// prettier-ignore
+export const table = [1,2,3,   4];
+EOF
 expect_ok "tsc --noEmit" bun run typecheck
 expect_ok "next build (static export)" env NODE_ENV=production bun run build
 

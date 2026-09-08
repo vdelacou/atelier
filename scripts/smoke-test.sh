@@ -14,7 +14,8 @@
 #     file, stale preload, oversized commit, "latest" version, junk commit
 #     message, complexity 11, an order-dependent test chain, and the style
 #     bans: a class, an inline type specifier, a use-case try/catch, a curried
-#     chain, node:fs in the domain, a domain import of infra, a mock import)
+#     chain, node:fs in the domain, a domain import of infra, a mock import,
+#     an inline ignore in each of eight forms)
 #
 # Run locally: bash scripts/smoke-test.sh
 # Run in CI:   .github/workflows/ci.yml
@@ -397,6 +398,54 @@ ban_red "the domain zone still carries the mock ban (rule 13, replace-not-merge)
 import { mock } from 'bun:test';
 
 export const fake = mock(() => 1);
+EOF
+# Rule 15 was prose until 2026-09-08: five of these seven forms passed the canonical config,
+# and a file-level disable switched off every other ban. The directive forms are red through
+# noInlineConfig (the comment is inert and reported), the @ts- forms through ban-ts-comment,
+# the other tools' markers through no-warning-comments; each fixture is otherwise clean, so
+# the tag in the message is the proof.
+ban_red "a file-level eslint-disable is inert and reported (rule 15)" src/domain/sneaky.ts "noInlineConfig" <<'EOF'
+/* eslint-disable */
+export class Sneaky {}
+EOF
+ban_red "eslint-disable-next-line is inert and reported (rule 15)" src/domain/loud.ts "noInlineConfig" <<'EOF'
+export const shout = (s: string): void => {
+  // eslint-disable-next-line no-console
+  console.log(s);
+};
+EOF
+ban_red "a described @ts-expect-error is rejected (rule 15)" src/domain/coerced.ts "@ts-expect-error" <<'EOF'
+export const n = (): number => {
+  // @ts-expect-error: the value is a number at runtime, trust me
+  const x: number = '1';
+  return x;
+};
+EOF
+ban_red "@ts-ignore is rejected (rule 15)" src/domain/ignored.ts "@ts-ignore" <<'EOF'
+export const m = (): number => {
+  // @ts-ignore
+  const x: number = '1';
+  return x;
+};
+EOF
+ban_red "prettier-ignore is rejected (rule 15)" src/domain/unformatted.ts "'prettier-ignore'" <<'EOF'
+// prettier-ignore
+export const table = [1,2,3,   4];
+EOF
+ban_red "a Stryker disable comment is rejected (rule 15)" src/domain/unmutated.ts "'stryker disable'" <<'EOF'
+export const price = (cents: number): number => {
+  // Stryker disable next-line all
+  return (cents * 105) / 100;
+};
+EOF
+ban_red "NOSONAR is rejected (rule 15)" src/domain/unsonared.ts "'nosonar'" <<'EOF'
+export const total = (a: number, b: number): number => a + b; // NOSONAR
+EOF
+ban_red "a coverage ignore comment is rejected (rule 15)" src/domain/uncovered.ts "'c8 ignore'" <<'EOF'
+export const rare = (n: number): number => {
+  /* c8 ignore next */
+  return n < 0 ? -n : n;
+};
 EOF
 rmdir src/use-cases
 cat > src/infra/orphan.ts <<'EOF'
