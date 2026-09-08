@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  atelier rule 35: cyclomatic complexity at most 10 per method.
+  atelier rules 35 and 15.
+
+  Rule 35: cyclomatic complexity at most 10 per method.
 
   The size caps (short methods, one indentation level) are prose; this is the
   gate, and it counts what they miss: a one-line chain of && / || / ternaries,
@@ -13,15 +15,35 @@
   pmd:check to verify (references/java-quarkus.md, Gates and hooks). The fix
   for a violation is never a higher level: split the method or dispatch on a
   map (references/complexity.md).
+
+  Rule 15: no inline ignore. NoSuppressWarnings flags every @SuppressWarnings
+  annotation. It cannot see @SuppressWarnings("PMD") on the annotated element,
+  because PMD honours that argument on its own report, so this rule is defence
+  in depth: scripts/check-no-suppressions.sh (the fast hook and CI) is the
+  authority, and the canonical pom sets an impossible suppressMarker so a
+  // NOPMD comment is inert.
 -->
 <ruleset name="atelier"
     xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
-  <description>atelier rule 35: cyclomatic complexity at most 10 per method</description>
+  <description>atelier rules 35 (cyclomatic complexity at most 10 per method) and 15 (no @SuppressWarnings)</description>
   <rule ref="category/java/design.xml/CyclomaticComplexity">
     <properties>
       <property name="methodReportLevel" value="11" />
+    </properties>
+  </rule>
+  <rule name="NoSuppressWarnings" language="java" since="7.0"
+      message="No @SuppressWarnings: refactor, or change the rule's severity at project level with a comment (rule 15)"
+      class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+    <description>Rule 15: no inline ignore, ever. A suppression annotation hides a finding instead of fixing it.</description>
+    <priority>3</priority>
+    <properties>
+      <property name="xpath">
+        <value><![CDATA[
+//Annotation[pmd-java:typeIs('java.lang.SuppressWarnings')]
+]]></value>
+      </property>
     </properties>
   </rule>
 </ruleset>

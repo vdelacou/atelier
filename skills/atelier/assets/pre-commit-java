@@ -39,13 +39,15 @@ fi
 
 echo "pre-commit: running the fast gates..."
 
-echo "[1/4] commit size"
+echo "[1/5] commit size"
 bash scripts/check-commit-size.sh
 
-echo "[2/4] pom sanity (no ranges / -SNAPSHOT deps)"
+echo "[2/5] pom sanity (no ranges / -SNAPSHOT deps / no mock library)"
 bash scripts/check-pom.sh
 
-echo "[3/4] gitleaks protect --staged"
+echo "[3/5] no inline suppression (rule 15)"
+bash scripts/check-no-suppressions.sh
+echo "[4/5] gitleaks protect --staged"
 if command -v gitleaks >/dev/null 2>&1; then
   gitleaks protect --staged --redact --verbose --no-banner
 else
@@ -53,7 +55,7 @@ else
   echo "  install: brew install gitleaks (or https://github.com/gitleaks/gitleaks/releases)" >&2
 fi
 
-echo "[4/4] ./mvnw spotless:check"
+echo "[5/5] ./mvnw spotless:check"
 ./mvnw -q spotless:check
 
 echo "pre-commit: fast gates passed. ./mvnw verify and PIT run in CI (assets/ci-java.yml)."

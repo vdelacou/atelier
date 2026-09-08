@@ -213,6 +213,8 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
           <printFailingErrors>true</printFailingErrors>
           <includeTests>false</includeTests>
           <linkXRef>false</linkXRef>
+          <!-- rule 15: no inline ignore; an impossible marker makes every // NOPMD comment inert -->
+          <suppressMarker>ATELIER-NEVER-SUPPRESS</suppressMarker>
         </configuration>
         <executions>
           <execution>
@@ -272,7 +274,7 @@ Dependency rule unchanged: `domain` imports nothing from the framework; `usecase
 | 12 branded types | Value **records with validating compact constructors** plus a `parse(...)` factory returning `Result` (below) |
 | 13 no `mock` | **No Mockito, no EasyMock, no `@InjectMock`.** Hand-written fakes implement the port interface; two gates keep the libraries out of the pom: the enforcer's `bannedDependencies` (direct or transitive, in every `mvn` run) and `check-pom.sh`'s third check in the fast hook (a declared mock coordinate) |
 | 14 outside-in classicist | Unchanged: the SUT is the application service; domain runs real; only secondary ports get fakes |
-| 15 zero warnings, no inline ignores | No `@SuppressWarnings`, ever. Compile with `-Xlint:all -Werror`; SonarJava/Error Prone severities change at project level with a comment |
+| 15 zero warnings, no inline ignores | No `@SuppressWarnings`, ever. Compile with `-Xlint:all -Werror`; SonarJava/Error Prone severities change at project level with a comment. Three gates since 2026-09-08: `check-no-suppressions.sh` rejects `@SuppressWarnings`, `@SuppressFBWarnings`, `NOPMD`, `NOSONAR`, `CHECKSTYLE:OFF` and `noinspection` in staged Java (the fast hook) and across the tree (CI); the `NoSuppressWarnings` XPath rule in `pmd-ruleset.xml` flags the annotation in `verify` (it cannot see `@SuppressWarnings("PMD")`, which suppresses its own report, hence the grep); the canonical pom's `suppressMarker` is an impossible token, so a `// NOPMD` comment is inert |
 | 16 `Result` at IO boundaries | `Result<T, E>` as a sealed interface (below); every port method returns it |
 | 17 `try/catch` quarantine | Adapters in `infra/` catch SDK/JPA exceptions and translate to `Err`; use-cases pattern-match with `switch`; one top-level handler at the entry point |
 | 18 no curried chains | n/a |
@@ -413,14 +415,15 @@ Every `mvn test` then shuffles methods and classes; JUnit logs the seed, and `-D
 Same git hooks as the Bun variant, shell only, wired with `git config core.hooksPath .githooks`, plus the CI workflow. All five artifacts ship in the skill's `assets/`; copy them, never hand-write:
 
 - `assets/commit-msg`: the shipped Conventional Commits validator, unchanged (rule 23; it is dependency-free shell).
-- `assets/pre-commit-java`: the fast gates only, commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>`, the project's own dev version may be a SNAPSHOT; no mock library declared, rule 13) → `gitleaks protect --staged` → `./mvnw -q spotless:check`. A multi-minute hook trains `--no-verify` (canon 15.1, and 15.3), so `./mvnw verify` and PIT do not live here.
+- `assets/pre-commit-java`: the fast gates only, commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>`, the project's own dev version may be a SNAPSHOT; no mock library declared, rule 13) → no inline suppression (`scripts/check-no-suppressions.sh`, rule 15: `@SuppressWarnings`, `NOPMD`, `NOSONAR` and the rest as text) → `gitleaks protect --staged` → `./mvnw -q spotless:check`. A multi-minute hook trains `--no-verify` (canon 15.1, and 15.3), so `./mvnw verify` and PIT do not live here.
 - The four discipline tripwires (`references/workflow.md`, Discipline tripwires) are Java-aware and belong in any service that touches the matching concern, though they are not part of the core gate set: `check-pii-channels.sh` catches a `@QueryParam("email"|"phone"|"ssn"|"token")` and a logged natural identifier (rule 27), `check-io-deadlines.sh` catches an `HttpClient` built with no `.timeout(`/`connectTimeout` in the file (rule 29), `check-data-lifecycle.sh` catches `deleteById(`/`deleteAll(`/`DELETE FROM` in application code (rule 30), and `check-isolation-tests.sh` refuses a new `**/api/*.java` resource with no nearby test mentioning 404 (rule 28). Each reads the staged diff, takes `--all` for a tree-wide adopt audit, and is proven on its Java trigger by `smoke-test-java.sh`.
 - `assets/audit-java.yml`: the two watchdogs that are not gate material, the OWASP CVE scan and `check-skill-pin.sh` (a vendored standard is a dependency, `references/governance.md`; the workflow's `SKILL_PIN_UPSTREAM` env names the repository the whole vendored tree is compared against), on a daily schedule plus the pull requests that touch a pom or the vendored skill.
 - `assets/pit-changed.sh`: the mutation step of CI, PIT on the classes that changed in the event's range (the pull request's base, or `github.event.before..HEAD` on a push, which the workflow exports; an unknown base fails loudly, no change in scope exits 0), plus uncommitted and untracked sources locally.
 - `assets/mutation-java.yml`: the daily full PIT sweep over `domain` and `usecases` (`workflow_dispatch` on demand), the only run that measures the whole tree; a red run is a task, not a blocked merge.
 - `assets/ci-java.yml`: the authoritative gate set, run on every push and pull request as the required merge check. Its first step re-runs the commit-msg validator over the pushed range (`scripts/check-commit-messages.sh`, so `--no-verify` cannot slip a message past the local hook), then the pom gate, a full-history `gitleaks detect` (CI installs its own pinned copy), plus `./mvnw verify` (compile with `-Werror`, unit + integration tests, JaCoCo tier check, the PMD complexity cap of rule 35), and PIT mutation (≥90 on `domain`/`usecases`). The commit-size range check runs here too; the CVE scan does not.
 - `assets/java/LayerRulesTest.java`: the rule 37 test (ArchUnit); copied into `src/test/java/<pkg>/architecture/` with its package and `@AnalyzeClasses` root renamed to yours; needs `archunit-junit5` in the pom, which the canonical pom carries.
-- `assets/java/pmd-ruleset.xml`: the rule 35 ruleset (`CyclomaticComplexity`, `methodReportLevel` 11, so complexity 11 and above fails and 10 passes, the same boundary as the TypeScript `complexity: ['error', 10]`), copied to the repository root where the canonical pom's `maven-pmd-plugin` reads it in `verify`. `smoke-test-java.sh` plants a complexity-11 method and sees `pmd:check` red, and a complexity-10 one green.
+- `assets/check-no-suppressions.sh`: the rule 15 tripwire for Java, staged lines in the hook and `--all` in CI; the forms it rejects are listed in its header.
+- `assets/java/pmd-ruleset.xml`: the rule 35 ruleset and the rule 15 `NoSuppressWarnings` XPath rule (`CyclomaticComplexity`, `methodReportLevel` 11, so complexity 11 and above fails and 10 passes, the same boundary as the TypeScript `complexity: ['error', 10]`), copied to the repository root where the canonical pom's `maven-pmd-plugin` reads it in `verify`. `smoke-test-java.sh` plants a complexity-11 method and sees `pmd:check` red, and a complexity-10 one green.
 
 ```bash
 cp <skill>/assets/pre-commit-java        .githooks/pre-commit
@@ -428,6 +431,7 @@ cp <skill>/assets/commit-msg             .githooks/commit-msg
 cp <skill>/assets/java/pmd-ruleset.xml   pmd-ruleset.xml
 cp <skill>/assets/check-commit-size.sh   scripts/check-commit-size.sh
 cp <skill>/assets/check-pom.sh           scripts/check-pom.sh
+cp <skill>/assets/check-no-suppressions.sh scripts/check-no-suppressions.sh
 cp <skill>/assets/check-commit-messages.sh scripts/check-commit-messages.sh
 cp <skill>/assets/check-commit-range.sh    scripts/check-commit-range.sh
 mkdir -p .github/workflows
