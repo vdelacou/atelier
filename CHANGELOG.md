@@ -100,6 +100,9 @@ whole, not any single skill.
   citations had pinned the blank line after a heading since the lock was created, and twice on 2026-09-08 a
   shifted pin was re-locked onto a blank before the lock diff caught it. The three rows now cite the
   paragraph they quote.
+- `check-workflow-assets.sh` parses every shipped workflow (python3 with PyYAML, else ruby) before grepping
+  it; the first `ci-next.yml` draft did not parse and only a hand check caught it. A parser that says no
+  fails the gate, a machine with no parser prints a note, and the selftest rejects the colon-space fixture.
 
 ## [2.2.0] - 2026-09-06
 
