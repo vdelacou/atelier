@@ -37,6 +37,12 @@ whole, not any single skill.
   curried helper; on Java add the `archunit-junit5` dependency, copy `LayerRulesTest.java` into
   `src/test/java/<pkg>/architecture/` and rename its package and root; then re-copy the pointer block
   (rules 1-37).
+- **Rule 13 in Java is a gate.** The canonical pom's enforcer gains `bannedDependencies` for `org.mockito`,
+  `org.easymock`, `org.powermock`, `org.jmockit`, `quarkus-junit5-mockito` and `quarkus-panache-mock`
+  (enforcer 3.x walks the whole tree, so a Mockito arriving through another artifact is caught too), and
+  `check-pom.sh` rejects a declared mock coordinate in the fast hook. The Java smoke test proves both red
+  on a planted `mockito-core`. Consumers: re-extract the enforcer block of the canonical pom and re-copy
+  `check-pom.sh`.
 
 ### Changed
 - The Bun config's mock-ban message (`MOCK_BAN`, hard rule 13) ends with the rule number like the Next
