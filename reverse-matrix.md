@@ -31,7 +31,7 @@ re-audit when the hard-rule list changes.
 | 2 | No `function` declarations | NO-COUNTERPART | nearest 1.1 | Stack binding |
 | 3 | No `interface`, always `type` | NO-COUNTERPART | nearest 1.1 | Stack binding; inverts in the Java translation, which is the proof it is profile, not principle |
 | 4 | No `console.*`, injected Logger port | STRICTER-THAN | 3.2, 6.3 | Port discipline is 3.2 and redaction is 6.3; the absolute ban plus one Winston wiring is profile excess |
-| 5 | Bun-only toolchain | NO-COUNTERPART | nearest 1.1 | Stack binding; determinism rationale echoes 5.3. Gated since 2026-09-08: `check-package-json.sh` rejects a foreign lockfile anywhere and a `scripts` entry calling `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite` directly, proven red in the Bun smoke test |
+| 5 | Bun-only toolchain | NO-COUNTERPART | nearest 1.1 | Stack binding; determinism rationale echoes 5.3. Gated since 2026-09-08: `check-package-json.sh` rejects a foreign lockfile anywhere and a `scripts` entry calling `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite` directly, proven red in the Bun smoke test; the Next `simple-git-hooks` pre-commit runs the same gate first since the same day, proven in the Next smoke test |
 | 6 | Explicit return types on exports | NO-COUNTERPART | nearest 1.1 | Stack binding |
 | 7 | Type-only imports on their own line | NO-COUNTERPART | nearest 1.1 | Stack binding. Lint since 2026-09-08 (`ImportSpecifier[importKind="type"]`; `consistent-type-imports` alone accepted the inline form) |
 | 8 | Quotes, semicolons, formatting values | CANON-ROW | 1.1 | This IS the committed config 1.1 demands, instantiated |
@@ -45,7 +45,7 @@ re-audit when the hard-rule list changes.
 | 16 | `Result<T, E>` at IO boundaries | CANON-ROW | 10.2 | Errors as values |
 | 17 | `try/catch` quarantined to infra | CANON-ROW | 10.2, 3.1 | Was STRICTER-THAN at audit time; the 10.2 strengthening (accepted 2026-08-30, from this audit) fixes the catch's place at the boundary |
 | 18 | No curried arrow chains | NO-COUNTERPART | nearest 1.1, 1.2 | Stack binding. Lint since 2026-09-08 (an arrow whose body is an arrow, `create[A-Z]` declarators exempt) |
-| 19 | No `latest`/`*`; constrained versions | CANON-ROW | 5.3 | Post-P6 5.3 says exactly this: constrained range plus committed lockfile |
+| 19 | No `latest`/`*`; constrained versions | CANON-ROW | 5.3 | Post-P6 5.3 says exactly this: constrained range plus committed lockfile. Since 2026-09-08 the Next variant runs `check-package-json.sh` in its `simple-git-hooks` pre-commit too; before, no Next repo built from the skeleton ran gate 2 |
 | 20 | `Bun.file` in production, `node:fs` at edges | NO-COUNTERPART | nearest 3.1 | Stack binding. Lint since 2026-09-08 (an `fs` import under `src/**` outside tests, `src/test-helpers/**`, `src/infra/**`; Bun config only, Next runs on Node) |
 | 21 | Design system independent and logic-free | STRICTER-THAN | 3.3 | The canon seals presentation behind a design system; Atomic Design taxonomy, no-hooks, and the import bans are profile mechanics |
 | 22 | Styling sealed, no Tailwind in app code | STRICTER-THAN | 3.3 | The seal made mechanical for one styling system |

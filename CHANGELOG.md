@@ -66,6 +66,11 @@ whole, not any single skill.
   `pnpm-lock.yaml`) and a `scripts` entry that calls `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite`
   directly, an env prefix and a segment after `&&` included; `bunx vite` passes, the rule says directly.
   Until 2026-09-08 a tracked npm lockfile passed every hook. Consumers: re-copy `check-package-json.sh`.
+- **The Next variant runs gate 2.** The root `package.json` skeleton's `simple-git-hooks` pre-commit calls
+  `bash scripts/check-package-json.sh` before test and lint, and the bootstrap checklist copies the asset;
+  until 2026-09-08 no Next repo built from the skeleton ran the package.json gate at all, so rules 5 and 19
+  were unenforced there. The Next smoke test proves `"latest"` and a `node` script red. Consumers on Next:
+  copy `check-package-json.sh` into `scripts/`, add it to the hook line, `bun run prepare`.
 
 ### Changed
 - The Bun config's mock-ban message (`MOCK_BAN`, hard rule 13) ends with the rule number like the Next
