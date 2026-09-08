@@ -13,6 +13,8 @@
 #       rule 21: a hook, a next/* import, 'use client', an app-code import
 #                 inside a component
 #       rule 22: a className / class / style attribute outside src/components/**
+#     and the package.json gate (rules 5, 19), copied from assets and run first
+#     in the simple-git-hooks pre-commit, rejects "latest" and a node script
 #
 # The negative half is the point: it locks in the rules 21-22 enforcement so a
 # future ESLint / Next / typescript-eslint major cannot silently disable it.
@@ -108,6 +110,14 @@ cat > package.json <<'EOF'
 EOF
 
 printf 'node_modules/\n.next/\nout/\n.eslintcache\nnext-env.d.ts\n' > .gitignore
+
+# Gate 2 (rules 5 and 19) is copied from the skill's assets, as the bootstrap checklist
+# says; the doc's root package.json runs it first in the simple-git-hooks pre-commit.
+mkdir -p scripts
+cp "$REPO_ROOT/skills/atelier/assets/check-package-json.sh" scripts/
+extract_fence "$DOC" '## Root `package.json`' | grep -q 'check-package-json.sh && bun run' \
+  && pass "the root package.json fence runs check-package-json.sh first in pre-commit" \
+  || fail "the root package.json fence does not run check-package-json.sh in pre-commit (doc drift)"
 
 cat > app/globals.css <<'EOF'
 @import 'tailwindcss';
@@ -352,6 +362,26 @@ ban_red "prettier-ignore is rejected (rule 15)" src/lib/unformatted.ts "'prettie
 // prettier-ignore
 export const table = [1,2,3,   4];
 EOF
+
+# Rules 5 and 19 in this variant (2026-09-08): before, no Next repo ran the package.json
+# gate at all. The fixture's own manifest is green; a "latest" dependency and a script
+# calling node are red; the manifest is restored after each.
+expect_ok "package.json gate accepts the fixture's manifest (rules 5, 19)" bash scripts/check-package-json.sh
+cp package.json package.json.orig
+python3 - <<'PYEOF2'
+import json
+p = json.load(open('package.json')); p['dependencies']['left-pad'] = 'latest'
+json.dump(p, open('package.json', 'w'), indent=2)
+PYEOF2
+expect_err "package.json gate rejects \"latest\" (rule 19)" bash scripts/check-package-json.sh
+cp package.json.orig package.json
+python3 - <<'PYEOF2'
+import json
+p = json.load(open('package.json')); p['scripts']['dev'] = 'node server.js'
+json.dump(p, open('package.json', 'w'), indent=2)
+PYEOF2
+expect_err "package.json gate rejects a script calling node (rule 5)" bash scripts/check-package-json.sh
+mv package.json.orig package.json
 expect_ok "tsc --noEmit" bun run typecheck
 expect_ok "next build (static export)" env NODE_ENV=production bun run build
 
