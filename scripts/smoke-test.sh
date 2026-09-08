@@ -14,7 +14,7 @@
 #     file, stale preload, oversized commit, "latest" version, junk commit
 #     message, complexity 11, an order-dependent test chain, and the style
 #     bans: a class, an inline type specifier, a use-case try/catch, a curried
-#     chain, node:fs in the domain, a domain import of infra)
+#     chain, node:fs in the domain, a domain import of infra, a mock import)
 #
 # Run locally: bash scripts/smoke-test.sh
 # Run in CI:   .github/workflows/ci.yml
@@ -381,6 +381,22 @@ ban_red "layer zone rejects a domain file importing infra (rule 37)" src/domain/
 import { createFetchGreeting } from '../infra/fetch-greeting.ts';
 
 export const wired = createFetchGreeting('https://svc.test');
+EOF
+# Rule 13 had shipped since the first config and no fixture had ever seen it red. Two
+# places carry the ban: the base block (any test file) and every layer zone, which
+# re-declares it by hand because ESLint replaces a rule's options per block; the
+# second case is what would go quiet if a zone dropped it.
+ban_red "mock ban rejects import { mock } from bun:test in a test file (rule 13)" src/domain/mocky.test.ts "hard rule 13)" <<'EOF'
+import { expect, mock, test } from 'bun:test';
+
+test('a mocked call', () => {
+  expect(mock(() => 1)()).toBe(1);
+});
+EOF
+ban_red "the domain zone still carries the mock ban (rule 13, replace-not-merge)" src/domain/mocky.ts "hard rule 13)" <<'EOF'
+import { mock } from 'bun:test';
+
+export const fake = mock(() => 1);
 EOF
 rmdir src/use-cases
 cat > src/infra/orphan.ts <<'EOF'

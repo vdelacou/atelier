@@ -318,6 +318,21 @@ export const add =
   (b: number): number =>
     a + b;
 EOF
+# Rule 13, never seen red before 2026-09-08: the base block bans the import in any
+# test file, and the design-system block re-declares it (ESLint replaces a rule's
+# options per block), so a component importing `mock` proves the copy survived.
+ban_red "mock ban rejects import { mock } from bun:test in a test file (rule 13)" src/lib/mocky.test.ts "hard rule 13)" <<'EOF'
+import { expect, mock, test } from 'bun:test';
+
+test('a mocked call', () => {
+  expect(mock(() => 1)()).toBe(1);
+});
+EOF
+ban_red "the design-system block still carries the mock ban (rule 13, replace-not-merge)" src/components/atoms/mocky.tsx "hard rule 13)" <<'EOF'
+import { mock } from 'bun:test';
+
+export const fake = mock(() => 1);
+EOF
 expect_ok "tsc --noEmit" bun run typecheck
 expect_ok "next build (static export)" env NODE_ENV=production bun run build
 
