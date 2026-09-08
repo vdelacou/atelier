@@ -543,6 +543,26 @@ module.exports = {
 };
 ```
 
+## CI (`assets/ci-next.yml`)
+
+The hook is the fast first line; CI is the gate set that `--no-verify` cannot skip, so make it the
+required status check. The shipped workflow runs, on push to `main` and on pull requests, on a frozen
+lockfile: the commit messages over the pushed range through commitlint (the hook's own grammar, one
+grammar per variant, canon 1.3), the commit-size gate per commit (`scripts/check-commit-range.sh`),
+gate 2 over every manifest (`scripts/check-package-json.sh`, rules 5 and 19), gitleaks over the full
+history, then `bun run --filter '*' test`, `lint`, `typecheck` and `build`, and the bundle budget on
+each `packages/*/out` (`scripts/check-bundle-size.sh`, `BUDGET_KB` in the workflow's `env`, canon 17.7).
+No coverage or mutation step: this variant has neither gate (SKILL.md, What applies where).
+
+```bash
+mkdir -p .github/workflows scripts
+cp <skill>/assets/ci-next.yml            .github/workflows/ci.yml
+cp <skill>/assets/check-commit-range.sh  scripts/check-commit-range.sh
+cp <skill>/assets/check-package-json.sh  scripts/check-package-json.sh
+cp <skill>/assets/check-bundle-size.sh   scripts/check-bundle-size.sh
+chmod +x scripts/*.sh
+```
+
 ## Atomic Design (enforced: full doctrine in `references/atomic-design.md`)
 
 Directory model under `packages/<app>/src/components/`:
@@ -739,7 +759,7 @@ The exception stops at the client boundary. A Next.js server app (route handlers
 2. `bun init -y`, then replace `package.json` with the skeleton above (rename `name`).
 3. Create `tsconfig.json`, `eslint.config.mjs`, `postcss.config.mjs`, and `next.config.ts` with the blocks above.
 4. Create `.vscode/settings.json` and `.vscode/extensions.json` at the repo root if not present.
-5. From repo root: `mkdir -p scripts && cp <skill>/assets/check-package-json.sh scripts/ && chmod +x scripts/check-package-json.sh` (gate 2, rules 5 and 19; the hook calls it first), then `bun install`, then `bun run prepare` to install git hooks.
+5. From repo root: copy the CI workflow and its scripts as the CI section above shows (`assets/ci-next.yml` to `.github/workflows/ci.yml`; `check-commit-range.sh`, `check-package-json.sh`, `check-bundle-size.sh` to `scripts/`, `chmod +x`; gate 2 is what the hook calls first), then `bun install`, then `bun run prepare` to install git hooks.
 6. Create `src/lib/utils/logger.ts`.
 7. Set up `app/globals.css` for Tailwind v4.
 8. Lay out `src/components/{atoms,molecules,organisms}/`, `src/page/`, `src/lib/`, `src/config/`, `src/types/`.

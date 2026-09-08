@@ -287,7 +287,7 @@ Add the matching scripts to `package.json`:
 
 Optional: install `gitleaks` (`brew install gitleaks`) for the secret-scan gate. The hook degrades gracefully if it's missing.
 
-For a **Java (Quarkus) repo**, the equivalent install copies `assets/pre-commit-java`, `assets/ci-java.yml`, `assets/mutation-java.yml`, `assets/audit-java.yml`, `assets/check-pom.sh`, `assets/pit-changed.sh`, `assets/java/pmd-ruleset.xml`, the shared `assets/check-commit-size.sh`, `assets/check-commit-range.sh`, and `assets/check-commit-messages.sh`, and the same `assets/commit-msg`, see `references/java-quarkus.md` (§ Gates and hooks) for the copy block and the pom-side configuration (Spotless, JaCoCo tiers, PIT).
+For a **Next.js monorepo**, the hook is `simple-git-hooks` (`references/nextjs-monorepo.md`, Root `package.json`) and the CI workflow is `assets/ci-next.yml` with `check-commit-range.sh`, `check-package-json.sh` and `check-bundle-size.sh` (its CI section). For a **Java (Quarkus) repo**, the equivalent install copies `assets/pre-commit-java`, `assets/ci-java.yml`, `assets/mutation-java.yml`, `assets/audit-java.yml`, `assets/check-pom.sh`, `assets/pit-changed.sh`, `assets/java/pmd-ruleset.xml`, the shared `assets/check-commit-size.sh`, `assets/check-commit-range.sh`, and `assets/check-commit-messages.sh`, and the same `assets/commit-msg`, see `references/java-quarkus.md` (§ Gates and hooks) for the copy block and the pom-side configuration (Spotless, JaCoCo tiers, PIT).
 
 ## Carry the standard in the repo, not only in the skill
 
@@ -366,6 +366,7 @@ atelier/
     │   │   ├── check-skill-pin.sh              # a vendored or pinned skill compared against upstream, one file or the whole tree
     │   │   ├── ci.yml                          # GitHub Actions CI: the full gate set on a frozen lockfile (rules 4.6, 15.1)
     │   │   ├── ci-java.yml                     # GitHub Actions CI: the full Java gate set (verify, JaCoCo, PIT on the changed classes)
+    │   │   ├── ci-next.yml                     # GitHub Actions CI: the Next.js gate set (commitlint range, gate 2, gitleaks, test/lint/typecheck/build, bundle budget)
     │   │   ├── claude-md-pointer.md            # the pointer block every consumer CLAUDE.md carries (copy, never retype)
     │   │   ├── commit-msg                      # git commit-msg hook: enforce Conventional Commits (rule 23, all variants)
     │   │   ├── fetch-mock.ts                   # installFetchMock for infra adapter tests
