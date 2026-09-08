@@ -33,6 +33,7 @@ lint_workflow() {
   case "$(basename "$wf")" in
     ci.yml|audit.yml|mutation.yml) ref="${BOOTSTRAP_REF_BUN:-skills/atelier/references/bun-typescript.md}" ;;
     ci-java.yml|audit-java.yml|mutation-java.yml) ref="${BOOTSTRAP_REF_JAVA:-skills/atelier/references/java-quarkus.md}" ;;
+    ci-next.yml) ref="${BOOTSTRAP_REF_NEXT:-skills/atelier/references/nextjs-monorepo.md}" ;;
   esac
   if [ -n "$ref" ] && [ -f "$ref" ]; then
     while IFS= read -r sref; do
