@@ -16,8 +16,35 @@ ASSETS_DIR="${ASSETS_DIR:-skills/atelier/assets}"
 # Binaries the workflows may call that are absent from ubuntu-latest runners.
 NON_PREINSTALLED=(gitleaks)
 
+# 0. the file must be YAML at all. Whichever parser the machine has: python3 with
+#    PyYAML, else ruby with Psych (the ubuntu runner has both). A colon-space
+#    inside an unquoted step name is a mapping to YAML, not a name (the ci-next.yml
+#    draft of 2026-09-08), and grep cannot see it. Returns 0 parsed, 1 the parser
+#    said no (its message on stderr; any parser failure counts, a crashed parser
+#    is not a pass), 2 no parser on the machine.
+parse_yaml() {
+  local wf="$1" st
+  if python3 -c 'import yaml' 2>/dev/null; then
+    python3 -c 'import sys, yaml; yaml.safe_load(open(sys.argv[1]))' "$wf" 2>&1 | sed 's/^/    /' >&2; st="${PIPESTATUS[0]}"
+  elif command -v ruby >/dev/null 2>&1; then
+    ruby -ryaml -e 'YAML.load_file(ARGV[0])' "$wf" 2>&1 | sed 's/^/    /' >&2; st="${PIPESTATUS[0]}"
+  else
+    return 2
+  fi
+  [ "$st" -eq 0 ] && return 0
+  return 1
+}
+
 lint_workflow() {
   local wf="$1" assets_dir="$2" fails=0
+  local parsed=0
+  parse_yaml "$wf" || parsed=$?
+  if [ "$parsed" -eq 1 ]; then
+    echo "FAIL $wf: does not parse as YAML (a colon-space in an unquoted scalar, an indentation slip)" >&2
+    fails=1
+  elif [ "$parsed" -eq 2 ]; then
+    echo "NOTE $wf: no YAML parser on this machine (python3 with PyYAML, or ruby); the parse check is skipped here and runs in CI" >&2
+  fi
 
   # 1. every `scripts/<name>` referenced in a run line must ship in assets/
   while IFS= read -r ref; do
@@ -64,6 +91,15 @@ selftest() {
   trap "rm -rf '$tmp'" EXIT
   mkdir -p "$tmp/assets"
   touch "$tmp/assets/present.sh"
+  # violation 0: a workflow that is not YAML (the 2026-09-08 ci-next.yml draft)
+  printf 'steps:\n  - name: gate (rules 5 and 19: no latest)\n    run: bash scripts/present.sh\n' > "$tmp/v0.yml"
+  printf 'copy assets/present.sh into scripts/\n' > "$tmp/ref0.md"
+  parse_yaml "$tmp/v0.yml" 2>/dev/null && { echo "selftest FAIL: the parser accepted a colon-space step name" >&2; exit 1; }
+  rc=0; parse_yaml "$tmp/v0.yml" 2>/dev/null || rc=$?
+  [ "$rc" -eq 2 ] && { echo "selftest FAIL: no YAML parser on this machine (python3 with PyYAML, or ruby); the parse check cannot be proven here" >&2; exit 1; }
+  if BOOTSTRAP_REF_BUN="$tmp/ref0.md" lint_workflow "$tmp/v0.yml" "$tmp/assets" 2>/dev/null; then
+    echo "selftest FAIL: malformed-YAML violation was accepted" >&2; exit 1
+  fi
 
   # violation 1: missing shipped script
   printf 'steps:\n  - run: bash scripts/missing.sh\n' > "$tmp/v1.yml"
@@ -91,7 +127,7 @@ selftest() {
   if ! lint_workflow "$tmp/ok.yml" "$tmp/assets"; then
     echo "selftest FAIL: compliant fixture was rejected" >&2; exit 1
   fi
-  echo "selftest OK: gate rejects a missing shipped script, an uninstalled binary, and an uncopied bootstrap script"
+  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, and an uncopied bootstrap script"
 }
 
 if [ "${1:-}" = "--selftest" ]; then
