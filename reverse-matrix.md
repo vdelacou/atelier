@@ -39,7 +39,7 @@ re-audit when the hard-rule list changes.
 | 10 | No custom error classes | CANON-ROW | 10.2 | Bespoke exception types are the anti-pattern both name; Java translation says it verbatim |
 | 11 | No production code without a failing test | CANON-ROW | 4.3 | Test-first is the canon's stated philosophy; the conformance eval tags this 4.3 |
 | 12 | Branded types at trust boundaries | CANON-ROW | 10.11, 5.5 | Parse-don't-validate plus validate-at-the-boundary |
-| 13 | No `mock`, the entire namespace | STRICTER-THAN | 4.5 | Absolute, lint-enforced ban where the canon advises prefer-fakes (forward matrix STRICTER row) |
+| 13 | No `mock`, the entire namespace | STRICTER-THAN | 4.5 | Absolute, gated ban where the canon advises prefer-fakes (forward matrix STRICTER row): ESLint `no-restricted-imports` in TypeScript, and since 2026-09-08 the enforcer's `bannedDependencies` (transitives included) plus `check-pom.sh` in Java, both proven red in the smoke tests |
 | 14 | Primary-port SUT, outside-in classicist | CANON-ROW | 4.5, 4.1 | Behavior-not-internals plus layered testing |
 | 15 | Zero warnings, no inline ignores | CANON-ROW | 15.3, 15.1 | No-silent-opt-out made executable |
 | 16 | `Result<T, E>` at IO boundaries | CANON-ROW | 10.2 | Errors as values |
