@@ -13,6 +13,8 @@ Usage:
 
 A citation suffixed with @<sha> (e.g. pre-commit:21@430c740) is historical by
 declaration and skipped. Prose-form references ("lines 153-217") are not scanned.
+Scanned extensions: md, sh, ts, yml, yaml, json, py, js, java, xml, properties (the
+Java assets joined on 2026-09-08, when a `.java:18` citation had sat unpinned).
 """
 from __future__ import annotations
 
@@ -29,7 +31,7 @@ SNIPPET_LEN = 72
 
 CITE = re.compile(
     r"(?P<name>[A-Za-z0-9._/-]*[A-Za-z0-9_-]\."
-    r"(?:md|sh|ts|yml|yaml|json|py|js)|pre-commit-java|pre-commit|commit-msg)"
+    r"(?:md|sh|ts|yml|yaml|json|py|js|java|xml|properties)|pre-commit-java|pre-commit|commit-msg)"
     r":(?P<start>\d+)(?:-(?P<end>\d+))?(?P<hist>@[0-9a-f]{7,40})?"
     r"(?P<more>(?:/\d+)*)"
 )
@@ -127,8 +129,10 @@ def run_selftest() -> int:
         root = Path(td)
         target = root / "doc.md"
         target.write_text("alpha\nbeta\ngamma\n")
+        java = root / "Layer.java"
+        java.write_text("package x;\n@AnalyzeClasses\nfinal class Layer {}\n")
         src = root / "matrix.md"
-        src.write_text("| row | doc.md:2 | evidence |\n")
+        src.write_text("| row | doc.md:2; Layer.java:2 | evidence |\n")
         global ROOT, SOURCES, LOCK, CANDIDATE_DIRS
         ROOT, SOURCES, LOCK = root, ["matrix.md"], root / "lock.json"
         CANDIDATE_DIRS = [""]
@@ -137,6 +141,9 @@ def run_selftest() -> int:
         target.write_text("alpha\nCHANGED\ngamma\n")
         assert run_verify() == 1, "changed cited line must fail"
         target.write_text("alpha\nbeta\ngamma\n")
+        java.write_text("package x;\n@Deprecated\nfinal class Layer {}\n")
+        assert run_verify() == 1, "a changed cited .java line must fail (the asset kinds are scanned)"
+        java.write_text("package x;\n@AnalyzeClasses\nfinal class Layer {}\n")
         src.write_text("| row | doc.md:2 | e |\n| row | doc.md:3 | new cite |\n")
         assert run_verify() == 1, "citation missing from lock must fail"
         src.write_text("| row | doc.md:99 | e |\n")
@@ -144,7 +151,7 @@ def run_selftest() -> int:
         src.write_text("| row | doc.md:1@430c740 | historical, skipped |\n")
         (root / "lock.json").write_text('{"entries": {}}')
         assert run_verify() == 0, "historical @sha citation must be skipped"
-    print("selftest OK: gate rejects a drifted line, an unlocked citation, and an out-of-range one")
+    print("selftest OK: gate rejects a drifted line (in a .md and in a .java), an unlocked citation, and an out-of-range one")
     return 0
 
 

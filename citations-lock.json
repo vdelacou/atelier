@@ -29,6 +29,7 @@
     "skills/atelier/assets/check-package-json.sh:37": "# Permits:  \"x\": \"^1.2.3\" / \"~1.2.3\" / \">=1.0.0\" / \"^4.0.0-beta.0\",  \"ne",
     "skills/atelier/assets/check-package-json.sh:71": "instead of hand-editing: Bun pins to ^X.Y.Z automatically.",
     "skills/atelier/assets/ci.yml:50": "run: bun test --randomize",
+    "skills/atelier/assets/java/LayerRulesTest.java:18": "@AnalyzeClasses(packages = \"com.example.app\", importOptions = ImportOpti",
     "skills/atelier/assets/stryker.conf.json:20": "\"break\": 90",
     "skills/atelier/assets/stryker.conf.json:8": "\"command\": \"bun test --randomize\"",
     "skills/atelier/references/ai.md:105": "On metered endpoints (model calls above all), a request rate limit is no",
