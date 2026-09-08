@@ -34,26 +34,26 @@ Two append-only journals, `.claude/LESSONS.md` (committed, team) and `.claude/le
 
 ## Hard rules (non-negotiable: refuse, rewrite, explain)
 
-1. **No `class` keyword.** Anywhere; every OO shape is a module of arrow functions and typed records (`references/design-patterns.md`).
+1. **No `class` keyword.** Anywhere; every OO shape is a module of arrow functions and typed records; lint-enforced (`no-restricted-syntax`, `ClassDeclaration` and `ClassExpression`) (`references/design-patterns.md`).
 2. **No `function` declarations.** Always `export const fn = (...) => {...}` (`func-style: expression`).
 3. **No `interface`.** Always `type Foo = {...}` (`consistent-type-definitions: type`).
 4. **No `console.*`.** The injected `Logger` port, Winston-backed in production; `scripts/**` gate scripts are off the rule at project level; the one sanctioned singleton is the Next.js client/static `src/lib/utils/logger.ts` (`references/bun-typescript.md`, Logger).
 5. **Bun only.** Never `npm`, `pnpm`, `yarn`, `node`, or `vite` directly: `bun install`, `bun run`, `bunx`, `bun run src/main.ts`.
 6. **Explicit return types on every exported function** (`explicit-function-return-type`).
-7. **Type-only imports on their own line.** `import type { Foo } from './foo';`
+7. **Type-only imports on their own line.** `import type { Foo } from './foo';` never an inline `type` specifier; lint-enforced (`no-restricted-syntax`, `ImportSpecifier[importKind="type"]`).
 8. **Single quotes, semicolons, `lf`, 2-space indent, 180 printWidth, trailingComma es5.**
 9. **ESM only.** `"type": "module"` everywhere; never `require` or `module.exports`.
-10. **No custom error classes.** Plain `Error` only; narrow `unknown` before reading `.message`.
+10. **No custom error classes.** Plain `Error` only; narrow `unknown` before reading `.message`; the class ban of rule 1 is the gate.
 11. **No production code without a failing test.** See The TDD process below.
 12. **Brand at trust boundaries; pass through inside one.** Every primitive that crosses a trust boundary or feeds a dangerous sink gets a branded type with a validating factory; inside one trust zone a plain `string` is honest. The test: would interpolating this value into a sink without a checkpoint create an exploitable category? (`references/security.md`, The trust-zone test.)
 13. **No `mock` from `bun:test`, the entire namespace.** `mock()`, `mock.module()`, `.toHaveBeenCalled*` are banned (`no-restricted-imports`): `mock.module` is process-global, not file-scoped. Every infra adapter exposes a test seam from day one (custom-fetch DI, the two-constructor pair whose `XApi` slices the SDK's real surface and never the port's, or a sync-builder export); `globalThis.fetch` adapters use `installFetchMock` (`references/testing-infra.md`).
 14. **Outside-in classicist TDD.** The SUT is the primary port; entities, value objects, and domain services run real; only secondary ports get hand-written fakes; every test name is a complete business scenario. One rare exception: a value object or domain service with genuinely non-trivial logic earns a few direct tests that supplement the port tests, never replace them (`references/testing.md`).
 15. **Zero lint warnings; no inline ignores, ever.** Refactor, or change the rule's severity at project level with a comment; never `// eslint-disable*`, `// @ts-ignore`, `// @ts-expect-error`, or any other tool's equivalent (`references/workflow.md`).
 16. **`Result<T, E>` at IO boundaries.** Every IO port returns `Promise<Result<T, PortError>>` with a discriminated-union error; every use-case returns `Promise<Result<Summary, StepError>>`; thrown exceptions are for programmer bugs, caught once in `main.ts` (`references/result-type.md`).
-17. **`try/catch` is quarantined.** Only in `src/infra/**`, in a pure-domain fallback around a native synchronous thrower that returns a `Result`, and exactly once in `src/main.ts`; zero in `src/use-cases/**`; tests and `src/test-helpers/**` are outside the quarantine (`references/result-type.md`).
-18. **No curried arrow chains.** One arrow with all its parameters, wrapped at the call site; the DI factory `createX = (deps) => (input) => ...` is the one exemption (`references/clean-code.md`).
+17. **`try/catch` is quarantined.** Only in `src/infra/**`, in a pure-domain fallback around a native synchronous thrower that returns a `Result`, and exactly once in `src/main.ts`; zero in `src/use-cases/**`; tests and `src/test-helpers/**` are outside the quarantine. The use-cases zero is lint (`no-restricted-syntax`, `TryStatement` under `src/use-cases/**`), the rest is review (`references/result-type.md`).
+18. **No curried arrow chains.** One arrow with all its parameters, wrapped at the call site; the DI factory `createX = (deps) => (input) => ...` is the one exemption; lint-enforced (`no-restricted-syntax`, an arrow whose body is an arrow, `create[A-Z]` declarators exempt) (`references/clean-code.md`).
 19. **No `"latest"` or `"*"` in `package.json`.** Concrete versions or real ranges; add with `bun add`, bump with `bun update`; gate 2 enforces it (`references/workflow.md`, Dependency hygiene).
-20. **Bun file API in production.** `Bun.file` and `Bun.write` for file IO in `src/**`; `node:fs` only in tests, in `src/test-helpers/**`, and in one commented infra helper for directories; `node:path` anywhere (`references/bun-typescript.md`, File IO).
+20. **Bun file API in production.** `Bun.file` and `Bun.write` for file IO in `src/**`; `node:fs` only in tests, in `src/test-helpers/**`, and in one commented infra helper for directories; `node:path` anywhere; lint-enforced (`no-restricted-syntax`, an `fs` import under `src/**` outside those paths) (`references/bun-typescript.md`, File IO).
 21. **The design system is independent and logic-free.** Everything under `src/components/{atoms,molecules,organisms}` is a stateless props-only component: no hooks, no fetching, no i18n, no `next/*`, imports strictly upward; state is hoisted to page shells, links and images arrive as injected `ComponentType` props (`references/atomic-design.md`).
 22. **Styling is sealed inside the design system.** Tailwind utilities only under `src/components/**` (tokens in `app/globals.css`); typed variant props, never free-form `className`; the app never sees Tailwind (`references/atomic-design.md`).
 23. **Conventional Commits, enforced by a hook.** `type(scope)!: subject`, header at most 100 chars; the `commit-msg` hook rejects the rest and CI re-checks the pushed range because `--no-verify` exists (`references/workflow.md`, Commit message format).
@@ -76,6 +76,7 @@ Rule 35 is a style rule that arrived later (2026-09); it sits after the discipli
 
 35. **Cyclomatic complexity at most 10 per function.** Lint-enforced in every variant (ESLint `complexity: ['error', 10]`, PMD `CyclomaticComplexity` at level 11); it counts what the size caps cannot see, a one-line chain of `&&`/`??`/ternaries or a wide `switch`; the fix is never a bigger number, split the function or dispatch on a map (`references/workflow.md`, Complexity gate).
 36. **Tests run in random order; no test depends on another.** `bun test --randomize` is the test script in every Bun and Next.js repo, in CI, in Stryker's runner and in the inner loop alike; Java sets `MethodOrderer$Random` and `ClassOrderer$Random` in `junit-platform.properties`. A red run prints its seed and `--seed=<n>` replays it. Each test owns its setup and teardown; state shared between tests is a defect, never a flake (`references/testing.md`, Random order).
+37. **Dependencies point inward, lint-enforced per layer.** `domain/` imports nothing else in `src/`; `use-cases/` sees `domain/` and its own `ports/`; `infra/` sees `domain/` and the ports it implements; `presenter/` sees `domain/`; `composition/` sees everything; no production code imports `src/test-helpers/**`. One `no-restricted-imports` zone per layer in `eslint.config.js` rejects the rest, tests excepted (`references/architecture.md`, Dependency rule).
 
 ## The TDD process (non-negotiable, every feature)
 
@@ -124,6 +125,8 @@ The hard rules are universal unless this table says otherwise. Gates and tooling
 | Rules 27–34 (production disciplines) | Apply when the concern exists | Apply when the concern exists | Apply when the concern exists (Java expressions in `references/java-quarkus.md`) |
 | Complexity cap (rule 35) | ESLint `complexity` 10 in `eslint.config.js` | The same rule in `eslint.config.mjs` | PMD `CyclomaticComplexity`, level 11, in `verify` (`assets/java/pmd-ruleset.xml`) |
 | Random test order (rule 36) | `bun test --randomize` as the `test` script, in CI and Stryker | The same script per package | `MethodOrderer$Random` and `ClassOrderer$Random` in `junit-platform.properties` |
+| Style bans (rules 1, 7, 10, 17, 18, 20) | `no-restricted-syntax` blocks in `eslint.config.js` (`STYLE_BANS`, `TRY_BAN`, `FS_BAN`) | `STYLE_BANS` and `TRY_BAN` in `eslint.config.mjs`; no `fs` ban (Node runtime) | n/a: rules 1-3, 7, 18, 20 are TypeScript bindings; 17's Java translation is review-checked |
+| Layer zones (rule 37) | `layerZone` blocks in `eslint.config.js`, one per layer under `src/` | Follow-up for the server archetype; rule 21 lints the design-system boundary | The same table in `references/java-quarkus.md`, review-checked until the ArchUnit gate lands |
 
 Whatever the variant, **every gate proves it can fail**: when you add or change a gate (a lint rule, a coverage tier, a hook, a CI check), land a violation fixture the gate must reject and keep it re-running, so a toolchain upgrade that silently disables the gate turns CI red instead of quiet. A gate only ever seen green is a hypothesis. The skill repo's own smoke tests are the reference implementation: each proves its gates pass on compliant code AND block their target violation.
 
@@ -137,7 +140,7 @@ Dotted ids in these files (canon 1.3, canon 15.10) are sub-concepts of the publi
 | `nextjs-monorepo.md` | `next.config.*` or `packages/*`; or touching `app/**`, `eslint.config.mjs`, `src/lib/utils/logger.ts` | no `next` in any `package.json` |
 | `atomic-design.md` | touching `src/components/**`, `src/page/**`, `src/lib/{hooks,layout}/**`, `app/globals.css` (rules 21-22) | no React |
 | `java-quarkus.md` | `pom.xml` or `build.gradle` present | no Java sources |
-| `architecture.md` | a new directory under `src/`, a new use-case, an HTTP entry, a composition root; adopt mode | the change stays inside one module |
+| `architecture.md` | a new directory under `src/`, a new use-case, an HTTP entry, a composition root, a layer-zone finding (rule 37); adopt mode | the change stays inside one module |
 | `testing.md` | any `*.test.ts` or `src/test-helpers/**` in the diff; rules 11, 13, 14, 24 | never (rule 11 puts a test in every feature diff) |
 | `testing-infra.md` | adding or testing a `src/infra/**` adapter (SDK, fetch, filesystem, timers) | no infra file touched |
 | `result-type.md` | a new port, use-case, `try/catch`, retry, or Result-to-HTTP mapping; rules 16-17 | a pure function with no IO |
@@ -183,7 +186,7 @@ Dotted ids in these files (canon 1.3, canon 15.10) are sub-concepts of the publi
 
 ## Red flags (stop and rethink)
 
-Any hard-rule breach (1-35) is a red flag by definition, as is any breach of the clean-code numbers or of complexity management (a speculative abstraction, extraction before the third duplication, a module with more than one reason to change, hardcoded values that should be configuration). The traps the gates cannot catch, from an infra adapter with no test seam to a `process.env` assignment, and the per-rule symptoms of a discipline breach (27-34) are listed in `references/workflow.md`, Red flags the gates miss; read it when reviewing.
+Any hard-rule breach (1-37) is a red flag by definition, as is any breach of the clean-code numbers or of complexity management (a speculative abstraction, extraction before the third duplication, a module with more than one reason to change, hardcoded values that should be configuration). The traps the gates cannot catch, from an infra adapter with no test seam to a `process.env` assignment, and the per-rule symptoms of a discipline breach (27-34) are listed in `references/workflow.md`, Red flags the gates miss; read it when reviewing.
 
 ## Remember
 
