@@ -71,6 +71,14 @@ whole, not any single skill.
   until 2026-09-08 no Next repo built from the skeleton ran the package.json gate at all, so rules 5 and 19
   were unenforced there. The Next smoke test proves `"latest"` and a `node` script red. Consumers on Next:
   copy `check-package-json.sh` into `scripts/`, add it to the hook line, `bun run prepare`.
+- **The Next variant ships a CI workflow.** `assets/ci-next.yml`, the authoritative gate set beside `ci.yml`
+  and `ci-java.yml`: commit messages over the pushed range through commitlint (the hook's grammar), the
+  commit-size range gate, gate 2, gitleaks over the full history, then test, lint, typecheck and build for
+  every workspace on a frozen lockfile, and the bundle budget on each `packages/*/out`. Until 2026-09-08 a
+  Next repo built from the skeleton had hooks only, so `--no-verify` had nothing behind it. The
+  workflow-asset gate lints it against the Next reference. Consumers on Next: copy it to
+  `.github/workflows/ci.yml` with `check-commit-range.sh`, `check-package-json.sh` and
+  `check-bundle-size.sh`, then make it the required status check.
 
 ### Changed
 - The Bun config's mock-ban message (`MOCK_BAN`, hard rule 13) ends with the rule number like the Next
