@@ -38,6 +38,14 @@ whole, not any single skill.
   `src/test/java/<pkg>/architecture/` and rename its package and root; then re-copy the pointer block
   (rules 1-37).
 
+### Changed
+- The Bun config's mock-ban message (`MOCK_BAN`, hard rule 13) ends with the rule number like the Next
+  one, and both smoke tests now prove the ban red, which no fixture had done since it shipped: a `mock`
+  import in a test file (the base block) and in a scoped production file (a Bun layer zone, a Next
+  design-system component), the second because ESLint replaces a rule's options per block and a zone
+  that dropped the copy would go quiet. Consumers: re-extract `eslint.config.js` if you want the tag in
+  the message; the ban itself is unchanged.
+
 ## [2.2.0] - 2026-09-06
 
 The six-pack release: the standard as a team of six (the SwarmForge pack, its installer and its
