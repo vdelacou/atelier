@@ -46,6 +46,13 @@ whole, not any single skill.
   that dropped the copy would go quiet. Consumers: re-extract `eslint.config.js` if you want the tag in
   the message; the ban itself is unchanged.
 
+### Harness
+- `select-tasks.py` (tier 1): a rule range from 1 over at least half the set is the count of the rules
+  and selects nothing; the rule ceiling is read from the SKILL.md hard-rules section instead of a
+  constant stuck at 35 (an explicit "rule 36" used to select nothing); within a hunk only the
+  references that differ between removed and added text count. The 2026-09-08 lint-gates diff selects
+  5 of 21 tasks instead of 21; each fix has a selftest case that fails without it.
+
 ## [2.2.0] - 2026-09-06
 
 The six-pack release: the standard as a team of six (the SwarmForge pack, its installer and its

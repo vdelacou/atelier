@@ -284,7 +284,13 @@ when it can answer something:
   maps touched rule lines, explicit rule references, reference files through the trigger
   table, and canon ids to the tasks tagged with them), skill arm, one pass, six jobs, graded
   with `--frozen-baseline`. A reference whose trigger-table row names no rule selects
-  nothing and is reported, so tier 2 is a conscious call, never a silent skip.
+  nothing and is reported, so tier 2 is a conscious call, never a silent skip. Since
+  2026-09-08 a range from rule 1 over at least half the set ("(1-37)", "rules 1-36") is read
+  as the count of the rules and selects nothing, the rule ceiling comes from the hard-rules
+  section rather than a constant, and within a hunk only the references that differ between
+  the removed and the added text count, so editing the red-flags count no longer selects the
+  discipline tier its unchanged "(27-34)" names. Dry-run `select-tasks.py --since <ref>`
+  before `run.sh`; the reasoning on stderr lists the ignored counts.
 - **Tier 2, hours, on a description change or before a release**: the full matrix,
   `CONFORMANCE_ARMS=both`, re-measuring the unaided arm and re-freezing it.
 
