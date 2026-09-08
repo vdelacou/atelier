@@ -118,7 +118,7 @@ const MOCK_BAN = {
   name: 'bun:test',
   importNames: ['mock'],
   message:
-    '`mock` from bun:test is forbidden: it leaks across test files. Use dependency injection: refactor the production code to accept the SDK as a parameter, then pass a fake at construction.',
+    '`mock` from bun:test is forbidden: it leaks across test files. Use dependency injection: refactor the production code to accept the SDK as a parameter, then pass a fake at construction (hard rule 13).',
 };
 
 // The style rules as lint (hard rules 1, 7, 10, 18). ESLint REPLACES a rule's options
