@@ -53,7 +53,14 @@ whole, not any single skill.
   `v8` and `istanbul` coverage ignores). The Bun smoke test proves eight forms red on their own messages,
   the Next smoke test three. Consumers: re-extract `eslint.config.js` or `eslint.config.mjs`; every
   suppression comment in the tree becomes a finding to refactor or to turn into a project-level severity
-  change with a reason. The Java half (`@SuppressWarnings`, `NOPMD`, `NOSONAR`) is the next slice.
+  change with a reason. Java gets three layers: `assets/check-no-suppressions.sh` (new; staged Java lines in
+  the fast hook as gate 3 of 5, `--all` over the tree in CI) rejects `@SuppressWarnings`,
+  `@SuppressFBWarnings`, `NOPMD`, `NOSONAR`, `CHECKSTYLE:OFF` and `noinspection` as text; the
+  `NoSuppressWarnings` XPath rule in `pmd-ruleset.xml` flags the annotation in `verify` (defence in depth,
+  since `@SuppressWarnings("PMD")` suppresses its own report); the canonical pom's `suppressMarker` is an
+  impossible token, so a `// NOPMD` comment is inert and the finding it hid resurfaces. Consumers on Java:
+  copy `check-no-suppressions.sh` into `scripts/`, re-copy `pre-commit-java`, `ci-java.yml` and
+  `pmd-ruleset.xml`, re-extract the PMD block of the canonical pom.
 
 ### Changed
 - The Bun config's mock-ban message (`MOCK_BAN`, hard rule 13) ends with the rule number like the Next
