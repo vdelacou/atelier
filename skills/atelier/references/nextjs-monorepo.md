@@ -66,7 +66,7 @@ This reference describes two shapes that share the same toolchain: the **static 
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "bun run --filter <package-name> test && bun run --filter <package-name> lint",
+    "pre-commit": "bash scripts/check-package-json.sh && bun run --filter <package-name> test && bun run --filter <package-name> lint",
     "commit-msg": "bunx --yes commitlint --edit $1"
   }
 }
@@ -74,7 +74,7 @@ This reference describes two shapes that share the same toolchain: the **static 
 
 Activate hooks after install: `bun run prepare`.
 
-**This variant's hook mechanism is `simple-git-hooks`** (test + lint per package, commitlint on the message). The `.githooks/pre-commit` fast-gate hook from `references/workflow.md` belongs to the Bun-script variant, never install both: `core.hooksPath` and `simple-git-hooks` overwrite each other. The commit-size, package.json, and gitleaks gates are portable here if wanted; the coverage and mutation gates are not (see SKILL.md, "What applies where").
+**This variant's hook mechanism is `simple-git-hooks`** (gate 2 first, `scripts/check-package-json.sh` copied from the skill's `assets/`: no `"latest"`, no foreign lockfile, no `scripts` entry calling `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite`, rules 5 and 19; then test + lint per package, commitlint on the message). The `.githooks/pre-commit` fast-gate hook from `references/workflow.md` belongs to the Bun-script variant, never install both: `core.hooksPath` and `simple-git-hooks` overwrite each other. The commit-size, package.json, and gitleaks gates are portable here if wanted; the coverage and mutation gates are not (see SKILL.md, "What applies where").
 
 ## Package `package.json`
 
@@ -739,7 +739,7 @@ The exception stops at the client boundary. A Next.js server app (route handlers
 2. `bun init -y`, then replace `package.json` with the skeleton above (rename `name`).
 3. Create `tsconfig.json`, `eslint.config.mjs`, `postcss.config.mjs`, and `next.config.ts` with the blocks above.
 4. Create `.vscode/settings.json` and `.vscode/extensions.json` at the repo root if not present.
-5. From repo root: `bun install`, then `bun run prepare` to install git hooks.
+5. From repo root: `mkdir -p scripts && cp <skill>/assets/check-package-json.sh scripts/ && chmod +x scripts/check-package-json.sh` (gate 2, rules 5 and 19; the hook calls it first), then `bun install`, then `bun run prepare` to install git hooks.
 6. Create `src/lib/utils/logger.ts`.
 7. Set up `app/globals.css` for Tailwind v4.
 8. Lay out `src/components/{atoms,molecules,organisms}/`, `src/page/`, `src/lib/`, `src/config/`, `src/types/`.
