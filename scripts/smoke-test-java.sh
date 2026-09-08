@@ -13,6 +13,7 @@
 #     CI gates (verify with the JaCoCo tiers, PIT) run directly, and commit-msg
 #   - every gate FAILS on the violation it exists to block: a version range,
 #     a -SNAPSHOT dependency, a mock library in the pom (hook and enforcer),
+#     a suppression in three forms (PMD rule, inert NOPMD, the tripwire),
 #     an oversized commit, a junk commit message, a
 #     misformatted file, a warning under -Werror, a domain class importing a
 #     use-case (ArchUnit, rule 37), a complexity-11 method (PMD), an order-
@@ -83,6 +84,7 @@ cp "$SKILL/assets/commit-msg" .githooks/commit-msg
 cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/assets/check-commit-messages.sh" "$SKILL/assets/check-commit-range.sh" "$SKILL/assets/pit-changed.sh" scripts/
 cp "$SKILL/assets/check-pii-channels.sh" "$SKILL/assets/check-io-deadlines.sh" \
    "$SKILL/assets/check-data-lifecycle.sh" "$SKILL/assets/check-isolation-tests.sh" scripts/
+cp "$SKILL/assets/check-no-suppressions.sh" scripts/
 cp "$SKILL/assets/java/pmd-ruleset.xml" pmd-ruleset.xml
 # The dependency rule as a test (rule 37): a shipped asset, copied as a real bootstrap does.
 mkdir -p src/test/java/com/example/app/architecture
@@ -299,6 +301,7 @@ expect_ok "the conforming suite is green under three seeds of the random orderer
   bash -c 'for s in 1 2 3; do ./mvnw -q test -Djunit.jupiter.execution.order.random.seed=$s >/dev/null 2>&1 || exit 1; done'
 expect_ok "PIT mutation >= 90 on domain+usecases (rule 14 analogue)" ./mvnw -q test-compile org.pitest:pitest-maven:mutationCoverage
 expect_ok "check-pom.sh on the canonical pom (rule 19)" bash scripts/check-pom.sh
+expect_ok "check-no-suppressions.sh --all on the clean tree (rule 15)" bash scripts/check-no-suppressions.sh --all
 expect_ok "commit-msg accepts a Conventional Commit (rule 23)" \
   bash -c 'printf "feat(smoke): walking skeleton\n" > .msg && .githooks/commit-msg .msg'
 
@@ -590,6 +593,58 @@ expect_err "PMD blocks a method of cyclomatic complexity 11 (rule 35)" ./mvnw -q
 gen_guards 9
 expect_ok "PMD accepts complexity 10, the cap itself" ./mvnw -q pmd:check
 rm src/main/java/com/example/app/domain/Branchy.java
+
+# 6c. Rule 15, the Java half (2026-09-08), three layers each proven red. The PMD rule
+# flags @SuppressWarnings in verify (the rule name lands in target/pmd.xml; -q hides
+# it from the console). The impossible suppressMarker makes // NOPMD inert, so a
+# complexity-11 method behind it is red. The tripwire catches the forms PMD cannot,
+# @SuppressWarnings("PMD") first among them, and NOSONAR, on the staged lines.
+cat > src/main/java/com/example/app/domain/Quiet.java <<'EOF'
+package com.example.app.domain;
+
+public final class Quiet {
+  private Quiet() {}
+
+  @SuppressWarnings("unchecked")
+  public static int one() {
+    return 1;
+  }
+}
+EOF
+expect_err "PMD blocks @SuppressWarnings (rule 15)" ./mvnw -q pmd:check
+expect_ok "the PMD violation is the NoSuppressWarnings rule, not a bystander" grep -q 'rule="NoSuppressWarnings"' target/pmd.xml
+rm src/main/java/com/example/app/domain/Quiet.java
+gen_guards 10
+sed -i.bak 's|public static int score(int\[\] v) {|public static int score(int[] v) { // NOPMD|' src/main/java/com/example/app/domain/Branchy.java && rm src/main/java/com/example/app/domain/Branchy.java.bak
+grep -q "NOPMD" src/main/java/com/example/app/domain/Branchy.java || { fail "fixture: the NOPMD marker was not planted"; }
+expect_err "a // NOPMD comment is inert: complexity 11 behind it is still red (rule 15)" ./mvnw -q pmd:check
+rm src/main/java/com/example/app/domain/Branchy.java
+cat > src/main/java/com/example/app/domain/Quiet.java <<'EOF'
+package com.example.app.domain;
+
+@SuppressWarnings("PMD")
+public final class Quiet {
+  private Quiet() {}
+}
+EOF
+git add src/main/java/com/example/app/domain/Quiet.java
+expect_err "check-no-suppressions.sh blocks a staged @SuppressWarnings(\"PMD\"), the form PMD cannot see (rule 15)" bash scripts/check-no-suppressions.sh
+cat > src/main/java/com/example/app/domain/Quiet.java <<'EOF'
+package com.example.app.domain;
+
+public final class Quiet {
+  private Quiet() {}
+
+  public static int one() {
+    return 1; // NOSONAR
+  }
+}
+EOF
+git add src/main/java/com/example/app/domain/Quiet.java
+expect_err "check-no-suppressions.sh blocks a staged NOSONAR (rule 15)" bash scripts/check-no-suppressions.sh
+git rm -q --cached src/main/java/com/example/app/domain/Quiet.java
+rm src/main/java/com/example/app/domain/Quiet.java
+
 
 # 7. The JaCoCo 100 tier blocks an untested domain class.
 cat > src/main/java/com/example/app/domain/Untested.java <<'EOF'
