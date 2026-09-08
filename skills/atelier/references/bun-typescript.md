@@ -110,6 +110,64 @@ import unicornPlugin from 'eslint-plugin-unicorn';
 import globals from 'globals';
 import tsPlugin from 'typescript-eslint';
 
+// `mock` from `bun:test` is process-global once installed and leaks into every
+// other test file the runner loads. Use dependency injection (createXFromApi or
+// installFetchMock) instead. See references/testing-infra.md. A const, because
+// every layer zone below has to repeat it (see the replace-not-merge note).
+const MOCK_BAN = {
+  name: 'bun:test',
+  importNames: ['mock'],
+  message:
+    '`mock` from bun:test is forbidden: it leaks across test files. Use dependency injection: refactor the production code to accept the SDK as a parameter, then pass a fake at construction.',
+};
+
+// The style rules as lint (hard rules 1, 7, 10, 18). ESLint REPLACES a rule's options
+// when a second block matches the same file, it never merges them, so every scoped
+// `no-restricted-syntax` block below spreads this list before its own selector.
+const STYLE_BANS = [
+  { selector: 'ClassDeclaration', message: 'No class keyword (hard rule 1; rule 10 for error classes): a module of arrow functions and typed records (references/design-patterns.md).' },
+  { selector: 'ClassExpression', message: 'No class keyword (hard rule 1): a module of arrow functions and typed records (references/design-patterns.md).' },
+  { selector: 'ImportSpecifier[importKind="type"]', message: 'Type-only imports on their own line: `import type { Foo } from ...` (hard rule 7).' },
+  {
+    selector: 'VariableDeclarator[id.name!=/^create[A-Z]/] > ArrowFunctionExpression > ArrowFunctionExpression.body',
+    message: 'No curried arrow chains: one arrow with all its parameters, wrapped at the call site; the DI factory `createX = (deps) => (input) => ...` is the one exemption (hard rule 18, references/clean-code.md).',
+  },
+];
+// Hard rule 17: a use-case pattern-matches the Result a port returns; a catch there means the port lied.
+const TRY_BAN = {
+  selector: 'TryStatement',
+  message: 'try/catch is quarantined to src/infra/**, the pure-domain fallback and src/main.ts; a use-case pattern-matches the Result (hard rule 17, references/result-type.md).',
+};
+// Hard rule 20: file IO is Bun.file / Bun.write; node:fs only in tests, src/test-helpers/**
+// and the one commented directory helper in src/infra/** (File IO, below).
+const FS_BAN = {
+  selector: 'ImportDeclaration[source.value=/^(node:)?fs(\\/promises)?$/]',
+  message: 'File IO goes through Bun.file and Bun.write; node:fs only in tests, src/test-helpers/** and the one commented directory helper in src/infra/** (hard rule 20, references/bun-typescript.md, File IO).',
+};
+
+// The dependency rule as lint (hard rule 37; references/architecture.md, the dependency
+// table). Dependencies point inward, so each layer names the layers it may never import,
+// and a layer left out of a list is one it is allowed to reach. Production files only: a
+// test reaches for the fakes in src/test-helpers/ by design.
+const layerZone = (layer, forbidden, files = [`src/${layer}/**/*.ts`]) => ({
+  files,
+  ignores: ['**/*.test.ts'],
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      {
+        paths: [MOCK_BAN],
+        patterns: [
+          {
+            group: forbidden.flatMap((name) => [`**/${name}`, `**/${name}/**`]),
+            message: `src/${layer} must not import ${forbidden.join(', ')}: dependencies point inward (hard rule 37, references/architecture.md, the dependency table).`,
+          },
+        ],
+      },
+    ],
+  },
+});
+
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   pluginJs.configs.recommended,
@@ -127,17 +185,9 @@ export default [
       'no-console': ['error'],
       'prefer-template': 'error',
       quotes: ['error', 'single', { avoidEscape: true }],
-      // `mock` from `bun:test` is process-global once installed and leaks into
-      // every other test file the runner loads. Use dependency injection
-      // (createXFromApi or installFetchMock) instead. See references/testing-infra.md.
-      'no-restricted-imports': ['error', {
-        paths: [{
-          name: 'bun:test',
-          importNames: ['mock'],
-          message:
-            '`mock` from bun:test is forbidden: it leaks across test files. Use dependency injection: refactor the production code to accept the SDK as a parameter, then pass a fake at construction.',
-        }],
-      }],
+      'no-restricted-imports': ['error', { paths: [MOCK_BAN] }],
+      // Hard rules 1, 7, 10, 18 (STYLE_BANS above); the scoped blocks below add 17 and 20.
+      'no-restricted-syntax': ['error', ...STYLE_BANS],
       '@typescript-eslint/explicit-function-return-type': ['error', { allowExpressions: true, allowTypedFunctionExpressions: true }],
       '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
     },
@@ -151,6 +201,30 @@ export default [
     files: ['scripts/**/*.ts'],
     rules: { 'no-console': 'off' },
   },
+  {
+    // Hard rule 17 for the one layer where the count is zero; the domain fallback, the
+    // adapter catch and the single catch in main.ts stay with review.
+    files: ['src/use-cases/**/*.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: { 'no-restricted-syntax': ['error', ...STYLE_BANS, TRY_BAN, FS_BAN] },
+  },
+  {
+    // Hard rule 20 over the rest of src/**; the carve-outs are paths, never inline ignores.
+    files: ['src/**/*.ts'],
+    ignores: ['**/*.test.ts', 'src/test-helpers/**', 'src/infra/**', 'src/use-cases/**'],
+    rules: { 'no-restricted-syntax': ['error', ...STYLE_BANS, FS_BAN] },
+  },
+  layerZone('domain', ['use-cases', 'infra', 'presenter', 'composition', 'test-helpers']),
+  layerZone('use-cases', ['infra', 'presenter', 'composition', 'test-helpers']),
+  layerZone('presenter', ['use-cases', 'infra', 'composition', 'test-helpers']),
+  layerZone('infra', ['presenter', 'composition', 'test-helpers']),
+  layerZone('composition', ['test-helpers']),
+  // The fakes may reach the ports they stand for and the entry points a test harness
+  // drives; an adapter is the one thing they may never wrap, or the fake stops being a fake.
+  layerZone('test-helpers', ['infra']),
+  // The entry point sees the composition root, the presenter and infra; it is still
+  // production code, so the fakes stay out of it.
+  layerZone('main.ts', ['test-helpers'], ['src/main.ts']),
   // Type-aware rules: slow (~25s on full repo), enabled only by
   // `bun run lint:strict` (which sets LINT_STRICT=1), CI's lint step.
   // Inner-loop `bun run lint` does NOT run them.
@@ -250,7 +324,8 @@ Notes on the config:
 - **`sonarjsPlugin.configs.recommended`** catches SonarLint findings at lint time so they no longer escape the IDE. See `references/workflow.md` for the common ones (S4325, S6594, S4123, S6551, S6671). Six rules are turned off, each justified in a comment beside it: `sonarjs/no-unused-vars` (duplicate), `sonarjs/no-empty-test-file` (false-positive on `describe` blocks), `sonarjs/cognitive-complexity` (one metric is enough: the cyclomatic cap of rule 35, `complexity: ['error', 10]` in the base block, plus the size caps cover it), and three that fire only in the type-aware lane and contradict the standard itself, `sonarjs/no-useless-intersection` (reports every branded type, i.e. hard rule 12), `sonarjs/null-dereference` (reports non-nullable and explicitly narrowed values, a class `strict: true` already owns), and `sonarjs/function-return-type` (reports every function that returns through the `ok()`/`err()` helpers, i.e. hard rule 16, since `Result<T, never>` and `Result<never, E>` are two types to it). The last three are dated against sonarjs 4.2.0 (2026-08-29 for the first two, 2026-09-05 for the third) and re-probed weekly by the skill repository's `.github/workflows/canary.yml` (upstream, not an asset a consumer copies), which turns them back on and reports if upstream has fixed them. Holding sonarjs at an older version is not an option: 4.1.0 does not load under ESLint 10 at all.
 - **`no-console` is `error`** under `src/**`. Always use the logger port (see below), never `console.*`. The one carve-out is `scripts/**`: the gate scripts shipped in `assets/` are terminal tools whose output *is* their interface; the config turns the rule off there at the project level rather than sprinkling inline ignores (rule 15).
 - **`security/detect-object-injection`, `detect-unsafe-regex`, and `detect-non-literal-fs-filename`** are disabled at the project level because they only false-positive on this codebase's idioms (branded-type `Record<K, V>` lookups, bounded regexes, `chmodSync(mkdtempSync(...))` in tests). Comments in the config explain why each is off. Never inline-ignore them per-line.
-- **`no-restricted-imports`** blocks `mock` from `bun:test` (the entire namespace), see hard rule 13.
+- **`no-restricted-imports`** blocks `mock` from `bun:test` (the entire namespace), see hard rule 13, and carries the layer zones of hard rule 37: one block per layer under `src/`, each listing the layers it may never import, the mock ban repeated in each because ESLint replaces a matching rule's options rather than merging them.
+- **`no-restricted-syntax`** is where the style rules stop being prose: `class` (hard rules 1 and 10), an inline `type` specifier (7) and a curried arrow chain with the `create[A-Z]` factory exempt (18) in every `.ts` file; a `try` under `src/use-cases/**` (17); an `fs` import under `src/**` outside `*.test.ts`, `src/test-helpers/**` and `src/infra/**` (20). Each scoped block spreads `STYLE_BANS` first, for the same replace-not-merge reason. A tightened selector needs its red fixture in the smoke test, like every gate.
 
 See `references/workflow.md` for the zero-warning rule and the no-inline-ignore discipline that make this config load-bearing.
 
@@ -427,7 +502,7 @@ The shared `formatError(err: unknown): string` helper lives in `src/domain/utili
 
 ## File IO (rule 20)
 
-All **file** IO in `src/**` production code goes through the Bun file API: read with `Bun.file(path).text()` / `.json()` / `.arrayBuffer()` / `.bytes()` / `.exists()`; write with `Bun.write(path, contents)`, which creates parent directories itself, no `mkdir -p` ceremony; delete with `Bun.file(path).delete()` (Bun 1.1 and later). `node:fs` is forbidden for file operations under `src/**`.
+All **file** IO in `src/**` production code goes through the Bun file API: read with `Bun.file(path).text()` / `.json()` / `.arrayBuffer()` / `.bytes()` / `.exists()`; write with `Bun.write(path, contents)`, which creates parent directories itself, no `mkdir -p` ceremony; delete with `Bun.file(path).delete()` (Bun 1.1 and later). `node:fs` is forbidden for file operations under `src/**`, and the lint says so: the `FS_BAN` selector in `eslint.config.js` rejects an `fs` import under `src/**` outside `*.test.ts`, `src/test-helpers/**` and `src/infra/**` (the directory helper of point 2 below lives there).
 
 **Directories are the exception.** Bun has no native primitive for `mkdir`, `rmdir`, or directory-existence as such (`Bun.file(dir).exists()` returns `false` for a directory: that is "not a file", not "directory missing"). Two acceptable answers, in order of preference:
 

@@ -407,3 +407,5 @@ Non-exported helpers go at the bottom or in a sibling module. Exported API stays
 Never `const f = (a) => (b) => { ... }`. Use a single arrow with all parameters and wrap at the call site: `const compareByPriority = (a: X, b: X, target: number): number => { ... }`, then `arr.sort((a, b) => compareByPriority(a, b, t))`. Curried chains cause Prettier and TypeScript-formatter fights and obscure the signature.
 
 One exemption, the DI factory: `const createX = (deps: Deps): PortType => async (input) => { ... }` is sanctioned. The outer call runs once at composition and the inner arrow IS the port function the type names; that is closure over dependencies, not currying on a call path.
+
+The rule is lint: the `STYLE_BANS` selector `VariableDeclarator[id.name!=/^create[A-Z]/] > ArrowFunctionExpression > ArrowFunctionExpression.body` in `eslint.config.js` rejects an arrow whose body is another arrow unless the declarator is named `create...`. Name a factory that way because it is one, never to slip a curried helper past the gate.

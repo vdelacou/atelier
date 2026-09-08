@@ -246,7 +246,7 @@ src/
 
 Invariants the layout protects:
 
-- The domain is zero-dependency on anything in `src/` except shared `domain/*`. `grep -rn "from '.*infra" src/domain src/use-cases` must return nothing.
+- The domain is zero-dependency on anything in `src/` except shared `domain/*`. The table above is lint (hard rule 37): one `no-restricted-imports` zone per layer in `eslint.config.js` (`references/bun-typescript.md`, the `layerZone` blocks) rejects the imports the table forbids, tests excepted. `grep -rn "from '.*infra" src/domain src/use-cases` stays the adopt-mode audit for a tree that has no config yet.
 - Ports are type-only modules: they declare interfaces, never implementations.
 - The composition root is the only place where you may import both an adapter and a use-case.
 - Tests instantiate fakes; no production code imports from `test-helpers/`.

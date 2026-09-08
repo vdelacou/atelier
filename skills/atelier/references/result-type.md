@@ -129,7 +129,7 @@ After adopting `Result`, the repo has exactly these places that may contain `try
 
 `*.test.ts` files and `src/test-helpers/**` sit outside the quarantine: test code may catch (mirrors hard rule 20's test carve-out).
 
-`src/use-cases/**` has **zero** `try/catch`. Every port call is pattern-matched on `.ok`. If you catch a thrown exception inside a use-case, the port has lied about its contract: fix the port, don't silence the symptom.
+`src/use-cases/**` has **zero** `try/catch`. Every port call is pattern-matched on `.ok`. If you catch a thrown exception inside a use-case, the port has lied about its contract: fix the port, don't silence the symptom. That scope is lint: the `TRY_BAN` block in `eslint.config.js` (`references/bun-typescript.md`) rejects any `try` under `src/use-cases/**` outside tests. The domain fallback, the adapter catch and the single catch in `main.ts` are review-checked.
 
 ```ts
 // BAD - try/catch inside a use-case hides a lying port contract
