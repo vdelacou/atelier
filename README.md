@@ -20,7 +20,7 @@ None of that is a model failing. It is the absence of a standard the agent can b
 
 **Enforcement.** The rules that can be lint are lint: the style bans, the layer dependency table, the no-inline-ignore rule, complexity at most 10. The rest are hooks, tripwires and CI: a fast pre-commit that caps commit size, blocks unpinned dependencies and secrets, lints the staged files and typechecks; a `commit-msg` hook for Conventional Commits; tripwires for personal data in logs and URLs, network calls without a deadline, routes without a cross-tenant test, hard deletes; CI that runs the full suite, per-tier coverage and mutation on the changed files as the merge gate. All of it ships as copyable assets.
 
-**Proof.** Two evals measure the skill against an unaided agent on the same tasks. Three smoke tests replay the install on the current unpinned toolchain and prove every gate both passes and blocks its target violation. A conformance matrix pins the doctrine to a 120-point canon with file-and-line citations that CI keeps honest. The numbers are [below](#how-we-know-it-works).
+**Proof.** Two evals measure the skill against an unaided agent on the same tasks. Three smoke tests replay the install on the current unpinned toolchain and prove every gate both passes and blocks its target violation. A conformance matrix pins the doctrine to a written 120-point canon with file-and-line citations that CI keeps honest ([the canon](#built-on-a-written-canon)). The numbers are [below](#how-we-know-it-works).
 
 ## See the difference
 
@@ -184,6 +184,14 @@ The full text is [`SKILL.md`](skills/atelier/SKILL.md). This is the shape.
 
 Rules are non-negotiable by design. When a request would break one, the agent rewrites to comply and tells you in one sentence what it substituted.
 
+## Built on a written canon
+
+Atelier is not a list of preferences. It is the executable form of a written canon, [*The Global Rules Every New Project Should Have*](docs/global-rules/global-rules-every-new-project.md): eighteen pillars, from consistency and clean boundaries through security, privacy, isolation, delivery, observability and ownership to validating before you build, expanded into 120 sub-concepts with a [Do and Don't](docs/global-rules/global-rules-dos-and-donts.md) for each, and vendored in this repo under `docs/global-rules/`. The canon states the obligation and stays stack-agnostic. Atelier is its [profile](docs/global-rules/global-rules-profiles.md) for Bun, Next.js and Java: it fixes which tool meets each obligation and at what threshold.
+
+The two are audited against each other, in both directions. The forward matrix, [`conformance-matrix.md`](conformance-matrix.md), gives every one of the 120 sub-concepts a row and a verdict with file-and-line evidence: 118 covered, 2 where the skill is stricter than the canon, none missing, none contradicted. The reverse matrix, [`reverse-matrix.md`](reverse-matrix.md), takes each hard rule back to the canon: most sit on a canon row, some exceed it, and the nine that fix a language or toolchain choice are stack bindings the canon leaves to a profile on purpose. When the two collide, the canon wins and the skill amends. When the skill exposes a defect in the canon, the fix is a [proposed revision](docs/global-rules/proposed-revisions.md), and the accepted ones have changed the canon.
+
+CI keeps this honest. A drift gate hashes the vendored canon and refuses a matrix whose count or titles no longer match it. The 233 citations the matrices make are pinned to the content of the line they cite, so an edit that moves a cited line fails the build until the citation is re-anchored.
+
 ## How we know it works
 
 Both evals run the same tasks with and without the skill on Claude Opus and grade mechanically. The scorecards are checked in.
@@ -201,7 +209,7 @@ The gap is widest on the rules that hurt most in production. The unaided agent n
 
 The six-pack's first live run, on 2026-09-05 from an empty repository with the card quoted above: one hour fifty-six from card to Done, one approval, zero clarifications, 35 commits by six roles, 88 tests, coverage 100 on every tier, mutation score 100, and a verdict of conformant with one Low finding the reviewer fixed itself.
 
-The standard is audited against a canon of 120 sub-concepts: 120 covered in [`conformance-matrix.md`](conformance-matrix.md), 233 file-and-line citations pinned to their content. Nine CI jobs run on every push to this repo, among them three smoke tests that replay the install on the current unpinned toolchain and prove each shipped gate green on a conforming tree and red on its target violation. A new ESLint, TypeScript, Stryker, Next or Maven-plugin major that breaks an asset fails here before it reaches you. A [field test](field-test.md) on a real consumer repo found the defects the evals could not, and each became a fix.
+Nine CI jobs run on every push to this repo: the canon drift and citation gates, the grader selftests, the six-pack gate, and three smoke tests that replay the install on the current unpinned toolchain and prove each shipped gate green on a conforming tree and red on its target violation. A new ESLint, TypeScript, Stryker, Next or Maven-plugin major that breaks an asset fails here before it reaches you. A [field test](field-test.md) on a real consumer repo found the defects the evals could not, and each became a fix.
 
 ## Questions you will have
 

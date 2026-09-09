@@ -84,9 +84,10 @@ whole, not any single skill.
 - The README is rewritten from scratch as a pitch, no section carried over: why agents need a
   standard, the three things the suite delivers (a standard, enforcement, proof), a before-and-after
   snippet, three steps to start, the six-pack as a team with its install and first card, the stack
-  table, the four skills by moment, the rules at a glance, the measured scorecards (conformance and
-  review evals, the first six-pack run, the matrix and CI counts), a short FAQ, a contributor pointer
-  and the lineage. The manual gate install is no longer in the README; each variant's bootstrap
+  table, the four skills by moment, the rules at a glance, the canon (what the Global Rules are, the
+  two-way audit of the matrices, the drift and citation gates), the measured scorecards (conformance
+  and review evals, the first six-pack run, the CI counts), a short FAQ, a contributor pointer and
+  the lineage. The manual gate install is no longer in the README; each variant's bootstrap
   checklist in its reference carries it, and `smoke-test.sh`'s header names that checklist as the
   block it replays.
 - The Bun config's mock-ban message (`MOCK_BAN`, hard rule 13) ends with the rule number like the Next
