@@ -2,7 +2,7 @@
 
 The forward audit (`conformance-matrix.md`) proves every canon sub-concept has a home in the
 skill. This is the other direction: one row per atelier hard rule 1-37, asking whether
-the canon carries the rule's substance. Audited against the 117-row canon; 13.5's acceptance moved three rows the same day, and the 10.2 strengthening (accepted 2026-08-30) moved row 17. Three verdicts:
+the canon carries the rule's substance. Audited against the 117-row canon (120 rows today); 13.5's acceptance moved three rows the same day, and the 10.2 strengthening (accepted 2026-08-30) moved row 17. Three verdicts:
 
 - **CANON-ROW**: a canon sub-concept carries the substance at comparable strength.
 - **STRICTER-THAN**: the canon carries the concern; atelier exceeds or quantifies it.
@@ -69,18 +69,18 @@ re-audit when the hard-rule list changes.
 
 | Verdict | Count | Rules |
 |---|---|---|
-| CANON-ROW | 21 | 8, 10, 11, 12, 14, 15, 16, 17, 19, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 36 |
+| CANON-ROW | 22 | 8, 10, 11, 12, 14, 15, 16, 17, 19, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 36, 37 |
 | STRICTER-THAN | 6 | 4, 13, 21, 22, 28, 35 |
 | NO-COUNTERPART, stack binding | 9 | 1, 2, 3, 5, 6, 7, 9, 18, 20 |
-| Total | 36 | |
+| Total | 37 | |
 
-Counting plainly: 21 covered, 6 stricter, 9 stack bindings. The stack bindings are the point of
+Counting plainly: 22 covered, 6 stricter, 9 stack bindings (re-counted 2026-09-09 after rows 36 and 37). The stack bindings are the point of
 a profile and propose nothing back to the canon. The audit's one actionable finding, three
 agent-discipline rules (24-26) with no canon home, became P6 row 13.5 and was ACCEPTED the same
 day, which is why those rows read CANON-ROW with an at-audit-time note: this file caused the
-row it now cites. The canon count is 119 after the 2026-08-30 acceptances of 13.5 and 15.10. Row 17 later flipped the same way: the 10.2 catch-placement strengthening, proposed from its stricter-than delta, was accepted 2026-08-30.
+row it now cites. The canon count is 119 after the 2026-08-30 acceptances of 13.5 and 15.10, and 120 after 4.9 (accepted 2026-09-06, caused by row 36). Row 17 later flipped the same way: the 10.2 catch-placement strengthening, proposed from its stricter-than delta, was accepted 2026-08-30.
 
-Outside the 34: the skill's process artifacts already have canon homes. The append-only
+Outside the 37: the skill's process artifacts already have canon homes. The append-only
 LESSONS journal is 12.4 (institutional memory) and 10.10 (learn from every failure); PLAN.md
 with a per-step definition of done is 12.3-adjacent (decisions recorded where they cannot
 drift). No proposal needed there. The repo's gate discipline (every new gate ships a violation fixture proving it can fail, a process rule here and the smoke tests' design) had no canon home; it became 15.10, accepted 2026-08-30.

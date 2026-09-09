@@ -6,6 +6,12 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Changed
+- `reverse-matrix.md`'s tally counts all 37 hard rules: rule 37 joins the CANON-ROW list (22, with 6
+  STRICTER-THAN and 9 stack bindings), the total reads 37 instead of 36, the canon count 120 after 4.9,
+  and the closing paragraph says "outside the 37". The rows were already complete; only the counts had
+  stopped at row 36. Every edit is in place, so no cited line moved.
+
 ## [2.3.0] - 2026-09-09
 
 The enforcement release: hard rules 36 (tests run in random order) and 37 (the dependency rule
