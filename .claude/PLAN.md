@@ -25,14 +25,18 @@ macOS); nothing under `skills/` or `scripts/` is edited while it runs.
        the scratchpad, Monitor on `done:|capped:|exit=|rror`. DoD: 42 sessions finished, `.capped`
        empty (or each capped run named), `grade.py <runs-dir>` over the finished directory read
        for both arms.
-2. [ ] Release notes while it runs (CHANGELOG.md and README.md only): the Unreleased block becomes
+Closed 2026-09-09: v2.3.0 tagged on af0aad7 and pushed with main. The h4 7.1 check was corrected
+mid-release (the fifth grader defect) and the baseline fixture re-frozen from the pass's single
+baseline arm; a three-pass top-up is an optional later slice.
+
+2. [x] (ae50592) Release notes while it runs (CHANGELOG.md and README.md only): the Unreleased block becomes
        2.3.0 with the release paragraph and the upgrade list; README's current-release line. Commit
        `docs(release): 2.3.0 changelog and upgrade notes`. DoD: em-dash gate, frontmatter, citations
        green; the upgrade list names every "Consumers:" action of the Unreleased block once.
-3. [ ] Record the pass in `scripts/conformance-eval/baseline.md` under
+3. [x] (af0aad7, with the corrected h4 check, its selftest and the re-frozen fixture) Record the pass in `scripts/conformance-eval/baseline.md` under
        `## Tier 2 for the 2.3.0 release (2026-09-09)` in the 2.2.0 shape (arms table, capped, tree
        under test, anything environmental). Commit `chore(conformance-eval): the 2.3.0 tier-2 pass`.
        If the skill arm is below full marks on any task, stop and report before tagging.
-4. [ ] `git tag -a v2.3.0` on the record commit with a message in the v2.2.0 shape (one line, then
+4. [x] (v2.3.0 on af0aad7, pushed with main, on the remote) `git tag -a v2.3.0` on the record commit with a message in the v2.2.0 shape (one line, then
        the release paragraph and the tier-2 numbers); `git push origin main v2.3.0`. DoD: the tag on
        the remote, CI green, plan closed.
