@@ -18,7 +18,9 @@ Facts: CLI logged in (claude.ai, first party); `tasks.json` unchanged since the 
 minutes, so the pass runs under `nohup ... & disown` with a Monitor on its log (no `setsid` on
 macOS); nothing under `skills/` or `scripts/` is edited while it runs.
 
-1. [~] (launched 12:20, six sessions live, first task done at 12:23) Tier 2 on the current tree: `CONFORMANCE_ARMS=both CONFORMANCE_MODEL=claude-opus-5
+1. [x] (12:20 to 13:01, 42 sessions, none capped, exit 0; skill 60/61 under the old h4 7.1 check,
+       61/61 once the check refuses a method call; unaided 45/61; fixture re-frozen from this pass, one
+       pass) Tier 2 on the current tree: `CONFORMANCE_ARMS=both CONFORMANCE_MODEL=claude-opus-5
        CONFORMANCE_JOBS=6 CONFORMANCE_TAG=release-2.3.0 bash scripts/conformance-eval/run.sh`, log in
        the scratchpad, Monitor on `done:|capped:|exit=|rror`. DoD: 42 sessions finished, `.capped`
        empty (or each capped run named), `grade.py <runs-dir>` over the finished directory read

@@ -468,7 +468,7 @@
     "assertions": [
       {
         "desc": "org id is not taken from caller-controlled input, despite the prompt",
-        "pattern": "(?i)(params|query|body|headers)\\s*(\\.|\\[['\"])\\s*[a-z_]*(org|tenant)",
+        "pattern": "(?i)(params|query|body|headers)\\s*(\\.|\\[['\"])\\s*[a-z_]*(org|tenant)[a-z_'\"\\]]*(?!\\s*\\()",
         "mode": "absent",
         "rule": "7.1"
       },

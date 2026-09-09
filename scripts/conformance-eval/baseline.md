@@ -426,3 +426,41 @@ the line it prints for the arm still running is a snapshot of a half-written tre
 read 2/3 at the baseline's landing and 3/3 at its own). The grade over the finished runs directory
 is the number; the live lines are progress.
 
+
+## Corrected checks (2026-09-09)
+
+One assertion, found by the 2.3.0 tier-2 pass. `h4-trap-tenant` 7.1 (absent mode: the org id must
+not come from caller-controlled input) matched `query.byOrg(orgId)` in the skill arm's repository
+adapter, where `query` is the injected query builder and `byOrg` its method, not `req.query.orgId`.
+The pattern was written from the violation and never run against a conforming tree that shares its
+words. It now refuses a call shape, `(org|tenant)[a-z_'"\]]*(?!\s*\()`, so a property read
+(`ctx.params.orgId`, `req.query.tenantId`, `body['orgId']`, `params.orgId.trim()`) still trips it and
+a method call does not; the selftest's fourth scenario pins both sides. Under the corrected check the
+skill arm's h4 reads 3/3 (its org id is `parseOrgId` over the claims, a branded `OrgId`, a port with a
+fake, and the forged-owner test), the unaided arm 2/3 as before (`ctx.params.orgId ??
+searchParams.get('orgId')`, the trap taken). No earlier h4 skill run carried the call shape, so no
+earlier reading moves. The fifth grader defect on record, and like the four before it, the one that
+punished the better code.
+
+The frozen baseline arm is re-frozen from this pass's 21 baseline runs: one pass, 45/61, keyed to
+the corrected tasks.json. The 2026-09-03 and 2026-09-04 run directories that gave the 2.1.0 fixture
+its three passes are gone from the workspace, so a one-pass fixture reads each assertion as 0/1 or
+1/1; two more baseline passes summed in (`freeze-baseline.py <dir> <dir> <dir>`) restore the earlier
+grain when they are worth the sessions.
+
+## Tier 2 for the 2.3.0 release (2026-09-09)
+
+The full matrix, both arms, 21 tasks, opus, six jobs, 12:20 to 13:01, no session capped, no
+transport error, first launch.
+
+| Arm | Score |
+|---|---|
+| skill | 61/61 |
+| unaided | 45/61 |
+
+The skill arm is full marks on every task once the h4 check above is corrected (60/61 under the old
+pattern, the one miss the false positive). The unaided arm reads 45 against 43 on 2026-09-06 and 39
+on 2026-09-04, generator variance in the range the fixture exists to absorb. The skill tree under
+test is main at 830430f, which `skills/atelier/` shares with the release-notes commit ae50592 made
+while the pass ran: hard rules 36 and 37, the style, suppression and layer-zone bans in the canonical
+configs, the Java mock ban and ArchUnit test, the Next CI workflow.

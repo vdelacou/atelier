@@ -217,12 +217,22 @@ def selftest() -> None:
     # scenario) as well as the single-resource 404, never a same-owner-only test.
     # The 2026-09-03 reruns lost an hour per pass to the word-boundary version of
     # 4.8 (`evals/` + `run-evals.ts --min-score` scored 0) and to a 404 demanded of
-    # a list endpoint that cannot produce one.
+    # a list endpoint that cannot produce one. 7.1 (absent mode) refuses a property
+    # read of caller input (`ctx.params.orgId`, `req.query.tenantId`) and ignores a
+    # method call on a query builder (`query.byOrg(orgId)`): the 2.3.0 tier-2 pass
+    # read the skill arm 60/61 on exactly that call, the fifth grader defect.
     h6 = next(task for task in tasks if task["id"] == "h6-ai-full")
     eval_gate = next(a for a in h6["assertions"] if a["rule"] == "4.8")
     h4 = next(task for task in tasks if task["id"] == "h4-trap-tenant")
     absence = next(a for a in h4["assertions"] if a["rule"] == "7.5")
+    caller = next(a for a in h4["assertions"] if a["rule"] == "7.1" and a["mode"] == "absent")
     shapes = [
+        ("7.1 query-builder method call is not caller input", "src/infra/invoice-repository-db.ts",
+         "const rows = await withDeadline(query.byOrg(orgId), timeoutMs);\n", caller, True),
+        ("7.1 route param is caller input", "src/infra/http/invoices.ts",
+         "const orgId = ctx.params.orgId ?? new URL(req.url).searchParams.get('orgId');\n", caller, False),
+        ("7.1 request query is caller input", "src/infra/http/invoices.ts",
+         "const tenant = req.query.tenantId;\n", caller, False),
         ("4.8 runner with a bar", "scripts/run-evals.ts",
          "const bar = minScoreFrom(process.argv);\nif (passed / cases.length < bar) process.exit(1);\n", eval_gate, True),
         ("4.8 package.json script with a bar", "package.json",
@@ -286,7 +296,7 @@ def selftest() -> None:
             sys.exit(1)
 
     assert tasks_hash(tasks[:1]) != tasks_hash(tasks), "a filtered task list must not hash like the whole file (the --task path checks the fixture before filtering)"
-    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8 and 7.5 credit shape over vocabulary, the frozen baseline is keyed to its assertions and checked before any --task filter, a dead session is not scored")
+    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8, 7.1 and 7.5 credit shape over vocabulary, the frozen baseline is keyed to its assertions and checked before any --task filter, a dead session is not scored")
 
 
 def _flag_val(args: list[str], name: str) -> int | None:

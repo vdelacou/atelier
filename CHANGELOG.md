@@ -137,6 +137,12 @@ gate pinning both ends of a range with a re-anchor mode, and the README rewritte
   the message; the ban itself is unchanged.
 
 ### Harness
+- `tasks.json`, h4 7.1 (absent mode): the check no longer matches a method call such as
+  `query.byOrg(orgId)`. It matched the skill arm's query-builder call in the 2.3.0 tier-2 pass and
+  read a conforming tree 60/61: the fifth grader defect, and like the four before it the one
+  punishing the better code. The grader selftest pins a property read red and the call green. The
+  frozen baseline arm is re-frozen from that pass's own 21 baseline runs (one pass, 45/61), since
+  the three-pass run directories behind the 2.1.0 fixture are gone from the workspace.
 - `select-tasks.py` (tier 1): a rule range from 1 over at least half the set is the count of the rules
   and selects nothing; the rule ceiling is read from the SKILL.md hard-rules section instead of a
   constant stuck at 35 (an explicit "rule 36" used to select nothing); within a hunk only the
