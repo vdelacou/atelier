@@ -23,6 +23,13 @@ whole, not any single skill.
   follow-up. Consumers on Next: re-extract `eslint.config.mjs` and expect a red on any atom that
   reaches into a molecule or an organism.
 
+### Harness
+- The frozen baseline arm holds three passes again: two more unaided passes over the 21 tasks
+  (opus, none capped) summed with the 2.3.0 release run's baseline arm, 138/183 over 63 runs,
+  keyed to the tasks.json with the corrected h4 check. The one-pass fixture of the release morning
+  read each assertion as 0/1 or 1/1; the three-pass one separates a rule the unaided arm never
+  satisfies from one it misses by chance. Tier 1 compares against it from here on.
+
 ### Changed
 - `reverse-matrix.md`'s tally counts all 37 hard rules: rule 37 joins the CANON-ROW list (22, with 6
   STRICTER-THAN and 9 stack bindings), the total reads 37 instead of 36, the canon count 120 after 4.9,

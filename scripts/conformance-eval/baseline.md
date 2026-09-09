@@ -464,3 +464,15 @@ on 2026-09-04, generator variance in the range the fixture exists to absorb. The
 test is main at 830430f, which `skills/atelier/` shares with the release-notes commit ae50592 made
 while the pass ran: hard rules 36 and 37, the style, suppression and layer-zone bans in the canonical
 configs, the Java mock ban and ArchUnit test, the Next CI workflow.
+
+## Frozen baseline arm, three passes (2026-09-09)
+
+The one-pass fixture of the release morning is replaced by a three-pass one the same afternoon:
+two more baseline-arm passes (`bl-2`, `bl-3`, 21 tasks each, opus, three jobs each and run
+concurrently, 15:04 to 15:26, none capped, no transport error) summed with the release run's
+baseline arm. Per pass the unaided arm read 45, 49 and 44 of 61; the fixture holds 138/183 over 63
+runs, keyed to the tasks.json that carries the corrected h4 check. Against it the release run's skill
+arm reads 61/61 to an expected 46.0/61, and the two shapes the grain exists for are back: h4's first
+assertion reads 2/3 unaided (the trap taken once in three, not the 0/1 of the morning), e2's first two
+read 0/3 (the unaided arm never satisfies them, which one pass could not distinguish from bad luck).
+Tier 1 compares against this fixture from here on.
