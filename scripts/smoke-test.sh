@@ -2,8 +2,9 @@
 #
 # End-to-end smoke test of the atelier skill's shipped assets.
 #
-# Scaffolds a throwaway Bun repo by following README.md's install steps
-# verbatim, extracts the canonical tsconfig.json and eslint.config.js from
+# Scaffolds a throwaway Bun repo by copying the assets the Bootstrap checklist
+# of references/bun-typescript.md names, verbatim, extracts the canonical
+# tsconfig.json and eslint.config.js from
 # references/bun-typescript.md (so doc drift fails CI, not just asset drift),
 # installs the current toolchain UNPINNED (so a new ESLint/TS/Stryker major
 # that breaks an asset is caught here first), then proves:
@@ -63,7 +64,7 @@ mkdir -p "$FX"/{scripts,.githooks,src/domain/utilities,src/test-helpers,src/infr
 cd "$FX"
 git init -q
 
-# --- README install steps, verbatim ---
+# --- the bootstrap checklist asset copy, verbatim ---
 cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-package-json.sh" \
    "$SKILL/assets/check-coverage.ts" "$SKILL/assets/regenerate-coverage-preload.ts" \
    "$SKILL/assets/mutate-staged.sh" "$SKILL/assets/mutate-changed.sh" \
