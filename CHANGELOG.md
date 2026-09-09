@@ -6,6 +6,23 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Added
+- **Rule 37 in the Next variant: the layer zones.** The canonical `eslint.config.mjs` of
+  `references/nextjs-monorepo.md` gains a `layerZone` helper and eight zones in the two shapes the
+  variant has: the design system's own layers point upward (`src/components/atoms` never imports
+  molecules or organisms, `src/components/molecules` never organisms; the doctrine of
+  `references/atomic-design.md`, unlinted until now) and the server sub-variant's
+  `src/{domain,use-cases,infra,presenter,composition,test-helpers}` get the Bun config's zones with
+  `.tsx` included and the UI layers (`lib`, `page`, `components`) added to what a server layer may
+  never reach. The mock ban and the rule-21 bans are hoisted to `MOCK_BAN` and `DESIGN_SYSTEM_BANS` so
+  every zone carries them, since a zone replaces the design-system block's `no-restricted-imports`
+  for its files. The Next smoke test proves an atom importing a molecule, a molecule importing an
+  organism and a domain file importing infra red with the rule number in the message, seen red
+  before the config change, and the existing rule-21 and rule-13 atom fixtures prove the atoms zone
+  still carries both bans. SKILL.md's matrix row for rule 37 no longer calls the Next variant a
+  follow-up. Consumers on Next: re-extract `eslint.config.mjs` and expect a red on any atom that
+  reaches into a molecule or an organism.
+
 ### Changed
 - `reverse-matrix.md`'s tally counts all 37 hard rules: rule 37 joins the CANON-ROW list (22, with 6
   STRICTER-THAN and 9 stack bindings), the total reads 37 instead of 36, the canon count 120 after 4.9,

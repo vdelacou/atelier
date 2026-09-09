@@ -376,6 +376,31 @@ ban_red "prettier-ignore is rejected (rule 15)" src/lib/unformatted.ts "'prettie
 export const table = [1,2,3,   4];
 EOF
 
+# Rule 37 in this variant (2026-09-09): the design system's own layers point upward (an
+# atom never imports a molecule, a molecule never an organism, atomic-design.md) and the
+# server archetype's src/{domain,use-cases,infra,presenter,composition} zones mirror the
+# Bun config. A zone REPLACES the design-system block's no-restricted-imports for its
+# files, so the atom fixtures for rule 21 (bad-widget, below) and rule 13 (mocky, above)
+# double as proof that the atoms zone still carries both bans.
+ban_red "an atom importing a molecule is rejected (rule 37)" src/components/atoms/needy.tsx "hard rule 37," <<'EOF'
+import type { ReactNode } from 'react';
+import { StatCard } from '../molecules/stat-card.tsx';
+
+export const Needy = (): ReactNode => <StatCard title="t" value="v" delta="d" tone="flat" />;
+EOF
+ban_red "a molecule importing an organism is rejected (rule 37)" src/components/molecules/upside-down.tsx "hard rule 37," <<'EOF'
+import type { ReactNode } from 'react';
+import { StatsPanel } from '../organisms/stats-panel.tsx';
+
+export const UpsideDown = (): ReactNode => <StatsPanel heading="h" stats={[]} />;
+EOF
+mkdir -p src/domain
+ban_red "a domain file importing infra is rejected (rule 37, server archetype)" src/domain/leaky.ts "hard rule 37," <<'EOF'
+import { createWinstonLogger } from '../infra/logger.ts';
+
+export const leak = (): unknown => createWinstonLogger('info');
+EOF
+rmdir src/domain
 # Rules 5 and 19 in this variant (2026-09-08): before, no Next repo ran the package.json
 # gate at all. The fixture's own manifest is green; a "latest" dependency and a script
 # calling node are red; the manifest is restored after each.

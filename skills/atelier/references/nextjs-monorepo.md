@@ -210,6 +210,46 @@ const TRY_BAN = {
   selector: 'TryStatement',
   message: 'try/catch is quarantined to the inbound adapter (the route handler), src/infra/** and the pure-domain fallback; a use-case pattern-matches the Result (hard rule 17, references/result-type.md).',
 };
+// Hard rule 13, one object for every block that sets no-restricted-imports: ESLint REPLACES a
+// rule's options when a second block matches the same file, so each scoped block and each
+// layer zone below carries the mock ban itself.
+const MOCK_BAN = {
+  name: 'bun:test',
+  importNames: ['mock'],
+  message: '`mock` from bun:test is forbidden, it leaks across test files. Use a hand-written fake (hard rule 13).',
+};
+// Hard rule 21: the design system imports react and its own lower layers only. The atoms and
+// molecules zones spread this list again for the same replace-not-merge reason.
+const DESIGN_SYSTEM_BANS = [
+  { group: ['next', 'next/*'], message: 'Design-system components import react only: inject links/images as ComponentType props (hard rule 21).' },
+  { group: ['**/lib/**', '**/config/**', '**/page/**'], message: 'Design-system components must not import application code (hard rule 21).' },
+];
+// Hard rule 37: one no-restricted-imports zone per layer, listing the layers it may never
+// import, tests excepted. Two shapes in this variant: the design system's own layers point
+// upward (references/atomic-design.md, Imports point strictly upward) and the server
+// archetype's src/{domain,use-cases,infra,presenter,composition} mirror the Bun config's
+// zones (references/architecture.md, the dependency table).
+const INWARD = 'dependencies point inward (hard rule 37, references/architecture.md, the dependency table)';
+const UPWARD = 'imports point upward inside the design system (hard rule 37, references/atomic-design.md, Imports point strictly upward)';
+const layerZone = (layer, forbidden, extraPatterns = [], why = INWARD) => ({
+  files: [`src/${layer}/**/*.ts`, `src/${layer}/**/*.tsx`],
+  ignores: ['**/*.test.ts', '**/*.test.tsx'],
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      {
+        paths: [MOCK_BAN],
+        patterns: [
+          ...extraPatterns,
+          {
+            group: forbidden.flatMap((name) => [`**/${name}`, `**/${name}/**`]),
+            message: `src/${layer} must not import ${forbidden.join(', ')}: ${why}.`,
+          },
+        ],
+      },
+    ],
+  },
+});
 
 const eslintConfig = defineConfig([
   securityPlugin.configs.recommended,
@@ -249,22 +289,11 @@ const eslintConfig = defineConfig([
       'prefer-template': 'error',
       quotes: ['error', 'single', { avoidEscape: true }],
       // Mock ban (hard rule 13). Lives in this unscoped block (which precedes the
-      // design-system block) AND is re-declared inside the design-system block:
-      // ESLint flat config REPLACES (never merges) two `no-restricted-imports`
+      // design-system block) AND is re-declared inside the design-system block and every
+      // layer zone: ESLint flat config REPLACES (never merges) two `no-restricted-imports`
       // objects that match the same file, so each scope must carry its full set. The
       // same holds for `no-restricted-syntax`, hence `...STYLE_BANS` in every scoped block.
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: 'bun:test',
-              importNames: ['mock'],
-              message: '`mock` from bun:test is forbidden, it leaks across test files. Use a hand-written fake (hard rule 13).',
-            },
-          ],
-        },
-      ],
+      'no-restricted-imports': ['error', { paths: [MOCK_BAN] }],
     },
   },
   {
@@ -312,17 +341,8 @@ const eslintConfig = defineConfig([
           // Carries BOTH the mock ban (hard rule 13) and the design-system bans:
           // flat config replaces, not merges, so re-declaring the mock ban here is
           // mandatory: the general unscoped block's copy is overwritten for these files.
-          paths: [
-            {
-              name: 'bun:test',
-              importNames: ['mock'],
-              message: '`mock` from bun:test is forbidden, it leaks across test files. Use a hand-written fake (hard rule 13).',
-            },
-          ],
-          patterns: [
-            { group: ['next', 'next/*'], message: 'Design-system components import react only: inject links/images as ComponentType props (hard rule 21).' },
-            { group: ['**/lib/**', '**/config/**', '**/page/**'], message: 'Design-system components must not import application code (hard rule 21).' },
-          ],
+          paths: [MOCK_BAN],
+          patterns: [...DESIGN_SYSTEM_BANS],
         },
       ],
       'no-restricted-syntax': [
@@ -361,6 +381,20 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // Hard rule 37, the design system's own layers. After the rule-21 block on purpose: for
+  // these files a zone is the no-restricted-imports that counts, so it carries rules 13 and
+  // 21 as well (the smoke test's atom fixtures for both rules prove the copy survived).
+  layerZone('components/atoms', ['molecules', 'organisms'], DESIGN_SYSTEM_BANS, UPWARD),
+  layerZone('components/molecules', ['organisms'], DESIGN_SYSTEM_BANS, UPWARD),
+  // Hard rule 37, the server archetype: the Bun config's zones, .tsx included, plus the UI
+  // layers no server layer may reach. Inert in the static layout, which has none of these
+  // directories.
+  layerZone('domain', ['use-cases', 'infra', 'presenter', 'composition', 'test-helpers', 'lib', 'page', 'components']),
+  layerZone('use-cases', ['infra', 'presenter', 'composition', 'test-helpers', 'lib', 'page', 'components']),
+  layerZone('presenter', ['use-cases', 'infra', 'composition', 'test-helpers']),
+  layerZone('infra', ['presenter', 'composition', 'test-helpers', 'page', 'components']),
+  layerZone('composition', ['test-helpers']),
+  layerZone('test-helpers', ['infra']),
   pluginJs.configs.recommended,
   ...tsPlugin.configs.recommended,
   tailwind.configs.recommended,
@@ -394,6 +428,8 @@ const eslintConfig = defineConfig([
 
 export default eslintConfig;
 ```
+
+**Layer zones (hard rule 37).** `layerZone` blocks carry the dependency direction in both shapes this variant has: an atom never imports a molecule or an organism and a molecule never an organism (`references/atomic-design.md`, Imports point strictly upward; rule 21 seals the design system from app code and frameworks), and the server sub-variant's `src/{domain,use-cases,infra,presenter,composition,test-helpers}` get the Bun config's zones with `.tsx` included and the UI layers (`lib`, `page`, `components`) added to what a server layer may never reach. A zone replaces the design-system block's `no-restricted-imports` for its files, which is why every zone spreads `MOCK_BAN` and the atoms and molecules zones spread `DESIGN_SYSTEM_BANS`. The Next smoke test proves an atom importing a molecule, a molecule importing an organism and a domain file importing infra red, each with the rule number in the message.
 
 Note: `no-console: 'error'` is the enforcement (hard rule 4); `next.config.ts` → `compiler.removeConsole` is defence-in-depth, not a substitute: a stripped `console.*` is a violation that silently vanished, which is why the lint rule exists. Log through the Winston module (below).
 
