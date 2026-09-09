@@ -90,6 +90,8 @@ First start: Claude Code asks two questions in every pane the first time it runs
 
 Environment for offline or forked installs: `SWARMFORGE_BASE_DIR` (a local SwarmForge `main` checkout instead of a download), `SWARMFORGE_REPO_URL` (a fork), `GET_SWARM_FORGE` (an existing helper), `CLAUDE_SKILLS_DIR` (another skills directory).
 
+Updating. The skills and the pack update on different paths. The skills are symlinks into the atelier clone (unless `--copy-skills` or the skills CLI put copies there), so `git pull` in that clone updates the doctrine for every project that links it; a copy is refreshed by repeating its install. The runtime and the pack are files in the project: Teardown, pull the clone, and re-run `get-atelier-six-pack` from the project. The composer replaces `swarmforge/scripts/` and the three shared articles from SwarmForge `main` as of that moment (pin it with `SWARMFORGE_BASE_DIR`), and replaces `swarm`, `swarmforge.conf`, `constitution.prompt`, the pack articles and `swarmforge/roles/` from the clone's `packs/six-pack/`; local edits to any of those are lost, which is why pack changes belong in a fork of this repository (Changing this pack, below). The seeded files and an already-present skill are left alone. Nothing is committed: read the diff, commit, `./swarm`.
+
 ## The standard in a swarm
 
 The atelier standard assumes a user in the conversation; the swarm has an operator on a board. `local-workflow.prompt` reads the two behavioural gates for that setting, and the rest of the standard applies unchanged.

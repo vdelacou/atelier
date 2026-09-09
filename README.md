@@ -109,11 +109,15 @@ New Task -> specifier -> Attention -> coder -> cleaner -> architect -> hardener 
 
 The hooks run in every worktree. No test older than the card is touched. No role ever pushes.
 
+### How the pieces fit
+
+Three parties, one directory. [SwarmForge](https://github.com/unclebob/swarm-forge), Robert C. Martin's multi-agent runtime, supplies the machinery: the launcher that starts six Claude Code sessions in tmux, the handoff daemon (a Babashka script, hence `bb`), the dashboard, and three shared constitution articles. This repo supplies the pack: the six-role `swarmforge.conf`, the constitution that puts the standard first, and the six role prompts. Your project receives both as files under `swarmforge/`, plus a `swarm` launcher at its root, and that is where everything runs: the roles work in `.worktrees/<role>` checkouts of your repo, the specifier in your main checkout, and every commit lands on your `main`. The role prompts do not restate the standard. They load the four atelier skills from `~/.claude/skills`, which is why the installer links them there.
+
 ### Install it
 
 You need `zsh`, `git`, `tmux`, Babashka (`bb`), a signed-in `claude` CLI and the variant's toolchain (Bun, or JDK 21 with the Maven wrapper). `gitleaks` on PATH feeds the secret gate; the hook says so and continues without it.
 
-Run the installer from the project that receives the pack, an existing repo or an empty directory:
+Clone this repo once, anywhere. Then run its installer from inside the project that will receive the pack, an existing repo or an empty directory:
 
 ```bash
 git clone https://github.com/vdelacou/atelier.git ~/code/atelier
@@ -121,13 +125,17 @@ cd ~/code/my-project
 ~/code/atelier/get-atelier-six-pack
 ```
 
-It writes the `swarm` launcher and the `swarmforge/` runtime, seeds the pointer block in `CLAUDE.md`, an empty `.claude/LESSONS.md` and the runtime's ignore rules, and links the four skills into `~/.claude/skills` unless they are already there (`--skip-skills` and `--copy-skills` change that). It commits nothing. Commit the seeded files yourself, then start:
+The installer downloads SwarmForge's `get-swarm-forge` composer and runs it against this clone's `packs/six-pack/`, so your project gets SwarmForge's runtime from its `main` branch and atelier's pack in one `swarmforge/` directory, plus the `swarm` launcher. It links the four skills into `~/.claude/skills` unless they are already there (`--copy-skills` copies, `--skip-skills` leaves the directory alone), seeds the pointer block in `CLAUDE.md`, an empty `.claude/LESSONS.md` and `tmp/` in `.gitignore`, and commits nothing. Commit what it wrote, because role worktrees are cut from `HEAD` and see only committed files, then start from your project root:
 
 ```bash
 git add CLAUDE.md .claude/LESSONS.md .gitignore swarm swarmforge
 git commit -m "chore(swarm): install the atelier six-pack"
 ./swarm
 ```
+
+### Update it
+
+The doctrine and the machinery update separately. The skills are symlinks into your atelier clone, so `git -C ~/code/atelier pull` updates the standard for every project at once; with `--copy-skills` or the skills CLI, re-run that install instead. The runtime and the pack are copies inside your project: after a Teardown, pull the clone and re-run `~/code/atelier/get-atelier-six-pack` from the project. It replaces `swarmforge/scripts/`, the shared articles, the `swarm` launcher, the conf, the constitution and the role prompts with the current versions, leaves your seeded files and skills alone, and again commits nothing. Read the diff, commit, `./swarm`. A re-run overwrites local edits to the conf or a role prompt, so keep such edits in a fork of this repo and run the installer from that clone. The runtime is whatever SwarmForge `main` is at the moment you run the installer; `SWARMFORGE_BASE_DIR` substitutes a local checkout when you want to pin it.
 
 ### Run a card
 

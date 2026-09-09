@@ -87,7 +87,13 @@ whole, not any single skill.
   table, the four skills by moment, the rules at a glance, the canon (what the Global Rules are, the
   two-way audit of the matrices, the drift and citation gates), the measured scorecards (conformance
   and review evals, the first six-pack run, the CI counts), a short FAQ, a contributor pointer and
-  the lineage. The manual gate install is no longer in the README; each variant's bootstrap
+  the lineage.
+- The six-pack section of the README and the pack manual say how the pieces fit (SwarmForge supplies
+  the runtime from its `main`, this repo the pack, the project receives both under `swarmforge/` and
+  runs there) and how to update (skills by pulling the linked clone, runtime and pack by re-running
+  the installer after a Teardown, which replaces them wholesale and commits nothing). The README also
+  names what the installer seeds exactly: the pointer block, the LESSONS header, `tmp/` in
+  `.gitignore`. The manual gate install is no longer in the README; each variant's bootstrap
   checklist in its reference carries it, and `smoke-test.sh`'s header names that checklist as the
   block it replays.
 - The Bun config's mock-ban message (`MOCK_BAN`, hard rule 13) ends with the rule number like the Next
