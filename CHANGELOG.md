@@ -81,6 +81,12 @@ whole, not any single skill.
   `check-bundle-size.sh`, then make it the required status check.
 
 ### Changed
+- The README is rewritten from scratch as a pitch: the problem an unaided agent has, what changes on
+  day one with a before-and-after snippet, the measured proof (the conformance and review scoreboards,
+  the six-pack's first run, the matrix and CI counts), then the two quick starts, the four skills as a
+  table, the enforcement table condensed to one line per area, and the three variants. The copy block
+  the Bun smoke test replays survives unchanged (plus `check-docs.sh`, which the smoke test already
+  copied) inside a collapsed section, as do the layout and CI notes for contributors.
 - The Bun config's mock-ban message (`MOCK_BAN`, hard rule 13) ends with the rule number like the Next
   one, and both smoke tests now prove the ban red, which no fixture had done since it shipped: a `mock`
   import in a test file (the base block) and in a scoped production file (a Bun layer zone, a Next

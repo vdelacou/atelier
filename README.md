@@ -1,34 +1,107 @@
 # Atelier
 
-A personal engineering standard for Bun/TypeScript, Next.js, and Java (Quarkus) repos, packaged as an [Agent Skill](https://github.com/anthropics/skills) for AI coding agents. Turns generic code generation into senior-engineer output that follows a consistent toolchain, TDD workflow, SOLID design, a class-free functional style (records and sealed types on the Java side), and the production disciplines a real system needs from day one: privacy, tenant isolation, reliability, observability, delivery, and validated product decisions.
+**Your AI coding agent, held to a senior engineer's standard. With the gates to prove it.**
 
-It comes two ways: four skills for a single agent session, and a six-agent [SwarmForge](https://github.com/unclebob/swarm-forge) pack (`packs/six-pack/`) that runs the whole loop unattended, from an operator's card to a rule-cited verdict ([below](#start-here-with-the-six-pack)).
+Atelier is an [Agent Skill](https://github.com/anthropics/skills) suite for Claude Code and compatible agents. Install it once and every code task in a Bun/TypeScript, Next.js, or Java (Quarkus) repo comes out test-first, cleanly layered, typed at the boundaries, private by default, and ready for production. Not because the prompt asked, but because the standard is loaded on every session and enforced by lint, hooks, and CI.
 
-## What changes once it is installed
+Two ways to run it: four skills inside a single agent session, or a six-agent [SwarmForge](https://github.com/unclebob/swarm-forge) pack that takes a one-paragraph card from specification to a rule-cited verdict while you approve once.
 
-Once installed, the agent consults `atelier` on every code task in a Bun/TypeScript, Next.js, or Java project: you do not need to mention it by name. It will:
+## The problem it solves
 
-- Refuse generated code that uses `class`, `function` declarations, `interface`, `console.*`, or `npm`/`pnpm`/`yarn` and rewrite it in the class-free style (on the Java side: refuse Mockito, `@SuppressWarnings`, version ranges, and business failures thrown as exceptions).
-- Write a failing test before production code when implementing a feature.
-- Promote raw domain primitives to branded types with validating factories.
-- Apply the production disciplines when the change touches them: keep personal data out of logs and URLs, derive tenants from the verified token and ship the cross-tenant test, put deadlines on outbound calls, version mutable records, keep migrations additive, pin AI-model snapshots behind ports.
-- Read `.claude/LESSONS.md` and `.claude/lessons.local.md` at session start and propose new entries at session end.
+Coding agents write plausible code fast. Left to themselves they also:
 
-Behind those five habits stand 37 hard rules and the production disciplines, all in
-[`skills/atelier/SKILL.md`](skills/atelier/SKILL.md), with one reference file per concern. The
-table that summarises them is under [The four skills](#the-four-skills) below.
+- Reach for a `class`, an `interface`, a `try/catch` and a `console.log`, in whatever style the last training example used.
+- Mock everything, test after the fact, and weaken a failing test to go green.
+- Interpolate raw strings into SQL, shell, URLs and logs, and put an email address in a query string.
+- Hard-delete rows, rename live columns, call the network without a deadline, and pin an AI model to `latest`.
+- Commit, push, and rewrite your tests without asking.
 
-## Start here with one agent
+Every one of those is a habit. Atelier replaces the habits with 37 hard rules, the production disciplines behind them, and a gate for each one that can be checked by a machine.
 
-**1. Install the skills, once per machine.** Use the [`skills`](https://www.npmjs.com/package/skills) CLI by Vercel Labs: it discovers `skills/atelier/SKILL.md` in this repo automatically:
+## What changes on day one
+
+Once installed, the agent consults the standard on its own. You do not name it. Ask for a feature and you get:
+
+- A failing test proposed first, at the primary port, with hand-written fakes and no mocks.
+- Modules of `const` arrow functions and typed records. No `class`, no `function` declaration, no `interface`, no `console.*`.
+- `Result<T, E>` at every IO boundary and a branded type with a validating factory for every value that crosses a trust boundary.
+- Clean Architecture layers (`src/{domain,use-cases,infra,presenter,composition}`) with the dependency rule enforced by lint.
+- Personal data kept out of logs and URLs, tenants derived from the verified token with the cross-tenant test shipped, deadlines on every outbound call, soft delete and additive migrations, optimistic locking, AI models behind ports with eval gates.
+- Two confirmation gates: the agent never commits or pushes, and never touches an existing test, without your yes.
+- A memory. It reads `.claude/LESSONS.md` at session start and proposes new entries at session end.
+
+### Before and after
+
+What an unaided agent writes for "fetch a user by id":
+
+```ts
+class UserService {
+  async getUser(id: string) {
+    try {
+      const res = await fetch(`https://api.example.com/users/${id}`);
+      return await res.json();
+    } catch (e) {
+      console.log('failed', e);
+      return null;
+    }
+  }
+}
+```
+
+The same request under atelier, before any adapter is written:
+
+```ts
+// src/domain/user-id.ts
+export type UserId = string & { readonly __brand: 'UserId' };
+export type UserIdError = { readonly kind: 'malformed'; readonly message: string };
+
+export const parseUserId = (raw: string): Result<UserId, UserIdError> =>
+  /^[0-9a-f-]{36}$/.test(raw) ? ok(raw as UserId) : err({ kind: 'malformed', message: 'expected a uuid' });
+
+// src/use-cases/ports/users.ts
+export type UsersError =
+  | { readonly kind: 'not-found' }
+  | { readonly kind: 'timeout'; readonly message: string };
+
+export type Users = {
+  readonly find: (id: UserId) => Promise<Result<User, UsersError>>;
+};
+```
+
+The fetch lives in one infra adapter behind that port, with `AbortSignal.timeout` on the call and the `Logger` port instead of `console`. The test drives the use-case through a hand-written in-memory `Users` fake. The failing test came first, and the agent asked before writing it.
+
+## Proof, not promises
+
+Every claim above is measured. The harnesses and their scorecards live in this repo.
+
+| Measurement | With atelier | Without |
+|---|---|---|
+| Conformance eval, 37 assertions over 3 passes, Claude Opus ([baseline](scripts/conformance-eval/baseline.md)) | 111/111 | 86/111 |
+| Hard tier, 7 production-discipline tasks, 24 assertions | 24/24 | 15/24 |
+| Review eval, TypeScript, 11 planted violations over 3 passes ([baseline](scripts/review-eval/baseline.md)) | 33/33 caught | 23/33 caught |
+| Review eval, TypeScript, findings that cite the rule | 33/33 | 0/33 |
+| Review eval, Java, 9 planted violations over 3 passes | 27/27 caught | 15/27 caught |
+| False positives on clean files, both languages | 0 | 0 |
+
+The gap is widest where it matters most. Soft delete over hard delete was satisfied by the unaided arm in none of its runs, in either eval. Depending on a port rather than an implementation: one run in six.
+
+The six-pack's first live run, an empty repository and a small CLI card on 2026-09-05: one hour fifty-six from card to Done, one approval, zero clarifications, 35 commits by six roles, 88 tests, coverage 100 on every tier, mutation score 100, a verdict of conformant with one Low finding fixed by the reviewer.
+
+The standard itself is audited: 120 of 120 canon sub-concepts covered in [`conformance-matrix.md`](conformance-matrix.md), 233 file-and-line citations pinned to their content, and nine CI jobs that prove every shipped gate both passes on a conforming tree and blocks its target violation on the current, unpinned toolchain.
+
+## Start with one agent
+
+Three steps, once per machine and once per repo.
+
+**1. Install the skills.** The [`skills`](https://www.npmjs.com/package/skills) CLI by Vercel Labs discovers every skill in this repo:
 
 ```bash
 bunx skills add vdelacou/atelier
 ```
 
-(`npx skills add vdelacou/atelier` works the same.) By default it installs into Claude Code's user skills directory (`~/.claude/skills/atelier`). Use `-g` for project-local install or `-a <agent>` to target another supported agent (`opencode`, `cursor`, etc.).
+`npx skills add vdelacou/atelier` works the same. The default target is Claude Code's user skills directory (`~/.claude/skills/atelier`); `-g` installs project-local, `-a <agent>` targets another supported agent (`opencode`, `cursor`, and more).
 
-**2. Point your repo at the standard.** Skill triggering is probabilistic; a pointer block at the top of your repo's `CLAUDE.md` is deterministic, so every session loads the standard whatever you type:
+**2. Point your repo at the standard.** Skill triggering is probabilistic. A pointer block at the top of your repo's `CLAUDE.md` is deterministic, so every session loads the standard whatever you type:
 
 ```bash
 SKILL=~/.claude/skills/atelier
@@ -36,27 +109,40 @@ printf '# CLAUDE.md\n\n' > CLAUDE.md
 cat "$SKILL/assets/claude-md-pointer.md" >> CLAUDE.md
 ```
 
-**3. Ask.** The agent consults the standard on its own; you do not name it. Example prompts:
+**3. Ask for work.** In plain language, no skill names:
 
 - "Add a CSV export use case for the orders feature."
 - "Add a pricing section with a monthly/yearly toggle to the landing page."
-- "Refactor `user-service.ts` to follow SOLID principles."
-- "Scaffold a new Bun script repo for a Firebase admin job."
-- "Add a paginated invoices endpoint to the Quarkus service." (Java variant: keyset pagination, cross-tenant 404 test, REST Assured)
-- "Review this module for code smells."
+- "Add a paginated invoices endpoint to the Quarkus service."
 - "Wrap the `email`, `userId`, and `money` primitives as branded types."
+- "Review this module for code smells."
 
-**The gates are the agent's job.** A new repo: say "scaffold a new Bun repo" (or a Next.js package, or a Java service) and `atelier-greenfield` lays the layout, copies the gate scripts, wires the hooks and proves every gate green before the first commit. An existing repo: say "adopt the standard into this repo" and `atelier-review-me` scans it and hands you a staged plan whose first slice installs the gates without tripping them on the legacy tree. The copy block for doing it by hand is under [Install the gates by hand](#install-the-gates-by-hand-bun-script-repos).
+The gates are the agent's job. For a new repo, say "scaffold a new Bun repo" (or a Next.js package, or a Java service) and `atelier-greenfield` lays the layout, copies the gate scripts, wires the hooks and proves every gate green before the first commit. For an existing repo, say "adopt the standard into this repo" and `atelier-review-me` scans it and hands you a staged plan whose first slice installs the gates without tripping them on the legacy tree. Prefer to do it by hand? The copy block is [below](#install-the-gates-by-hand).
 
-## Start here with the six-pack
+## Or hand the loop to six agents
 
-Write a card. Six Claude Code agents take it from a grilled specification to a rule-cited conformance verdict, and you decide once, at the spec.
+Write a card. Six Claude Code agents take it from a grilled specification to a rule-cited conformance verdict. You decide once, at the spec.
+
+```text
+New Task -> specifier -> Attention -> coder -> cleaner -> architect -> hardener -> reviewer -> Done
+```
+
+| Role | What it does | Skill |
+|---|---|---|
+| specifier | Grills the card one question at a time, writes `docs/specs/<card>.md`: scenarios, disciplines, decisions, ADRs | atelier-grill-me |
+| coder | Makes the scenarios pass test-first; on an empty tree, scaffolds the variant green from the first commit | atelier, atelier-greenfield |
+| cleaner | The refactor step: names, the clean-code numbers, complexity at most 10, duplication at the third occurrence | atelier |
+| architect | Layers, dependency direction, ports as function types, branded value objects, boundary lint with fixtures | atelier |
+| hardener | Mutation at 90 or above, test seams, the discipline tripwires, the security lens, a red fixture for every gate | atelier |
+| reviewer | The rule-cited verdict in `docs/reviews/<card>.md`, the lessons appended, the card closed | atelier-review-me |
+
+Each role runs in its own git worktree and exchanges committed work through SwarmForge's durable handoffs. The hooks run in every worktree, no test older than the card is touched, and no role ever pushes.
 
 ### Install the pack
 
 Prerequisites on the machine that runs the swarm: `zsh`, `git`, `tmux`, Babashka (`bb`), the `claude` CLI signed in, and the variant's toolchain (Bun, or JDK 21 with the Maven wrapper for Java). `gitleaks` on PATH serves the hooks' secret gate; the hook degrades without it and says so.
 
-The pack is installed into the project that will receive it, an existing repo or an empty directory the first card turns into one. The installer lives in a clone of this repository, whichever way the skills were installed:
+Run the installer from the project that will receive the pack, an existing repo or an empty directory the first card turns into one:
 
 ```bash
 git clone https://github.com/vdelacou/atelier.git ~/code/atelier
@@ -64,7 +150,7 @@ cd ~/code/my-project
 ~/code/atelier/get-atelier-six-pack
 ```
 
-The installer writes four things and commits nothing (rule 25): the `swarm` launcher and the `swarmforge/` runtime (SwarmForge's shared runtime and articles from its `main`, this repository's `packs/six-pack` as the pack, fetched through `get-swarm-forge`, downloaded for the run when it is not on PATH); the standard's pointer block at the top of `CLAUDE.md`; an empty `.claude/LESSONS.md`; and the runtime's ignore rules in `.gitignore`. By default it symlinks the four skills into `~/.claude/skills`, leaving any skill already there (step 1 of the single-agent start, or an earlier link) untouched and saying so; `--skip-skills` leaves that directory alone, `--copy-skills` copies instead of symlinking. Commit what it wrote, then start:
+It writes the `swarm` launcher and the `swarmforge/` runtime, the pointer block at the top of `CLAUDE.md`, an empty `.claude/LESSONS.md`, and the runtime's ignore rules. It symlinks the four skills into `~/.claude/skills` unless they are already there (`--skip-skills` leaves that directory alone, `--copy-skills` copies instead). It commits nothing. You do:
 
 ```bash
 git add CLAUDE.md .claude/LESSONS.md .gitignore swarm swarmforge
@@ -74,140 +160,67 @@ git commit -m "chore(swarm): install the atelier six-pack"
 
 ### Your first card
 
-1. `./swarm` starts the six roles, the handoff daemon and the dashboard, prints `Dashboard: http://127.0.0.1:<port>` and opens it. On a first start Claude Code asks two questions in every pane, whether to trust the folder and whether to accept bypass-permissions mode: six panes, twelve answers, from the dashboard's pane view.
-2. **New Task**: write the card as intent, not as a design. The first run's card, `invoice-totals`, in full:
+1. `./swarm` starts the six roles, the handoff daemon and the dashboard, then opens `http://127.0.0.1:<port>`. On a first start Claude Code asks two questions in every pane, whether to trust the folder and whether to accept bypass-permissions mode: six panes, twelve answers, from the dashboard's pane view.
+2. **New Task**: write the card as intent, not as a design. The first run's card in full:
 
    > Bun script CLI that reads a CSV of invoices and prints the total amount per customer as a table. The CSV columns are customer name, customer email, invoice id, amount in EUR cents. The file holds personal data (names, emails). Single user, no tenants, no network, no database. Scope: parse the file, sum per customer, print the table; nothing else. Start with the walking skeleton.
 
-3. The specifier grills the card one question at a time, each led by a recommendation, after exploring the tree; any question it cannot settle itself reaches you in **Attention**, answer it there (the first run needed none). When the specification is written, its handoff waits in Attention too: read `docs/specs/<card>.md`, then approve. That approval is your one decision, and it is where the standard's two confirmation rules land (rules 24 and 25).
-4. The board moves on its own from there. **Work Queue** opens any role's live pane; a clarification from any role lands in Attention with the same answer control.
-5. **Done**: the specification in `docs/specs/<card>.md`, the rule-cited verdict in `docs/reviews/<card>.md`, the task's lessons appended to `.claude/LESSONS.md`, and every commit on your project's `main`. Push when you are ready; no role ever pushes.
+3. The specifier grills the card, exploring the tree before each question and leading with a recommendation. Anything it cannot settle reaches you in **Attention**. When the specification is written, its handoff waits there too: read `docs/specs/<card>.md`, then approve. That is your one decision.
+4. The board moves on its own from there. **Work Queue** opens any role's live pane; a clarification from any role lands in Attention.
+5. **Done**: the specification, the rule-cited verdict in `docs/reviews/<card>.md`, the lessons appended to `.claude/LESSONS.md`, and every commit on your `main`. Push when you are ready.
 6. **Teardown** stops the swarm and keeps the project; `./swarm` starts it again.
 
-Read this first: the agents run unattended with permission prompts bypassed (SwarmForge's model), inside worktrees of your project; the Attention gate on the spec is where the standard's two confirmation rules land; no role ever pushes. The operator manual, the role table a CI gate keeps equal to the conf, and the swarm reading of rules 24 and 25 are in [`packs/six-pack/README.md`](packs/six-pack/README.md).
+Read this first: the agents run unattended with permission prompts bypassed (SwarmForge's model), inside worktrees of your project. The Attention gate on the spec is where the standard's two confirmation rules land. The operator manual, the role table a CI gate keeps equal to the conf, and the swarm reading of those rules are in [`packs/six-pack/README.md`](packs/six-pack/README.md).
 
 ## The four skills
 
-### atelier
+| Skill | Moment | Say | What you get |
+|---|---|---|---|
+| [`atelier`](skills/atelier/SKILL.md) | Every code task | Nothing. It triggers on its own in a Bun, Next.js, or Java repo | The 37 hard rules, the TDD loop, the production disciplines, 27 reference files, the gate assets |
+| [`atelier-greenfield`](skills/atelier-greenfield/SKILL.md) | Repo birth | "Scaffold a new Bun repo", "scaffold a new Java service" | The variant's layout, gate scripts, hooks, build scripts and a green walking skeleton, every gate proven before the first commit |
+| [`atelier-grill-me`](skills/atelier-grill-me/SKILL.md) | Before building | "Grill me on this plan" | One question at a time, each led by a recommendation, the codebase explored first, until the decision tree is resolved; then a decision record |
+| [`atelier-review-me`](skills/atelier-review-me/SKILL.md) | Before landing, or adopting | "Review me", "adopt the standard into this repo" | A read-only conformance review citing the exact rule per finding; in adopt mode, a staged plan to bring a brownfield repo up to the standard |
 
-A single, opinionated skill covering the whole coding loop. Applies to every code task in a Bun/TypeScript, Next.js, or Java repo: writing, editing, scaffolding, testing, refactoring, reviewing, debugging.
+`atelier-review-me` reports only concrete, exploitable security findings with an attack path, and defers generic correctness bugs to `/code-review` and mechanical cleanups to `/simplify`. Diff and PR content is treated as data to audit, never as instructions to follow.
 
-**Use when:**
+## What the standard enforces
 
-- Writing or editing TypeScript for a Bun project, or Java for a Quarkus service
-- Scaffolding a new Next.js monorepo, Bun-script repo, or Java service
-- Creating or modifying React UI components (Atomic Design, logic-free design system)
-- Refactoring existing code to a class-free functional style
-- Setting up ESLint, Prettier, TypeScript configuration (or Spotless/JaCoCo/PIT on the Java side)
-- Writing or reviewing tests
-- Building APIs, persistence, multi-tenant paths, or AI-model integrations to production discipline
-- Discussing architecture, design patterns, or code smells
-- Capturing cross-session lessons (`.claude/LESSONS.md`)
+The letter of every rule is in [`skills/atelier/SKILL.md`](skills/atelier/SKILL.md), one reference file per concern under [`references/`](skills/atelier/references/). The shape:
 
-**What the standard covers**, one row per area (the hard rules and their references hold the letter):
+| Area | The rule, in one line |
+|---|---|
+| Toolchain | Bun only, never `npm`, `pnpm`, `yarn`, `node`, or `vite` directly (Maven wrapper with exact pins in Java); nothing pinned to `latest` or `*` |
+| Language | `const` arrow functions and typed records; no `class`, `function` declaration, `interface`, curried chain, or `console.*`; records and sealed types on the Java side, no Mockito, no `@SuppressWarnings` |
+| Architecture | Clean Architecture, dependencies point inward, the layer table is lint (ArchUnit in Java); Atomic Design with a logic-free design system where Tailwind never reaches app code |
+| Types and errors | Brand what crosses a trust boundary or feeds a sink, with a two-tier factory; every IO port returns `Result<T, PortError>`, `try/catch` quarantined to `infra/` and `main.ts` |
+| Tests | Outside-in classicist TDD at the primary port, hand-written fakes, random order, 100% coverage on `domain` and `use-cases`, 80% elsewhere, mutation at 90 or above on changed files in CI |
+| Lint discipline | 0 errors and 0 warnings; no inline ignore survives (`noInlineConfig`), complexity at most 10 per function |
+| Commits | Conventional Commits by hook, at most 10 files and 300 lines, trunk-based, the agent never commits or pushes and never edits an existing test without a yes |
+| Privacy (27, 34) | Personal data never in logs, URLs, or query strings; user rights as routine endpoints; synthetic fixtures only |
+| Isolation (28) | Owner from the verified token only, fail-closed reads, RLS, a cross-tenant 404 test on every owner-scoped endpoint |
+| Reliability (29-31) | A deadline on every outbound call, bounded jittered retries with idempotency keys, the transactional outbox, optimistic locking, soft delete, expand-contract migrations |
+| AI models (32) | The model behind a port with a hand-written fake, pinned dated snapshots, output treated as untrusted, prompt-injection fencing, eval gates in CI, per-caller spend caps |
+| Security (33) | Source-to-sink threat model, auth and crypto rented, review reports only concrete exploitable findings |
+| Operations | SLOs as numbers, correlated OpenTelemetry, symptom-based alerts; pipeline-only deploys with canary and one-step rollback, IaC, SBOM and signed artifacts, restore drills |
+| Product | Error copy naming cause and next step, honest flows, accessibility with an axe gate, validate before build |
+| Memory | Append-only `.claude/LESSONS.md` across sessions, a live `.claude/PLAN.md` so a multi-step task survives a context reset |
 
-| Area | Rule |
-|------|------|
-| Interaction | Correctness, then a safety confirmation, then concision, then style; terse answer-first chat, polished prose in deliverables, never an em dash; challenge on substance, not question spam; one question round led by a recommendation, then assumptions named inline; the two agent gates, never commit or push and never touch an existing test without a yes (rules 24-25), and headless runs create new tests only |
-| Toolchain | Bun only, never `npm`, `pnpm`, `yarn`, `node`, or `vite` directly |
-| Language | `const` arrow functions, no `class`, no `function` declaration, no `interface`, no curried arrow chains |
-| Typing | Branded types at trust boundaries (rule 12: brand what crosses a boundary or feeds a sink, pass plain values through inside one); `Partial<Record<K, V>>` when the key set is open |
-| Architecture | Clean Architecture: `src/{domain,use-cases,infra,presenter,composition,test-helpers}`, dependency rule inward-only |
-| UI / Design system | Atomic Design: independent, logic-free design system (`src/components/{atoms,molecules,organisms}`) of stateless props-only components, no hooks, no fetching, no i18n, no `next/*` imports; state hoisted to page shells via `src/lib/hooks/`, links/images injected as `ComponentType` props. Styling sealed inside: Tailwind utilities only under `src/components/**` (tokens in `globals.css`), typed variants instead of `className` passthrough, the app layer never sees Tailwind |
-| Logging | Logger is a **port** (`src/use-cases/ports/logger.ts`), Winston adapter in `src/infra/`, fake in `src/test-helpers/`. Never `console.*` |
-| Tests | Outside-in classicist TDD: SUT is the primary port, domain runs real, only secondary ports are faked, never mocks |
-| Test integrity | Tests are confirmation-gated (rule 24): the agent never creates, edits, deletes, skips, or weakens a test without showing you the change and getting an explicit yes, TDD stays test-first by *proposing* the Red test for approval. Prevents silently weakening a test to go green |
-| Error handling | Every IO port returns `Result<T, PortError>` with a discriminated-union error; use-cases return `Result<Summary, StepError>`; `try/catch` quarantined to `infra/`, `main.ts`, and pure-domain native-API fallbacks |
-| Design | SOLID expressed through typed records and arrow functions, object calisthenics |
-| Complexity | YAGNI, KISS, DRY after Rule of Three, Tell-Don't-Ask, Law of Demeter |
-| Toolchain discipline | `bun run lint` must be 0 errors AND 0 warnings; no inline ignores of any tool ever; inner-loop checks (`bun test` + `lint` + `typecheck` + `coverage`) after every change; coverage gates 100% on `domain` + `use-cases`, 80% on `composition` + `infra` + `presenter`; Stryker mutation testing with ≥90% break threshold, on the changed files per run in CI and the full sweep on a daily schedule; no `"latest"` or `"*"` in `package.json` (use `bun add` / `bun update`); fast pre-commit hook (commit-size ≤10 files / ≤300 lines, package.json check, gitleaks `protect --staged`, staged lint, typecheck) plus a CI gate set (`.github/workflows/ci.yml`) that runs strict lint, tests, coverage, and mutation on a frozen lockfile as the required merge check; cyclomatic complexity at most 10 per function, lint-enforced in every variant (rule 35) |
-| Security | Source-to-sink threat model, branded types at trust boundaries (`SafeUrl`, `SanitizedHtml`, `EnvVar`, `SafePath`); security review reports only concrete, exploitable findings with an attack path |
-| Commits | Conventional Commits enforced by a `commit-msg` hook (rule 23): `type(scope)!: subject`; the Bun-script variant ships a zero-dependency validator, the Next.js variant uses `@commitlint/config-conventional`. Same grammar both ways. The agent never commits or pushes without explicit user confirmation (rule 25) |
-| Identity | Contributor identity in commit metadata is normal (rule 26), never a finding or a publish blocker. File contents are the opposite: no tracked file names a person, an employer, or a client. Scrubbing a mention from pushed history is a gated `git filter-repo` rewrite plus a force-push (treating cached commits as still exposed) |
-| Integration | Trunk-based development: commit to `main` in small green increments (≤10 files / ≤300 lines), no long-lived feature branches; unfinished work hides behind a flag. The pre-commit gates keep every commit releasable |
-| Memory | Append-only `.claude/LESSONS.md` and `.claude/lessons.local.md` across sessions; plus a mutable `.claude/PLAN.md` (plan + per-step definition of done) so a multi-step task resumes losslessly after a context reset |
-| Privacy (rules 27, 34) | Personal data never in logs, URLs, or query strings (user-typed text travels in POST bodies; opaque ids only in logs, natural identifiers redacted at the logger); user rights (see/export/correct/erase/withdraw) as routine endpoints; a data map with classifications; production data never leaves production; synthetic fixtures only |
-| Isolation (rule 28) | Owner/tenant id from the verified token only, fail-closed reads, defense in depth (RLS), least-privilege runtime role, a cross-tenant 404 test on every owner-scoped endpoint, UUIDv7 ids that are never the authorization |
-| Reliability (rules 29-31) | A deadline on every outbound call with bounded jittered retries and idempotency keys; explicit hot reads and keyset pagination; the transactional outbox for side effects; optimistic locking (no lost updates); soft delete + versioned expand-contract migrations; stateless scaling; load-tested latency budgets |
-| Observability | SLOs as numbers with windows; correlated OpenTelemetry traces/metrics/logs; behaviour metrics split by outcome; symptom-based alerts that page only when a human must act |
-| Delivery & ops | Pipeline-only deploys (canary + one-step rollback), infrastructure as code with read-only humans, ephemeral environments, managed over self-run (no SSH, automatic TLS), open-standard interfaces for portability, SBOM + signed artifacts, restore drills, blameless postmortems |
-| Metrics | The four DORA metrics derived from pipeline events, flow metrics (cycle time, not story points), system metrics never per-person leaderboards, trends over snapshots, cost as a first-class metric with idle-cheap design |
-| AI models (rule 32) | The model behind a capability port with a hand-written fake; pinned dated snapshots (never `latest`); model output checkpointed as untrusted input; prompt-injection fencing with server-side action authorization; eval gates in CI; per-caller spend caps on metered endpoints |
-| Governance | Decision records (`[decision]` entries + an ADR tier), API docs generated from the contract, thresholds as numbers not adjectives, one honest backlog, CODEOWNERS with exactly one Accountable per area, separation of duties, audit trails, owner-verifiable done |
-| Product & accessibility | Error copy naming cause + next step over stable error codes, honest flows (cancel as easy as subscribe), market-driven defaults, a visible human path, i18n catalog, semantic HTML + keyboard + token contrast + an axe gate, and validate-before-build (problem interviews, dated go/no-go, keep-or-kill on measured adoption) |
+Rules are non-negotiable by design: when a request would violate one, the agent rewrites to comply and says so in one sentence.
 
-**Reference documentation included:**
+## Three stacks, one standard
 
-- `ai.md`: the AI model as a dependency: capability port + fake, pinned snapshots, eval gates in CI, prompt-injection fencing + server-side action authorization, per-caller spend caps
-- `architecture.md`: vertical slices, dependency rule, hexagonal and clean architecture, walking skeleton, inbound HTTP server archetype, client-agnostic API shape and the three model boundaries (domain/DB/wire), the frontend gateway
-- `atomic-design.md`: the logic-free design system: atoms/molecules/organisms layer rules, interactivity ladder (native HTML → hoisted state → `src/lib/hooks`), injected link/image wrappers, styling seal (Tailwind invisible outside the design system), page-shell wiring, decision table
-- `behavioural-examples.md`: before/after worked examples for the four Behavioural Guidelines in this repo's idiom (over-abstraction vs one function, drive-by vs surgical edit, vague vs verifiable plan), anti-pattern table
-- `bun-typescript.md`: Clean Architecture Bun script repos, strict ESLint flat config (SonarJS + type-aware), Logger port + Winston adapter, bootstrap checklist, optional containerization Dockerfile
-- `clean-code.md`: naming priorities, object calisthenics in a class-free world, comments, formatting
-- `code-smells.md`: detection catalogue and the refactorings that clean each smell
-- `complexity.md`: essential vs accidental complexity, YAGNI, the lazy ladder (stop at the first rung; simplicity is not negligence; defer the build, not the seam), KISS, DRY + Rule of Three
-- `delivery.md`: pipeline-only deploys with canary + one-step rollback, infrastructure as code with read-only humans, ephemeral environments, managed over self-run (no SSH, automatic TLS), open-standard portability + compose gate, SBOM + signed artifacts, restore drills, blameless postmortems
-- `design-patterns.md`: the four basic class-to-module translations, the full GoF catalogue rewritten as modules of arrow functions, the translation quick-reference table
-- `governance.md`: decision records (`[decision]` + ADR tier), API docs from the contract, numbers not adjectives, one honest backlog, CODEOWNERS/RACI, separation of duties, audit trail, owner-verifiable done
-- `isolation.md`: token-derived owner, RLS defense in depth, fail closed, blast radius, cross-tenant 404 tests per endpoint, UUIDv7 identifiers
-- `java-quarkus.md`: the Java variant: records + sealed `Result`, ports as interfaces with hand-written fakes (no Mockito), Maven-wrapper toolchain with exact pins, Spotless, JaCoCo tiers + PIT mutation, Flyway expand-contract, Panache writes / explicit reads, authenticated-by-default resources, hard-rules translation table, bootstrap checklist
-- `lessons.md`: session memory format, triggers, extraction heuristics, worked examples
-- `metrics.md`: measure whether you are improving: DORA from pipeline events, flow metrics over story points, system metrics never per-person, trend over snapshot, cost as a first-class metric
-- `nextjs-monorepo.md`: Next.js 16 + Tailwind v4 + i18n route groups + static export
-- `object-design.md`: responsibility-driven design, stereotypes, tell-don't-ask, value objects vs entities, aggregates
-- `observability.md`: SLOs as numbers, correlated OpenTelemetry traces/metrics/logs, behaviour metrics by outcome, symptom-based alerting and alert hygiene
-- `privacy.md`: private by default: minimize collection, PII out of logs/URLs/query strings, user rights as routine endpoints, data map, synthetic fixtures, impact assessments
-- `product.md`: the whole experience: error copy over stable codes, honest flows, market-driven defaults, human path, accessibility, and validate-before-build (interviews, cheapest demand test, dated go/no-go, keep-or-kill on adoption)
-- `reliability.md`: design for failure: deadlines + jittered idempotent retries, explicit hot reads, keyset pagination, transactional outbox, optimistic locking, soft delete + expand-contract migrations, stateless scaling, load-tested budgets
-- `result-type.md`: `Result<T, E>` and helpers, per-port discriminated-union errors, `StepError` aggregation, `try/catch` quarantine, fan-out batch semantics, `retryOnErr`, fakes-with-error-injection, `captureRejection` helper
-- `security.md`: source-to-sink threat model, vulnerability categories for Bun/TypeScript + Next.js, branded types for trust boundaries, rented auth/crypto, the one security baseline, pre-merge checklist, the concrete-exploitability review filter
-- `solid-principles.md`: SRP, OCP, LSP, ISP, DIP expressed as typed records and function contracts
-- `testing.md`: primary-port unit tests, the test-the-code-you-own principle (trust your dependencies), fakes with `errors` knob, regression + bypass + performance layers, test doubles catalogue, test builders, contract tests
-- `testing-infra.md`: three patterns for infra-adapter tests (custom-fetch DI / two-constructor / sync-builder export), production-wiring smoke test, `installFetchMock`, global-swap pattern, FS chmod tricks, ordering gotchas
-- `workflow.md`: four-check loop, zero-warning lint rule, no-inline-ignore discipline, per-directory coverage gates, SonarJS-at-lint-time, trunk-based development, fast pre-commit hook plus the full CI gate set, dependency CVE scanning in CI (`bun audit`), verification discipline (test the bypass, fix the class, compliance is not proof), Conventional Commits `commit-msg` hook, README consistency check
+The skill detects the variant and reads the matching reference:
 
-### atelier-greenfield
+- **Bun TypeScript script**: Clean Architecture, strict ESLint (SonarJS, type-aware, the style bans and layer zones), Logger port with a Winston adapter. Detected by `"module": "src/main.ts"` in `package.json`.
+- **Next.js monorepo**: Bun workspaces, Atomic Design with a logic-free design system, Tailwind v4, i18n route groups, static export, a bundle-size budget. Detected by `packages/*` and `next.config.ts`.
+- **Java (Quarkus)**: records and a sealed `Result`, ports as small interfaces with hand-written fakes, Maven wrapper with exact pins, Spotless, JaCoCo tiers, PIT mutation, Flyway expand-contract, ArchUnit layer rules, authenticated-by-default resources. Detected by `pom.xml` with `src/main/java/**`.
 
-A companion skill for the one moment the main standard assumes has already happened: repo birth. Trigger it when starting a fresh repo or a new monorepo package ("scaffold a new Bun repo", "bootstrap a new project to the standard", "scaffold a new Java service"). It detects the variant (Bun-script, Next.js, or Java/Quarkus), follows that variant's bootstrap checklist verbatim, scaffolding the layout, copying the gate assets from the installed `atelier` skill, wiring the git hook(s), writing the build scripts, then lays a minimal green walking skeleton and proves every gate passes before stopping for you to confirm the first commit (rule 25). Greenfield only; it orchestrates the existing checklists rather than duplicating them. It is the standard's paved road: a repo born from it starts already passing every gate.
+## Install the gates by hand
 
-**Use when:** starting a brand-new Bun/TypeScript script repo, a new package in a Next.js monorepo, or a new Java (Quarkus) service, from zero. For an existing repo with code, the main atelier skill applies.
+The skill ships every gate as a copyable asset in [`skills/atelier/assets/`](skills/atelier/assets/): the fast pre-commit hook, the Conventional Commits hook, the tripwires, and the full CI gate set. `atelier-greenfield` and adopt mode install them for you; this is the manual path for a **Bun-script repo**, and it is the block the Bun smoke test replays in CI.
 
-### atelier-grill-me
-
-A small companion skill for stress-testing a plan or design *before* building. Trigger it with "grill me" (or when a decision needs pressure-testing): it interviews you one question at a time (each led with a recommended answer, exploring the codebase before asking) walking the decision tree until you reach shared understanding, then writes a tight decision record. Independent of the atelier standard but atelier-aware: it grills toward the simplest design and proposes durable choices as `.claude/LESSONS.md` `[decision]` entries.
-
-**Use when:** you want to be grilled, stress-test or pressure-test a plan, or de-risk a high-stakes decision (architecture, data model, public API, migration) before writing code.
-
-### atelier-review-me
-
-The pre-land companion: a rule-aware conformance review of a diff against the atelier standard. Trigger it with "review me" (or to check a branch/PR against the rules before committing). It resolves the diff scope, maps each changed file to the hard rules that bind it, and reports findings that cite the exact rule number (or red flag), reporting only concrete exploitable security findings and deferring generic correctness bugs to `/code-review` and mechanical cleanups to `/simplify`. Report-only by default; it offers to apply the fixes on request. It also runs an **adopt mode** for brownfield, scanning a whole existing repo and emitting a staged migration plan to bring it up to the standard (the counterpart to atelier-greenfield's repo birth). atelier-grill-me owns the pre-decision moment, atelier-greenfield repo-birth, atelier-review-me the pre-land moment and brownfield adoption.
-
-**Use when:** you want a conformance checkpoint before a change lands, a rule-cited review of staged changes, a feature branch, or a PR (covering the core rules and the production disciplines, rules 27-34), or to adopt the standard into an existing brownfield repo (adopt mode). For generic correctness bugs use `/code-review`; for reuse/simplification cleanups use `/simplify`.
-
-## The six-pack in detail
-
-`packs/six-pack/` packages the four skills as a [SwarmForge](https://github.com/unclebob/swarm-forge) pack. Each role runs in its own git worktree and exchanges committed work through SwarmForge's durable handoffs, holding itself to the standard exactly as a single-agent session does: the hooks run in every worktree, no test older than the card is touched, no role ever pushes.
-
-```text
-New Task -> specifier -> Attention -> coder -> cleaner -> architect -> hardener -> reviewer -> Done
-```
-
-| Role | What it does | Skill |
-|---|---|---|
-| specifier | Grills the card one question at a time through the dashboard, writes `docs/specs/<card>.md`: scenarios, disciplines, decisions, ADRs | atelier-grill-me |
-| coder | Makes the scenarios pass test-first; on an empty tree, scaffolds the variant green from the first commit | atelier, atelier-greenfield |
-| cleaner | The refactor step: names, the clean-code numbers, complexity at most 10, duplication at the third occurrence | atelier |
-| architect | Layers, dependency direction, ports as function types, branded value objects, boundary lint with fixtures | atelier |
-| hardener | Mutation at 90 or above, test seams, the discipline tripwires, the security lens, a red fixture for every gate | atelier |
-| reviewer | The rule-cited verdict in `docs/reviews/<card>.md`, the lessons appended, the card closed | atelier-review-me |
-
-What you get per card: a specification you approved, code that passed the hooks and the inner loop on every commit, mutation-proven tests, a verdict that cites rule numbers, and a `.claude/LESSONS.md` that remembers. What you do: write the card as intent, approve the spec in Attention, answer a clarification when a role asks, push when you are ready.
-
-Measured on its first run (2026-09-05, an empty repository, a small CLI card): one hour fifty-six from card to Done, one Attention approval, zero clarifications, 35 commits by six roles, 88 tests, coverage 100 on every tier, mutation score 100, a verdict of conformant with one Low finding fixed by the reviewer.
-
-## Install the gates by hand (Bun-script repos)
-
-The skill ships executable assets in [`skills/atelier/assets/`](skills/atelier/assets/) implementing the fast pre-commit hook and the full CI gate set (`ci.yml`) for the **Bun-script variant**. Next.js monorepos use `simple-git-hooks` (test + lint + commitlint) instead, see `references/nextjs-monorepo.md`; never install both hook mechanisms. For a Bun-script repo, copy the scripts and wire the hook:
+<details>
+<summary>Copy block, Bun-script variant</summary>
 
 ```bash
 SKILL=~/.claude/skills/atelier   # or wherever you cloned the skill
@@ -221,6 +234,7 @@ cp $SKILL/assets/regenerate-coverage-preload.ts   scripts/
 cp $SKILL/assets/mutate-staged.sh                 scripts/
 cp $SKILL/assets/mutate-changed.sh                scripts/
 cp $SKILL/assets/lint-staged.sh                   scripts/
+cp $SKILL/assets/check-docs.sh                    scripts/
 cp $SKILL/assets/stryker.conf.json                ./
 
 # CI re-runs the commit-message and commit-size gates over the pushed range
@@ -264,8 +278,6 @@ chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh scripts/check-co
 git config core.hooksPath .githooks   # picks up both hooks
 ```
 
-The `commit-msg` hook enforces [Conventional Commits](https://www.conventionalcommits.org) (`type(scope)!: subject`) with zero dependencies, see `references/workflow.md` (Commit message format).
-
 Add the matching scripts to `package.json`:
 
 ```jsonc
@@ -285,163 +297,89 @@ Add the matching scripts to `package.json`:
 }
 ```
 
-Optional: install `gitleaks` (`brew install gitleaks`) for the secret-scan gate. The hook degrades gracefully if it's missing.
+The `commit-msg` hook enforces [Conventional Commits](https://www.conventionalcommits.org) (`type(scope)!: subject`) with zero dependencies. Optional: `brew install gitleaks` for the secret-scan gate; the hook degrades gracefully without it.
 
-For a **Next.js monorepo**, the hook is `simple-git-hooks` (`references/nextjs-monorepo.md`, Root `package.json`) and the CI workflow is `assets/ci-next.yml` with `check-commit-range.sh`, `check-package-json.sh` and `check-bundle-size.sh` (its CI section). For a **Java (Quarkus) repo**, the equivalent install copies `assets/pre-commit-java`, `assets/ci-java.yml`, `assets/mutation-java.yml`, `assets/audit-java.yml`, `assets/check-pom.sh`, `assets/pit-changed.sh`, `assets/java/pmd-ruleset.xml`, the shared `assets/check-commit-size.sh`, `assets/check-commit-range.sh`, and `assets/check-commit-messages.sh`, and the same `assets/commit-msg`, see `references/java-quarkus.md` (§ Gates and hooks) for the copy block and the pom-side configuration (Spotless, JaCoCo tiers, PIT).
+</details>
+
+For a **Next.js monorepo**, the hook is `simple-git-hooks` (`references/nextjs-monorepo.md`, Root `package.json`) and the CI workflow is `assets/ci-next.yml` with `check-commit-range.sh`, `check-package-json.sh` and `check-bundle-size.sh`; never install both hook mechanisms. For a **Java (Quarkus) repo**, copy `assets/pre-commit-java`, `assets/ci-java.yml`, `assets/mutation-java.yml`, `assets/audit-java.yml`, `assets/check-pom.sh`, `assets/pit-changed.sh`, `assets/java/pmd-ruleset.xml`, `assets/java/LayerRulesTest.java`, the shared commit scripts and the same `assets/commit-msg`; the copy block and the pom-side configuration are in `references/java-quarkus.md` (Gates and hooks).
 
 ## Carry the standard in the repo, not only in the skill
 
-Skill triggering is probabilistic: it depends on a prompt matching a description, and smaller
-model tiers under-invoke. The deterministic path is a pointer block at the top of the consumer
-repo's `CLAUDE.md`, which every session loads as context regardless of what the user types. Treat
-the block as the primary distribution mechanism and skill triggering as the fallback.
+Skill triggering depends on a prompt matching a description, and smaller model tiers under-invoke. The pointer block at the top of a consumer's `CLAUDE.md` loads on every session regardless. Treat the block as the primary distribution mechanism and skill triggering as the fallback. The canonical text is [`assets/claude-md-pointer.md`](skills/atelier/assets/claude-md-pointer.md): copy it, never retype it, so an upstream wording change propagates by re-copy. `atelier-greenfield` seeds it at repo birth and adopt mode seeds it in the first migration slice.
 
-The canonical text lives in [`assets/claude-md-pointer.md`](skills/atelier/assets/claude-md-pointer.md);
-copy it rather than retyping it, so every repo carries the same block and an upstream wording change
-propagates by re-copy. `atelier-greenfield` seeds it at repo birth (step 6) and `atelier-review-me`
-adopt mode seeds it in the first migration slice; the command is step 2 of the single-agent quick start above, for an already-conforming
-repo that predates the block. Extend `CLAUDE.md` freely below it; the block stays at the top.
-
-## Variant references
-
-The skill covers three repo shapes and picks the right reference automatically:
-
-- **Next.js monorepo**: Bun workspaces, Atomic Design with a logic-free design system, Tailwind v4, i18n route groups, static export. Identifiable by `packages/*` and `next.config.ts`.
-- **Bun TypeScript script**: Clean Architecture (`src/{domain,use-cases,infra,presenter,composition,test-helpers}`), strict ESLint (SonarJS + type-aware), Logger port + Winston adapter. Identifiable by `"module": "src/main.ts"` in `package.json`.
-- **Java (Quarkus)** | the same commitments in Java 21+ idiom: records + sealed `Result`, ports as small interfaces with hand-written fakes (no Mockito), Maven wrapper with exact pins, Spotless, JaCoCo coverage tiers, PIT mutation, Flyway expand-contract migrations, authenticated-by-default JAX-RS resources. Identifiable by `pom.xml` with `src/main/java/**`.
+A vendored or pinned skill is a dependency. It goes stale silently while every gate stays green; the [field test](field-test.md) found a consumer running doctrine 49 days behind. Re-check the pin on your dependency-scan cadence and re-sync doctrine and gates together.
 
 ## Working on this repository
 
-### Repository layout
+This repo is the standard, not an application. What binds work here is in [`CLAUDE.md`](CLAUDE.md): never an em dash, frontmatter within the loader limits, plan-first, small Conventional Commits, and every new gate ships with a fixture that proves it can fail.
 
-```
+<details>
+<summary>Repository layout</summary>
+
+```text
 atelier/
-├── LICENSE
 ├── README.md
 ├── CHANGELOG.md                   # the suite's changelog; the standard is versioned as a whole
 ├── CLAUDE.md                      # authoring and process rules for work in this repo
-├── field-test.md                  # the skill scored against a real consumer repo (Phase 5)
+├── field-test.md                  # the skill scored against a real consumer repo
 ├── conformance-matrix.md          # one row per canon sub-concept, verdict + file:line evidence
 ├── reverse-matrix.md              # one row per hard rule, does the canon carry it
 ├── citations-lock.json            # content pin for every file:line the matrices cite
 ├── docs/global-rules/             # the vendored canon the matrices audit against
 ├── docs/upstream/                 # notes on the upstream tooling this repo leans on
-├── .github/workflows/ci.yml       # CI: nine jobs (frontmatter, em-dash gate, three smoke tests, two grader selftests, matrix drift, the six-pack gate)
-├── .github/workflows/canary.yml   # weekly probe of the two toolchain concessions (typescript pin, three sonarjs rules)
-├── .githooks/                     # this repo's own hooks (em-dash gate + frontmatter check, Conventional Commits)
-├── get-atelier-six-pack           # six-pack installer: compose the pack, link the four skills, seed the pointer block
-├── packs/six-pack/                # the SwarmForge six-pack: launcher stub, conf, constitution, six role prompts, operator README
+├── .github/workflows/ci.yml       # nine jobs on every push (below)
+├── .github/workflows/canary.yml   # weekly probe of the two toolchain concessions
+├── .githooks/                     # this repo's own hooks: em-dash gate, frontmatter check, Conventional Commits
+├── get-atelier-six-pack           # six-pack installer: compose the pack, link the skills, seed the pointer
+├── packs/six-pack/                # the SwarmForge pack: launcher stub, conf, constitution, six role prompts, operator README
 ├── scripts/
-│   ├── validate-frontmatter.ts    # frontmatter gate: name/description present + within skill limits
+│   ├── validate-frontmatter.ts    # frontmatter gate
 │   ├── check-no-em-dash.sh        # no em dash on an added line (hook + CI)
-│   ├── check-citations.py         # file:line evidence pinned to content (--lock re-pins after a deliberate move)
-│   ├── check-matrix-drift.py      # conformance-matrix.md true to the vendored canon (count, titles, sha256)
-│   ├── check-workflow-assets.sh   # shipped workflows self-sufficient in a consumer repo
-│   ├── check-six-pack.sh          # the pack parses as the launcher will and its prompts close the handoff loop
-│   ├── smoke-test.sh              # e2e (Bun): install the assets per this README into a scratch repo, run every gate
-│   ├── smoke-test-next.sh         # e2e (Next.js): scaffold a package, assert rules 21-22 and 35 enforcement
-│   ├── smoke-test-java.sh         # e2e (Java): scaffold from the canonical pom, run + block every gate
-│   ├── trigger-eval/              # does the skill load on the queries it should (and not on the others)
-│   ├── conformance-eval/          # does produced code follow the rules, with-skill vs baseline, plus the pairwise judge
-│   └── review-eval/               # does atelier-review-me catch planted violations in a diff
+│   ├── check-citations.py         # file:line evidence pinned to content (--reanchor, --lock)
+│   ├── check-matrix-drift.py      # conformance-matrix.md true to the vendored canon
+│   ├── check-workflow-assets.sh   # shipped workflows parse and are self-sufficient
+│   ├── check-six-pack.sh          # the pack parses, the prompts close the loop, the README table matches the conf
+│   ├── smoke-test.sh              # e2e (Bun): replay the copy block above, run and block every gate
+│   ├── smoke-test-next.sh         # e2e (Next.js): scaffold a package, prove the design-system lint block
+│   ├── smoke-test-java.sh         # e2e (Java): scaffold from the canonical pom, run and block every gate
+│   ├── trigger-eval/              # does the skill load on the queries it should, and not on the others
+│   ├── conformance-eval/          # does produced code follow the rules, with-skill vs a frozen baseline, plus the judge
+│   └── review-eval/               # does atelier-review-me catch planted violations, recall + citation + false positives
 └── skills/
     ├── atelier/
-    │   ├── SKILL.md           # Main skill instructions
-    │   ├── assets/            # Copyable artefacts: install with the steps above
-    │   │   ├── audit.yml                       # scheduled CVE scan (bun audit) plus the vendored-skill staleness check
-    │   │   ├── audit-java.yml                  # the same for the Java variant
-    │   │   ├── capture-rejection.ts            # rejection-assertion helper (SonarJS S4123)
-    │   │   ├── check-bundle-size.sh            # rule-17.7 bundle-weight budget (gzipped JS vs a ceiling)
-    │   │   ├── check-commit-messages.sh        # CI: Conventional Commits over the pushed range (rule 23, the --no-verify proof)
-    │   │   ├── check-commit-range.sh           # CI: the commit-size cap over every commit in the range (gate 1's CI half)
-    │   │   ├── check-commit-size.sh            # block commits over 10 files / 300 lines (gate 1; shared with the Java hook)
-    │   │   ├── check-coverage.ts               # per-tier coverage gate (runs in CI)
-    │   │   ├── check-data-lifecycle.sh         # rule-30 tripwire: hard deletes + destructive DDL in the staged diff
-    │   │   ├── check-docs.sh                   # rule-12.1 docs-check: run the README's ## Verify commands
-    │   │   ├── check-io-deadlines.sh           # rule-29 tripwire: infra fetch/HttpClient without a deadline marker
-    │   │   ├── check-isolation-tests.sh        # rule-28 tripwire: new route files without a nearby 404 test
-    │   │   ├── check-package-json.sh           # block "latest" / "*" / dist-tag version strings (gate 2)
-    │   │   ├── check-pii-channels.sh           # rule-27 tripwire: PII in query strings, log messages, @QueryParam
-    │   │   ├── check-pom.sh                    # Java: block version ranges + -SNAPSHOT deps in pom.xml (rule 19)
-    │   │   ├── check-skill-pin.sh              # a vendored or pinned skill compared against upstream, one file or the whole tree
-    │   │   ├── ci.yml                          # GitHub Actions CI: the full gate set on a frozen lockfile (rules 4.6, 15.1)
-    │   │   ├── ci-java.yml                     # GitHub Actions CI: the full Java gate set (verify, JaCoCo, PIT on the changed classes)
-    │   │   ├── ci-next.yml                     # GitHub Actions CI: the Next.js gate set (commitlint range, gate 2, gitleaks, test/lint/typecheck/build, bundle budget)
-    │   │   ├── claude-md-pointer.md            # the pointer block every consumer CLAUDE.md carries (copy, never retype)
-    │   │   ├── commit-msg                      # git commit-msg hook: enforce Conventional Commits (rule 23, all variants)
-    │   │   ├── fetch-mock.ts                   # installFetchMock for infra adapter tests
-    │   │   ├── format-error.ts                 # safe catch-block formatter (SonarJS S6551)
-    │   │   ├── format-error.test.ts            # its test (format-error is in the mutation scope)
-    │   │   ├── java/                           # Java variant exemplars: sealed Result/Ok/Err, the Email value-record, the rule-35 PMD ruleset
-    │   │   ├── lint-staged.sh                  # fast staged-file ESLint for the pre-commit hook
-    │   │   ├── mutate-changed.sh               # Stryker mutation on the files changed vs the base ref (origin/main by default)
-    │   │   ├── mutate-staged.sh                # Stryker mutation on staged files (optional local; CI enforces mutation)
-    │   │   ├── mutation.yml                    # the daily full Stryker sweep, never a commit gate
-    │   │   ├── mutation-java.yml               # the daily full PIT sweep
-    │   │   ├── pit-changed.sh                  # Java: PIT on the classes changed vs the base ref
-    │   │   ├── pre-commit                      # git pre-commit hook running the fast gates (Bun variant)
-    │   │   ├── pre-commit-java                 # git pre-commit hook running the fast gates (Java variant)
-    │   │   ├── regenerate-coverage-preload.ts  # auto-glob src/{infra,composition,presenter} → coverage-preload.ts
-    │   │   └── stryker.conf.json               # Stryker config (mutation scope, 90% break threshold)
-    │   └── references/        # Supporting documentation
-    │       ├── ai.md
-    │       ├── architecture.md
-    │       ├── atomic-design.md
-    │       ├── behavioural-examples.md
-    │       ├── bun-typescript.md
-    │       ├── clean-code.md
-    │       ├── code-smells.md
-    │       ├── complexity.md
-    │       ├── delivery.md
-    │       ├── design-patterns.md
-    │       ├── governance.md
-    │       ├── isolation.md
-    │       ├── java-quarkus.md
-    │       ├── lessons.md
-    │       ├── metrics.md
-    │       ├── nextjs-monorepo.md
-    │       ├── object-design.md
-    │       ├── observability.md
-    │       ├── privacy.md
-    │       ├── product.md
-    │       ├── reliability.md
-    │       ├── result-type.md
-    │       ├── security.md
-    │       ├── solid-principles.md
-    │       ├── testing.md
-    │       ├── testing-infra.md
-    │       └── workflow.md
-    ├── atelier-greenfield/
-    │   └── SKILL.md           # standalone greenfield-repo scaffolder (orchestrates the variant bootstrap checklists)
-    ├── atelier-grill-me/
-    │   └── SKILL.md           # standalone "grill me" plan stress-test skill
-    └── atelier-review-me/
-        └── SKILL.md           # standalone rule-aware pre-land diff-review skill
+    │   ├── SKILL.md               # the 37 hard rules, the TDD loop, the disciplines, the workflow
+    │   ├── assets/                # copyable gates: hooks, tripwires, CI workflows, test helpers, Java exemplars
+    │   └── references/            # 27 files, one per concern: architecture, testing, result-type, security, privacy, ...
+    ├── atelier-greenfield/SKILL.md
+    ├── atelier-grill-me/SKILL.md
+    └── atelier-review-me/SKILL.md
 ```
 
-### Repository CI
+</details>
 
-Every push and pull request runs nine GitHub Actions jobs, each guarding against the same failure mode: a toolchain major or a doc edit silently breaking what the skill ships:
+<details>
+<summary>Repository CI, nine jobs on every push</summary>
 
-- **frontmatter validator**: every `SKILL.md` opens with a valid `name`/`description` within the skill-loader limits.
-- **no em dash on an added line** (`scripts/check-no-em-dash.sh`): the standard bans the character and an agent copies the punctuation it sees; the selftest runs first so the gate is seen red before it judges the range.
-- **grader selftests**: `conformance-eval/grade.py --selftest`, `conformance-eval/select-tasks.py --selftest`, `conformance-eval/judge.py --selftest` and `review-eval/grade.py --selftest`, so a grader defect (four have been found so far, every one punishing the better review) cannot land unnoticed.
-- **matrix drift**: `check-matrix-drift.py`, `check-citations.py` and `check-workflow-assets.sh`, with their selftests, plus the staleness gate's own selftest; the matrices stay true to the vendored canon, every cited line keeps its content, and the shipped workflows stay self-sufficient.
-- **six-pack** (`scripts/check-six-pack.sh`): the SwarmForge pack parses under the launcher's rules (one master worktree, known agents, a prompt per role), every role prompt closes the receive/send/done loop and hands off to the next role in conf order, the last role broadcasts, and the operator README's role table equals the conf; the selftest plants eleven defects first.
-- **`scripts/smoke-test.sh` (Bun variant)**: follows this README's install steps into a scratch Bun repo, extracts the canonical `tsconfig.json` / `eslint.config.js` from `references/bun-typescript.md`, installs the **current unpinned** toolchain, and proves every gate both passes on a conforming tree and blocks its target violation (the fast pre-commit hook run end-to-end, plus the CI gates run directly, Stryker included).
-- **`scripts/smoke-test-next.sh` (Next.js variant)**: scaffolds a Next.js package from the canonical configs in `references/nextjs-monorepo.md`, builds a conforming design system + page shell + static export, and asserts the design-system lint block catches its target violations: rule 21 (a hook / `next/*` import / `'use client'` / app-code import inside a component) and rule 22 (a `className` / `class` / `style` attribute outside `src/components/**`).
-- **`scripts/smoke-test-java.sh` (Java variant)** | scaffolds a Maven repo from the canonical `pom.xml` in `references/java-quarkus.md` plus the shipped hook assets, proves the gates pass on a conforming skeleton (spotless, `verify` with the JaCoCo tiers, PIT, a real hooked commit through `pre-commit-java`), and that each gate blocks its target violation (a version range, a `-SNAPSHOT` dependency, an oversized commit, a junk commit message, a misformatted file, a warning under `-Werror`, an untested domain class, a covered-but-unasserted mutant survivor).
+- **frontmatter**: every `SKILL.md` opens with a valid `name` and `description` within the skill-loader limits.
+- **em dash**: no em dash on an added line; the selftest runs first so the gate is seen red before it judges the range.
+- **grader selftests**: the conformance grader, the tier-1 task selector, the judge and the review grader each prove they can fail. Four grader defects have been found so far, every one punishing the better review.
+- **matrix drift**: the matrices stay true to the vendored canon, every cited line keeps its content, the shipped workflows parse and stay self-sufficient.
+- **six-pack**: the pack parses under the launcher's rules, every role prompt closes the handoff loop, the operator README's role table equals the conf.
+- **smoke test, Bun**: replays the copy block into a scratch repo on the current unpinned toolchain and proves every gate both passes on a conforming tree and blocks its target violation, the style bans and layer zones included.
+- **smoke test, Next.js**: scaffolds a package from the canonical configs and proves the design-system lint block catches a hook, a `next/*` import or app code inside a component, and a `className` outside `src/components/**`.
+- **smoke test, Java**: scaffolds from the canonical `pom.xml` and proves Spotless, the JaCoCo tiers, PIT, the enforcer's mock ban, the ArchUnit layer rules and the hooks each pass and each block their violation.
 
-A new ESLint/TypeScript/Stryker/Next/Maven-plugin major that breaks a shipped asset (or doc drift in the canonical configs) fails CI before a user hits it. Run them locally with `bash scripts/smoke-test.sh`, `bash scripts/smoke-test-next.sh`, and `bash scripts/smoke-test-java.sh`.
+A new ESLint, TypeScript, Stryker, Next or Maven-plugin major that breaks a shipped asset fails CI here before a user hits it. Run them locally with `bash scripts/smoke-test.sh`, `bash scripts/smoke-test-next.sh`, and `bash scripts/smoke-test-java.sh`; the fast checks are `bun run scripts/validate-frontmatter.ts` and `python3 scripts/check-citations.py`.
+
+</details>
 
 ## Credits
 
-Inspired by the layout of [ramziddin/solid-skills](https://github.com/ramziddin/solid-skills). The engineering substance encodes patterns from Clean Code (Robert C. Martin), Test-Driven Development (Kent Beck), Domain-Driven Design (Eric Evans), and Refactoring (Martin Fowler), adapted to a class-free Bun/TypeScript codebase (and its Java translation). The production disciplines (hard rules 27-34 and the references they point to) are the executable encoding of the eighteen pillars in *The Global Rules Every New Project Should Have* and its *Do and Don't* companion. The security reference and its false-positive filter are adapted with credit from [anthropics/claude-code-security-review](https://github.com/anthropics/claude-code-security-review).
+Inspired by the layout of [ramziddin/solid-skills](https://github.com/ramziddin/solid-skills). The engineering substance encodes patterns from Clean Code (Robert C. Martin), Test-Driven Development (Kent Beck), Domain-Driven Design (Eric Evans), and Refactoring (Martin Fowler), adapted to a class-free Bun/TypeScript codebase and its Java translation. The production disciplines (hard rules 27-34 and their references) are the executable encoding of the eighteen pillars in *The Global Rules Every New Project Should Have* and its *Do and Don't* companion. The security reference and its false-positive filter are adapted with credit from [anthropics/claude-code-security-review](https://github.com/anthropics/claude-code-security-review).
 
 ## Changelog
 
-Notable changes are tracked in [CHANGELOG.md](./CHANGELOG.md); the suite is versioned as a
-whole. The current release is 2.2.0 (the six-pack release: the standard as a team of six, the README rebuilt around two quick starts, the third re-probed sonarjs rule, the redirect stubs removed).
+Notable changes are in [CHANGELOG.md](./CHANGELOG.md); the suite is versioned as a whole. The current release is 2.2.0.
 
 ## License
 
