@@ -6,6 +6,39 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-09-09
+
+The enforcement release: hard rules 36 (tests run in random order) and 37 (the dependency rule
+as lint), the style rules, the no-inline-ignore rule, the Java mock ban and the Bun-only rule
+turned from prose into gates, the Next variant's first CI workflow, the citation
+gate pinning both ends of a range with a re-anchor mode, and the README rewritten as a pitch.
+
+### Upgrading from 2.2.0
+
+- Re-extract `eslint.config.js` (Bun) or `eslint.config.mjs` (Next) from its reference. It carries
+  the style bans (rules 1, 7, 10, 18), the use-case `try/catch` ban (17), the domain `fs` ban (20,
+  Bun only), the layer zones (37, Bun only), `noInlineConfig` with the `@ts-` and other-tool
+  suppression bans (15), and the mock-ban message tagged with its rule. Then `bun run lint`: expect
+  reds on inline `type` specifiers, hidden classes, curried helpers, a `try/catch` in a use-case, a
+  cross-layer import, and every suppression comment in the tree, each to refactor or to turn into a
+  project-level severity change with a reason.
+- Change the `test` script to `bun test --randomize` and re-copy `ci.yml` and `stryker.conf.json`
+  (rule 36). A red run prints `--seed=<n>`; the seed replays the order.
+- Re-copy `check-package-json.sh` (rule 5: a foreign lockfile or a `node`/`npm`/`npx`/`pnpm`/`yarn`/
+  `vite` script entry now fails gate 2). On Next, add it to the `simple-git-hooks` pre-commit line
+  before test and lint, then `bun run prepare`.
+- On Next, copy `assets/ci-next.yml` to `.github/workflows/ci.yml` with `check-commit-range.sh`,
+  `check-package-json.sh` and `check-bundle-size.sh`, and make it the required status check.
+- On Java: add `src/test/resources/junit-platform.properties` with the random orderers (36); add
+  the `archunit-junit5` test dependency and copy `assets/java/LayerRulesTest.java` into
+  `src/test/java/<pkg>/architecture/`, renaming its package and root (37); re-extract the enforcer
+  block of the canonical pom and re-copy `check-pom.sh` (13); copy `check-no-suppressions.sh` into
+  `scripts/`, re-copy `pre-commit-java`, `ci-java.yml` and `pmd-ruleset.xml`, and re-extract the
+  PMD block of the canonical pom (15).
+- Re-copy `assets/claude-md-pointer.md` into your `CLAUDE.md`: the block names hard rules 1-37.
+- The manual gate install left the README; each variant's bootstrap checklist in its reference
+  carries it. No action unless you linked to the README section.
+
 ### Added
 - **Hard rule 36 and canon 4.9: tests run in random order, no test depends on another.**
   `bun test --randomize` is the `test` script in the Bun and Next.js skeletons, the CI step in

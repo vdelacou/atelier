@@ -1,25 +1,36 @@
-# Plan: check-citations.py --reanchor (2026-09-09)
+# Plan: release 2.3.0 (2026-09-09)
 
-Goal: after any insertion in a cited file, the pinned citations shift and `--lock` re-pins whatever now
-sits at the old line, blank included, so yesterday every shift was repaired by an ad-hoc script that
-found the pinned snippet's new line and rewrote the matrix, eight times, and never moved a range's end.
-Give the gate that mode.
+Goal: ship the changes accumulated since v2.2.0 (hard rules 36 and 37, rules 5, 13 and 15 gated in
+every variant, the Next CI workflow, the README pitch, the citation gate's range pins and
+`--reanchor`) as 2.3.0, the same shape as 2.2.0: release notes, the tier-2 pass on the release tree,
+the pass recorded, the annotated tag, main and the tag pushed.
 
-Definition of done: `python3 scripts/check-citations.py --reanchor` finds, for every lock entry whose
-line no longer holds its snippet, the unique line that does, rewrites every citation token in both
-matrices consistently (start, end, and `/extra` lines each mapped independently), re-locks, and prints
-the moves; a snippet that is gone or appears more than once is reported and left for a human, exit 1,
-no lock written; on an unshifted tree it prints "nothing to re-anchor" and exits 0; the selftest proves
-the happy path (a citation and a range shifted by an inserted line, verify red before, green after) and
-both refusals; CLAUDE.md's verify line names the mode; CHANGELOG Harness bullet; CI green.
+Definition of done: CHANGELOG has `## [2.3.0] - 2026-09-09` with a release paragraph and an
+"Upgrading from 2.2.0" list distilled from the Consumers notes; README names 2.3.0 as the current
+release; `baseline.md` records the tier-2 pass (both arms, 21 tasks, opus, scores, capped sessions,
+tree under test); tag `v2.3.0` sits on the record commit with a message in the v2.2.0 shape;
+`git ls-remote --tags origin` shows it; CI green on the pushed range. Owner's one yes covers the
+three commits, the tag and the push (given in advance, 2026-09-09).
 
-Facts (2026-09-09): lock keys are `target:line` with `target` the ROOT-relative path `resolve()` returns
-and the snippet the stripped 72-char prefix; both ends of a range are separate keys since yesterday, so
-mapping keys independently moves a range as two points; `CITE.sub` over each source with a per-match
-rebuild keeps everything outside the token untouched.
+Facts: CLI logged in (claude.ai, first party); `tasks.json` unchanged since the 2026-09-04 freeze
+(last commit 257ee2d, 2026-09-03), so no re-freeze; `skills/atelier/` diff since v2.2.0 is 20 files,
++560/-62; 2.2.0's tier 2 took 58 minutes at six jobs; the Bash tool caps a background run at 10
+minutes, so the pass runs under `nohup ... & disown` with a Monitor on its log (no `setsid` on
+macOS); nothing under `skills/` or `scripts/` is edited while it runs.
 
-1. [x] (selftest green; nothing to re-anchor on the tree; rehearsal on a scratch copy moved 17 SKILL.md citations and nothing else) `run_reanchor()`, dispatch, docstring, selftest cases. DoD: selftest green; `--reanchor` on the
-       current tree says nothing to re-anchor; verify still 233 intact.
-2. [x] (two slices committed and pushed 2026-09-09 on the owner's yes) CLAUDE.md verify line; CHANGELOG bullet; LESSONS one line; plan final. Commits on the yes:
-       (a) `feat(check-citations): --reanchor moves shifted citations by snippet`, (b) `docs: CLAUDE.md,
-       changelog, lessons and plan for --reanchor`. Push on its own yes.
+1. [~] (launched 12:20, six sessions live, first task done at 12:23) Tier 2 on the current tree: `CONFORMANCE_ARMS=both CONFORMANCE_MODEL=claude-opus-5
+       CONFORMANCE_JOBS=6 CONFORMANCE_TAG=release-2.3.0 bash scripts/conformance-eval/run.sh`, log in
+       the scratchpad, Monitor on `done:|capped:|exit=|rror`. DoD: 42 sessions finished, `.capped`
+       empty (or each capped run named), `grade.py <runs-dir>` over the finished directory read
+       for both arms.
+2. [ ] Release notes while it runs (CHANGELOG.md and README.md only): the Unreleased block becomes
+       2.3.0 with the release paragraph and the upgrade list; README's current-release line. Commit
+       `docs(release): 2.3.0 changelog and upgrade notes`. DoD: em-dash gate, frontmatter, citations
+       green; the upgrade list names every "Consumers:" action of the Unreleased block once.
+3. [ ] Record the pass in `scripts/conformance-eval/baseline.md` under
+       `## Tier 2 for the 2.3.0 release (2026-09-09)` in the 2.2.0 shape (arms table, capped, tree
+       under test, anything environmental). Commit `chore(conformance-eval): the 2.3.0 tier-2 pass`.
+       If the skill arm is below full marks on any task, stop and report before tagging.
+4. [ ] `git tag -a v2.3.0` on the record commit with a message in the v2.2.0 shape (one line, then
+       the release paragraph and the tier-2 numbers); `git push origin main v2.3.0`. DoD: the tag on
+       the remote, CI green, plan closed.
