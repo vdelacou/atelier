@@ -31,9 +31,11 @@ tree. What binds work HERE is the authoring and process discipline below.
 
 ## Verify commands
 - `bun run scripts/validate-frontmatter.ts` (fast; the CI frontmatter gate).
-- `python3 scripts/check-citations.py` (fast; file-line evidence vs citations-lock.json; after
-  a deliberate re-anchor, `--lock`) and `bash scripts/check-workflow-assets.sh` (shipped CI
-  workflows self-sufficient); both take `--selftest`.
+- `python3 scripts/check-citations.py` (fast; file-line evidence vs citations-lock.json; after an
+  edit shifts cited lines, `--reanchor` moves every pinned citation, both ends of a range, to the line
+  that now holds its snippet and re-locks, refusing an ambiguous or vanished one; `--lock` alone only
+  when the pinned content itself changed on purpose) and `bash scripts/check-workflow-assets.sh`
+  (shipped CI workflows parse and are self-sufficient); both take `--selftest`.
 - `bash scripts/smoke-test.sh` / `smoke-test-next.sh` / `smoke-test-java.sh` (the CI e2e gates;
   Java needs JDK 21+ and mvn; each takes minutes on first run for dependency downloads).
 - `bash scripts/trigger-eval/run.sh <set> <skill-dir> [fixture] [runs]` after any SKILL.md

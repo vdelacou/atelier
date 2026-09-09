@@ -107,6 +107,10 @@ whole, not any single skill.
   ends rotted unseen: the preview found two ranges ending on a blank line and three inverted (end before
   start) after starts had been re-anchored without their ends. The five are repaired from the target
   text and the lock grows from 183 to 233 entries.
+- `check-citations.py --reanchor`: after an edit shifts cited lines, every pinned citation moves to the
+  unique line that now holds its snippet, both ends of a range, in both matrices, and the lock is rewritten;
+  a snippet that is gone or appears twice is reported and left for a human, nothing locked. Replaces the
+  hand scripts that did this eight times on 2026-09-08 and never moved a range's end.
 
 ## [2.2.0] - 2026-09-06
 
