@@ -278,6 +278,8 @@ Every commit carries an author and a committer (each a name plus an email), take
 
 File contents are the opposite. No tracked file ever names a person, an employer, or a client: not a name in a comment or a LICENSE holder line, not an employer's internal hostname in a config, not a client name in a fixture. A content mention outlives the commit that added it, travels with every copy and quote of the file, and once pushed cannot be removed by anything short of a history rewrite. Where a holder or author string is structurally required, use a neutral handle (e.g. `atelier`). Host control files whose format is identities (CODEOWNERS, `.mailmap`) are metadata in file form, not mentions; they are exempt. The cheap moment to catch a mention is review (atelier-review-me checks it); the expensive moment is after a push.
 
+**The gate.** `assets/check-identity.sh` is a tripwire in the shape of the discipline guards below, and a core gate: every shipped hook runs it on the staged added lines and every shipped CI workflow on the whole tracked tree (`--all`). It looks for the committer's multi-word git name in both orders and the email, under `--all` for every author and committer in the history, and for every entry of `IDENTITY_DENYLIST` (employer and client names; an environment variable, never a tracked file, since a tracked denylist would itself name what the rule forbids). A one-word git name is a handle and is skipped, as is a GitHub noreply address; CODEOWNERS and `.mailmap` are exempt; a lone first name stays a review duty. The fix for a hit is a neutral handle, never a suppression.
+
 Secrets are the other real pre-publish concern: run `gitleaks detect` (the history-wide mode, not the pre-commit `protect --staged`) before the first push to a public host. Secrets in history are always findings; metadata identities never are.
 
 **Scrubbing pushed history is a rewrite, gated and user-initiated.** A one-time, destructive operation; never run it unprompted (rule 25). Use `git filter-repo` (install: `brew install git-filter-repo`): `--replace-text` removes a mention from file contents across history, and `--mailmap` remaps commit metadata when the user wants that changed too:
@@ -508,12 +510,13 @@ Once per release (or quarterly), temporarily remove the `test-helpers` skip from
 
 Restore the skip after the audit. Schedule it on a calendar; the longer between audits, the more dead code accumulates.
 
-### Discipline tripwires (rules 27-30, optional gates)
+### Discipline tripwires (rules 26-30)
 
-Four shipped guards move the mechanical slices of the production disciplines into the machine tier. Each checks the **staged diff** (like `gitleaks protect --staged`), so it blocks a violation entering history without flooding a brownfield tree; each takes `--all` for a tree-wide adopt-mode audit; exceptions ride on path conventions, never inline suppressions (rule 15).
+Five shipped guards move the mechanical slices of the production disciplines into the machine tier. Each checks the **staged diff** (like `gitleaks protect --staged`), so it blocks a violation entering history without flooding a brownfield tree; each takes `--all` for a tree-wide adopt-mode audit; exceptions ride on path conventions, never inline suppressions (rule 15).
 
 | Guard | Rule | Blocks |
 |:---|:--:|:---|
+| `assets/check-identity.sh` | 26 | a person, employer, or client named in file contents: the committer's multi-word name (both orders) or email, the history's authors under `--all`, `IDENTITY_DENYLIST` entries; handles, noreply addresses, CODEOWNERS and `.mailmap` pass. Unlike the four below it is a core gate, run by every shipped hook and CI workflow |
 | `assets/check-pii-channels.sh` | 27 | a natural identifier (thirteen names, any casing or prefix) in a query string (literal or via `new URLSearchParams`), a logger message interpolation (the call joined with up to 3 following lines), a Java `@QueryParam` |
 | `assets/check-io-deadlines.sh` | 29 | an infra `fetch` / `globalThis.fetch` call with no `AbortSignal.timeout(` / `signal:` within the 8 lines after it, comments stripped (Java `HttpClient` with no `.timeout(` / `connectTimeout` in the file) |
 | `assets/check-data-lifecycle.sh` | 30 | a hard delete in app code (erasure/retention/prune/sweep paths exempt, matched on the path only); DROP COLUMN / DROP TABLE / RENAME / TRUNCATE / ALTER COLUMN TYPE outside a `*contract*` migration |

@@ -7,6 +7,19 @@ whole, not any single skill.
 ## [Unreleased]
 
 ### Added
+- **Rule 26 is a gate: `assets/check-identity.sh`.** Until now "no tracked file names a person, an
+  employer, or a client" was prose, and the field test had found a consumer's ADRs naming their
+  author. The tripwire checks the staged added lines in every shipped hook (Bun gate 4 of 6, Java
+  gate 5 of 6, second in the Next `simple-git-hooks` line) and the whole tracked tree with `--all` in
+  every shipped CI workflow. It looks for the committer's multi-word git name in both orders and
+  the email, under `--all` for every author and committer in the history, and for every entry of
+  `IDENTITY_DENYLIST` (employer and client names; an environment variable, never a tracked file,
+  which would itself name what the rule forbids). A one-word git name is a handle and passes, so
+  does a GitHub noreply address; CODEOWNERS and `.mailmap` are exempt; a lone first name stays a
+  review duty. The three smoke tests prove a planted name red standalone and, in Bun and Java, red
+  through the hook itself with the rule number, a handle and a CODEOWNERS mention green. This repo
+  runs the gate on itself in its hook and CI. Consumers: copy `check-identity.sh` into `scripts/`,
+  re-copy the hook (or add it to the Next hook line) and the CI workflow.
 - **Rule 37 in the Next variant: the layer zones.** The canonical `eslint.config.mjs` of
   `references/nextjs-monorepo.md` gains a `layerZone` helper and eight zones in the two shapes the
   variant has: the design system's own layers point upward (`src/components/atoms` never imports

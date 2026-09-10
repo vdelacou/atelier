@@ -1,19 +1,32 @@
-# Plan: baseline fixture top-up to three passes (2026-09-09)
+# Plan: gap hunt, rule 26 gate then the tripwires as default gates (2026-09-09)
 
-Goal: `baseline-arm.json` was re-frozen during the 2.3.0 release from one pass (the release run's
-baseline arm), because the 2026-09-03/04 directories behind the earlier three-pass fixture are gone.
-A one-pass fixture reads each assertion as 0/1 or 1/1. Restore the three-pass grain.
+Findings: rule 26 (identity in commit metadata, never in file contents) has no gate in any variant;
+the four rule 27-30 tripwires ship but nothing runs them (the Bun and Next checklists never copy
+them, no hook or CI calls them, Java copies them with "wire them" as prose). Owner chose both
+closures, two slices.
 
-Definition of done: two more baseline-arm passes over the 21 tasks (opus, tags `bl-2` and `bl-3`,
-three jobs each, concurrently), none capped; `freeze-baseline.py` over the release run plus the two
-new directories writes a fixture with `passes: 3` keyed to the current tasks.json;
-`grade.py <release-runs> --frozen-baseline` accepts it and reads the skill arm 61/61 against the
-three-pass expectation; `baseline.md` records the freeze; CHANGELOG Harness bullet; commit on the yes.
+## Slice 1: rule 26 gate
 
-1. [x] (15:04 to 15:26, both exit 0, none capped, no errors) Launch both passes under nohup, a Monitor per log on `capped:|exit=|rror`. DoD: both logs end
-       with `all runs complete` and `exit=0`, `.capped` empty in both directories.
-2. [x] (passes 3, 63 runs, 138/183; sha of the current tasks.json; release run 61/61 vs 46.0/61; selftest OK) Freeze from three directories, verify the fixture (passes 3, 63 baseline runs, sha of the
-       current tasks.json), grade the release run against it.
-3. [x] (baseline.md section and CHANGELOG bullet; committed and pushed on the yes) Record in `baseline.md` (a "Frozen baseline arm (2026-09-09, three passes)" section with the
-       per-pass unaided totals), CHANGELOG Harness bullet, plan closed. Commit
-       `chore(conformance-eval): three-pass baseline fixture` on the yes.
+Definition of done: `assets/check-identity.sh` (staged added lines by default, `--all` over every
+tracked text file; a multi-word git name in both orders and the email from git config, every
+multi-word author and committer and every email in the history under `--all`, `IDENTITY_DENYLIST`
+env entries; one-word names and GitHub noreply addresses are handles and skipped; CODEOWNERS and
+`.mailmap` exempt; a lone first name stays review) probed red and green in a scratch repo first;
+wired as a hook gate in `pre-commit` (Bun) and `pre-commit-java` and in the Next `simple-git-hooks`
+line, and as an `--all` step in `ci.yml`, `ci-next.yml`, `ci-java.yml`; copied by the three
+bootstrap checklists (the workflow-asset gate proves it); this repo runs it on itself (hook and CI);
+the three smoke tests prove a planted name red, a handle and a CODEOWNERS mention green, and (Bun,
+Java) the hook itself red on a staged leak; SKILL.md rule 26 names the gate and the matrix gains its
+row; workflow.md's Commit identity section and tripwire table carry it; matrix row 13.5 cites the
+script; citations re-anchored and locked; CHANGELOG, LESSONS; tier 1 dry run; commit on the yes.
+
+1. [x] (probe 1: 15 of 15; probe 2 after the one-word-name refinement: 5 of 5) Script drafted and probed.
+2. [x] (workflow-asset gate green; this repo passes its own gate staged and --all) Hooks and CI wired (three each), bootstraps copy it, this repo's own hook and CI run it.
+3. [x] (16:16 to 16:2x, all three suites green: Bun 7 rule-26 checks incl. the hook, Java 3 incl. the hook and --all, Next 3) Smoke tests: fixtures in all three; the hook path is the proof in Bun and Java.
+4. [x] (doctrine, matrix 13.5, 235 locked, CHANGELOG, LESSONS; tier 1 selects nothing for rule 26, the conscious skip; three commits pushed on the yes) Doctrine, tier 1, commits.
+
+## Slice 2: pii, deadline and data-lifecycle tripwires as default gates
+
+After slice 1 lands: the three wired the same way (hook staged, CI `--all`), isolation stays opt-in
+where tenants exist, checklists copy them, workflow.md's "optional gates" becomes "default gates,
+isolation opt-in", the smoke tests prove one hooked commit red per tripwire, tier 1.
