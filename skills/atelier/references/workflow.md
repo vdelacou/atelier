@@ -516,13 +516,13 @@ Five shipped guards move the mechanical slices of the production disciplines int
 
 | Guard | Rule | Blocks |
 |:---|:--:|:---|
-| `assets/check-identity.sh` | 26 | a person, employer, or client named in file contents: the committer's multi-word name (both orders) or email, the history's authors under `--all`, `IDENTITY_DENYLIST` entries; handles, noreply addresses, CODEOWNERS and `.mailmap` pass. Unlike the four below it is a core gate, run by every shipped hook and CI workflow |
-| `assets/check-pii-channels.sh` | 27 | a natural identifier (thirteen names, any casing or prefix) in a query string (literal or via `new URLSearchParams`), a logger message interpolation (the call joined with up to 3 following lines), a Java `@QueryParam` |
-| `assets/check-io-deadlines.sh` | 29 | an infra `fetch` / `globalThis.fetch` call with no `AbortSignal.timeout(` / `signal:` within the 8 lines after it, comments stripped (Java `HttpClient` with no `.timeout(` / `connectTimeout` in the file) |
-| `assets/check-data-lifecycle.sh` | 30 | a hard delete in app code (erasure/retention/prune/sweep paths exempt, matched on the path only); DROP COLUMN / DROP TABLE / RENAME / TRUNCATE / ALTER COLUMN TYPE outside a `*contract*` migration |
-| `assets/check-isolation-tests.sh` | 28 | a new route file with no test named for it that asserts 404 inside a test block, comments excluded (`*public*`/`*health*`/`*to-response*` exempt) |
+| `assets/check-identity.sh` | 26 | a person, employer, or client named in file contents: the committer's multi-word name (both orders) or email, the history's authors under `--all`, `IDENTITY_DENYLIST` entries; handles, noreply addresses, CODEOWNERS and `.mailmap` pass. A core gate, run by every shipped hook and CI workflow |
+| `assets/check-pii-channels.sh` (core, via `check-disciplines.sh`) | 27 | a natural identifier (thirteen names, any casing or prefix) in a query string (literal or via `new URLSearchParams`), a logger message interpolation (the call joined with up to 3 following lines), a Java `@QueryParam` |
+| `assets/check-io-deadlines.sh` (core, via `check-disciplines.sh`) | 29 | an infra `fetch` / `globalThis.fetch` call with no `AbortSignal.timeout(` / `signal:` within the 8 lines after it, comments stripped (Java `HttpClient` with no `.timeout(` / `connectTimeout` in the file) |
+| `assets/check-data-lifecycle.sh` (core, via `check-disciplines.sh`) | 30 | a hard delete in app code (erasure/retention/prune/sweep paths exempt, matched on the path only); DROP COLUMN / DROP TABLE / RENAME / TRUNCATE / ALTER COLUMN TYPE outside a `*contract*` migration |
+| `assets/check-isolation-tests.sh` (opt-in, where tenants exist) | 28 | a new route file with no test named for it that asserts 404 inside a test block, comments excluded (`*public*`/`*health*`/`*to-response*` exempt) |
 
-They are not part of the core gate set: wire them as pre-commit pre-flight steps or CI checks **in repos where the concern exists** (personal data, network IO, a schema, tenants). They are tripwires, not proofs; the discipline references keep the full review duty. The repo smoke test exercises all four so a regression in a guard fails CI here first.
+Since 2026-09-10 four of the five are core gates: the identity guard and, through `assets/check-disciplines.sh` (one hook step, one CI step, every guard run even after one fails), the personal-data, deadline and data-lifecycle guards, each inert in a repo without the concern and wrong in any repo with it. The isolation guard is the exception and stays opt-in **where tenants or owners exist**: it demands a cross-tenant 404 test of every new route, which is wrong for a single-user app; wire it beside the wrapper in the hook and CI when the concern exists. They are tripwires, not proofs; the discipline references keep the full review duty. The repo smoke test exercises all four so a regression in a guard fails CI here first.
 
 ### Never bypass with `--no-verify`
 

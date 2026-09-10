@@ -169,7 +169,7 @@ Enforcement tier is rule rather than doctrine.
 data access behind an interface with a real client and an in-memory fake; the skill prescribes
 exactly that, "a gateway port in src/lib/ with a real client and a canned fake, returning
 Result and mapping the wire DTO into the frontend's own model at that one point"
-(nextjs-monorepo.md:633): COVERED. Canon 17.6's Do has four clauses (semantic elements,
+(nextjs-monorepo.md:637): COVERED. Canon 17.6's Do has four clauses (semantic elements,
 keyboard-workable flows, contrast in tokens, and a gate on automated accessibility checks); the
 skill meets all four, with "Semantic elements first" and "Keyboard everywhere" and "Contrast
 lives in the tokens" (atomic-design.md:234-236) and a real gate, "eslint-plugin-jsx-a11y runs
@@ -215,7 +215,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 3.2 | Put every external thing behind a port | COVERED | architecture.md:257-258; SKILL.md:49 | gate | Port plus real adapter plus in-memory fake at composition root; mock ban lint-enforced |
 | 3.3 | Seal the presentation behind a design system | COVERED | SKILL.md:57; atomic-design.md:236 | gate | Props-in JSX-out, tokens only, no fetching; design-system eslint block |
 | 3.4 | The backend is a client-agnostic API | COVERED | architecture.md:321 | doctrine | Resource-shaped API every client consumes the same way |
-| 3.5 | Build the frontend against a contract, not a running backend | COVERED | architecture.md:331-342; nextjs-monorepo.md:633 | doctrine | Gateway port with real client and canned fake, one wiring flip (Watchlist 6) |
+| 3.5 | Build the frontend against a contract, not a running backend | COVERED | architecture.md:331-342; nextjs-monorepo.md:637 | doctrine | Gateway port with real client and canned fake, one wiring flip (Watchlist 6) |
 | 3.6 | The internal model is yours, not the API's shape | COVERED | architecture.md:325-332 | doctrine | Wire DTO mapped to own model at one point |
 | 3.7 | The domain model is not the database model | COVERED | architecture.md:323 | doctrine | Repository is the single row-to-domain mapping point |
 | 3.8 | Make the boundary testable | COVERED | testing.md:11; SKILL.md:57 | rule | Domain refactor never breaks tests; UI half lint-gated |
@@ -233,7 +233,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; assets/ci-java.yml; assets/ci-next.yml; governance.md:117 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on the changed files on a frozen lockfile as the required merge check; the full mutation sweep is scheduled (assets/mutation.yml) |
 | 4.7 | Hold generated code to the same bar | COVERED | workflow.md:589 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-82; behavioural-examples.md:42 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
-| 4.9 | Run the tests in random order | COVERED | SKILL.md:78; testing.md:692; bun-typescript.md:35; assets/ci.yml:52; assets/stryker.conf.json:8; java-quarkus.md:407 | gate | Added 2026-09-06 with hard rule 36: `bun test --randomize` is the test script, the CI step and Stryker's runner; JUnit random method and class order in Java; the seed prints on red and replays |
+| 4.9 | Run the tests in random order | COVERED | SKILL.md:78; testing.md:692; bun-typescript.md:35; assets/ci.yml:54; assets/stryker.conf.json:8; java-quarkus.md:407 | gate | Added 2026-09-06 with hard rule 36: `bun test --randomize` is the test script, the CI step and Stryker's runner; JUnit random method and class order in Java; the seed prints on red and replays |
 
 ### Pillar 5: Secure by default
 
@@ -256,7 +256,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 6.1 | Know the law that follows the user | COVERED | privacy.md:13 | doctrine | Design to the strictest regime you serve; policyFor code example |
 | 6.2 | Minimize and justify collection | COVERED | privacy.md:7-38 | doctrine | Collect only stated-purpose fields; explicit consent for sensitive and minors |
-| 6.3 | Keep personal data out of logs and URLs | COVERED | privacy.md:44-47; security.md:206 | tripwire | POST body, logger redactFormat, opaque vs natural ids; check-pii-channels.sh (Watchlist 2) |
+| 6.3 | Keep personal data out of logs and URLs | COVERED | privacy.md:44-47; security.md:206 | tripwire | POST body, logger redactFormat, opaque vs natural ids; check-pii-channels.sh (Watchlist 2), a default gate via check-disciplines.sh in every hook and CI workflow since 2026-09-10 |
 | 6.4 | Build for user rights from day one | COVERED | privacy.md:65-74 | doctrine | Five rights as first-class ops; erasure hard-deletes personal fields |
 | 6.5 | Map and classify your data | COVERED | privacy.md:78-85 | doctrine | Generated data map with class, purpose, crossesBorder per field |
 | 6.6 | Never copy production data into test or dev | COVERED | privacy.md:99 | rule | Deterministic synthetic fixtures, zero real subjects (rule 34) |
@@ -270,7 +270,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 7.2 | Defend in depth | COVERED | isolation.md:28; SKILL.md:67 | rule | App filter plus row-level security in the same transaction |
 | 7.3 | Fail closed | COVERED | isolation.md:48; SKILL.md:67 | rule | Missing owner context returns nothing, never everything or a 500 |
 | 7.4 | Shrink the blast radius | COVERED | isolation.md:65-72 | doctrine | Narrowest runtime role; NOBYPASSRLS scoped grants |
-| 7.5 | Prove isolation per endpoint | STRICTER | isolation.md:82-94; SKILL.md:67 | tripwire | Cross-tenant 404 test per endpoint plus a forged-trust-header edge test; check-isolation-tests.sh gates it |
+| 7.5 | Prove isolation per endpoint | STRICTER | isolation.md:82-94; SKILL.md:67 | tripwire | Cross-tenant 404 test per endpoint plus a forged-trust-header edge test; check-isolation-tests.sh gates it, opt-in where tenants exist (the one tripwire not in check-disciplines.sh) |
 | 7.6 | Make identifiers unguessable, and never the authorization | COVERED | isolation.md:106-108 | doctrine | UUIDv7, keys internal, id is defense-in-depth never authorization |
 | 7.7 | No service-token backdoor for bulk reads | COVERED | isolation.md; SKILL.md:67 | doctrine | Resolved Phase 2: no service-key bulk route, analytical volume served from the data platform (ties 10.14) |
 
@@ -282,7 +282,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 8.2 | Automated pipeline, progressive delivery, one-step rollback | COVERED | delivery.md:7-12 | doctrine | Pipeline-only deploy, canary, one-re-run rollback |
 | 8.3 | Infrastructure as code | COVERED | delivery.md:22 | doctrine | Every resource in version-controlled IaC, rebuilt with one command |
 | 8.4 | Vertical slices | COVERED | architecture.md:37-46; workflow.md:259 | doctrine | Feature-cohesive slices, deploy independently or dark behind a flag; archetype src/ is layer-first |
-| 8.5 | Change contracts additively / expand-contract | COVERED | reliability.md:112-114; assets/check-data-lifecycle.sh:31 | tripwire | Expand-migrate-contract; check-data-lifecycle.sh blocks DROP COLUMN/TABLE, RENAME, TRUNCATE, ALTER COLUMN TYPE outside a *contract* migration |
+| 8.5 | Change contracts additively / expand-contract | COVERED | reliability.md:112-114; assets/check-data-lifecycle.sh:31 | tripwire | Expand-migrate-contract; check-data-lifecycle.sh blocks DROP COLUMN/TABLE, RENAME, TRUNCATE, ALTER COLUMN TYPE outside a *contract* migration, a default gate via check-disciplines.sh since 2026-09-10 |
 | 8.6 | Separate and ephemeral environments | COVERED | delivery.md:30 | doctrine | Throwaway per-branch environments keyed to the PR, destroyed on close |
 
 ### Pillar 9: Run as little as possible yourself
@@ -307,11 +307,11 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 10.6 | Keep backups you have actually restored | COVERED | delivery.md:79 | doctrine | Quarterly restore drill into a scratch DB, timed |
 | 10.7 | Scale with demand | COVERED | reliability.md:120-121 | doctrine | Stateless replicas, explicit-TTL cache with invalidation; autoscale implied |
 | 10.8 | Meet performance targets under load | COVERED | reliability.md:126 | doctrine | p95/p99 route budgets, k6 load-test gate fails the build |
-| 10.9 | Treat data as sacred | COVERED | reliability.md:96-108; assets/check-data-lifecycle.sh | tripwire | Soft-delete default, versioned migrations; deliberate storage choice via the ADR discipline |
+| 10.9 | Treat data as sacred | COVERED | reliability.md:96-108; assets/check-data-lifecycle.sh | tripwire | Soft-delete default, versioned migrations; deliberate storage choice via the ADR discipline; check-data-lifecycle.sh a default gate via check-disciplines.sh since 2026-09-10 |
 | 10.10 | Learn from every failure | COVERED | delivery.md:91-98 | doctrine | Blameless postmortem ending in owned, dated backlog tickets |
 | 10.11 | Parse, don't validate | COVERED | reliability.md:130-133; security.md:183 | rule | Parse at the boundary into branded types; money cents, instants UTC (rule 12) |
 | 10.12 | No lost updates | COVERED | reliability.md:82; SKILL.md:70 | rule | Version on read, required on write, stale write is a 409 (rule 31) |
-| 10.13 | Every network call has a deadline | COVERED | reliability.md:9-11; assets/check-io-deadlines.sh | tripwire | Deadline on every outbound call, bounded jittered retries; check-io-deadlines.sh (rule 29) |
+| 10.13 | Every network call has a deadline | COVERED | reliability.md:9-11; assets/check-io-deadlines.sh | tripwire | Deadline on every outbound call, bounded jittered retries; check-io-deadlines.sh (rule 29), a default gate via check-disciplines.sh since 2026-09-10 |
 | 10.14 | Separate the analytical store from the operational one | COVERED | reliability.md | doctrine | Resolved Phase 2: OLTP/OLAP separation doctrine, ETL/CDC copy, the pipeline as the one sanctioned bulk reader (ties 7.7) |
 
 ### Pillar 11: Make it observable
@@ -385,7 +385,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 17.2 | Earn trust rather than extract a sale | COVERED | product.md:25-28 | doctrine | Honest over conversion, symmetric cancel, no dark patterns |
 | 17.3 | Design for real behavior, not the demo | COVERED | product.md:33-39 | doctrine | Ground flows in observed behavior per market, re-ranked on evidence |
 | 17.4 | Let technology serve the person, not replace them | COVERED | product.md:48 | doctrine | Automation removes friction; the human path stays visible |
-| 17.5 | Speak the user's language | COVERED | product.md:52; nextjs-monorepo.md:712 | rule | Every string in a meaning-keyed catalog; localization is a data change |
+| 17.5 | Speak the user's language | COVERED | product.md:52; nextjs-monorepo.md:716 | rule | Every string in a meaning-keyed catalog; localization is a data change |
 | 17.6 | Accessible by default | COVERED | atomic-design.md:234-239; nextjs-monorepo.md:360 | gate | Semantic, keyboard, token contrast; jsx-a11y error-level gate; axe optional (Watchlist 6) |
 | 17.7 | Mobile first, and a light interface | COVERED | product.md:86; assets/check-bundle-size.sh; atomic-design.md:206 | gate | Resolved Phase 2: smallest-screen-first, one-primary-action, progressive-disclosure; the bundle budget is a shipped gate. P6 ACCEPTED 2026-08-30, canon 17.7 gained the budget clause the pillar prose already asked for (Watchlist 6) |
 
