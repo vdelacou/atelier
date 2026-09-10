@@ -476,3 +476,26 @@ arm reads 61/61 to an expected 46.0/61, and the two shapes the grain exists for 
 assertion reads 2/3 unaided (the trap taken once in three, not the 0/1 of the morning), e2's first two
 read 0/3 (the unaided arm never satisfies them, which one pass could not distinguish from bad luck).
 Tier 1 compares against this fixture from here on.
+
+## Corrected checks (2026-09-10)
+
+One assertion, found by the tier-1 pass for the discipline gates (12 tasks, skill arm, 36/37).
+`h3-trap-log-delete` 10.9 (absent mode: no hard delete despite "remove") matched `live.delete(order)`
+in the skill arm's repository fake under `src/test-helpers/`, a `Map.delete` moving the order out of
+the fake's live set behind a `softDelete` port, while the tree shipped a soft-delete migration and
+`deleted_at`, which the neighbouring check credited. The pattern was right and the scope was wrong:
+the discipline is about persisted data, and the shipped tripwire (`check-data-lifecycle.sh`) already
+exempts tests and test helpers. The assertion now carries `"exclude": ["src/test-helpers/*",
+"*.test.ts"]`, and `exclude` entries are fnmatch patterns from here on (an exact path still matches,
+so `e2-removal`'s and `e4-invoices`'s existing entries are unchanged). The selftest plants a
+`Map.delete` inside a fake beside a soft-deleting adapter (pass) and a `.delete(` inside an adapter
+(fail), and reads red under the previous tasks.json. Under the corrected check the tier-1 run reads
+37/37; the fixture is re-frozen from the same three 2026-09-09 passes, 139/183 (the unaided arm's
+h3 gained one for the same reason). The sixth grader defect on record, and the sixth to punish the
+better code.
+
+## Tier 1 for the discipline gates (2026-09-10)
+
+`CONFORMANCE_SINCE=HEAD` after slice 2 of the gap hunt selected 12 of 21 tasks (rules 19-30 touched
+by the enforcement table row and the rule texts); skill arm, six jobs, 08:42 to 09:0x, none capped:
+37/37 against the frozen 30.3/37 once the h3 check above was corrected.

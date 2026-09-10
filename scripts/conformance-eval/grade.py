@@ -15,6 +15,7 @@ baseline. Missing directories are reported as ungraded, not failed.
 """
 
 import hashlib
+from fnmatch import fnmatch
 import json
 import re
 import shutil
@@ -64,7 +65,10 @@ def read_sources(run_dir: Path, exts: tuple[str, ...], exclude: set[str]) -> dic
         rel = str(p.relative_to(run_dir))
         # skills/ guards against older run dirs copied from a transiently polluted
         # fixture, which nested whole other-task run trees under skills/.
-        if rel.startswith((".claude/", "node_modules/", "skills/")) or rel in exclude:
+        # An exclude entry is an fnmatch pattern: an exact path, or "src/test-helpers/*" and
+        # "*.test.ts" for an assertion about production code only (h3's hard-delete check
+        # matched a Set.delete inside a repository fake on 2026-09-10).
+        if rel.startswith((".claude/", "node_modules/", "skills/")) or any(fnmatch(rel, x) for x in exclude):
             continue
         text = p.read_text(errors="replace")
         if FIXTURE_BASELINE.get(rel) == text:
@@ -248,6 +252,29 @@ def selftest() -> None:
         ("7.5 same-owner only", "src/infra/http/invoices.test.ts",
          "it('lists the invoices of the signed-in organisation', () => {});\n", absence, False),
     ]
+    # 10.9 reads production code only: a Set.delete inside a repository fake under
+    # src/test-helpers/ is bookkeeping, not a hard delete (the 2026-09-10 tier-1 pass read
+    # a soft-deleting tree 2/3 on exactly that line); a .delete( in an infra adapter is one.
+    h3 = next(task for task in tasks if task["id"] == "h3-trap-log-delete")
+    no_hard_delete = next(a for a in h3["assertions"] if a["rule"] == "10.9" and a["mode"] == "absent")
+    for label, extra, want in [
+        ("10.9 Set.delete in a fake is not a hard delete", ("src/test-helpers/order-repository-fake.ts", "const live = new Map();\nexport const createFake = () => ({ softDelete: async (id) => { live.delete(id); return ok(id); } });\n"), True),
+        ("10.9 .delete( in an adapter is a hard delete", ("src/infra/orders-repository-db.ts", "export const remove = async (id) => db.orders.delete(id);\n"), False),
+    ]:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp) / "scope"
+            shutil.copytree(FIXTURE_DIR, run_dir)
+            keep = run_dir / "src" / "infra" / "orders-repository-db.ts"
+            keep.parent.mkdir(parents=True, exist_ok=True)
+            keep.write_text("export const retire = async (id) => db.orders.update(id, { deletedAt: now() });\n")
+            artifact = run_dir / extra[0]
+            artifact.parent.mkdir(parents=True, exist_ok=True)
+            artifact.write_text(extra[1])
+            ((_d, _r, got),) = grade_run(run_dir, [no_hard_delete])
+            if got != want:
+                print(f"SELFTEST FAILED: {label}: expected {'pass' if want else 'fail'}, got {'pass' if got else 'fail'}")
+                sys.exit(1)
+
     for label, rel, body, assertion, want in shapes:
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp) / "shape"
@@ -296,7 +323,7 @@ def selftest() -> None:
             sys.exit(1)
 
     assert tasks_hash(tasks[:1]) != tasks_hash(tasks), "a filtered task list must not hash like the whole file (the --task path checks the fixture before filtering)"
-    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8, 7.1 and 7.5 credit shape over vocabulary, the frozen baseline is keyed to its assertions and checked before any --task filter, a dead session is not scored")
+    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8, 7.1 and 7.5 credit shape over vocabulary, 10.9 reads production code only, the frozen baseline is keyed to its assertions and checked before any --task filter, a dead session is not scored")
 
 
 def _flag_val(args: list[str], name: str) -> int | None:

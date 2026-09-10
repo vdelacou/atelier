@@ -443,6 +443,7 @@
         "desc": "no hard delete, despite 'remove it'",
         "pattern": "DELETE\\s+FROM|\\.delete\\(|deleteById\\(|deleteOne\\(",
         "mode": "absent",
+        "exclude": ["src/test-helpers/*", "*.test.ts"],
         "rule": "10.9"
       },
       {
