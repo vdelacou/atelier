@@ -561,6 +561,7 @@ Why: keeping file IO on `Bun.file` is faster, has zero import ceremony, fits the
     - `cp <skill-path>/assets/lint-staged.sh scripts/lint-staged.sh` (hook gate 4 runs it via the `lint:staged` script)
     - `cp <skill-path>/assets/check-commit-messages.sh scripts/check-commit-messages.sh` (CI re-runs the message check over the pushed range, so `--no-verify` cannot slip one past)
     - `cp <skill-path>/assets/check-commit-range.sh scripts/check-commit-range.sh` (the same for commit SIZE: the hook sees one staged diff, CI walks every commit in the range)
+    - `cp <skill-path>/assets/check-identity.sh scripts/check-identity.sh` (hook gate 4, rule 26: no person, employer, or client named in file contents; CI runs it over the whole tree with `--all`)
     - `chmod +x scripts/lint-staged.sh scripts/check-commit-messages.sh`
     - `mkdir -p .github/workflows && cp <skill-path>/assets/ci.yml .github/workflows/ci.yml` (the authoritative gate set: strict lint, tests, coverage, mutation on the changed files, secret scan on a frozen lockfile)
     - `cp <skill-path>/assets/mutation.yml .github/workflows/mutation.yml` (the daily full mutation sweep, `workflow_dispatch` on demand; ci.yml mutates the changed files only, so this is the only place the whole tree is measured)

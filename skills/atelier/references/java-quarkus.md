@@ -423,6 +423,7 @@ Same git hooks as the Bun variant, shell only, wired with `git config core.hooks
 - `assets/ci-java.yml`: the authoritative gate set, run on every push and pull request as the required merge check. Its first step re-runs the commit-msg validator over the pushed range (`scripts/check-commit-messages.sh`, so `--no-verify` cannot slip a message past the local hook), then the pom gate, a full-history `gitleaks detect` (CI installs its own pinned copy), plus `./mvnw verify` (compile with `-Werror`, unit + integration tests, JaCoCo tier check, the PMD complexity cap of rule 35), and PIT mutation (≥90 on `domain`/`usecases`). The commit-size range check runs here too; the CVE scan does not.
 - `assets/java/LayerRulesTest.java`: the rule 37 test (ArchUnit); copied into `src/test/java/<pkg>/architecture/` with its package and `@AnalyzeClasses` root renamed to yours; needs `archunit-junit5` in the pom, which the canonical pom carries.
 - `assets/check-no-suppressions.sh`: the rule 15 tripwire for Java, staged lines in the hook and `--all` in CI; the forms it rejects are listed in its header.
+- `assets/check-identity.sh`: the rule 26 tripwire, hook gate 5 on the staged lines and `--all` in CI: a multi-word git name in both orders and the email, every author and committer in the history under `--all`, `IDENTITY_DENYLIST` for employers and clients; one-word names and noreply addresses are handles, CODEOWNERS and `.mailmap` exempt.
 - `assets/java/pmd-ruleset.xml`: the rule 35 ruleset and the rule 15 `NoSuppressWarnings` XPath rule (`CyclomaticComplexity`, `methodReportLevel` 11, so complexity 11 and above fails and 10 passes, the same boundary as the TypeScript `complexity: ['error', 10]`), copied to the repository root where the canonical pom's `maven-pmd-plugin` reads it in `verify`. `smoke-test-java.sh` plants a complexity-11 method and sees `pmd:check` red, and a complexity-10 one green.
 
 ```bash
@@ -432,6 +433,7 @@ cp <skill>/assets/java/pmd-ruleset.xml   pmd-ruleset.xml
 cp <skill>/assets/check-commit-size.sh   scripts/check-commit-size.sh
 cp <skill>/assets/check-pom.sh           scripts/check-pom.sh
 cp <skill>/assets/check-no-suppressions.sh scripts/check-no-suppressions.sh
+cp <skill>/assets/check-identity.sh       scripts/check-identity.sh
 cp <skill>/assets/check-commit-messages.sh scripts/check-commit-messages.sh
 cp <skill>/assets/check-commit-range.sh    scripts/check-commit-range.sh
 mkdir -p .github/workflows

@@ -57,6 +57,8 @@ jobs:
           sudo install gitleaks /usr/local/bin/ && rm gitleaks
       - name: secret scan (full history)
         run: gitleaks detect --redact --no-banner
+      - name: identity in file contents (rule 26, the whole tree)
+        run: bash scripts/check-identity.sh --all
       - name: tests (random order, rule 36)
         run: bun run --filter '*' test
       - name: lint (zero errors AND zero warnings, rule 15)

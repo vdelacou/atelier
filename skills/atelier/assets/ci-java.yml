@@ -49,6 +49,8 @@ jobs:
           sudo install gitleaks /usr/local/bin/ && rm gitleaks
       - name: secret scan (full history)
         run: gitleaks detect --redact --no-banner
+      - name: identity in file contents (rule 26, the whole tree)
+        run: bash scripts/check-identity.sh --all
       - name: format check
         run: ./mvnw -q spotless:check
       - name: verify (compile -Werror, unit + integration tests, JaCoCo tiers)
