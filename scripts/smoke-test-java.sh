@@ -84,7 +84,7 @@ cp "$SKILL/assets/commit-msg" .githooks/commit-msg
 cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/assets/check-commit-messages.sh" "$SKILL/assets/check-commit-range.sh" "$SKILL/assets/pit-changed.sh" scripts/
 cp "$SKILL/assets/check-pii-channels.sh" "$SKILL/assets/check-io-deadlines.sh" \
    "$SKILL/assets/check-data-lifecycle.sh" "$SKILL/assets/check-isolation-tests.sh" scripts/
-cp "$SKILL/assets/check-no-suppressions.sh" "$SKILL/assets/check-identity.sh" scripts/
+cp "$SKILL/assets/check-no-suppressions.sh" "$SKILL/assets/check-identity.sh" "$SKILL/assets/check-disciplines.sh" scripts/
 cp "$SKILL/assets/java/pmd-ruleset.xml" pmd-ruleset.xml
 # The dependency rule as a test (rule 37): a shipped asset, copied as a real bootstrap does.
 mkdir -p src/test/java/com/example/app/architecture
@@ -471,6 +471,10 @@ public class LookupResource {
 EOF
 git add src/main/java/com/example/app/api/LookupResource.java
 expect_err "pii guard blocks a Java @QueryParam(\"email\")" bash scripts/check-pii-channels.sh
+# Since 2026-09-10 the three safe guards are hook gate 6 through check-disciplines.sh.
+if bash .githooks/pre-commit >"$LOG" 2>&1; then cat "$LOG"; fail "the Java hook accepted a @QueryParam(\"email\") (rule 27)"
+elif grep -q "rule 27" "$LOG"; then pass "the Java hook stops on the discipline tripwires (rule 27)"
+else cat "$LOG"; fail "the Java hook failed, but not on the discipline tripwires"; fi
 git rm -q --cached src/main/java/com/example/app/api/LookupResource.java
 rm src/main/java/com/example/app/api/LookupResource.java
 

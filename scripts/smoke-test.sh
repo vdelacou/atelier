@@ -557,13 +557,19 @@ rm -f .msg
 
 echo "== discipline tripwires (rules 27-30, staged-diff guards) =="
 cp "$SKILL/assets/check-pii-channels.sh" "$SKILL/assets/check-io-deadlines.sh" \
-   "$SKILL/assets/check-data-lifecycle.sh" "$SKILL/assets/check-isolation-tests.sh" scripts/
-chmod +x scripts/check-pii-channels.sh scripts/check-io-deadlines.sh scripts/check-data-lifecycle.sh scripts/check-isolation-tests.sh
+   "$SKILL/assets/check-data-lifecycle.sh" "$SKILL/assets/check-isolation-tests.sh" "$SKILL/assets/check-disciplines.sh" \
+   "$SKILL/assets/check-identity.sh" scripts/
+chmod +x scripts/check-pii-channels.sh scripts/check-io-deadlines.sh scripts/check-data-lifecycle.sh scripts/check-isolation-tests.sh scripts/check-disciplines.sh scripts/check-identity.sh
 mkdir -p src/use-cases
 
 printf 'export const s = async (u: { email: string }) => fetch(`/search?email=${u.email}`);\n' > src/use-cases/leak.ts
 git add src/use-cases/leak.ts
 expect_err "pii guard blocks an email in a query string" bash scripts/check-pii-channels.sh
+# Since 2026-09-10 the three safe guards are hook gate 5 through check-disciplines.sh: the
+# same staged leak is red through the hook itself, with the rule number, before lint runs.
+if bash .githooks/pre-commit >"$LOG" 2>&1; then cat "$LOG"; fail "fast hook accepted a personal-data query string (rule 27)"
+elif grep -q "rule 27" "$LOG"; then pass "fast hook stops on the discipline tripwires (rule 27)"
+else cat "$LOG"; fail "fast hook failed, but not on the discipline tripwires"; fi
 git reset -q && rm src/use-cases/leak.ts
 
 printf 'export const s = async (u: { email: string }) => fetch(`/search?${new URLSearchParams({ email: u.email })}`);\n' > src/use-cases/leak-params.ts
@@ -593,8 +599,8 @@ git reset -q && rm src/use-cases/log-opaque-id.ts
 # Rule 26 tripwire (2026-09-09): the committer's multi-word name or email in a tracked
 # file is red, in both orders; a one-word git name is a handle and passes beside its
 # project name; CODEOWNERS is exempt; and the fast hook stops on gate 4 with the rule
-# number, which is the wiring proof (the four guards above are opt-in, this one is core).
-cp "$SKILL/assets/check-identity.sh" scripts/ && chmod +x scripts/check-identity.sh
+# number, which is the wiring proof (the script was copied with the guards above, since
+# the hook runs it as gate 4 before the discipline gate the rule-27 proof relies on).
 git config user.name 'Ada Lovelace'
 git config user.email 'ada@example.invalid'
 printf '# Decided by Ada Lovelace\n' > decision.md
@@ -709,7 +715,7 @@ expect_ok "check-skill-pin.sh degrades, not blocks, when no upstream is configur
   env -u SKILL_PIN_UPSTREAM bash scripts/check-skill-pin.sh
 rm -rf .claude
 
-echo "== fast pre-commit hook end-to-end (the 6 fast gates: size, package.json, gitleaks, identity, lint:staged, typecheck) =="
+echo "== fast pre-commit hook end-to-end (the 7 fast gates: size, package.json, gitleaks, identity, disciplines, lint:staged, typecheck) =="
 git add package.json src/domain/result.ts src/domain/greeting.ts src/domain/greeting.test.ts
 expect_ok "fast pre-commit hook end-to-end" bash .githooks/pre-commit
 

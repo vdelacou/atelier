@@ -116,10 +116,12 @@ printf 'node_modules/\n.next/\nout/\n.eslintcache\nnext-env.d.ts\n' > .gitignore
 # Gate 2 (rules 5 and 19) is copied from the skill's assets, as the bootstrap checklist
 # says; the doc's root package.json runs it first in the simple-git-hooks pre-commit.
 mkdir -p scripts
-cp "$REPO_ROOT/skills/atelier/assets/check-package-json.sh" "$REPO_ROOT/skills/atelier/assets/check-identity.sh" scripts/
-extract_fence "$DOC" '## Root `package.json`' | grep -q 'check-package-json.sh && bash scripts/check-identity.sh && bun run' \
-  && pass "the root package.json fence runs check-package-json.sh then check-identity.sh first in pre-commit" \
-  || fail "the root package.json fence does not run the package.json and identity gates first in pre-commit (doc drift)"
+cp "$REPO_ROOT/skills/atelier/assets/check-package-json.sh" "$REPO_ROOT/skills/atelier/assets/check-identity.sh" \
+   "$REPO_ROOT/skills/atelier/assets/check-disciplines.sh" "$REPO_ROOT/skills/atelier/assets/check-pii-channels.sh" \
+   "$REPO_ROOT/skills/atelier/assets/check-io-deadlines.sh" "$REPO_ROOT/skills/atelier/assets/check-data-lifecycle.sh" scripts/
+extract_fence "$DOC" '## Root `package.json`' | grep -q 'check-package-json.sh && bash scripts/check-identity.sh && bash scripts/check-disciplines.sh && bun run' \
+  && pass "the root package.json fence runs the package.json, identity and discipline gates first in pre-commit" \
+  || fail "the root package.json fence does not run the package.json, identity and discipline gates first in pre-commit (doc drift)"
 # Rule 26 (2026-09-09): the identity guard is the second hook step in this variant; the
 # fixture is not a git repo, so a throwaway one proves the staged mode here.
 git init -q && git config user.name 'Ada Lovelace' && git config user.email 'ada@example.invalid'
@@ -129,6 +131,13 @@ git reset -q && rm decision.md
 printf 'maintained by adalovelace\n' > decision.md && git add decision.md
 expect_ok "identity guard passes a handle (rule 26)" bash scripts/check-identity.sh
 git reset -q && rm decision.md
+# Rules 27, 29, 30 (2026-09-10): the discipline wrapper is the third hook step; a personal
+# identifier in a query string under src/lib is red, the wrapper names the rule.
+printf 'export const s = async (u: { email: string }): Promise<Response> => fetch(`/search?email=${u.email}`);\n' > src/lib/leak.ts && git add src/lib/leak.ts
+if bash scripts/check-disciplines.sh >"$LOG" 2>&1; then cat "$LOG"; fail "discipline wrapper accepted a personal-data query string (rule 27)"
+elif grep -q 'rule 27' "$LOG"; then pass "discipline wrapper blocks a personal-data query string (rule 27)"
+else cat "$LOG"; fail "discipline wrapper failed, but not on rule 27"; fi
+git reset -q && rm src/lib/leak.ts
 
 # The CI workflow (2026-09-08; before, this variant shipped none). Actions do not run
 # here: the asset is copied as the CI section says and its gates are checked as text;
