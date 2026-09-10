@@ -66,7 +66,7 @@ This reference describes two shapes that share the same toolchain: the **static 
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "bash scripts/check-package-json.sh && bash scripts/check-identity.sh && bun run --filter <package-name> test && bun run --filter <package-name> lint",
+    "pre-commit": "bash scripts/check-package-json.sh && bash scripts/check-identity.sh && bash scripts/check-disciplines.sh && bun run --filter <package-name> test && bun run --filter <package-name> lint",
     "commit-msg": "bunx --yes commitlint --edit $1"
   }
 }
@@ -597,6 +597,10 @@ cp <skill>/assets/check-commit-range.sh  scripts/check-commit-range.sh
 cp <skill>/assets/check-package-json.sh  scripts/check-package-json.sh
 cp <skill>/assets/check-bundle-size.sh   scripts/check-bundle-size.sh
 cp <skill>/assets/check-identity.sh      scripts/check-identity.sh
+cp <skill>/assets/check-disciplines.sh   scripts/check-disciplines.sh
+cp <skill>/assets/check-pii-channels.sh  scripts/check-pii-channels.sh
+cp <skill>/assets/check-io-deadlines.sh  scripts/check-io-deadlines.sh
+cp <skill>/assets/check-data-lifecycle.sh scripts/check-data-lifecycle.sh
 chmod +x scripts/*.sh
 ```
 
@@ -796,7 +800,7 @@ The exception stops at the client boundary. A Next.js server app (route handlers
 2. `bun init -y`, then replace `package.json` with the skeleton above (rename `name`).
 3. Create `tsconfig.json`, `eslint.config.mjs`, `postcss.config.mjs`, and `next.config.ts` with the blocks above.
 4. Create `.vscode/settings.json` and `.vscode/extensions.json` at the repo root if not present.
-5. From repo root: copy the CI workflow and its scripts as the CI section above shows (`assets/ci-next.yml` to `.github/workflows/ci.yml`; `check-commit-range.sh`, `check-package-json.sh`, `check-identity.sh`, `check-bundle-size.sh` to `scripts/`, `chmod +x`; gate 2 is what the hook calls first), then `bun install`, then `bun run prepare` to install git hooks.
+5. From repo root: copy the CI workflow and its scripts as the CI section above shows (`assets/ci-next.yml` to `.github/workflows/ci.yml`; `check-commit-range.sh`, `check-package-json.sh`, `check-identity.sh`, `check-disciplines.sh` with `check-pii-channels.sh`, `check-io-deadlines.sh` and `check-data-lifecycle.sh`, `check-bundle-size.sh` to `scripts/`, `chmod +x`; gate 2 is what the hook calls first), then `bun install`, then `bun run prepare` to install git hooks.
 6. Create `src/lib/utils/logger.ts`.
 7. Set up `app/globals.css` for Tailwind v4.
 8. Lay out `src/components/{atoms,molecules,organisms}/`, `src/page/`, `src/lib/`, `src/config/`, `src/types/`.

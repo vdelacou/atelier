@@ -416,7 +416,7 @@ Same git hooks as the Bun variant, shell only, wired with `git config core.hooks
 
 - `assets/commit-msg`: the shipped Conventional Commits validator, unchanged (rule 23; it is dependency-free shell).
 - `assets/pre-commit-java`: the fast gates only, commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>`, the project's own dev version may be a SNAPSHOT; no mock library declared, rule 13) → no inline suppression (`scripts/check-no-suppressions.sh`, rule 15: `@SuppressWarnings`, `NOPMD`, `NOSONAR` and the rest as text) → `gitleaks protect --staged` → `./mvnw -q spotless:check`. A multi-minute hook trains `--no-verify` (canon 15.1, and 15.3), so `./mvnw verify` and PIT do not live here.
-- The four discipline tripwires (`references/workflow.md`, Discipline tripwires) are Java-aware and belong in any service that touches the matching concern, though they are not part of the core gate set: `check-pii-channels.sh` catches a `@QueryParam("email"|"phone"|"ssn"|"token")` and a logged natural identifier (rule 27), `check-io-deadlines.sh` catches an `HttpClient` built with no `.timeout(`/`connectTimeout` in the file (rule 29), `check-data-lifecycle.sh` catches `deleteById(`/`deleteAll(`/`DELETE FROM` in application code (rule 30), and `check-isolation-tests.sh` refuses a new `**/api/*.java` resource with no nearby test mentioning 404 (rule 28). Each reads the staged diff, takes `--all` for a tree-wide adopt audit, and is proven on its Java trigger by `smoke-test-java.sh`.
+- `assets/check-disciplines.sh` and the three guards it runs (`check-pii-channels.sh`, `check-io-deadlines.sh`, `check-data-lifecycle.sh`; rules 27, 29, 30): core gates, hook gate 6 on the staged lines and `--all` in CI, all Java-aware (`@QueryParam`, `HttpClient` timeouts, hard deletes and destructive DDL). The isolation guard (`check-isolation-tests.sh`, rule 28) is opt-in where tenants or owners exist, since it demands a 404 test of every new `api/` route (`references/workflow.md`, Discipline tripwires).
 - `assets/audit-java.yml`: the two watchdogs that are not gate material, the OWASP CVE scan and `check-skill-pin.sh` (a vendored standard is a dependency, `references/governance.md`; the workflow's `SKILL_PIN_UPSTREAM` env names the repository the whole vendored tree is compared against), on a daily schedule plus the pull requests that touch a pom or the vendored skill.
 - `assets/pit-changed.sh`: the mutation step of CI, PIT on the classes that changed in the event's range (the pull request's base, or `github.event.before..HEAD` on a push, which the workflow exports; an unknown base fails loudly, no change in scope exits 0), plus uncommitted and untracked sources locally.
 - `assets/mutation-java.yml`: the daily full PIT sweep over `domain` and `usecases` (`workflow_dispatch` on demand), the only run that measures the whole tree; a red run is a task, not a blocked merge.
@@ -434,6 +434,7 @@ cp <skill>/assets/check-commit-size.sh   scripts/check-commit-size.sh
 cp <skill>/assets/check-pom.sh           scripts/check-pom.sh
 cp <skill>/assets/check-no-suppressions.sh scripts/check-no-suppressions.sh
 cp <skill>/assets/check-identity.sh       scripts/check-identity.sh
+cp <skill>/assets/check-disciplines.sh    scripts/check-disciplines.sh
 cp <skill>/assets/check-commit-messages.sh scripts/check-commit-messages.sh
 cp <skill>/assets/check-commit-range.sh    scripts/check-commit-range.sh
 mkdir -p .github/workflows
@@ -443,8 +444,9 @@ cp <skill>/assets/mutation-java.yml      .github/workflows/mutation-java.yml
 cp <skill>/assets/audit-java.yml         .github/workflows/audit-java.yml
 cp <skill>/assets/check-skill-pin.sh     scripts/check-skill-pin.sh
 
-# Discipline tripwires (rules 27-30), in the repos where the concern exists.
-# All four ship Java detection; wire them as CI steps or hook pre-flights.
+# Discipline tripwires. Three are core gates run by check-disciplines.sh (hook gate 6,
+# CI --all): rules 27, 29, 30. The isolation guard (rule 28) is opt-in where tenants or
+# owners exist: call it beside the wrapper in the hook and CI. All four ship Java detection.
 cp <skill>/assets/check-pii-channels.sh   scripts/check-pii-channels.sh
 cp <skill>/assets/check-io-deadlines.sh   scripts/check-io-deadlines.sh
 cp <skill>/assets/check-data-lifecycle.sh scripts/check-data-lifecycle.sh
