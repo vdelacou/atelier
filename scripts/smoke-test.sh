@@ -590,6 +590,38 @@ git add src/use-cases/log-opaque-id.ts
 expect_ok "pii guard passes an opaque id in a multi-line logger call" bash scripts/check-pii-channels.sh
 git reset -q && rm src/use-cases/log-opaque-id.ts
 
+# Rule 26 tripwire (2026-09-09): the committer's multi-word name or email in a tracked
+# file is red, in both orders; a one-word git name is a handle and passes beside its
+# project name; CODEOWNERS is exempt; and the fast hook stops on gate 4 with the rule
+# number, which is the wiring proof (the four guards above are opt-in, this one is core).
+cp "$SKILL/assets/check-identity.sh" scripts/ && chmod +x scripts/check-identity.sh
+git config user.name 'Ada Lovelace'
+git config user.email 'ada@example.invalid'
+printf '# Decided by Ada Lovelace\n' > decision.md
+git add decision.md
+expect_err "identity guard blocks the committer's name in a tracked file (rule 26)" bash scripts/check-identity.sh
+if bash .githooks/pre-commit >"$LOG" 2>&1; then cat "$LOG"; fail "fast hook accepted a file naming the committer (rule 26)"
+elif grep -q 'hard rule 26' "$LOG"; then pass "fast hook stops on the identity gate (rule 26)"
+else cat "$LOG"; fail "fast hook failed, but not on the identity gate"; fi
+git reset -q && rm decision.md
+printf 'reviewed by lovelace ada\n' > decision.md && git add decision.md
+expect_err "identity guard blocks the name reversed, any case (rule 26)" bash scripts/check-identity.sh
+git reset -q && rm decision.md
+printf 'contact ada@example.invalid\n' > decision.md && git add decision.md
+expect_err "identity guard blocks the committer's email (rule 26)" bash scripts/check-identity.sh
+git reset -q && rm decision.md
+printf 'maintained by adalovelace\n' > decision.md && git add decision.md
+expect_ok "identity guard passes a handle (rule 26)" bash scripts/check-identity.sh
+git reset -q && rm decision.md
+printf '* @adalovelace Ada Lovelace\n' > .github/CODEOWNERS && git add .github/CODEOWNERS
+expect_ok "identity guard exempts CODEOWNERS (rule 26)" bash scripts/check-identity.sh
+git reset -q && rm .github/CODEOWNERS
+git config user.name 'atelier' && git config user.email 'atelier@example.invalid'
+printf 'name: atelier-smoke-fixture\n' > handle.md && git add handle.md
+expect_ok "identity guard treats a one-word git name as a handle (rule 26)" bash scripts/check-identity.sh
+git reset -q && rm handle.md
+git config --unset user.name && git config --unset user.email
+
 printf 'export const f = (): Promise<Response> => fetch("https://svc.test/x");\n' > src/infra/no-deadline.ts
 git add src/infra/no-deadline.ts
 expect_err "deadline guard blocks fetch without a deadline marker" bash scripts/check-io-deadlines.sh
@@ -677,7 +709,7 @@ expect_ok "check-skill-pin.sh degrades, not blocks, when no upstream is configur
   env -u SKILL_PIN_UPSTREAM bash scripts/check-skill-pin.sh
 rm -rf .claude
 
-echo "== fast pre-commit hook end-to-end (the 5 fast gates: size, package.json, gitleaks, lint:staged, typecheck) =="
+echo "== fast pre-commit hook end-to-end (the 6 fast gates: size, package.json, gitleaks, identity, lint:staged, typecheck) =="
 git add package.json src/domain/result.ts src/domain/greeting.ts src/domain/greeting.test.ts
 expect_ok "fast pre-commit hook end-to-end" bash .githooks/pre-commit
 

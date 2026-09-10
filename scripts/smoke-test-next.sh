@@ -116,10 +116,19 @@ printf 'node_modules/\n.next/\nout/\n.eslintcache\nnext-env.d.ts\n' > .gitignore
 # Gate 2 (rules 5 and 19) is copied from the skill's assets, as the bootstrap checklist
 # says; the doc's root package.json runs it first in the simple-git-hooks pre-commit.
 mkdir -p scripts
-cp "$REPO_ROOT/skills/atelier/assets/check-package-json.sh" scripts/
-extract_fence "$DOC" '## Root `package.json`' | grep -q 'check-package-json.sh && bun run' \
-  && pass "the root package.json fence runs check-package-json.sh first in pre-commit" \
-  || fail "the root package.json fence does not run check-package-json.sh in pre-commit (doc drift)"
+cp "$REPO_ROOT/skills/atelier/assets/check-package-json.sh" "$REPO_ROOT/skills/atelier/assets/check-identity.sh" scripts/
+extract_fence "$DOC" '## Root `package.json`' | grep -q 'check-package-json.sh && bash scripts/check-identity.sh && bun run' \
+  && pass "the root package.json fence runs check-package-json.sh then check-identity.sh first in pre-commit" \
+  || fail "the root package.json fence does not run the package.json and identity gates first in pre-commit (doc drift)"
+# Rule 26 (2026-09-09): the identity guard is the second hook step in this variant; the
+# fixture is not a git repo, so a throwaway one proves the staged mode here.
+git init -q && git config user.name 'Ada Lovelace' && git config user.email 'ada@example.invalid'
+printf 'Decided by Ada Lovelace\n' > decision.md && git add decision.md
+expect_err "identity guard blocks the committer's name in a tracked file (rule 26)" bash scripts/check-identity.sh
+git reset -q && rm decision.md
+printf 'maintained by adalovelace\n' > decision.md && git add decision.md
+expect_ok "identity guard passes a handle (rule 26)" bash scripts/check-identity.sh
+git reset -q && rm decision.md
 
 # The CI workflow (2026-09-08; before, this variant shipped none). Actions do not run
 # here: the asset is copied as the CI section says and its gates are checked as text;

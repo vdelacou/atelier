@@ -84,7 +84,7 @@ cp "$SKILL/assets/commit-msg" .githooks/commit-msg
 cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/assets/check-commit-messages.sh" "$SKILL/assets/check-commit-range.sh" "$SKILL/assets/pit-changed.sh" scripts/
 cp "$SKILL/assets/check-pii-channels.sh" "$SKILL/assets/check-io-deadlines.sh" \
    "$SKILL/assets/check-data-lifecycle.sh" "$SKILL/assets/check-isolation-tests.sh" scripts/
-cp "$SKILL/assets/check-no-suppressions.sh" scripts/
+cp "$SKILL/assets/check-no-suppressions.sh" "$SKILL/assets/check-identity.sh" scripts/
 cp "$SKILL/assets/java/pmd-ruleset.xml" pmd-ruleset.xml
 # The dependency rule as a test (rule 37): a shipped asset, copied as a real bootstrap does.
 mkdir -p src/test/java/com/example/app/architecture
@@ -426,6 +426,29 @@ expect_err "check-commit-range.sh catches an oversized commit in the range" \
   bash scripts/check-commit-range.sh HEAD~1 HEAD
 git reset -q --mixed HEAD~1   # keeps every other untracked file the later scenarios need
 rm -f oversized*.txt
+
+# 4c. Rule 26 (2026-09-09): the identity guard is hook gate 5 in this variant. A Java
+# file naming the committer is red standalone and through the hook, with the rule
+# number; the scaffold under its one-word git name passes --all.
+git config user.name 'Ada Lovelace'
+cat > src/main/java/com/example/app/domain/Credit.java <<'EOF'
+package com.example.app.domain;
+
+// Reviewed by Ada Lovelace
+public interface Credit {
+  static int apply(int cents) {
+    return cents;
+  }
+}
+EOF
+git add src/main/java/com/example/app/domain/Credit.java
+expect_err "identity guard blocks a Java comment naming the committer (rule 26)" bash scripts/check-identity.sh
+if bash .githooks/pre-commit >"$LOG" 2>&1; then cat "$LOG"; fail "the Java hook accepted a file naming the committer (rule 26)"
+elif grep -q 'hard rule 26' "$LOG"; then pass "the Java hook stops on the identity gate (rule 26)"
+else cat "$LOG"; fail "the Java hook failed, but not on the identity gate"; fi
+git reset -q -- src/main/java/com/example/app/domain/Credit.java && rm src/main/java/com/example/app/domain/Credit.java
+git config user.name 'atelier-smoke'
+expect_ok "identity guard passes the scaffold under a one-word git name with --all (rule 26)" bash scripts/check-identity.sh --all
 
 # 4d. The four discipline tripwires on their JAVA triggers (rules 27-30). All
 # four ship Java detection (@QueryParam, HttpClient, hard delete, api/ routes),

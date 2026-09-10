@@ -27,6 +27,8 @@ jobs:
       # the gate proves it can fail before it judges the range (canon 15.10)
       - run: bash scripts/check-no-em-dash.sh --selftest
       - run: bash scripts/check-no-em-dash.sh
+      - name: no person, employer, or client named in file contents (rule 26, the shipped gate on this repo)
+        run: bash skills/atelier/assets/check-identity.sh --all
 
   asset-smoke-test:
     name: asset smoke test (Bun variant, all gates)
