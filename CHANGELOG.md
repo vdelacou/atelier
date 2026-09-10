@@ -7,6 +7,20 @@ whole, not any single skill.
 ## [Unreleased]
 
 ### Added
+- **The discipline tripwires for rules 27, 29 and 30 are default gates.** They shipped since
+  2026-09-02 as "optional gates" that no hook or CI workflow ran and that the Bun and Next
+  checklists never copied. `assets/check-disciplines.sh` runs the three in order (every guard even
+  after one fails, so a commit shows all its findings) and is hook gate 5 (Bun), gate 6 (Java) and
+  the third `simple-git-hooks` step (Next) on the staged lines, and an `--all` step in every shipped
+  CI workflow; the three checklists copy the wrapper and its guards. Each guard is inert in a repo
+  without the concern and wrong in any repo with it. The isolation guard (rule 28) stays opt-in
+  where tenants or owners exist, since it demands a cross-tenant 404 test of every new route, which
+  is wrong for a single-user app. The three smoke tests prove a personal-data query string red
+  through the wrapper, in Bun and Java through the hook itself. Consumers: copy `check-disciplines.sh`,
+  `check-pii-channels.sh`, `check-io-deadlines.sh` and `check-data-lifecycle.sh` into `scripts/`,
+  re-copy the hook (or extend the Next hook line) and the CI workflow; expect reds on any personal
+  identifier in a query string or a log message, any outbound call with no deadline marker, any hard
+  delete or destructive DDL outside a contract migration.
 - **Rule 26 is a gate: `assets/check-identity.sh`.** Until now "no tracked file names a person, an
   employer, or a client" was prose, and the field test had found a consumer's ADRs naming their
   author. The tripwire checks the staged added lines in every shipped hook (Bun gate 4 of 6, Java
@@ -37,6 +51,13 @@ whole, not any single skill.
   reaches into a molecule or an organism.
 
 ### Harness
+- `tasks.json` h3 10.9 (absent mode, no hard delete) reads production code only: `"exclude":
+  ["src/test-helpers/*", "*.test.ts"]`, and `exclude` entries are fnmatch patterns from here on (an
+  exact path still matches). The check had matched a `Map.delete` inside a repository fake behind a
+  `softDelete` port and read a soft-deleting tree 2/3 in the 2026-09-10 tier-1 pass: the sixth grader
+  defect, the sixth to punish the better code. The selftest pins a fake's `.delete(` green beside a
+  soft-deleting adapter and an adapter's `.delete(` red; the frozen baseline arm is re-frozen from the
+  same three passes (139/183).
 - The frozen baseline arm holds three passes again: two more unaided passes over the 21 tasks
   (opus, none capped) summed with the 2.3.0 release run's baseline arm, 138/183 over 63 runs,
   keyed to the tasks.json with the corrected h4 check. The one-pass fixture of the release morning

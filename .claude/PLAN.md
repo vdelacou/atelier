@@ -27,6 +27,6 @@ script; citations re-anchored and locked; CHANGELOG, LESSONS; tier 1 dry run; co
 
 ## Slice 2: pii, deadline and data-lifecycle tripwires as default gates
 
-After slice 1 lands: the three wired the same way (hook staged, CI `--all`), isolation stays opt-in
+Done 2026-09-10: `check-disciplines.sh` probed (5 of 5), wired (hooks, CI, checklists, doctrine, matrix notes), the three smoke suites green (Bun after one rerun: the rule-27 hook proof ran before the identity script was copied), tier 1 12 tasks 37/37 vs frozen 30.3/37 once the h3 hard-delete check learned the tripwire's scope (the sixth grader defect; fixture re-frozen from the same three passes, 139/183). Five commits wait for the yes. The plan was: the three wired the same way (hook staged, CI `--all`), isolation stays opt-in
 where tenants exist, checklists copy them, workflow.md's "optional gates" becomes "default gates,
 isolation opt-in", the smoke tests prove one hooked commit red per tripwire, tier 1.
