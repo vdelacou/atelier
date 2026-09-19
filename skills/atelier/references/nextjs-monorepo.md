@@ -230,6 +230,13 @@ const DESIGN_SYSTEM_BANS = [
 // archetype's src/{domain,use-cases,infra,presenter,composition} mirror the Bun config's
 // zones (references/architecture.md, the dependency table).
 const INWARD = 'dependencies point inward (hard rule 37, references/architecture.md, the dependency table)';
+// Hard rule 20 in the server sub-variant: file IO stays at the edges. The domain and the
+// use-cases never import fs; an infra adapter does, behind a port. Elsewhere in a Next package
+// Node is the runtime and its fs stays legal; the static layout has no server layers at all.
+const FS_AT_THE_EDGES = {
+  group: ['fs', 'node:fs', 'fs/promises', 'node:fs/promises'],
+  message: 'File IO stays at the edges: node:fs only in src/infra/**, tests and src/test-helpers/**; the domain and the use-cases read through a port (hard rule 20, references/bun-typescript.md, File IO).',
+};
 const UPWARD = 'imports point upward inside the design system (hard rule 37, references/atomic-design.md, Imports point strictly upward)';
 const layerZone = (layer, forbidden, extraPatterns = [], why = INWARD) => ({
   files: [`src/${layer}/**/*.ts`, `src/${layer}/**/*.tsx`],
@@ -389,8 +396,8 @@ const eslintConfig = defineConfig([
   // Hard rule 37, the server archetype: the Bun config's zones, .tsx included, plus the UI
   // layers no server layer may reach. Inert in the static layout, which has none of these
   // directories.
-  layerZone('domain', ['use-cases', 'infra', 'presenter', 'composition', 'test-helpers', 'lib', 'page', 'components']),
-  layerZone('use-cases', ['infra', 'presenter', 'composition', 'test-helpers', 'lib', 'page', 'components']),
+  layerZone('domain', ['use-cases', 'infra', 'presenter', 'composition', 'test-helpers', 'lib', 'page', 'components'], [FS_AT_THE_EDGES]),
+  layerZone('use-cases', ['infra', 'presenter', 'composition', 'test-helpers', 'lib', 'page', 'components'], [FS_AT_THE_EDGES]),
   layerZone('presenter', ['use-cases', 'infra', 'composition', 'test-helpers']),
   layerZone('infra', ['presenter', 'composition', 'test-helpers', 'page', 'components']),
   layerZone('composition', ['test-helpers']),
@@ -429,7 +436,7 @@ const eslintConfig = defineConfig([
 export default eslintConfig;
 ```
 
-**Layer zones (hard rule 37).** `layerZone` blocks carry the dependency direction in both shapes this variant has: an atom never imports a molecule or an organism and a molecule never an organism (`references/atomic-design.md`, Imports point strictly upward; rule 21 seals the design system from app code and frameworks), and the server sub-variant's `src/{domain,use-cases,infra,presenter,composition,test-helpers}` get the Bun config's zones with `.tsx` included and the UI layers (`lib`, `page`, `components`) added to what a server layer may never reach. A zone replaces the design-system block's `no-restricted-imports` for its files, which is why every zone spreads `MOCK_BAN` and the atoms and molecules zones spread `DESIGN_SYSTEM_BANS`. The Next smoke test proves an atom importing a molecule, a molecule importing an organism and a domain file importing infra red, each with the rule number in the message.
+**Layer zones (hard rule 37).** `layerZone` blocks carry the dependency direction in both shapes this variant has: an atom never imports a molecule or an organism and a molecule never an organism (`references/atomic-design.md`, Imports point strictly upward; rule 21 seals the design system from app code and frameworks), and the server sub-variant's `src/{domain,use-cases,infra,presenter,composition,test-helpers}` get the Bun config's zones with `.tsx` included and the UI layers (`lib`, `page`, `components`) added to what a server layer may never reach. A zone replaces the design-system block's `no-restricted-imports` for its files, which is why every zone spreads `MOCK_BAN` and the atoms and molecules zones spread `DESIGN_SYSTEM_BANS`. The `domain` and `use-cases` zones also carry `FS_AT_THE_EDGES` (hard rule 20 in this variant): `fs` and `fs/promises` in either form are banned there and nowhere else, since Node is the runtime everywhere else in a Next package and the static layout has no server layers. The Next smoke test proves an atom importing a molecule, a molecule importing an organism and a domain file importing infra red, each with the rule number in the message.
 
 Note: `no-console: 'error'` is the enforcement (hard rule 4); `next.config.ts` → `compiler.removeConsole` is defence-in-depth, not a substitute: a stripped `console.*` is a violation that silently vanished, which is why the lint rule exists. Log through the Winston module (below).
 

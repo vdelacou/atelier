@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  atelier rules 35 and 15.
+  atelier rules 35, 15 and 4.
 
   Rule 35: cyclomatic complexity at most 10 per method.
 
@@ -22,12 +22,32 @@
   in depth: scripts/check-no-suppressions.sh (the fast hook and CI) is the
   authority, and the canonical pom sets an impossible suppressMarker so a
   // NOPMD comment is inert.
+
+  Rule 4: no System.out, no System.err, no printStackTrace; the injected logger
+  only. SystemPrintln is PMD's own rule. printStackTrace is our XPath rule
+  because PMD 7.17's AvoidPrintStackTrace stays silent on both a bare call and
+  one inside a catch (probed 2026-09-19); //MethodCall[@MethodName] is the
+  PMD 7 AST and fires on both.
 -->
 <ruleset name="atelier"
     xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
-  <description>atelier rules 35 (cyclomatic complexity at most 10 per method) and 15 (no @SuppressWarnings)</description>
+  <description>atelier rules 35 (cyclomatic complexity at most 10 per method), 15 (no @SuppressWarnings) and 4 (no System.out, no printStackTrace)</description>
+  <rule ref="category/java/bestpractices.xml/SystemPrintln" />
+  <rule name="NoPrintStackTrace" language="java" since="7.0"
+      message="No printStackTrace: log the failure through the injected logger (rule 4)"
+      class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+    <description>Rule 4: a stack trace printed to stderr bypasses the logger, its redaction and its JSON shape.</description>
+    <priority>3</priority>
+    <properties>
+      <property name="xpath">
+        <value><![CDATA[
+//MethodCall[@MethodName='printStackTrace']
+]]></value>
+      </property>
+    </properties>
+  </rule>
   <rule ref="category/java/design.xml/CyclomaticComplexity">
     <properties>
       <property name="methodReportLevel" value="11" />
