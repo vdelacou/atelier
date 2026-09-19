@@ -98,8 +98,17 @@ repository. The suite is the four skills for one agent session again.
   pass read a conforming h3 tree 2/3 on a redaction test that plants an email in a logger call to
   prove it comes out `[REDACTED]`: the seventh grader defect, the seventh to punish the better code.
   The selftest pins the redaction test green beside a clean adapter and an adapter logging the email
-  red, and reads red under the previous tasks.json. The frozen baseline arm is re-frozen from four
-  passes (the three of 2026-09-09 plus the 2.4.0 release run's), 184/244 over 84 runs.
+  red, and reads red under the previous tasks.json. The frozen baseline arm was re-frozen from four
+  passes at the 60-turn cap that night and replaced the same night by the 120-turn fixture below.
+- `run.sh`'s caps are 120 turns and 40 minutes per session (60 and 20 before). Four skill-arm
+  sessions of the 2.4.0 tier-2 pass hit the 60-turn cap, the first in any pass, and a 120-turn rerun
+  finished them with full marks; a 120-turn session needs the longer wall clock. The frozen baseline
+  arm is re-frozen at the new cap from the 2.4.0 release pass rerun at 120 (one pass; a top-up to
+  three is the next harness slice).
+- `grade.py` treats a refused session as a dead one: `.result.txt` reading "Failed to authenticate.
+  API Error: 403 Request not allowed" on an unmodified tree is not scored, like the transport error
+  of 2026-09-03. The first 120-turn launch of the 2.4.0 pass lost 24 of 42 sessions to it after
+  midnight and scored them as zeros before this line knew the shape. Selftested.
 - `grade.py` names a session the CLI's `--max-turns` cap ended (`.result.txt` is the CLI's own
   "Error: Reached max turns"): the scorecard line carries "(turn cap, graded as produced)" and the
   totals list the capped tasks per arm. Such a run is scored as produced, unlike a transport error,

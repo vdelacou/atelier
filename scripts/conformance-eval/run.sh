@@ -16,9 +16,11 @@
 #                      grade with --frozen-baseline), baseline, or both
 #   CONFORMANCE_JOBS   parallel runs (default 4; 6 when CONFORMANCE_SINCE is set)
 #   CONFORMANCE_SINCE  git ref; selects tasks from the skills/atelier/ diff since it
-#   CONFORMANCE_TIMEOUT_MIN  wall-clock cap per session (default 20); a capped run is
+#   CONFORMANCE_TIMEOUT_MIN  wall-clock cap per session (default 40); a capped run is
 #                      graded as produced and named in the summary
-#   CONFORMANCE_MAX_TURNS    turn cap per session, passed to claude -p (default 60)
+#   CONFORMANCE_MAX_TURNS    turn cap per session, passed to claude -p (default 120; 60 until
+#                      2026-09-19, when four skill-arm sessions of the 2.4.0 tier-2 pass hit it
+#                      and a 120-turn rerun finished them; a 120-turn session needs the 40 min)
 #
 # Results land in skills/atelier-workspace/conformance-<date>/runs/ (gitignored).
 # Grade afterwards, against the frozen baseline arm:
@@ -35,8 +37,8 @@ SKILL_PATH="${CONFORMANCE_SKILL_PATH:-$REPO_ROOT/skills/atelier}"
 OUT="$REPO_ROOT/skills/atelier-workspace/conformance-$(date +%F)/runs${CONFORMANCE_MODEL:+-$CONFORMANCE_MODEL}${CONFORMANCE_TAG:+-$CONFORMANCE_TAG}"
 SINCE="${CONFORMANCE_SINCE:-}"
 JOBS="${CONFORMANCE_JOBS:-$([ -n "$SINCE" ] && echo 6 || echo 4)}"
-TIMEOUT_MIN="${CONFORMANCE_TIMEOUT_MIN:-20}"
-MAX_TURNS="${CONFORMANCE_MAX_TURNS:-60}"
+TIMEOUT_MIN="${CONFORMANCE_TIMEOUT_MIN:-40}"
+MAX_TURNS="${CONFORMANCE_MAX_TURNS:-120}"
 ARMS="${CONFORMANCE_ARMS:-with_skill}"
 [ "$ARMS" != "both" ] || ARMS="with_skill baseline"
 mkdir -p "$OUT"

@@ -90,7 +90,10 @@ def session_failed(run_dir: Path) -> str | None:
     if not result.is_file():
         return None
     text = result.read_text(errors="replace").strip()
-    if not (text.startswith("API Error") and len(text) < 300):
+    # Two shapes so far: the transport error of 2026-09-03 ("API Error: Can't reach the API
+    # server") and the refused session of 2026-09-20 ("Failed to authenticate. API Error: 403
+    # Request not allowed"), which scored 24 empty trees as zeros before this line knew it.
+    if not (text.startswith(("API Error", "Failed to authenticate")) and len(text) < 300):
         return None
     # The files decide, not the transcript: a session that wrote its work and
     # lost only its closing message has agent files that differ from the fixture.
@@ -346,6 +349,12 @@ def selftest() -> None:
         dead = Path(tmp) / "dead"
         shutil.copytree(FIXTURE_DIR, dead)
         (dead / ".result.txt").write_text("API Error: Can't reach the API server (ENOTFOUND)\n")
+        refused = Path(tmp) / "refused"
+        shutil.copytree(FIXTURE_DIR, refused)
+        (refused / ".result.txt").write_text("Failed to authenticate. API Error: 403 Request not allowed\n")
+        if session_failed(refused) is None:
+            print("SELFTEST FAILED: a refused session (403 on an empty tree) must not be scored")
+            sys.exit(1)
         if session_failed(dead) is None:
             print("SELFTEST FAILED: an API-error-only transcript was treated as a graded session")
             sys.exit(1)

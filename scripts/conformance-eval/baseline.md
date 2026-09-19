@@ -294,9 +294,9 @@ when it can answer something:
 - **Tier 2, hours, on a description change or before a release**: the full matrix,
   `CONFORMANCE_ARMS=both`, re-measuring the unaided arm and re-freezing it.
 
-Every session is capped: a wall-clock cap (`CONFORMANCE_TIMEOUT_MIN`, default 20 since 2026-09-03, 15 before; the
+Every session is capped: a wall-clock cap (`CONFORMANCE_TIMEOUT_MIN`, default 40 since 2026-09-19, 20 from 2026-09-03, 15 before; the
 capped run keeps what it produced, is graded like any other and is named in the summary) and
-`--max-turns` (default 60). `run.sh` prints each task's scorecard line as its session finishes, so a batch
+`--max-turns` (default 120 since 2026-09-19, 60 before; `grade.py` names a turn-capped run on its scorecard line). `run.sh` prints each task's scorecard line as its session finishes, so a batch
 reads as it runs. `CONFORMANCE_MODEL` is the smoke lever: the question tier 1 asks, did an
 obligation vanish from the produced code, shows on a smaller model faster; the recorded
 baselines stay opus.
@@ -538,3 +538,27 @@ blocker: capture a transcript per session so a turn census is possible, and deci
 moves to 120 for both arms (which re-freezes the fixture at that cap). The skill tree under test is
 main at 9c8243e, which `skills/atelier/` shares with the release-notes commit 3d7093a: the rule 26
 gate, the discipline tripwires as default gates, rule 37 in Next, rules 4 and 20 in Java and Next.
+
+## Tier 2 for the 2.4.0 release at 120 turns (2026-09-20)
+
+The owner chose the rerun over the 59/61 reading above. `run.sh`'s defaults moved first to what a
+finished session needs, 120 turns and 40 minutes (60 and 20 before), and the pass ran on those
+defaults. The first launch (23:29 to 00:03) lost 24 of 42 sessions to "Failed to authenticate. API
+Error: 403 Request not allowed" after the first fifteen had finished, both arms at once on tasks that
+had just passed, the environmental tell; `grade.py` now reads a refused session on an unmodified tree
+as a dead one (it had scored them as zeros). A one-turn probe answered a minute later and the second
+launch ran clean, 00:06 to 01:08, six jobs, 42 sessions, no wall-clock cap, no turn cap, no refusal.
+
+| Arm | Score |
+|---|---|
+| skill | 61/61 |
+| unaided | 45/61 |
+
+Full marks on every task, h6 and h7 included, with room to spare: no session reached the cap. The
+unaided arm reads 45 again, as in the 2.3.0 pass and the 60-turn pass of the evening, so the cap
+changed nothing for it. The fixture is re-frozen at the 120-turn cap from this pass's baseline arm,
+one pass, 45/61 (the four-pass fixture at 60 turns is not mixed in: a fixture is measured at one
+cap); two more baseline passes at 120 summed in restore the three-pass grain, the next harness slice.
+The tree under test is main at 703bd32, which `skills/atelier/` shares with the release-notes commit
+3d7093a. Read with the 60-turn pass above: the standard produced full marks whenever a session had
+the turns to finish, and the harness now says when it did not.

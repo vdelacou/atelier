@@ -19,4 +19,5 @@ covers the commits, the tag and the push (the 2.3.0 precedent).
        tagging (a grader defect is the usual cause; fix, selftest red-then-green, re-freeze from the
        workspace's three baseline directories if tasks.json changes). Commit
        `chore(conformance-eval): the 2.4.0 tier-2 pass`.
+3b. [x] (recorded; first 120-turn launch 23:29 to 00:03: 24 of 42 sessions refused with "Failed to authenticate. API Error: 403" after the first 15 finished, the environmental tell; grade.py now treats a refused empty tree as a dead session, selftested; the CLI answered a one-turn probe at 00:04, second launch 00:06 to 01:08: 42 sessions, skill 61/61, unaided 45/61, no cap of either kind, no refusal; fixture re-frozen at 120 from its baseline arm, one pass) Owner's call on the 59/61 reading: rerun tier 2 at 120 turns first (both arms, `run.sh` defaults now 120 turns and 40 minutes, tag release-2.4.0-t120), re-freeze the fixture from that run's baseline arm (one pass at the new cap), record, then tag on that reading. Top-up to three passes at 120 after the tag.
 4. [ ] `git tag -a v2.4.0` on the record commit; `git push origin main v2.4.0`; plan closed.
