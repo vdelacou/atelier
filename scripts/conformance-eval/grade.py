@@ -99,6 +99,18 @@ def session_failed(run_dir: Path) -> str | None:
     return text.splitlines()[0][:80]
 
 
+def turn_capped(run_dir: Path) -> bool:
+    """The CLI's --max-turns cap ended the session (".result.txt" is the CLI's own
+    "Error: Reached max turns (N)"). Unlike a transport error the run is scored as
+    produced: an unfinished tree is a real reading of what the skill got done in the
+    budget, but the scorecard names it, since four skill-arm sessions hit the cap in
+    the 2.4.0 tier-2 pass against none in every earlier pass."""
+    result = run_dir / ".result.txt"
+    if not result.is_file():
+        return False
+    return result.read_text(errors="replace").strip().startswith("Error: Reached max turns")
+
+
 def grade_run(run_dir: Path, assertions: list[dict]) -> list[tuple[str, bool]]:
     marks = []
     for a in assertions:
@@ -275,6 +287,29 @@ def selftest() -> None:
                 print(f"SELFTEST FAILED: {label}: expected {'pass' if want else 'fail'}, got {'pass' if got else 'fail'}")
                 sys.exit(1)
 
+    # 6.3 reads production code only, like 10.9: a redaction test that plants an email
+    # in a logger call to prove it comes out "[REDACTED]" is the discipline done right
+    # (the 2.4.0 tier-2 pass read a conforming tree 2/3 on exactly that test); the same
+    # call in an adapter is the leak.
+    no_email_log = next(a for a in h3["assertions"] if a["rule"] == "6.3" and a["mode"] == "absent")
+    for label, extra, want in [
+        ("6.3 a redaction test may plant an email in a log call", ("src/infra/logger.test.ts", "logger.warn('order.removed', { customerEmail: 'alice@example.test' });\n"), True),
+        ("6.3 an adapter logging the email is the leak", ("src/infra/http/remove-order.ts", "export const h = (u) => logger.info(`removed ${u.email}`);\n"), False),
+    ]:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp) / "scope63"
+            shutil.copytree(FIXTURE_DIR, run_dir)
+            keep = run_dir / "src" / "infra" / "logger.ts"
+            keep.parent.mkdir(parents=True, exist_ok=True)
+            keep.write_text("export const createLogger = (sink) => ({ info: (event, meta) => sink(redact(meta)) });\n")
+            artifact = run_dir / extra[0]
+            artifact.parent.mkdir(parents=True, exist_ok=True)
+            artifact.write_text(extra[1])
+            ((_d, _r, got),) = grade_run(run_dir, [no_email_log])
+            if got != want:
+                print(f"SELFTEST FAILED: {label}: expected {'pass' if want else 'fail'}, got {'pass' if got else 'fail'}")
+                sys.exit(1)
+
     for label, rel, body, assertion, want in shapes:
         with tempfile.TemporaryDirectory() as tmp:
             run_dir = Path(tmp) / "shape"
@@ -323,7 +358,14 @@ def selftest() -> None:
             sys.exit(1)
 
     assert tasks_hash(tasks[:1]) != tasks_hash(tasks), "a filtered task list must not hash like the whole file (the --task path checks the fixture before filtering)"
-    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8, 7.1 and 7.5 credit shape over vocabulary, 10.9 reads production code only, the frozen baseline is keyed to its assertions and checked before any --task filter, a dead session is not scored")
+    with tempfile.TemporaryDirectory() as tmp:
+        cut = Path(tmp) / "cut"
+        shutil.copytree(FIXTURE_DIR, cut)
+        (cut / ".result.txt").write_text("Error: Reached max turns (60)\n")
+        if not turn_capped(cut) or session_failed(cut) is not None:
+            print("SELFTEST FAILED: a max-turns session must be marked turn-capped and still scored")
+            sys.exit(1)
+    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8, 7.1 and 7.5 credit shape over vocabulary, 10.9 and 6.3 read production code only, the frozen baseline is keyed to its assertions and checked before any --task filter, a dead session is not scored, a turn-capped one is marked and scored")
 
 
 def _flag_val(args: list[str], name: str) -> int | None:
@@ -379,6 +421,7 @@ def main() -> None:
     frozen_grand = [0.0, 0]  # expected baseline passes, assertions covered by the fixture
     # by_rule[rule][arm] = [passed, total], so the scorecard maps to conformance-matrix rows
     by_rule: dict[str, dict[str, list[int]]] = {}
+    capped: dict[str, list[str]] = {"with_skill": [], "baseline": []}
     for task in tasks:
         rows = []
         for arm in ("with_skill", "baseline"):
@@ -390,6 +433,8 @@ def main() -> None:
             if failure:
                 rows.append((arm, failure))
                 continue
+            if turn_capped(run_dir):
+                capped[arm].append(task["id"])
             marks = grade_run(run_dir, task["assertions"])
             grand[arm][0] += sum(1 for _, _, p in marks if p)
             grand[arm][1] += len(marks)
@@ -412,7 +457,8 @@ def main() -> None:
                 continue
             score = sum(1 for _, _, p in marks if p)
             detail = "  ".join(("PASS" if p else "fail") + f"[{r}]:{d[:30]}" for d, r, p in marks)
-            print(f"  {arm:<11} {score}/{len(marks)}  {detail}")
+            cap = "  (turn cap, graded as produced)" if task["id"] in capped[arm] else ""
+            print(f"  {arm:<11} {score}/{len(marks)}  {detail}{cap}")
             if frozen is not None and arm == "with_skill":
                 expected = frozen_expected(frozen, task["id"], len(marks))
                 if expected is None:
@@ -425,6 +471,9 @@ def main() -> None:
     print("\nTOTALS (graded runs only):")
     for arm, (p, t) in grand.items():
         print(f"  {arm:<11} {p}/{t}")
+    for arm, ids in capped.items():
+        if ids:
+            print(f"  turn-capped {arm}: {len(ids)} ({', '.join(ids)}), scored as produced")
     if frozen is not None:
         print(f"  {'frozen-bl':<11} {frozen_grand[0]:.1f}/{frozen_grand[1]}  "
               f"({frozen.get('passes', '?')} pass(es) frozen {frozen.get('frozen', '?')}, {frozen.get('model', '?')})")

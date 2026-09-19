@@ -11,11 +11,11 @@ unless tasks.json changed (it did not since 2026-09-10); tag `v2.4.0` on the rec
 message in the v2.3.0 shape; `git ls-remote --tags origin` shows it; CI green. The owner's "release"
 covers the commits, the tag and the push (the 2.3.0 precedent).
 
-1. [~] (launched 21:55, six sessions live) Tier 2: `CONFORMANCE_ARMS=both CONFORMANCE_MODEL=claude-opus-5 CONFORMANCE_JOBS=6
+1. [x] (21:55 to 22:47, 42 sessions, exit 0, none wall-clock capped; four skill-arm sessions ended on the CLI's 60-turn cap, e7 h3 h6 h7, against none in any earlier pass; skill 58/61 as read, 59/61 once the 6.3 checks learned the test-tier scope, unaided 45/61) Tier 2: `CONFORMANCE_ARMS=both CONFORMANCE_MODEL=claude-opus-5 CONFORMANCE_JOBS=6
        CONFORMANCE_TAG=release-2.4.0`, nohup + Monitor. DoD: 42 sessions, none capped, graded.
-2. [~] (written; commit next) Release notes while it runs (CHANGELOG.md, README.md). Commit `docs(release): 2.4.0 changelog
+2. [x] (3d7093a) Release notes while it runs (CHANGELOG.md, README.md). Commit `docs(release): 2.4.0 changelog
        and upgrade notes`.
-3. [ ] Record the pass in `baseline.md`; if the skill arm is below full marks, stop and report before
+3. [x] (recorded in baseline.md; seventh grader defect fixed: 6.3 absent checks in h3 and e6 exclude the test tier, selftest red-then-green; grade.py marks turn-capped sessions, selftested; fixture re-frozen from four passes, 184/244; a same-cap rerun of the four capped tasks launched 22:49 as the variance check; rerun capped three of four again, the 120-turn probe finished h6 5/5 and h7 4/4) Record the pass in `baseline.md`; if the skill arm is below full marks, stop and report before
        tagging (a grader defect is the usual cause; fix, selftest red-then-green, re-freeze from the
        workspace's three baseline directories if tasks.json changes). Commit
        `chore(conformance-eval): the 2.4.0 tier-2 pass`.

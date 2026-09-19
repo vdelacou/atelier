@@ -93,6 +93,19 @@ repository. The suite is the four skills for one agent session again.
   reaches into a molecule or an organism.
 
 ### Harness
+- `tasks.json`'s two 6.3 absent checks (h3, e6: no email in a log call) read production code only,
+  `"exclude": ["src/test-helpers/*", "*.test.ts"]`, like h3's 10.9 since 2026-09-10. The 2.4.0 tier-2
+  pass read a conforming h3 tree 2/3 on a redaction test that plants an email in a logger call to
+  prove it comes out `[REDACTED]`: the seventh grader defect, the seventh to punish the better code.
+  The selftest pins the redaction test green beside a clean adapter and an adapter logging the email
+  red, and reads red under the previous tasks.json. The frozen baseline arm is re-frozen from four
+  passes (the three of 2026-09-09 plus the 2.4.0 release run's), 184/244 over 84 runs.
+- `grade.py` names a session the CLI's `--max-turns` cap ended (`.result.txt` is the CLI's own
+  "Error: Reached max turns"): the scorecard line carries "(turn cap, graded as produced)" and the
+  totals list the capped tasks per arm. Such a run is scored as produced, unlike a transport error,
+  since an unfinished tree is a real reading of what the skill got done in the budget; the 2.4.0 pass
+  is the first with any (four skill-arm sessions against none in every earlier pass), and the
+  marker is what makes that visible. Selftested.
 - `tasks.json` h3 10.9 (absent mode, no hard delete) reads production code only: `"exclude":
   ["src/test-helpers/*", "*.test.ts"]`, and `exclude` entries are fnmatch patterns from here on (an
   exact path still matches). The check had matched a `Map.delete` inside a repository fake behind a

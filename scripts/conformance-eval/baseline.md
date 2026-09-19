@@ -499,3 +499,42 @@ better code.
 `CONFORMANCE_SINCE=HEAD` after slice 2 of the gap hunt selected 12 of 21 tasks (rules 19-30 touched
 by the enforcement table row and the rule texts); skill arm, six jobs, 08:42 to 09:0x, none capped:
 37/37 against the frozen 30.3/37 once the h3 check above was corrected.
+
+## Corrected checks (2026-09-19)
+
+One assertion pair, found by the 2.4.0 tier-2 pass. `h3-trap-log-delete` 6.3 (absent mode: no
+email in a log call) matched `logger.warn('order.removed', { customerEmail: ... })` inside the skill
+arm's `src/infra/logger.test.ts`, a redaction test that plants the email to assert it comes out
+`[REDACTED]`, the discipline done right. The same scope rule as 10.9's on 2026-09-10 applies: an
+absent-mode check on a production discipline reads production code only, so both 6.3 absent checks
+(h3 and `e6-logging-pii`) now exclude `src/test-helpers/*` and `*.test.ts`. The selftest pins the
+redaction test green beside a clean adapter and an adapter logging the email red, and reads red under
+the previous tasks.json. Under the corrected check h3 reads 3/3. The seventh grader defect on record,
+the seventh to punish the better code. The fixture is re-frozen from four passes, the three of
+2026-09-09 plus this release run's baseline arm: 184/244 over 84 runs.
+
+## Tier 2 for the 2.4.0 release (2026-09-19)
+
+The full matrix, both arms, 21 tasks, opus, six jobs, 21:55 to 22:47, no session wall-clock capped,
+no transport error, first launch.
+
+| Arm | Score |
+|---|---|
+| skill | 59/61 (58/61 before the 6.3 correction above) |
+| unaided | 45/61 |
+
+Against the four-pass fixture the skill arm reads 59/61 to an expected 46.0/61. The two remaining
+misses are h6's schema checkpoint and eval gate, and they are not the skill's: four skill-arm sessions
+(e7, h3, h6, h7) ended on the CLI's 60-turn cap, the first such in any pass (`grade.py` names them
+now), and h6's tree stopped at 25 files where the 2.3.0 run wrote 40. A same-cap rerun of the four
+capped three again (e7 3/3, h3 3/3, h6 2/5 on a 19-file tree, h7 3/4), so this is not variance. A
+120-turn rerun of h6 and h7 finished both normally: h6 5/5 on 41 files, h7 4/4, neither capped. The
+standard is intact when given room; the 60-turn instrument cap is what now binds on the hard tier.
+Why the turn cost rose is not established: SKILL.md grew 3 percent in words since v2.3.0 (200 to 201
+lines) and the CLI is the same 2.1.263 binary as on 2026-09-09, so the change is on the model side
+or in what the sessions choose to read, and the harness keeps no transcript (`.run.log` is the CLI's
+empty stderr, `.result.txt` its final message) to say which. Two follow-ups, neither a release
+blocker: capture a transcript per session so a turn census is possible, and decide whether the cap
+moves to 120 for both arms (which re-freezes the fixture at that cap). The skill tree under test is
+main at 9c8243e, which `skills/atelier/` shares with the release-notes commit 3d7093a: the rule 26
+gate, the discipline tripwires as default gates, rule 37 in Next, rules 4 and 20 in Java and Next.
