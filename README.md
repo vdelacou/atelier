@@ -4,8 +4,6 @@
 
 Atelier is a coding standard packaged as an [Agent Skill](https://github.com/anthropics/skills) suite. Install it once and every code task your agent takes in a Bun/TypeScript, Next.js, or Java (Quarkus) repo comes out test-first, cleanly layered, typed at the boundaries, private by default and production-ready. The agent does not need to be told. The standard loads on every session, and lint, git hooks and CI hold the line when prose alone would not.
 
-It runs two ways. Four skills inside your normal agent session, or a six-agent [SwarmForge](https://github.com/unclebob/swarm-forge) pack that turns a one-paragraph card into specified, tested, hardened, reviewed code on your `main` while you approve once.
-
 ## Why a standard for agents
 
 Coding agents are fast and fluent. They are also inconsistent in exactly the ways that cost you later.
@@ -92,63 +90,6 @@ Copy the block rather than retyping it. When the wording changes upstream, a re-
 
 The gates are the agent's job, not yours. Say "scaffold a new Bun repo" (or a Next.js package, or a Java service) on an empty directory and `atelier-greenfield` lays the layout, copies the gate assets, wires the hooks and proves every gate green before the first commit. Say "adopt the standard into this repo" on an existing codebase and `atelier-review-me` scans it and returns a staged plan whose first slice installs the gates without tripping them on legacy code. The manual path, for each variant, is the bootstrap checklist at the end of its reference: [`bun-typescript.md`](skills/atelier/references/bun-typescript.md), [`nextjs-monorepo.md`](skills/atelier/references/nextjs-monorepo.md), [`java-quarkus.md`](skills/atelier/references/java-quarkus.md).
 
-## Scale it to six agents
-
-The six-pack is the same standard run as a team. You write a card. Six Claude Code agents, each in its own git worktree, hand committed work down a pipeline and back, and you make one decision: approving the specification.
-
-```text
-New Task -> specifier -> Attention -> coder -> cleaner -> architect -> hardener -> reviewer -> Done
-```
-
-- **specifier** grills your card one question at a time, exploring the tree before each and leading with a recommendation, then writes `docs/specs/<card>.md`: scenarios, the disciplines the card triggers, decisions and ADRs. Runs `atelier-grill-me`.
-- **coder** makes the scenarios pass test-first under `atelier`. On an empty tree it scaffolds the variant green from the first commit with `atelier-greenfield`.
-- **cleaner** takes the refactor step: names in domain language, the clean-code numbers, complexity at most 10, duplication extracted at the third occurrence.
-- **architect** owns structure: layers and dependency direction, ports as function types, branded value objects, and the lint rules that pin each boundary with a fixture that proves they fire.
-- **hardener** proves the tests bite: mutation at 90 or above, a test seam on every adapter, the discipline tripwires, the security lens, a red fixture for every gate the card added.
-- **reviewer** runs `atelier-review-me` over the whole diff, cites a rule number for every finding, fixes the narrow ones, writes `docs/reviews/<card>.md`, appends the lessons and closes the card.
-
-The hooks run in every worktree. No test older than the card is touched. No role ever pushes.
-
-### How the pieces fit
-
-Three parties, one directory. [SwarmForge](https://github.com/unclebob/swarm-forge), Robert C. Martin's multi-agent runtime, supplies the machinery: the launcher that starts six Claude Code sessions in tmux, the handoff daemon (a Babashka script, hence `bb`), the dashboard, and three shared constitution articles. This repo supplies the pack: the six-role `swarmforge.conf`, the constitution that puts the standard first, and the six role prompts. Your project receives both as files under `swarmforge/`, plus a `swarm` launcher at its root, and that is where everything runs: the roles work in `.worktrees/<role>` checkouts of your repo, the specifier in your main checkout, and every commit lands on your `main`. The role prompts do not restate the standard. They load the four atelier skills from `~/.claude/skills`, which is why the installer links them there.
-
-### Install it
-
-You need `zsh`, `git`, `tmux`, Babashka (`bb`), a signed-in `claude` CLI and the variant's toolchain (Bun, or JDK 21 with the Maven wrapper). `gitleaks` on PATH feeds the secret gate; the hook says so and continues without it.
-
-Clone this repo once, anywhere. Then run its installer from inside the project that will receive the pack, an existing repo or an empty directory:
-
-```bash
-git clone https://github.com/vdelacou/atelier.git ~/code/atelier
-cd ~/code/my-project
-~/code/atelier/get-atelier-six-pack
-```
-
-The installer downloads SwarmForge's `get-swarm-forge` composer and runs it against this clone's `packs/six-pack/`, so your project gets SwarmForge's runtime from its `main` branch and atelier's pack in one `swarmforge/` directory, plus the `swarm` launcher. It links the four skills into `~/.claude/skills` unless they are already there (`--copy-skills` copies, `--skip-skills` leaves the directory alone), seeds the pointer block in `CLAUDE.md`, an empty `.claude/LESSONS.md` and `tmp/` in `.gitignore`, and commits nothing. Commit what it wrote, because role worktrees are cut from `HEAD` and see only committed files, then start from your project root:
-
-```bash
-git add CLAUDE.md .claude/LESSONS.md .gitignore swarm swarmforge
-git commit -m "chore(swarm): install the atelier six-pack"
-./swarm
-```
-
-### Update it
-
-The doctrine and the machinery update separately. The skills are symlinks into your atelier clone, so `git -C ~/code/atelier pull` updates the standard for every project at once; with `--copy-skills` or the skills CLI, re-run that install instead. The runtime and the pack are copies inside your project: after a Teardown, pull the clone and re-run `~/code/atelier/get-atelier-six-pack` from the project. It replaces `swarmforge/scripts/`, the shared articles, the `swarm` launcher, the conf, the constitution and the role prompts with the current versions, leaves your seeded files and skills alone, and again commits nothing. Read the diff, commit, `./swarm`. A re-run overwrites local edits to the conf or a role prompt, so keep such edits in a fork of this repo and run the installer from that clone. The runtime is whatever SwarmForge `main` is at the moment you run the installer; `SWARMFORGE_BASE_DIR` substitutes a local checkout when you want to pin it.
-
-### Run a card
-
-`./swarm` brings up the six roles, the handoff daemon and a local dashboard, and opens it. The first start asks Claude Code's two questions in every pane, trust the folder and accept bypass-permissions mode: six panes, twelve answers, from the dashboard's pane view.
-
-Write the card under **New Task** as intent, not design. The card that ran first:
-
-> Bun script CLI that reads a CSV of invoices and prints the total amount per customer as a table. The CSV columns are customer name, customer email, invoice id, amount in EUR cents. The file holds personal data (names, emails). Single user, no tenants, no network, no database. Scope: parse the file, sum per customer, print the table; nothing else. Start with the walking skeleton.
-
-Anything the specifier cannot settle from the tree reaches you in **Attention**. When the spec is written, its handoff waits there too: read it, approve it. From that point the board moves on its own; **Work Queue** opens any role's live pane. **Done** means the spec, the rule-cited verdict, the appended lessons and every commit are on your `main`. You push. **Teardown** stops the swarm and keeps the project.
-
-Know before you start: the roles run unattended with permission prompts bypassed, inside worktrees of your project, and the spec approval is where the standard's two confirmation gates land. The operator manual is [`packs/six-pack/README.md`](packs/six-pack/README.md).
-
 ## Pick your stack
 
 The skill detects the variant from the tree and reads the matching reference. Same rules, native idiom.
@@ -215,9 +156,7 @@ Both evals run the same tasks with and without the skill on Claude Opus and grad
 
 The gap is widest on the rules that hurt most in production. The unaided agent never once preferred soft delete to a hard `DELETE`, in either eval, and built against a port rather than an implementation in one run of six.
 
-The six-pack's first live run, on 2026-09-05 from an empty repository with the card quoted above: one hour fifty-six from card to Done, one approval, zero clarifications, 35 commits by six roles, 88 tests, coverage 100 on every tier, mutation score 100, and a verdict of conformant with one Low finding the reviewer fixed itself.
-
-Nine CI jobs run on every push to this repo: the canon drift and citation gates, the grader selftests, the six-pack gate, and three smoke tests that replay the install on the current unpinned toolchain and prove each shipped gate green on a conforming tree and red on its target violation. A new ESLint, TypeScript, Stryker, Next or Maven-plugin major that breaks an asset fails here before it reaches you. A [field test](field-test.md) on a real consumer repo found the defects the evals could not, and each became a fix.
+Eight CI jobs run on every push to this repo: the canon drift and citation gates, the grader selftests, and three smoke tests that replay the install on the current unpinned toolchain and prove each shipped gate green on a conforming tree and red on its target violation. A new ESLint, TypeScript, Stryker, Next or Maven-plugin major that breaks an asset fails here before it reaches you. A [field test](field-test.md) on a real consumer repo found the defects the evals could not, and each became a fix.
 
 ## Questions you will have
 
@@ -235,14 +174,14 @@ Nine CI jobs run on every push to this repo: the canon drift and citation gates,
 
 ## Inside this repository
 
-This repo is the standard, not an application. `skills/` holds the four skills, with the main one's `assets/` (hooks, tripwires, CI workflows, test helpers, Java exemplars) and `references/` (the 27 doctrine files). `packs/six-pack/` is the SwarmForge pack and `get-atelier-six-pack` its installer. `scripts/` holds the harnesses: the three smoke tests, the trigger, conformance and review evals, and the gates that keep the matrices, citations, workflows and pack honest. `docs/global-rules/` is the vendored canon the matrices audit against.
+This repo is the standard, not an application. `skills/` holds the four skills, with the main one's `assets/` (hooks, tripwires, CI workflows, test helpers, Java exemplars) and `references/` (the 27 doctrine files). `scripts/` holds the harnesses: the three smoke tests, the trigger, conformance and review evals, and the gates that keep the matrices, citations and workflows honest. `docs/global-rules/` is the vendored canon the matrices audit against.
 
 Working here means [`CLAUDE.md`](CLAUDE.md): never an em dash, frontmatter within the loader limits, a plan before multi-step work, small Conventional Commits, and a fixture that proves every new gate can fail. The fast checks:
 
 ```bash
 bun run scripts/validate-frontmatter.ts
 python3 scripts/check-citations.py
-bash scripts/check-six-pack.sh
+bash scripts/check-workflow-assets.sh
 ```
 
 The slow ones are `bash scripts/smoke-test.sh`, `smoke-test-next.sh` and `smoke-test-java.sh`; the Java one needs JDK 21+ and Maven.

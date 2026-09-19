@@ -20,9 +20,6 @@ tree. What binds work HERE is the authoring and process discipline below.
 - `skills/atelier/` is the main skill: `SKILL.md` (hard rules + workflow) plus `references/`
   (the doctrine, one file per concern) and `assets/` (copyable gate scripts + Java exemplars).
 - `skills/atelier-{greenfield,review-me,grill-me}/` are the companion skills.
-- `packs/six-pack/` is the SwarmForge six-pack (the four skills as a six-role agent pipeline) and
-  `get-atelier-six-pack` its installer; `scripts/check-six-pack.sh` is its gate and
-  `packs/six-pack/README.md` the operator manual. Role prompts point at the skills, never restate doctrine.
 - `scripts/` holds the CI harnesses: three `smoke-test*.sh` (Bun/Next/Java, each proving the
   gates pass AND block their target violation), `trigger-eval/` (does the skill load; suite
   mode measures which skill wins a query), `conformance-eval/` (does produced code follow the
@@ -55,9 +52,9 @@ tree. What binds work HERE is the authoring and process discipline below.
 - `python3 scripts/conformance-eval/judge.py --selftest` (fast; the CI judge-harness gate).
   The judging itself is local and paired: `JUDGE_MODEL=claude-opus-5 python3
   scripts/conformance-eval/judge.py <runs-dir>` over run dirs the conformance eval produced.
-- CI (`.github/workflows/ci.yml`) runs nine jobs on every push (frontmatter, the em-dash gate,
-  the three smoke tests, the two grader selftests, matrix drift with the citation, workflow-asset
-  and staleness selftests, the six-pack gate); `canary.yml` weekly-probes
+- CI (`.github/workflows/ci.yml`) runs eight jobs on every push (frontmatter, the em-dash and
+  identity gates, the three smoke tests, the two grader selftests, matrix drift with the citation,
+  workflow-asset and staleness selftests); `canary.yml` weekly-probes
   the two deliberate toolchain concessions (whether the typescript pin can lift, and whether the
   three disabled sonarjs rules can go back on).
 

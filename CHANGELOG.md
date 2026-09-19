@@ -70,6 +70,15 @@ whole, not any single skill.
   and the closing paragraph says "outside the 37". The rows were already complete; only the counts had
   stopped at row 36. Every edit is in place, so no cited line moved.
 
+### Removed
+- **The six-pack.** `packs/six-pack/` (the SwarmForge pack: launcher stub, conf, constitution, six
+  role prompts, operator manual), `get-atelier-six-pack` (its installer), `scripts/check-six-pack.sh`
+  and the `six-pack` CI job, the swarm-forge block of `.gitignore`, and the README's six-agent
+  section, first-run paragraph and intro sentence. The suite is the four skills for one agent session
+  again; the 2.2.0 notes below and the LESSONS entries stay as the record of what shipped. A project
+  that installed the pack keeps working: the runtime and the pack are copies inside that project and
+  the installer never ran again on its own; there is no re-run to make.
+
 ## [2.3.0] - 2026-09-09
 
 The enforcement release: hard rules 36 (tests run in random order) and 37 (the dependency rule
