@@ -6,6 +6,33 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-09-19
+
+The gates release: five closures of the gap hunt turn the last prose rules into machine checks
+(rule 26 identity in file contents; the rule 27, 29 and 30 tripwires on by default; rule 37 in the
+Next variant; rules 4 and 20 in Java and the Next server layers), and the six-pack leaves the
+repository. The suite is the four skills for one agent session again.
+
+### Upgrading from 2.3.0
+
+- Copy `check-identity.sh`, `check-disciplines.sh`, `check-pii-channels.sh`, `check-io-deadlines.sh`
+  and `check-data-lifecycle.sh` into `scripts/`, then re-copy the hook (`pre-commit` on Bun,
+  `pre-commit-java` on Java) or extend the Next `simple-git-hooks` line, and re-copy the CI workflow
+  (`ci.yml`, `ci-next.yml` or `ci-java.yml`). Expect reds on a person, employer or client named in a
+  file (rule 26; `IDENTITY_DENYLIST` in the environment for employers and clients), a personal
+  identifier in a query string or a log message (27), an outbound call with no deadline marker (29),
+  a hard delete or destructive DDL outside a contract migration (30). Where tenants or owners exist,
+  copy `check-isolation-tests.sh` too and call it beside the wrapper (28, opt-in).
+- On Next, re-extract `eslint.config.mjs`: the layer zones (37, an atom never imports a molecule or
+  an organism, a molecule never an organism; the server sub-variant's layers as in Bun) and the `fs`
+  ban in the `domain` and `use-cases` zones (20).
+- On Java, re-copy `pmd-ruleset.xml` (rule 4: `SystemPrintln` and `NoPrintStackTrace` in `verify`)
+  and `LayerRulesTest.java` (rule 20: `java.nio.file` and the `java.io` File classes out of `domain`
+  and `usecases`; five rules), renaming its package and root again.
+- The six-pack, its installer and its gate are gone from this repository (breaking for anyone who
+  cloned for them). A project that installed the pack keeps its own copies and keeps working.
+- Re-copy `assets/claude-md-pointer.md` only if you have not since 2.3.0; it is unchanged.
+
 ### Added
 - **Rules 4 and 20 are gates in Java, and rule 20 in the Next server sub-variant.** Rule 4 (no
   `System.out`, no `printStackTrace`) had no machine check in Java: `assets/java/pmd-ruleset.xml`

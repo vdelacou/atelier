@@ -192,4 +192,4 @@ The engineering substance comes from Clean Code and Clean Architecture (Robert C
 
 ## Versioning and license
 
-The suite is versioned as a whole in [CHANGELOG.md](./CHANGELOG.md). The current release is 2.3.0, the enforcement release: rules 36 and 37, the style and suppression rules turned into gates, the Next CI workflow. [MIT](./LICENSE).
+The suite is versioned as a whole in [CHANGELOG.md](./CHANGELOG.md). The current release is 2.4.0, the gates release: the last prose rules turned into machine checks in every variant, the discipline tripwires on by default. [MIT](./LICENSE).
