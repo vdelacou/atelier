@@ -7,6 +7,21 @@ whole, not any single skill.
 ## [Unreleased]
 
 ### Added
+- **Rules 4 and 20 are gates in Java, and rule 20 in the Next server sub-variant.** Rule 4 (no
+  `System.out`, no `printStackTrace`) had no machine check in Java: `assets/java/pmd-ruleset.xml`
+  gains PMD's `SystemPrintln` and a shipped `NoPrintStackTrace` XPath rule (PMD 7.17's own
+  `AvoidPrintStackTrace` stays silent on a bare call and on one inside a catch, probed first), both
+  red in `verify` with their names in `target/pmd.xml`. Rule 20 (file IO at the edges) had none in
+  Java or Next: `assets/java/LayerRulesTest.java` gains two ArchUnit rules keeping `java.nio.file` and
+  the `java.io` File classes out of `domain` and `usecases` (five rules in all; infra stays free to
+  read the disk), and the Next config's `domain` and `use-cases` zones carry `FS_AT_THE_EDGES`, the
+  `fs` and `fs/promises` ban in both forms, nowhere else, since Node is the runtime elsewhere in a
+  Next package. The Java smoke test proves `System.err` plus `printStackTrace` red on `pmd:check`
+  with both rule names, and a domain class reading through `java.nio.file` red on `mvn test` with
+  an Architecture Violation; the Next smoke test proves a domain file importing `node:fs` red with
+  the rule number and a `src/lib` file importing it still green. Consumers on Java: re-copy
+  `pmd-ruleset.xml` and `LayerRulesTest.java` (rename its package and root again); on Next,
+  re-extract `eslint.config.mjs`.
 - **The discipline tripwires for rules 27, 29 and 30 are default gates.** They shipped since
   2026-09-02 as "optional gates" that no hook or CI workflow ran and that the Bun and Next
   checklists never copied. `assets/check-disciplines.sh` runs the three in order (every guard even

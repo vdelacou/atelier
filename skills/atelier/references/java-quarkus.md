@@ -265,7 +265,7 @@ Dependency rule unchanged: `domain` imports nothing from the framework; `usecase
 | 1 no `class` | Inverted mechanism, same intent: **records** for data, **sealed interfaces** for unions, small **final classes** with constructor injection for behaviour. No inheritance for reuse (composition only), no static mutable state, no field injection (`@Inject` on fields hides the contract; constructors state it) |
 | 2 no `function` decl | n/a |
 | 3 no `interface` | Inverted: interfaces ARE the port mechanism. Keep them small and role-shaped (ISP); one capability per interface |
-| 4 no `console.*` | No `System.out`/`System.err`/`printStackTrace`. Inject a `Logger` (JBoss/SLF4J) through the constructor; redaction configured once (below) |
+| 4 no `console.*` | No `System.out`/`System.err`/`printStackTrace`. Inject a `Logger` (JBoss/SLF4J) through the constructor; redaction configured once (below). Gated: PMD `SystemPrintln` and the shipped `NoPrintStackTrace` XPath rule in `verify` |
 | 5 Bun only | `./mvnw` only; the Quarkus CLI is sugar over it |
 | 6 explicit return types | Native. Avoid `var` on any public or port surface; locals may use it when the right side names the type |
 | 7-9 imports/style/ESM | Spotless owns style; no wildcard imports |
@@ -279,7 +279,7 @@ Dependency rule unchanged: `domain` imports nothing from the framework; `usecase
 | 17 `try/catch` quarantine | Adapters in `infra/` catch SDK/JPA exceptions and translate to `Err`; use-cases pattern-match with `switch`; one top-level handler at the entry point |
 | 18 no curried chains | n/a |
 | 19 no `latest` | Exact versions, no ranges, no SNAPSHOT deps (above) |
-| 20 Bun file API | `java.nio.file.Files` in `infra/` only; never `java.io.File` gymnastics in domain code |
+| 20 Bun file API | `java.nio.file.Files` in `infra/` only; never `java.io.File` gymnastics in domain code. Gated: `LayerRulesTest` keeps `java.nio.file` and the `java.io` File classes out of `domain` and `usecases` |
 | 21-22 design system | n/a (no UI) |
 | 23-26 commits, tests, identity | Unchanged: same hooks, same confirmation gates |
 | 27-34 production disciplines | Unchanged; Java expressions in their references and below |
@@ -421,10 +421,10 @@ Same git hooks as the Bun variant, shell only, wired with `git config core.hooks
 - `assets/pit-changed.sh`: the mutation step of CI, PIT on the classes that changed in the event's range (the pull request's base, or `github.event.before..HEAD` on a push, which the workflow exports; an unknown base fails loudly, no change in scope exits 0), plus uncommitted and untracked sources locally.
 - `assets/mutation-java.yml`: the daily full PIT sweep over `domain` and `usecases` (`workflow_dispatch` on demand), the only run that measures the whole tree; a red run is a task, not a blocked merge.
 - `assets/ci-java.yml`: the authoritative gate set, run on every push and pull request as the required merge check. Its first step re-runs the commit-msg validator over the pushed range (`scripts/check-commit-messages.sh`, so `--no-verify` cannot slip a message past the local hook), then the pom gate, a full-history `gitleaks detect` (CI installs its own pinned copy), plus `./mvnw verify` (compile with `-Werror`, unit + integration tests, JaCoCo tier check, the PMD complexity cap of rule 35), and PIT mutation (≥90 on `domain`/`usecases`). The commit-size range check runs here too; the CVE scan does not.
-- `assets/java/LayerRulesTest.java`: the rule 37 test (ArchUnit); copied into `src/test/java/<pkg>/architecture/` with its package and `@AnalyzeClasses` root renamed to yours; needs `archunit-junit5` in the pom, which the canonical pom carries.
+- `assets/java/LayerRulesTest.java`: the rule 37 test (ArchUnit); copied into `src/test/java/<pkg>/architecture/` with its package and `@AnalyzeClasses` root renamed to yours; needs `archunit-junit5` in the pom, which the canonical pom carries. Since 2026-09-19 it carries rule 20 too: `domain` and `usecases` depend on nothing in `java.nio.file` and on none of the `java.io` File classes; five rules in all.
 - `assets/check-no-suppressions.sh`: the rule 15 tripwire for Java, staged lines in the hook and `--all` in CI; the forms it rejects are listed in its header.
 - `assets/check-identity.sh`: the rule 26 tripwire, hook gate 5 on the staged lines and `--all` in CI: a multi-word git name in both orders and the email, every author and committer in the history under `--all`, `IDENTITY_DENYLIST` for employers and clients; one-word names and noreply addresses are handles, CODEOWNERS and `.mailmap` exempt.
-- `assets/java/pmd-ruleset.xml`: the rule 35 ruleset and the rule 15 `NoSuppressWarnings` XPath rule (`CyclomaticComplexity`, `methodReportLevel` 11, so complexity 11 and above fails and 10 passes, the same boundary as the TypeScript `complexity: ['error', 10]`), copied to the repository root where the canonical pom's `maven-pmd-plugin` reads it in `verify`. `smoke-test-java.sh` plants a complexity-11 method and sees `pmd:check` red, and a complexity-10 one green.
+- `assets/java/pmd-ruleset.xml`: the rule 35 ruleset and the rule 15 `NoSuppressWarnings` XPath rule (`CyclomaticComplexity`, `methodReportLevel` 11, so complexity 11 and above fails and 10 passes, the same boundary as the TypeScript `complexity: ['error', 10]`), copied to the repository root where the canonical pom's `maven-pmd-plugin` reads it in `verify`. `smoke-test-java.sh` plants a complexity-11 method and sees `pmd:check` red, and a complexity-10 one green. Since 2026-09-19 it carries rule 4 too: PMD's `SystemPrintln` and the `NoPrintStackTrace` XPath rule (PMD's own `AvoidPrintStackTrace` is silent on 7.17).
 
 ```bash
 cp <skill>/assets/pre-commit-java        .githooks/pre-commit
