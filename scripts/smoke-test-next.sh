@@ -418,7 +418,16 @@ import { createWinstonLogger } from '../infra/logger.ts';
 
 export const leak = (): unknown => createWinstonLogger('info');
 EOF
+# Rule 20 in this variant (2026-09-19): fs is banned in the domain and use-cases zones only.
+ban_red "a domain file importing node:fs is rejected (rule 20, server sub-variant)" src/domain/reads-disk.ts "hard rule 20," <<'EOF'
+import { readFileSync } from 'node:fs';
+
+export const read = (p: string): string => readFileSync(p, 'utf8');
+EOF
 rmdir src/domain
+printf "import { readFileSync } from 'node:fs';\n\nexport const readData = (p: string): string => readFileSync(p, 'utf8');\n" > src/lib/read-data.ts
+expect_ok "src/lib may still import node:fs: the rule-20 ban is scoped to the server layers" bun run lint
+rm src/lib/read-data.ts
 # Rules 5 and 19 in this variant (2026-09-08): before, no Next repo ran the package.json
 # gate at all. The fixture's own manifest is green; a "latest" dependency and a script
 # calling node are red; the manifest is restored after each.

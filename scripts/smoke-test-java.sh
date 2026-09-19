@@ -252,8 +252,8 @@ echo
 echo "== gates pass on a conforming tree =="
 expect_ok "spotless:check (rule 8)" ./mvnw -q spotless:check
 expect_ok "verify: -Werror compile, tests, JaCoCo tiers (rules 11, 15, coverage)" ./mvnw -q verify
-expect_ok "the three ArchUnit layer rules ran green inside verify (rule 37)" \
-  grep -q "Tests run: 3, Failures: 0, Errors: 0" target/surefire-reports/com.example.app.architecture.LayerRulesTest.txt
+expect_ok "the five ArchUnit rules ran green inside verify (rules 37 and 20)" \
+  grep -q "Tests run: 5, Failures: 0, Errors: 0" target/surefire-reports/com.example.app.architecture.LayerRulesTest.txt
 
 # Rule 36 proves it can fail: a three-step chain, each test reading the step
 # the previous one left in a static field, is green in declaration order
@@ -610,6 +610,28 @@ if ./mvnw -q test >"$LOG" 2>&1; then cat "$LOG"; fail "LayerRulesTest rejects a 
 elif grep -q "Architecture Violation" "$LOG"; then pass "LayerRulesTest rejects a domain class importing a use-case (rule 37)"
 else cat "$LOG"; fail "LayerRulesTest: mvn test failed, but not on an Architecture Violation"; fi
 rm src/main/java/com/example/app/domain/Leaky.java
+# 6a-bis. Rule 20 (2026-09-19): file IO stays at the edges. A domain class reading the
+# disk through java.nio.file compiles and fails LayerRulesTest; the same import in infra
+# is the sanctioned place and stays green (proven in the conforming pass above, where
+# the five rules run over the skeleton).
+cat > src/main/java/com/example/app/domain/DiskReader.java <<'EOF'
+package com.example.app.domain;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+public final class DiskReader {
+  private DiskReader() {}
+
+  public static boolean present(String p) {
+    return Files.exists(Path.of(p));
+  }
+}
+EOF
+if ./mvnw -q test >"$LOG" 2>&1; then cat "$LOG"; fail "LayerRulesTest rejects a domain class reading the disk (rule 20) (expected non-zero exit)"
+elif grep -q "Architecture Violation" "$LOG"; then pass "LayerRulesTest rejects a domain class reading the disk through java.nio.file (rule 20)"
+else cat "$LOG"; fail "LayerRulesTest: mvn test failed, but not on an Architecture Violation"; fi
+rm src/main/java/com/example/app/domain/DiskReader.java
 
 # 6b. Rule 35: PMD blocks a method of cyclomatic complexity 11 (ten guards)
 # and passes complexity 10 (nine), pinning the boundary. pmd:check alone, so
@@ -620,6 +642,31 @@ expect_err "PMD blocks a method of cyclomatic complexity 11 (rule 35)" ./mvnw -q
 gen_guards 9
 expect_ok "PMD accepts complexity 10, the cap itself" ./mvnw -q pmd:check
 rm src/main/java/com/example/app/domain/Branchy.java
+
+# 6b-bis. Rule 4 (2026-09-19): PMD's SystemPrintln and our NoPrintStackTrace XPath rule,
+# both named in target/pmd.xml so a red for another reason is not proof. AvoidPrintStackTrace,
+# PMD's own, stays silent on 7.17 and is not shipped.
+cat > src/main/java/com/example/app/domain/Shouty.java <<'EOF'
+package com.example.app.domain;
+
+public final class Shouty {
+  private Shouty() {}
+
+  public static int parse(String s) {
+    try {
+      return Integer.parseInt(s);
+    } catch (NumberFormatException e) {
+      e.printStackTrace();
+      System.err.println(s);
+      return 0;
+    }
+  }
+}
+EOF
+expect_err "PMD blocks System.err and printStackTrace (rule 4)" ./mvnw -q pmd:check
+expect_ok "the PMD violations are SystemPrintln and NoPrintStackTrace, not a bystander" \
+  bash -c 'grep -q "rule=\"SystemPrintln\"" target/pmd.xml && grep -q "rule=\"NoPrintStackTrace\"" target/pmd.xml'
+rm src/main/java/com/example/app/domain/Shouty.java
 
 # 6c. Rule 15, the Java half (2026-09-08), three layers each proven red. The PMD rule
 # flags @SuppressWarnings in verify (the rule name lands in target/pmd.xml; -q hides
