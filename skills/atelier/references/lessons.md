@@ -179,7 +179,7 @@ A journal is read in full at every session start, so its size is paid on every s
 | keep | still true, binding, in format | none | untouched |
 | tighten | still true, but past 5 sentences or bulleted | the rewrite beside the original | rewritten to 2-5 sentences keeping every command, flag, version, path, and number; the original archived |
 | merge | two or more entries carry one lesson | their dates and titles | one entry whose tail reads `Merges:` with the originals' dates; the originals archived |
-| graduate | a gate, a reference, or `CLAUDE.md` now states or enforces it | the enforcing `file:line` | archived with that pointer; the rule lives where it is enforced |
+| graduate | a gate, a reference, or `CLAUDE.md` now states or enforces its rule, not only the one instance it fixed | the enforcing `file:line` | archived with that pointer; the rule lives where it is enforced |
 | archive | superseded by a newer entry, or about something that no longer exists | the superseding entry, or the absence | moved verbatim |
 | move | filed in the wrong tier (a personal note in the team file, team knowledge in a personal store) | the routing rule it breaks | moved to the right file |
 | delete | an exact duplicate of an entry that stays, or noise that fits none of the three kinds | the surviving twin, or the test it fails | removed from a git-tracked file; archived instead in an untracked one |
