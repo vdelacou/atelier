@@ -157,3 +157,26 @@ sentinels. The design rule this bought: a sentinel must be a file the doctrine h
 say about, which in practice means conforming edits to existing files and exemplar-shaped
 records, never a new unwired port and never a new standalone value-object test. The planted
 TS-inversion trap (a Java `interface` flagged as illegal) never fired in any of the 24 runs.
+
+## After the companion cascade (2026-09-26)
+
+One pass per variant, skill arm, opus, after `atelier-review-me` gained the 2.4.0 gate findings
+(a hook or workflow dropping a tripwire, a Java ruleset or `LayerRulesTest` dropping the rule-4 or
+rule-20 checks, the Next zones and fs ban) and adopt mode the hook-first order for the tripwires.
+
+| Variant | Caught | Rule-cited | False positives |
+|---|---|---|---|
+| Bun | 12/12 | 12/12 | 1 (`settings.ts`) |
+| Java | 9/9 | 8/9 | 1 (`MemberId.java`) |
+
+Recall is full and no finding touched the edited gate text: the review named no clean file for a
+missing hook or workflow, which is what scoping the new findings to gate files in the diff was for.
+The two false positives cite rules the cascade did not change, and both are true on the fixture's
+text. `settings.ts` is new production code with no test (rule 11) and casts parsed JSON unchecked,
+`JSON.parse(raw) as Record<string, string>` (rule 12); the file was planted to test rule 17's
+carve-out and the review cleared that part explicitly. `MemberId.parse` returns `Result<MemberId,
+String>`, a string error where the shipped `Email` exemplar uses a typed enum (rule 16's error
+shape). Neither was raised in the recorded passes, so this pass is the stricter reviewer, the same
+direction as every grader defect so far. Candidate fixture fixes, not made here: give `settings.ts`
+a test and a shape check, and `MemberId` a typed error, so the clean files are clean on every rule
+and not only on the one they were planted for; that changes the fixture and needs both arms rerun.

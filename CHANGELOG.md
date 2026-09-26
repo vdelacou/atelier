@@ -6,6 +6,18 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Changed
+- **The companion skills catch up with the 2.4.0 gates**, a cascade CLAUDE.md requires and the
+  release skipped. `atelier-review-me` adopt mode puts the identity and discipline tripwires in the
+  hook on the first slice (staged lines only, so legacy code cannot trip them) and holds their CI
+  `--all` steps back to the flip-to-blocking slice; without that, a brownfield repo copying the
+  shipped workflow failed CI on its first push. The one-off `--all` run becomes the adoption
+  inventory. Review mode names a hook or workflow in the diff that drops a tripwire, and a Java
+  ruleset or `LayerRulesTest` that drops the rule-4 or rule-20 checks, as findings, and knows the Next
+  zones and fs ban. `atelier-greenfield` copies the tripwires in every variant (isolation opt-in),
+  names `IDENTITY_DENYLIST` for a repo built for an employer or client, and its prove-red step now
+  plants rules 26, 27, 4 and 20. `atelier-grill-me` mentions no gate and is unchanged.
+
 ### Harness
 - **A transcript per conformance session.** `run.sh` runs each session with `--output-format
   stream-json --verbose` and keeps the stream as `<run-dir>/.transcript.jsonl`; the new
