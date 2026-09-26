@@ -4,6 +4,26 @@ Entries a compaction pass retired from `.claude/LESSONS.md`, verbatim, newest fi
 
 ---
 
+## [decision] 2026-09-26 | a gap closes as canon, rule, gate and red fixture, probed on the toolchain first
+
+Every gap closed between 2026-09-06 and 2026-09-19 went the same way: take the enforcement claim (the SKILL.md table of what applies where, a rule's "lint-enforced", a reference's "the check is"), probe it in a scratch tree on the real toolchain with one violation per rule and the fixture trees included, and only then write doctrine. The closure is a canon sub-concept if missing, a hard rule if missing, the gate in its family's shape (staged lines in the hook, `--all` in CI, copied by every variant's checklist, which `check-workflow-assets.sh` enforces), a red fixture per variant proven through the hook, then tier 1. The probes kept changing the design: PMD's own `AvoidPrintStackTrace` fired on nothing, ArchUnit fails an empty layer unless `withOptionalLayers(true)`, and "optional gate" turned out to mean "inert where the concern is absent", so three tripwires went on by default. A rule that is only a table row and a habit is not a rule; the gate that fails is what makes it one.
+
+Merges: 2026-09-19 (rules 4 and 20), 2026-09-10 (three tripwires default), 2026-09-09 (rule 26 tripwire, rule 37 in Next), 2026-09-08 (rule 5, rule 15 Java and lint, Java mock ban, rule 37 Java, style rules and rule 37), 2026-09-06 (random order).
+
+Archived 2026-09-26: graduated, `CLAUDE.md:83-110` (Writing a gate).
+
+---
+
+## [gotcha] 2026-09-26 | how a gate lies: proofs that were green for the wrong reason
+
+A red fixture proves a gate only when it greps the rule's own tag (a formatting slip also exits non-zero), plants the route real code takes (the transitive `quarkus-junit5-mockito`, not only `mockito-core`), uses the idiom the reference teaches (the smoke fixture satisfied `sonarjs/function-return-type` with literals where consumers return through `ok()`), lives inside every later block that replaces the rule's options (ESLint keeps only the last matching block's), and cleans up exactly the files it created; walk the old gates through each new red-fixture helper, since the mock ban had never been seen red. The logic traps: an empty string equals nothing and passed as a pin, a grepped token appears in prose about the rule (`-SNAPSHOT` in the enforcer's own message), human-readable output carries defaults on failure (openssl's `Protocol` line on a refused handshake, so key on the exit status), a `git diff` scope ignores untracked files and `|| true` after a failing first command turns a dead base ref into a pass, a check that reads a sample must say so, and a leak has more than one constructor (`new URLSearchParams({ email })`). A ban on a tool's own suppression cannot live in that tool (`@SuppressWarnings("PMD")` silences the PMD rule that flags it), and for toolchain behaviour the smoke test outranks the docs.
+
+Merges: 2026-09-08 (blank pin, oldest gate never red), 2026-08-30 (check-skill-pin, smoke fixture -A), 2026-08-29 (diff-derived scope), 2026-07-20 (openssl), 2026-07-12 (construction-based evasions, PIT history), 2026-07-11 (-SNAPSHOT grep).
+
+Archived 2026-09-26: graduated, `CLAUDE.md:83-110` (Writing a gate).
+
+---
+
 ## [decision] 2026-09-26 | a gate that executes documentation is a code channel; pin artifacts, not only versions
 
 The owner saw a security warning installing the suite with `npx skills`. Reproduced in a scratch HOME: the CLI prints third-party assessments per skill, and `atelier` read Gen "Med Risk", Socket "1 alert", Snyk "Low Risk", the companions all clean; skills.sh has per-provider pages under `/<owner>/<repo>/<skill>/security/<provider>` with the findings. Socket's one alert and one of Gen's three findings were the same file: `check-docs.sh` ran the README's Verify block through `bash -eu -c`, which made README text a second way to run code in CI, and the script's own comment had accepted that risk rather than removed it. The canon's 12.1 Do says to run the documented commands, so dropping execution would have needed a canon revision; the fix keeps execution and removes the channel: only repo entry points run, as argument lists, and any shell syntax refuses the block before anything runs. Gen's second finding had a real gap under a benign verdict: the gitleaks tarball was pinned by version and installed with `sudo` unverified; the three workflows now check its SHA-256 and the asset gate fails a release download without a checksum. The third was a quoted injection payload in teaching text, reworded. Also found on the way: the README had the CLI's install scope backwards. Rule for next time: when a check executes content from a file that is not code, it is a code channel whatever the comment says; and a pinned version is not a pinned artifact.

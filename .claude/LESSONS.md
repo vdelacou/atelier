@@ -56,18 +56,6 @@ macOS BSD `awk -v pat='\\.'` delivers `.` to the program, so regexes live as awk
 Rule for next time: reproduce a CI-only red by exporting the job's environment locally, and run a shell gate under both bash and zsh before calling it portable.
 Merges: 2026-09-03 (BSD awk -v, pipe to tail, selftest environment).
 
-## [decision] 2026-09-26 | a gap closes as canon, rule, gate and red fixture, probed on the toolchain first
-
-Every gap closed between 2026-09-06 and 2026-09-19 went the same way: take the enforcement claim (the SKILL.md table of what applies where, a rule's "lint-enforced", a reference's "the check is"), probe it in a scratch tree on the real toolchain with one violation per rule and the fixture trees included, and only then write doctrine. The closure is a canon sub-concept if missing, a hard rule if missing, the gate in its family's shape (staged lines in the hook, `--all` in CI, copied by every variant's checklist, which `check-workflow-assets.sh` enforces), a red fixture per variant proven through the hook, then tier 1. The probes kept changing the design: PMD's own `AvoidPrintStackTrace` fired on nothing, ArchUnit fails an empty layer unless `withOptionalLayers(true)`, and "optional gate" turned out to mean "inert where the concern is absent", so three tripwires went on by default. A rule that is only a table row and a habit is not a rule; the gate that fails is what makes it one.
-
-Merges: 2026-09-19 (rules 4 and 20), 2026-09-10 (three tripwires default), 2026-09-09 (rule 26 tripwire, rule 37 in Next), 2026-09-08 (rule 5, rule 15 Java and lint, Java mock ban, rule 37 Java, style rules and rule 37), 2026-09-06 (random order).
-
-## [gotcha] 2026-09-26 | how a gate lies: proofs that were green for the wrong reason
-
-A red fixture proves a gate only when it greps the rule's own tag (a formatting slip also exits non-zero), plants the route real code takes (the transitive `quarkus-junit5-mockito`, not only `mockito-core`), uses the idiom the reference teaches (the smoke fixture satisfied `sonarjs/function-return-type` with literals where consumers return through `ok()`), lives inside every later block that replaces the rule's options (ESLint keeps only the last matching block's), and cleans up exactly the files it created; walk the old gates through each new red-fixture helper, since the mock ban had never been seen red. The logic traps: an empty string equals nothing and passed as a pin, a grepped token appears in prose about the rule (`-SNAPSHOT` in the enforcer's own message), human-readable output carries defaults on failure (openssl's `Protocol` line on a refused handshake, so key on the exit status), a `git diff` scope ignores untracked files and `|| true` after a failing first command turns a dead base ref into a pass, a check that reads a sample must say so, and a leak has more than one constructor (`new URLSearchParams({ email })`). A ban on a tool's own suppression cannot live in that tool (`@SuppressWarnings("PMD")` silences the PMD rule that flags it), and for toolchain behaviour the smoke test outranks the docs.
-
-Merges: 2026-09-08 (blank pin, oldest gate never red), 2026-08-30 (check-skill-pin, smoke fixture -A), 2026-08-29 (diff-derived scope), 2026-07-20 (openssl), 2026-07-12 (construction-based evasions, PIT history), 2026-07-11 (-SNAPSHOT grep).
-
 ## [gotcha] 2026-09-26 | when the unpinned toolchain contradicts the standard, turn the rule off and re-probe it; do not pin the world back
 
 Three times the unpinned toolchain broke a conforming tree: TypeScript 7 crashed `eslint-plugin-sonarjs` at rule load (the smoke install pins `typescript@^5`), and sonarjs 4.2 flagged the branded-type doctrine (`no-useless-intersection`, `null-dereference`) and every `ok()`/`err()` return (`function-return-type`), in the type-aware lane only. Each time the answer was one dated pin or one rule off with its reason in the canonical config, plus a weekly canary that re-probes it (`canary.yml`, `SMOKE_SONARJS_PROBE=1`), because sonarjs 4.1.0 does not even load under ESLint 10 and pinning it back would have dragged every other pin with it.
@@ -84,7 +72,6 @@ Rule for next time: a removal is a census first (`git grep` the name across the 
 ## [decision] 2026-09-09 | the README is a pitch written from scratch; the gate copy block lives in the bootstrap checklists
 
 The owner asked for the README deleted and rewritten from scratch with a marketing mindset; a first pass that reshaped the old one and carried blocks through verbatim came back with "i asked you to rewrite from scratch". From scratch means every section is new copy and no block is pasted through: the copy block's one technical consumer (the Bun smoke test replays it) was served by moving the block into each variant's Bootstrap checklist and repointing the smoke test's header, not by keeping it. Numbers in the pitch come only from files in the repo (the conformance and review `baseline.md`, the matrix and citation counts). Supersedes the 2026-09-06 README decision.
-
 
 ## [gotcha] 2026-09-03 | a compressed checklist drops the nouns the eval asserts
 

@@ -75,6 +75,36 @@ tree. What binds work HERE is the authoring and process discipline below.
   audit found every companion gap was a missed cascade.
 - **Every new gate proves it can fail**: ship a fixture violation case alongside it, and wire
   it into the matching smoke test so a toolchain major cannot silently disable it.
-- **Read `.claude/LESSONS.md` at session start**: it holds the eval-harness, gate-proof and
-  toolchain lessons that cost real time to find; `.claude/lessons.archive.md` holds the history
-  the compaction pass retired (grep it, never read it at session start).
+- **Read `.claude/LESSONS.md` at session start**: it holds the eval-harness, trigger-eval and
+  toolchain lessons that cost real time to find (the gate-writing ones live in the next section);
+  `.claude/lessons.archive.md` holds the history the compaction pass retired (grep it, never read
+  it at session start).
+
+## Writing a gate
+A rule that is only a table row and a habit is not a rule; the gate that fails is what makes it
+one. The method of every gap closed since 2026-09-06, and the proofs that were green for the wrong
+reason:
+- **Probe before doctrine.** Take the enforcement claim (the SKILL.md table of what applies where,
+  a rule's "lint-enforced", a reference's "the check is") and run it on the real toolchain in a
+  scratch tree, one violation per rule, the smoke fixture trees included (their one-word git names
+  shaped rule 26's gate). A tool's rule with the right name can fire on nothing (PMD's
+  `AvoidPrintStackTrace`), ArchUnit fails an empty layer unless `withOptionalLayers(true)`, and for
+  toolchain behaviour the smoke test outranks the docs.
+- **The closure**: a canon sub-concept if missing, a hard rule if missing, the gate in its family's
+  shape (staged lines in the hook, `--all` in CI, copied by every variant's checklist, which
+  `check-workflow-assets.sh` enforces), a red fixture per variant proven through the hook, then
+  tier 1. A gate that is inert where its concern is absent is on by default; opt-in needs the
+  doctrine to say who opts out and why.
+- **A red fixture proves the gate only when** it greps the rule's own tag (a formatting slip also
+  exits non-zero), plants the route real code takes (the transitive `quarkus-junit5-mockito`, not
+  only `mockito-core`), uses the idiom the reference teaches (returns through `ok()`, not
+  literals), lives inside every later block that replaces the rule's options (ESLint keeps only the
+  last matching block's), and cleans up exactly what it created. Walk the old gates through each
+  new red-fixture helper: the mock ban had never been seen red.
+- **Logic traps**: an empty string equals nothing (a blank pin passed); a grepped token appears in
+  prose about the rule (`-SNAPSHOT` in the enforcer's own message); human-readable output carries
+  defaults on failure (key on the exit status, not openssl's `Protocol` line); a `git diff` scope
+  ignores untracked files, and `|| true` after a failing first command turns an error into a pass;
+  a check that reads a sample must name it; a leak has more than one constructor
+  (`new URLSearchParams({ email })`); a ban on a tool's own suppression cannot live in that tool
+  (`@SuppressWarnings("PMD")` silences the PMD rule that flags it, hence `check-no-suppressions.sh`).
