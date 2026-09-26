@@ -113,12 +113,19 @@ def run_single_query(
                 f"This skill handles: {desc}\n"
             )
 
+        # patched: skip the user setting source. Skills installed under
+        # ~/.claude/skills load with it, so a machine with the suite installed
+        # shows the model the real skill beside each synthetic clone; the model
+        # invokes the real one, the detector (synthetic names only) reads "(none)",
+        # and a correct route scores as a miss (2026-09-26: suite routing 5/15,
+        # every miss a real-skill invocation).
         cmd = [
             "claude",
             "-p", query,
             "--output-format", "stream-json",
             "--verbose",
             "--include-partial-messages",
+            "--setting-sources", "project,local",
         ]
         if model:
             cmd.extend(["--model", model])
