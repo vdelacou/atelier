@@ -4,6 +4,46 @@ Entries a compaction pass retired from `.claude/LESSONS.md`, verbatim, newest fi
 
 ---
 
+## [gotcha] 2026-09-26 | a clean fixture must be clean on every rule, and the grader must read the review the skill asks for
+
+Cleaning the two review-eval files the reviewer had rightly accused took one edit each and surfaced two more grader defects in the rerun, the eighth and ninth, both punishing the better review again. The first came from the skill's own instruction: review-me says to name an embedded claim in the diff and verify it, so a correct review writes "the doc comment at settings.ts asserts its own rule 17 compliance" and gives the verdict in the next sentence, and a grader that judges sentences alone reads the report as an accusation. The second was grammar: "breaks rules 3 and 1" cited neither rule because the pattern only knew the singular. A third finding is doctrine, not measurement: SKILL.md's behavioural guidelines and hard rules share the numbers 1 to 5, and a reviewer citing "rule 3" for surgical changes asserts the `interface` ban against a clean file. Rule for next time: when a grader and a skill disagree, check first whether the skill told the reviewer to write the very sentence the grader penalises; and two numbered lists that share numbers need distinct citation forms before any tool counts citations.
+
+Archived 2026-09-26: merged into "grader defects favour the weaker answer; read the answer before the number".
+
+---
+
+## [gotcha] 2026-09-20 | a 403 after midnight is the environmental tell, and the grader must know every dead-session shape
+
+The first tier-2 pass at the new 120-turn cap read 30/61 on both arms: 24 of 42 sessions ended with "Failed to authenticate. API Error: 403 Request not allowed" after the first fifteen had finished normally, and the grader scored their untouched fixture trees as zeros, because `session_failed` knew one shape only, the "API Error" transport prefix of 2026-09-03. Both arms failing at once on tasks that had just passed is the tell the 2026-09-06 revoked-token entry named; a one-turn probe answered "ok" a minute later and the relaunched pass ran clean, 61/61 to 45/61, no cap of either kind. Landed: a refused session on an unmodified tree is a dead session, not a score, selftested. Rule for next time: when a scorecard drops on both arms at once, read `.result.txt` before reading the doctrine; and every distinct failure text the CLI can leave there is a shape the grader has to name, since a shape it does not know becomes a regression it reports.
+
+Archived 2026-09-26: merged into "both arms dropping at once is the environment, not the doctrine".
+
+---
+
+## [gotcha] 2026-09-19 | a turn cap that never bound is still an instrument parameter
+
+The 2.4.0 tier-2 pass read the skill arm 58/61 with four sessions ended by the CLI's 60-turn cap, the first in any pass, and the harness said nothing: `.capped` is the wall-clock cap, and a max-turns session leaves only "Error: Reached max turns (60)" in `.result.txt`. One miss was the seventh grader defect (a redaction test planting an email in a log call, the same scope class as the hard-delete fake of 2026-09-10; both 6.3 absent checks now exclude the test tier). The other two were h6's tree stopping at 25 files where the 2.3.0 run wrote 40. A same-cap rerun capped three of the four again; a 120-turn rerun finished h6 5/5 on 41 files and h7 4/4, neither capped. So the standard is intact and the cap is what moved, and nothing in the repo explains why: SKILL.md grew 3 percent, the CLI binary is the same, the fixture is the same. Landed: `grade.py` names turn-capped sessions per arm and scores them as produced; the record says the cause is on the model side or in what sessions choose to read, and that the harness cannot tell because it keeps no transcript. Rule for next time: every cap the harness applies is an instrument parameter that needs its own marker on the scorecard and its own count in the record, and a session's transcript is evidence the harness should keep; a scorecard that shows only files cannot distinguish "the skill got worse" from "the session got shorter".
+
+Archived 2026-09-26: merged into "read a tier-1 miss against variance and session budget before the doctrine".
+
+---
+
+## [gotcha] 2026-09-10 | an absent-mode check needs the tripwire's scope, not only its pattern
+
+The tier-1 pass for the discipline gates read the skill arm 36/37; the miss was h3's "no hard delete" check matching `live.delete(order)` in the repository fake under `src/test-helpers/`, a `Map.delete` behind a `softDelete` port, in a tree that shipped the soft-delete migration the next check credited. The shipped tripwire for the same rule already exempts tests and test helpers; the grader's assertion had the pattern and not the scope. Fixed by giving the assertion an `exclude` of `src/test-helpers/*` and `*.test.ts` and making `exclude` entries fnmatch patterns (exact paths still match), a selftest that plants the fake's `.delete(` green beside a soft-deleting adapter and an adapter's `.delete(` red (red under the old tasks.json), and a re-freeze from the same three passes, which the workspace still held. Yesterday's h4 defect was the pattern reading code it was not written for; this one is the scope. Rule for next time: when a tripwire and a grader assertion prove the same rule, they share the scope as well as the pattern, and the grader's absent-mode checks on production disciplines exclude the test tier by default.
+
+Archived 2026-09-26: merged into "grader defects favour the weaker answer; read the answer before the number".
+
+---
+
+## [gotcha] 2026-09-09 | an absent-mode regex has to be read against the code it should ignore
+
+The 2.3.0 tier-2 pass read the skill arm 60/61. The miss was h4's absent check for caller-controlled org ids, `(params|query|body|headers)\s*\.\s*[a-z_]*(org|tenant)`, matching `query.byOrg(orgId)` in the skill arm's repository adapter, where `query` is the injected query builder; the org id itself came from the claims through a branded `OrgId`. The pattern had been written from the violation (`req.query.orgId`) and never run against a conforming tree that shares its vocabulary, and no earlier h4 run had used that shape, so the check stayed green for the wrong reason for six weeks. Fixed with a lookahead that refuses a call, the selftest pins a property read red and the call green, the directory re-grades 61/61, and the baseline arm is re-frozen from the same pass (one pass; the three-pass directories behind the 2.1.0 fixture are gone from the workspace, so a top-up is a later choice). Rule for next time: an absent-mode assertion gets a green fixture from a conforming shape that shares its words the day it is written; the fifth grader defect, and all five punished the better code.
+
+Archived 2026-09-26: merged into "grader defects favour the weaker answer; read the answer before the number".
+
+---
+
 ## [gotcha] 2026-09-08 | a range pinned at one end is a point
 
 The citation lock pinned the start of every `file:N-M` range and nothing else. A preview of the 56 ranges before widening it found two ending on a blank line and three inverted, end before start (`testing.md:184-127`, `security.md:227-217`, `testing.md:649-531`): every hand re-anchor of the day had moved `file:N` starts by snippet and never touched the `-M`, so the ends drifted for weeks and the gate, which only ever read N, called them intact. Both ends are pinned now, the selftest drifts an end line and requires the red, and the five ranges were repaired against the section text they meant (rule 16 and 17 for the Result row, the whole zero-warnings section for 15.3, the regression, baseline and bypass sections for 4.3, 5.7 and 15.4, the last one two citations that had been fused). Rule for next time: a re-anchor that rewrites a citation must rewrite the whole citation, and the next harness slice is a `--reanchor` mode in the gate itself, since today's hand scripts did the job eight times and missed the ends every time. Landed the next morning: `--reanchor` maps every lock key independently, so a range moves as two points, rewrites the citation tokens with a single regex substitution over each source, and locks only when every snippet resolved to exactly one line; rehearsed on a scratch copy of the repo with one line inserted at the top of SKILL.md, 17 failing citations became 233 intact with only the SKILL.md numbers touched.
@@ -68,6 +108,22 @@ Archived 2026-09-26: superseded by "the six-pack leaves the repository" (2026-09
 
 ---
 
+## [gotcha] 2026-09-04 | an overnight API outage scored as three regressions
+
+The tier-2 pass for 2.1.0 ran from 17:44 to 01:18, and in the last hour the machine lost the API. Five sessions produced a transcript that was only `API Error: Can't reach the API server (ENOTFOUND)` and no files. The grader dutifully scored each 0 of N, so the scorecard showed h5, h6 and h7 collapsing on both arms at once, which is not a shape any doctrine edit can produce: a real regression moves one arm, and the unaided arm cannot regress at all, since it never reads the skill. Both arms failing together is the tell for an environmental failure. The grader and the freeze script now recognise a dead session (a transport-error transcript with no agent files) and leave it out rather than scoring it, with the selftest pinning that a session which did its work and lost only its closing message keeps its score. Read a long unattended pass with that in mind: check `.result.txt` sizes before believing a cliff.
+
+Archived 2026-09-26: merged into "both arms dropping at once is the environment, not the doctrine".
+
+---
+
+## [decision] 2026-09-04 | the first pre-registered ablation returned a null, and the edit stays
+
+h7's outbox assertion flickered (five of eight), the obligation was stated only in `reliability.md` and one buried parenthetical, and the obvious hypothesis was that generations which never opened the reference had no line to follow. The ablation (h7 alone, five generations per side, the before arm reading a v2.1.0 snapshot through `CONFORMANCE_SKILL_PATH`, the bar written down first) read 5 of 5 on both sides: the edit is not credited. It stays anyway, on structure rather than on a number: every other production discipline is stated in its hard rule and checked in the after-change checklist, and the outbox was the one that was not, which is a real asymmetry a reader can hit. The measurement lesson is separate and larger: the failing generations produced 24 to 27 files against 32 to 41 for the passing ones, so an assertion that flickers on a completeness task is telling you about session budget before it is telling you about the text. Check transcript size and file count before writing a doctrine fix.
+
+Archived 2026-09-26: merged into "read a tier-1 miss against variance and session budget before the doctrine".
+
+---
+
 ## [decision] 2026-09-03 | em dashes are a gate, not a convention
 
 The authoring rule "never use em dashes" had held for the canon and this journal and failed for the skill: 83 in SKILL.md alone, 300-odd across skills/ and README, because a rule only a reviewer checks drifts the moment the reviewer is the same model that writes the prose. `scripts/check-no-em-dash.sh` now runs first in the pre-commit hook (staged diff), in CI (pushed range) and under `--selftest`; the sweep went in five slices before any doctrine edit so the diffs stayed readable. In a worktree the hook only bites after merge, since `core.hooksPath` points at the main checkout; CI covers the gap.
@@ -114,6 +170,38 @@ prompts and assertions, refused with the refresh commands when they change. Ever
 wall-clock cap and a turn cap, and each task's scorecard line prints as its session lands.
 
 Archived 2026-09-26: graduated, `CLAUDE.md:42-53` (the three tiers and the frozen baseline arm).
+
+---
+
+## [gotcha] 2026-09-03 | a vocabulary assertion measures naming; assert the shape
+
+Five reruns of h4 and h6 (an hour per pass) confirmed the grader, not the skill: 4.8 was the
+word `eval` with boundaries, so `evals/` plus `run-evals.ts --min-score` scored 0, and 7.5
+wanted a 404 in a test on a list endpoint that cannot produce one while every run shipped the
+forged-id test the rule asks for at that shape. Both now assert shape (an eval set naming file
+that carries a bar, over `.ts` and `.json`; a 404 or a forged/other-owner scenario), with pass
+and fail fixtures in the grader selftest. The 2026-08-30 entry already said this about e10 and
+a3; the lesson repeats because a passing assertion looks like evidence until a run fails it.
+Also: a Python file named `select.py` shadows the stdlib module `subprocess` needs, and the
+error surfaces three frames deep in `selectors.py`.
+
+Archived 2026-09-26: merged into "grader defects favour the weaker answer; read the answer before the number".
+
+---
+
+## [gotcha] 2026-09-03 | a tier-1 miss on an untouched rule is variance until two reruns agree
+
+The first tier-1 pass after the mutation-cadence commits read 43/47 where the previous pass read 50/50: h5 without its database-side layer, h7 without outbox or version check, h6 capped. None of the four edited lines touched those rules. Two reruns of the three tasks read 12/12 and 12/12. One opus generation of a completeness task drops a noun a few percent of the time, and the frozen unaided arm moves two or three points between passes for the same reason, so the loop is: a miss on a rule the diff touched is the finding; a miss on a rule it did not touch is rerun twice before it is called anything. The cap is part of the same story: two of eight h-tier sessions hit 15 minutes in one afternoon, one with every noun already in place and one before its runner existed, so the default is 20 and a capped run is read with that in mind.
+
+Archived 2026-09-26: merged into "read a tier-1 miss against variance and session budget before the doctrine".
+
+---
+
+## [gotcha] 2026-08-30 | every review-grader defect so far punishes the BETTER review
+
+Planting the two violation classes review-me gained today (a gate widened with no fixture; a rule 17 pure-domain catch as a CLEAN file) surfaced two more grader bugs in one pass, both fixed selftest-first. The FP lens counted an exoneration that cites a rule ("settings.ts is conformant: the catch is the carve-out rule 17 names explicitly") as an accusation, and the rule-cited metric missed the gate finding because the reviewer cited the doctrine (SKILL.md:433, "every gate proves it can fail") instead of canon 15.10. Fixes: clearing-word detection with negation handling, and a `rule` field that accepts a list of alternate citations beside integers and dotted canon ids. The pattern is worth remembering: all four grader defects found to date punished the more thorough arm, because a baseline reviewer says less and gives the instrument less to misread. Corollary: when an eval reports a false positive against the skill arm, read the review text before believing the number.
+
+Archived 2026-09-26: merged into "grader defects favour the weaker answer; read the answer before the number".
 
 ---
 
