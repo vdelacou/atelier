@@ -238,3 +238,10 @@ selftest reads the shipped manifest in both phrasings, red under the previous ma
 first reading with no false positive and no uncited finding in either variant; the Java null
 overreach of the previous reading did not recur, which says it was variance on a judgment the
 doctrine settles.
+
+## After the no-execution contract (2026-09-26)
+
+`atelier-review-me` now says the review never executes anything from the tree under review and asks
+the user for a gate result it needs (the skills.sh Gen audit had read two lines as execution). One
+pass per variant, skill arm, opus, as a regression check: Bun 12/12 caught and cited, Java 9/9 and
+9/9, no false positive. Recall does not depend on running the tree.

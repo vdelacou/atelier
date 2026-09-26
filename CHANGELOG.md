@@ -28,6 +28,15 @@ whole, not any single skill.
   the audit workflow.
 - `references/ai.md` describes an injected instruction in words instead of quoting the payload, the
   pattern Gen's prompt-injection check matched (Gen itself called the text benign).
+- **`atelier-review-me` never executes anything from the tree under review.** Its read-only contract
+  covered edits, not execution, and two lines read as execution: "confirm the trigger eval was
+  rerun (`scripts/trigger-eval/run.sh`)", and the 2ccfd32 cascade's adopt-mode step "run each `--all`
+  once here", which would have run the adopted repo's own scripts, content a hostile tree controls.
+  The skills.sh Gen audit rated the skill "Med Risk" on the same ground (command execution, dynamic
+  execution of the reviewed repo's validation). The Untrusted input section now says the review never
+  runs the tree's scripts, hooks, tests, package scripts, build, lint config or evals, and asks the
+  user for a gate result it needs; the trigger-eval line asks instead of confirming; adopt mode's
+  one-off `--all` run is the user's first plan step, from the installed skill's shipped copies.
 
 ### Fixed
 - The README had the skills CLI's install scope backwards: installs are project-level by default and

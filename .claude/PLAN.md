@@ -36,3 +36,24 @@ Smoke: Bun (8 new docs-check proofs), Next and Java all green. Tier 1 (e10, h6):
 6.3/8; h6's final message was a 403 refusal after 71 turns of work on disk, scored as produced.
 Citations re-anchored (235), drift, frontmatter, em dash, identity green. Five commits pushed on the
 yes; after the push, reinstall in a scratch HOME to read the new assessment.
+
+## Follow-up after the push (2026-09-26 17:2x)
+
+Reinstall in a fresh scratch HOME: atelier now reads Gen Safe, Socket 1 alert, Snyk Low; review-me
+reads Gen Med Risk. Socket's page still shows the 08:22 audit of the old content hash (the bash -c
+description), so it has not re-audited; nothing here can trigger that. Review-me's Gen page (also
+08:22) lists INDIRECT_PROMPT_INJECTION (describes our mitigation), COMMAND_EXECUTION ("confirm the
+trigger eval was rerun (scripts/trigger-eval/run.sh)" read as run it) and DYNAMIC_EXECUTION (the
+gate wording read as running the reviewed repo's hooks, ArchUnit and ESLint). The cascade of
+2ccfd32 added "run each --all once here" to adopt mode, an instruction to execute the adopted repo's
+scripts, which contradicts review-me's read-only contract.
+
+DoD: review-me's Untrusted input section says the review never executes anything from the tree
+under review (scripts, hooks, tests, package scripts, builds, evals), a gate result it needs is a
+question to the user; step 2's trigger-eval line asks rather than confirms by running; adopt mode's
+one-off --all run becomes the user's first plan step, from the installed skill's shipped copies,
+not the repo's; Output says report only, never edit and never execute; description untouched;
+review eval skill arm one pass per variant shows no regression; CHANGELOG; commit on the yes;
+reinstall to read the assessment again.
+
+Follow-up status 18:1x: review-me edited, gates green, review eval skill arm one pass per variant Bun 12/12 and 12/12, Java 9/9 and 9/9, 0 FP; recorded; committed and pushed on the yes.
