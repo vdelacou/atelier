@@ -81,7 +81,7 @@
     "file": "scripts/check-package-json.sh",
     "rule": [
       "15.10",
-      "gates?\\s+prove[sd]?\\s+(it\\s+)?can\\s+fail"
+      "gates?[\\s-]+prove[sd]?[\\s-]+(it[\\s-]+)?can[\\s-]+fail"
     ],
     "evidence": "(?i)fixture|violation case|prove[sd]?\\s+(it\\s+)?can\\s+fail|never seen red|red path",
     "desc": "gate widened with no violation fixture proving it can fail"

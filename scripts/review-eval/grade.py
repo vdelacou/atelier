@@ -250,6 +250,15 @@ orders-db.ts line 30 looks fine to me.
     assert got["rule_cited"] == ["v-class", "v-interface"], got
     got = grade_review("`src/domain/loyalty.ts:6` breaks rules 31 and 13 with its class and interface.", plural, [])
     assert got["rule_cited"] == [], got
+    # The shipped manifest's doctrine-phrase citation reads the hyphenated form too (the
+    # tenth defect, 2026-09-26: "the every-gate-proves-it-can-fail canon" read as uncited).
+    gate = next(x for x in json.loads((HERE / "violations.json").read_text()) if x["id"] == "v-gate-nofixture")
+    for phrasing in (
+        "`scripts/check-package-json.sh` breaks the every gate proves it can fail doctrine: no fixture.",
+        "`scripts/check-package-json.sh` breaks the every-gate-proves-it-can-fail canon: no fixture.",
+    ):
+        got = grade_review(phrasing, [gate], [])
+        assert got["rule_cited"] == ["v-gate-nofixture"], (phrasing, got)
     # A sentence reporting the file's own claim is not an accusation (the eighth defect);
     # the same report with an accusation verb still is.
     reported = grade_review(
@@ -264,7 +273,7 @@ orders-db.ts line 30 looks fine to me.
     ):
         got = grade_review(accusation, [], ["src/domain/settings.ts"])
         assert got["false_positives"] == ["src/domain/settings.ts"], (accusation, got)
-    print("selftest OK: catches evidence, requires the rule token for citation, flags clean-file claims, ignores exonerations and reported claims, reads plural citations, scores an empty review 0")
+    print("selftest OK: catches evidence, requires the rule token for citation, flags clean-file claims, ignores exonerations and reported claims, reads plural and hyphenated citations, scores an empty review 0")
 
 
 def main() -> None:
