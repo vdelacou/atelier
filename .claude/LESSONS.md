@@ -50,10 +50,6 @@ The 2.3.0 tier-2 pass read the skill arm 60/61. The miss was h4's absent check f
 
 Supersedes the 2026-09-06 decision. The owner asked for the README deleted and rewritten from scratch with a marketing mindset. The first pass reshaped: new opening, new proof table, but the gate copy block, the six-pack walkthrough, the roles table, the credits and the layout tree came through verbatim, and it was sent back with "i asked you to rewrite from scratch". The second pass carried nothing over: why agents need a standard, the three things the suite delivers (a standard, enforcement, proof), a before-and-after snippet, three steps to start, the six-pack as a team, the stack table, the four skills by moment, the rules at a glance, the scorecards from the two baseline files and the first six-pack run, a six-question FAQ, a contributor pointer and the lineage, 240 lines against 449. The copy block's reason to survive (the Bun smoke test mirrors it line for line) was real, but it was a reason to move the block, not to keep it: each variant's reference already carries the same steps in its Bootstrap checklist, so the README points there and `smoke-test.sh`'s header names the checklist as the block it replays. Numbers in the pitch come only from files in the repo (conformance and review `baseline.md`, the first-run paragraph, the matrix and citation counts); the one loose figure found on the way ("nine commits old" for the field-test consumer, where `field-test.md` says 49 days and nine SKILL.md commits) was fixed to the source. Rule for next time: "rewrite from scratch" means every section is new copy and no block is pasted through; when an old block has a technical consumer, move the block to where that consumer can read it and repoint the consumer, then write the new document without it.
 
-## [gotcha] 2026-09-08 | a range pinned at one end is a point
-
-The citation lock pinned the start of every `file:N-M` range and nothing else. A preview of the 56 ranges before widening it found two ending on a blank line and three inverted, end before start (`testing.md:184-127`, `security.md:227-217`, `testing.md:649-531`): every hand re-anchor of the day had moved `file:N` starts by snippet and never touched the `-M`, so the ends drifted for weeks and the gate, which only ever read N, called them intact. Both ends are pinned now, the selftest drifts an end line and requires the red, and the five ranges were repaired against the section text they meant (rule 16 and 17 for the Result row, the whole zero-warnings section for 15.3, the regression, baseline and bypass sections for 4.3, 5.7 and 15.4, the last one two citations that had been fused). Rule for next time: a re-anchor that rewrites a citation must rewrite the whole citation, and the next harness slice is a `--reanchor` mode in the gate itself, since today's hand scripts did the job eight times and missed the ends every time. Landed the next morning: `--reanchor` maps every lock key independently, so a range moves as two points, rewrites the citation tokens with a single regex substitution over each source, and locks only when every snippet resolved to exactly one line; rehearsed on a scratch copy of the repo with one line inserted at the top of SKILL.md, 17 failing citations became 233 intact with only the SKILL.md numbers touched.
-
 ## [gotcha] 2026-09-08 | a pin on a blank line pins nothing
 
 The citation gate compared the pinned snippet with the current line and called an empty string a match. Three range citations (`observability.md:21-22`, `product.md:47-48`, `product.md:51-52`) had started on the blank line after a heading since the lock was created, so they guarded nothing, and twice today `--lock` re-pinned a shifted citation onto a blank line, which only the lock diff exposed. The gate now fails a blank target in verify and refuses it in lock, the selftest proves both, and the three rows cite the paragraph their note quotes. Only the start of an `N-M` range is pinned, which is how a heading drift leaves a range on a blank; pinning the end line too is a separate decision. Rule for next time: when a gate compares strings, ask what the empty string does; equality with nothing is the quietest way to pass.
@@ -73,10 +69,6 @@ Hunting the next gap after the Java mock ban, the probe took the rule that prote
 ## [decision] 2026-09-08 | the Java mock ban is the enforcer plus the hook, and the transitive route is the one that matters
 
 Rule 13's Java row said "enforce by keeping mock libraries out of the pom entirely" and nothing did. Landed as two gates in the shape the pom conventions already had: the maven-enforcer-plugin's `bannedDependencies` as the build-time authority and a third check in `check-pom.sh` as the fast pre-commit echo. Probed first: enforcer 3.6.3 rejects `searchTransitives` (the 3.x rule walks the whole tree unconditionally, the parameter is gone), the six excludes are green on the canonical pom, red on a direct `mockito-core`, and red through `quarkus-junit5-mockito`, whose tree carries mockito-junit-jupiter and mockito-core, which is the route a Quarkus repo actually takes. The hook's grep matches `<groupId>` and `<artifactId>` declarations only, so the enforcer's own `<exclude>org.mockito:*</exclude>` lines do not trip it. The probe also caught my own extraction bug: an awk that printed the fence line gave Maven a pom starting with three backticks, and the first "red" was a parse error, not the ban, which is why the smoke fixture greps for "(rule 13)". Rule for next time: for a dependency ban, plant the transitive route in the proof, not just the direct coordinate.
-
-## [decision] 2026-09-08 | the tier-1 selector measures changed references, not changed lines
-
-Fixing the "(1-37)" over-selection found three defects, not one. The count: a range from rule 1 over at least half the set is the size of the rule list (red flags, pointer block) and names no rule; it is reported and skipped. The ceiling: `MAX_RULE = 35` was a constant, so "rule 36" and "rule 37" in a changed line had selected nothing since rule 36 landed; the ceiling is now the highest number in the hard-rules section. The line: the selector read every reference on a changed line, so editing the count on the red-flags line selected the discipline tier through its unchanged "(27-34)"; it now takes, per hunk, the symmetric difference of the references in the removed and the added text. Per hunk and not per file, because the first draft cancelled a genuinely new "(hard rule 13)" in the mock-ban message against a rewritten bullet elsewhere in the same file that had named rule 13 before and after. Each fix has a selftest case, and each case was run against a copy with that fix reverted to see it fail. The lint-gates diff of the morning selects 5 of 21 under the new selector. Rule for next time: a selector that reads lines will select on context; diff the references, not the text.
 
 ## [gotcha] 2026-09-08 | the oldest gate had never been seen red
 
@@ -130,14 +122,6 @@ with_skill had scored a perfect 37/37 in six straight passes, so the eval could 
 
 Planting the two violation classes review-me gained today (a gate widened with no fixture; a rule 17 pure-domain catch as a CLEAN file) surfaced two more grader bugs in one pass, both fixed selftest-first. The FP lens counted an exoneration that cites a rule ("settings.ts is conformant: the catch is the carve-out rule 17 names explicitly") as an accusation, and the rule-cited metric missed the gate finding because the reviewer cited the doctrine (SKILL.md:433, "every gate proves it can fail") instead of canon 15.10. Fixes: clearing-word detection with negation handling, and a `rule` field that accepts a list of alternate citations beside integers and dotted canon ids. The pattern is worth remembering: all four grader defects found to date punished the more thorough arm, because a baseline reviewer says less and gives the instrument less to misread. Corollary: when an eval reports a false positive against the skill arm, read the review text before believing the number.
 
-## [decision] 2026-08-30 | the Java variant never saw its own tripwires
-
-All four discipline tripwires ship Java detection (ROUTE_GLOBS_JAVA, @QueryParam, HttpClient, deleteById), but java-quarkus.md named none of them, so a Java bootstrap followed verbatim copied zero of the four. The capability existed and the install path hid it, the same shape as the field test's other findings. Fixed by adding them to the Java asset list with their Java triggers and proving all four in smoke-test-java (six new checks, red on the violation, green on the fix). Rule for next time: an asset that handles a variant is not shipped to that variant until the variant's bootstrap names it.
-
-## [decision] 2026-08-30 | staleness is now a gate, and the size rule got its CI half
-
-Two gates from the field test's findings. check-commit-range.sh walks every non-merge commit in a pushed range against the same <=10 files / <=300 lines cap the hook applies to one staged diff: the size gate's --no-verify-proof half, exactly what check-commit-messages.sh is to the commit-msg hook, adopted from the consumer that had written it independently. check-skill-pin.sh compares a vendored SKILL.md against upstream and fails when it is behind; it rides in audit.yml beside the CVE scan rather than blocking commits, because upstream doctrine changes independently of your diff, and it degrades when it cannot reach upstream while saying plainly that unverified is not current. Proven on the real stale consumer copy before shipping.
-
 ## [gotcha] 2026-08-30 | a smoke fixture that stages -A and hard-resets eats the next scenario's setup
 
 The commit-range fixture used `git add -A` plus `git reset --hard HEAD~1`, which swept an untracked domain file into its commit and then deleted it, breaking the two mutate:changed scenarios that depended on that file existing untracked. The smoke suite caught it immediately, which is the argument for wiring every new gate into it. Fix: stage only the fixture's own paths and undo with a mixed reset plus an explicit rm. Rule for next time: a smoke fixture shares one working tree with every scenario after it, so it must clean up exactly what it created and nothing else.
@@ -145,10 +129,6 @@ The commit-range fixture used `git add -A` plus `git reset --hard HEAD~1`, which
 ## [decision] 2026-08-30 | Phase 5 field test: the skill is fine, the pin is the problem
 
 Audited a real consumer repo built under this standard (read-only, at its foundations milestone). Authoring held: 18/19 commits pass the shipped commit-msg validator, coverage tiers arrived correct and monorepo-adapted, auth rented and the model behind a port before any code. Four skill defects found, all invisible to the evals and the CI gates because those measure the skill against itself: check-package-json.sh read only the root manifest (a workspace pinning "latest" passed; the consumer had already rewritten it, and so did we, red fixture first), the shipped CI called gitleaks with no install step (the consumer had independently patched the same defect the same week), the prescribed ADR convention's Deciders field invites the rule 26 violation it then commits, and the skeleton defined no `test` script so the consumer invented one with --pass-with-no-tests, a gate that cannot fail. Everything else non-conforming in that repo traced to ONE cause: it pins the skill at a hash 49 days and 9 SKILL.md commits old, so it faithfully runs the retired eight-gate hook and the superseded rule 26. Rule for next time: a vendored standard is a dependency and goes stale silently while every gate stays green; governance.md now carries the re-sync ritual and the pointer block says it in the one file a consumer always reads. Only a real repo measures the skill against time.
-
-## [gotcha] 2026-08-30 | line-referenced evidence rots in bulk; one day of insertions broke 38 citations
-
-The full-repo audit found 27 HIGH + 11 MED stale `file:line` citations in conformance-matrix.md, nearly all from the same day's canon and reference insertions shifting everything below them. Worse, the shipped `assets/ci.yml`/`ci-java.yml` would fail in any consumer repo (bare `gitleaks`, no install step; a CI script the Java bootstrap never copies) and no gate ever caught it, because nothing executes the workflow assets: gates never seen red, exactly canon 15.10. Two gates added, each proven red before the fix landed: `scripts/check-citations.py` pins every cited line's content in `citations-lock.json` (verify/`--lock`/`--selftest`), and `scripts/check-workflow-assets.sh` lints the shipped workflows (referenced scripts must ship in assets/ and be copied by the variant's bootstrap reference; non-preinstalled binaries need an install step). Rule for next time: evidence cited by line number is a liability without a content pin; and an asset nothing executes is untested code, however green the repo looks.
 
 ## [decision] 2026-08-30 | canon P6 wave: 15.10, 10.2 catch placement, six repairs; count 119
 
@@ -265,21 +245,6 @@ and mutation 1-3 min/file are the realistic-repo numbers, so the split is by gat
 with repo size goes to CI), not day-one speed. The Java `pre-commit-java` hook has the same
 shape and is NOT yet split (deferred). See conformance-matrix.md 15.1 and 4.6.
 
-## [decision] 2026-07-19 | rule 26 final form, identity in commit metadata only, never in file contents
-
-Three same-day iterations converged here. The standard first treated attribution as a leak
-(pre-publish identity audits, an identity red flag), then flipped to "identity is normal,
-anonymity is an up-front opt-in", then dropped the opt-in too. The final rule splits by
-location: contributor identity in commit metadata is normal, public by design, and never a
-finding, an audit item, or a publish blocker; file contents are the opposite, no tracked
-file ever names a person, an employer, or a client (neutral handles like `atelier` where a
-holder string is required; CODEOWNERS and .mailmap exempt as metadata in file form). There
-is no per-repo identity decision left to make. Enforcement moment is review (review-me's
-universal checks); scrubbing after a push stays a gated filter-repo rewrite that leaves
-cached commits exposed. Supersedes the entry below, whose own naming of the contributor
-showed the problem: the acceptance it records stands for commit metadata, and its wording
-is redacted at tip to conform (pushed history keeps the original, accepted as exposed).
-
 ## [gotcha] 2026-07-12 | PIT 1.25.7 needs a history plugin for ALL incremental; the smoke test beats the docs
 
 Prompted to correct the 2026-07-11 PIT entry, I trusted pitest.org docs (via ctx7) that present withHistory and historyInputFile/historyOutputFile as free, live parameters, and enabled withHistory in the pom. smoke-test-java then failed TWICE: both withHistory=true AND explicit historyInputFile/historyOutputFile error "History has been enabled but no history plugin has been installed/activated" (pointing at Arcmutate's +arcmutate_history). So in PIT 1.25.7 with the base pitest-maven + junit5 plugins, incremental history of ANY kind is gated behind Arcmutate's commercial history plugin; the 2026-07-11 entry was RIGHT. The free speed levers are the narrow scope (targetClasses/targetTests), parallel threads (now added to the pom, a lever the earlier note missed), and staged-file gating; incremental speed at scale means Arcmutate, a licence decision not a library swap. Reverted the withHistory change. Lesson: for toolchain BEHAVIOR, not just API shape, the smoke test is ground truth over the docs; run it before overturning a hard-won gotcha. The challenge to the claim was still worth it, because it forced the empirical check that upgraded the original from asserted to verified and pinned the exact gate (Arcmutate's history plugin, not merely a vague "commercial add-on").
@@ -300,37 +265,17 @@ Running the trigger sets on Sonnet and Haiku (TRIGGER_EVAL_MODEL) showed recall 
 
 The rule-27 pii guard blocked `?email=` in a URL literal but not `new URLSearchParams({ email })`, which builds the same query string, so an earlier e1 baseline slipped PII into a query through the constructor. Added a URLSearchParams-construction pattern and kept it URLSearchParams-specific, so a POST body or FormData carrying email (the correct channel) is untouched; the incremental `.set`/`.append` form stays a review duty, because a line-local grep cannot know a variable is a URLSearchParams. The battery now pins both directions, the constructor evasion blocked and the POST-body form allowed. Rule for next time: a tripwire matching one syntax for a leak must consider the other constructors that reach the same sink.
 
-## [gotcha] 2026-07-12 | the conformance grader must grade the agent's diff, not fixture scaffolding
-
-grade.py graded every file in the run directory, so the fixture's own `src/domain/result.ts` (it defines `Result` and `ok: false`) satisfied the present-mode "failure is a value" assertion for BOTH arms of e1, e5, and e10 regardless of what the agent wrote. The module even computed a FIXTURE_FILES set for exactly this exclusion and never used it. The e10 Sonnet baseline exposed it, returning bare `Promise<string>` that throws on error yet scoring the Result assertion. Fix: grade only files whose bytes differ from their fixture original (agent-created or agent-modified, keyed on content so genuine edits still count), and exclude the `skills/` subtree that older run dirs nested from a transiently polluted fixture. `python3 scripts/conformance-eval/grade.py --selftest` proves it, a pristine fixture copy must score 0, red under the old grader and green now, and it is wired as its own CI job. Re-grading the existing runs moved exactly one cell (e10 baseline 2/3 to 1/3); e1 and e5 baselines were unchanged, so the Fable e1-e9 verdict (24/25 vs 22/25) was honest and only the new e10 row needed correcting. Rule for next time: an eval that seeds a fixture must grade the DIFF from that fixture, or shared scaffolding silently passes assertions for every arm and flatters the weaker one.
-
-## [decision] 2026-07-12 | discipline guards are staged-diff tripwires
-
-The rule 27-30 guards check STAGED ADDED LINES by default (like gitleaks protect), with `--all` for adopt-mode tree audits, and exceptions ride on path conventions (erasure/retention paths, `*contract*` migrations, `*public*`/`*health*` routes), never inline suppressions (rule 15). They are tripwires, not proofs: conservative patterns, review keeps the full duty.
-
 ## [gotcha] 2026-07-12 | single-skill trigger probes cannot measure suite routing
 
 A probe registering only one synthetic skill scores "review my diff" as an atelier miss and "set up eslint in this existing repo" as a greenfield false-trigger, because the skill that SHOULD win is not in the model's choice set. Fixed by suite mode in `scripts/trigger-eval/run_eval.py` (`--suite`, cases carry `expected_skill`): with all four registered, routing scored 13/13. Rule for next time: a triggering verdict is only as valid as the choice set the probe shows the model.
-
-## [gotcha] 2026-07-12 | git add of a directory sweeps bytecode
-
-`git add scripts/trigger-eval` happily staged `__pycache__/run_eval.cpython-312.pyc` because nothing ignored it; the repo had never held Python before. When a commit adds a directory wholesale, list what got staged before committing, and extend .gitignore the moment a new language enters the repo.
 
 ## [gotcha] 2026-07-12 | typescript 7 crashes eslint-plugin-sonarjs at rule load
 
 The smoke test's unpinned toolchain install pulled TypeScript 7.0.2, and sonarjs (<= 4.1.0, dependency spec `typescript: '>=5'`) crashed ESLint outright: its rules read `ts.SyntaxKind.*` at module scope, and TS 7's module shape breaks the CJS default-export interop (`Cannot read properties of undefined`). `tsc` itself is fine; only programmatic API consumers break. Fix: `typescript@^5` is the one deliberate pin in the smoke-test install (matching the canonical skeleton's `^5.0.0`), lifted when sonarjs supports TS 7. Rule for next time: an unpinned-toolchain canary that fires is a success; respond by pinning the one incompatible dep with a dated reason, not by pinning everything.
 
-## [gotcha] 2026-07-12 | setup-java cache maven requires a pom in the repo
-
-`actions/setup-java` with `cache: maven` fails the job in seconds ("No file matched to [**/pom.xml]") when the repository holds no pom, which is exactly this repo's shape: the smoke test generates its pom at runtime from the reference doc. Drop the cache option; the probe re-downloads plugins each run and that is fine.
-
 ## [gotcha] 2026-07-11 | stock trigger-eval runner false-zeros with fable
 
 The skill-creator `run_eval.py` scored every should-trigger case ~0/5 against a previously optimized description. Three compounding causes: it concludes False on the first non-Skill tool call (Fable explores the repo before consulting a skill), its 30s timeout straddles Fable's thinking latency, and, decisively, parallel workers share one probe root's `.claude/commands`, so each probe's model sees N uuid-suffixed clones and almost never invokes the uuid its own detector greps for. A patched runner (full-stream detection, per-probe isolated roots, 90s timeout) lives in the gitignored `skills/atelier-workspace/trigger-eval-2026-07-11/`; with it the same description scored 31/34. Rule for next time: uniform ~0 trigger rates mean harness artifact, not description failure; verify with one manual `claude -p` probe before touching the description.
-
-## [gotcha] 2026-07-11 | pit moved incremental history behind a paid plugin
-
-`-DwithHistory` on pitest-maven >= 1.25 fails the build outright ("no history plugin installed"); the free incremental analysis is gone. The open-source speed levers are a narrow `targetClasses` scope plus running the gate only when staged files touch it, which `assets/pre-commit-java` does. Applies to: any doc or hook that suggests PIT incremental runs.
 
 ## [gotcha] 2026-07-11 | -SNAPSHOT grep must match version elements only
 
@@ -352,18 +297,6 @@ The eighteen global-rules pillars split two ways: concerns visible in a diff bec
 
 DORA, flow metrics, and cost-as-a-metric were split out of `delivery.md` into `references/metrics.md` on review, so the measurement doctrine has its own consult moment instead of hiding inside the deploy file.
 
-## [decision] 2026-09-03 | em dashes are a gate, not a convention
-
-The authoring rule "never use em dashes" had held for the canon and this journal and failed for the skill: 83 in SKILL.md alone, 300-odd across skills/ and README, because a rule only a reviewer checks drifts the moment the reviewer is the same model that writes the prose. `scripts/check-no-em-dash.sh` now runs first in the pre-commit hook (staged diff), in CI (pushed range) and under `--selftest`; the sweep went in five slices before any doctrine edit so the diffs stayed readable. In a worktree the hook only bites after merge, since `core.hooksPath` points at the main checkout; CI covers the gap.
-
-## [gotcha] 2026-09-03 | the commit-message gate was vacuous on a push to main
-
-`check-commit-messages.sh` walked `origin/main..HEAD`, which is empty on a push to main, so the gate printed "no commits in range" and passed every message. The push path now takes `github.event.before` through a `GITHUB_EVENT_BEFORE` job env (the zero SHA of a new branch falls back to `HEAD~1..HEAD`); the same default went into `check-commit-range.sh` and the em-dash gate. The red fixture that proves it is a `wip:` commit with `refs/remotes/origin/main` pointed at HEAD.
-
-## [decision] 2026-09-03 | boundary factories return Result, constructors assert
-
-The branded factory threw while rules 16-17 and eval task a2 wanted a `Result`, and Money was integer cents in one reference and a float in four. The form is two-tier, mirroring `assets/java/Email.java`: `parseX(raw)` returns `Result<X, XError>` and is the only entry for untrusted input; `x(value)` asserts and throws as a programmer-bug check for values already proven. Sink guards became `parseSafeUrl` and `parseSafePath`; Money is `{ cents, currency }` with one canonical copy in object-design.md.
-
 ## [gotcha] 2026-09-03 | BSD awk -v strips backslash escapes
 
 Passing a regex through `awk -v pat='\\.'` on macOS delivers `.` to the program, so the PII tripwire exited 2 on every case while the Linux CI would have been fine. Regexes live as awk literals inside the program text now; lines are lowercased once and matched against lowercase patterns. Same family: zsh does not word-split an unquoted variable and has no `PIPESTATUS`, so a gate script that must run under both shells names its paths explicitly.
@@ -371,10 +304,6 @@ Passing a regex through `awk -v pat='\\.'` on macOS delivers `.` to the program,
 ## [gotcha] 2026-09-03 | a pipe to tail masks a failing verifier
 
 `python3 scripts/check-citations.py | tail -1` returns tail's status, so a slice committed with two citations beyond workflow.md's end of file and the failure surfaced one slice later. Verification chains are `&&` sequences with the verifier's own exit status deciding, and the reanchor helper now treats "beyond end of file" like "content changed".
-
-## [gotcha] 2026-09-03 | re-anchor citations per slice, never in bulk
-
-`citations-lock.json` pins the first 72 characters of every `file:line` the matrix cites, so any slice that moves or rewrites a pinned line breaks V3. A bulk `--lock` at the end would have blessed wrong lines silently; the discipline that worked was a snippet-matching re-anchor per slice (same file, rule-number or heading prefix when the line was rewritten, cross-file when the text moved), exiting non-zero on anything ambiguous, and only then `--lock`. Rewriting a pinned line in place is a re-lock, not a move.
 
 ## [gotcha] 2026-09-03 | a compressed checklist drops the nouns the eval asserts
 

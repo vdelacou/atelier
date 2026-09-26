@@ -4,6 +4,22 @@ Entries a compaction pass retired from `.claude/LESSONS.md`, verbatim, newest fi
 
 ---
 
+## [gotcha] 2026-09-08 | a range pinned at one end is a point
+
+The citation lock pinned the start of every `file:N-M` range and nothing else. A preview of the 56 ranges before widening it found two ending on a blank line and three inverted, end before start (`testing.md:184-127`, `security.md:227-217`, `testing.md:649-531`): every hand re-anchor of the day had moved `file:N` starts by snippet and never touched the `-M`, so the ends drifted for weeks and the gate, which only ever read N, called them intact. Both ends are pinned now, the selftest drifts an end line and requires the red, and the five ranges were repaired against the section text they meant (rule 16 and 17 for the Result row, the whole zero-warnings section for 15.3, the regression, baseline and bypass sections for 4.3, 5.7 and 15.4, the last one two citations that had been fused). Rule for next time: a re-anchor that rewrites a citation must rewrite the whole citation, and the next harness slice is a `--reanchor` mode in the gate itself, since today's hand scripts did the job eight times and missed the ends every time. Landed the next morning: `--reanchor` maps every lock key independently, so a range moves as two points, rewrites the citation tokens with a single regex substitution over each source, and locks only when every snippet resolved to exactly one line; rehearsed on a scratch copy of the repo with one line inserted at the top of SKILL.md, 17 failing citations became 233 intact with only the SKILL.md numbers touched.
+
+Archived 2026-09-26: graduated, `scripts/check-citations.py` pins both ends of a range, and `CLAUDE.md:32` documents `--reanchor`.
+
+---
+
+## [decision] 2026-09-08 | the tier-1 selector measures changed references, not changed lines
+
+Fixing the "(1-37)" over-selection found three defects, not one. The count: a range from rule 1 over at least half the set is the size of the rule list (red flags, pointer block) and names no rule; it is reported and skipped. The ceiling: `MAX_RULE = 35` was a constant, so "rule 36" and "rule 37" in a changed line had selected nothing since rule 36 landed; the ceiling is now the highest number in the hard-rules section. The line: the selector read every reference on a changed line, so editing the count on the red-flags line selected the discipline tier through its unchanged "(27-34)"; it now takes, per hunk, the symmetric difference of the references in the removed and the added text. Per hunk and not per file, because the first draft cancelled a genuinely new "(hard rule 13)" in the mock-ban message against a rewritten bullet elsewhere in the same file that had named rule 13 before and after. Each fix has a selftest case, and each case was run against a copy with that fix reverted to see it fail. The lint-gates diff of the morning selects 5 of 21 under the new selector. Rule for next time: a selector that reads lines will select on context; diff the references, not the text.
+
+Archived 2026-09-26: graduated, `scripts/conformance-eval/select-tasks.py:19` (count ranges ignored, references diffed per hunk, selftested).
+
+---
+
 ## [decision] 2026-09-06 | the README leads with the value and two quick starts; the catalogue comes second
 
 The README opened with a 98-line catalogue (use-when bullets, the pillar table, the reference list) before any way to start, and the six-pack's operator loop was written nowhere: neither this README nor the pack manual said where a card is typed, how the spec is approved, or where the verdict lands. Reshaped, not rewritten, and reviewed section by section: the first screen says what atelier is, the five habits the agent acquires, and two quick starts (one agent in three commands; the six-pack's clone, installer, `./swarm`, then "Your first card" in six steps, each checked against the dashboard's controls, the clarify helper and the first run's files). The gates are the agent's job in the quick start (greenfield for a new repo, adopt mode for an existing one); the copy block survives as "Install the gates by hand" because the smoke test mirrors it line for line. The clone-and-symlink install went; the skills CLI is the install and the six-pack already clones. Rule for next time: a README's first screen answers what, what changes, how to start; everything a newcomer reads second goes below, and any operator loop is written from the runtime's controls, never from memory.
@@ -49,6 +65,62 @@ Archived 2026-09-26: superseded by the six-pack entries of 2026-09-04 and 2026-0
 `swarmforge.bb` `install-commit-msg-hook!` writes its byline hook into `git rev-parse --git-path hooks` unconditionally. Under `core.hooksPath=.githooks` (Bun script, Java) the file is inert and the atelier hooks run in every role worktree, since the config is repository-wide. A Next.js package on `simple-git-hooks` loses its commitlint hook on each `./swarm` until `bunx simple-git-hooks` is re-run; CI's `check-commit-messages.sh` catches it either way. Documented in the pack README and `local-engineering.prompt`; not fixable from the pack side.
 
 Archived 2026-09-26: superseded by "the six-pack leaves the repository" (2026-09-19); the swarm launcher is no longer used here.
+
+---
+
+## [decision] 2026-09-03 | em dashes are a gate, not a convention
+
+The authoring rule "never use em dashes" had held for the canon and this journal and failed for the skill: 83 in SKILL.md alone, 300-odd across skills/ and README, because a rule only a reviewer checks drifts the moment the reviewer is the same model that writes the prose. `scripts/check-no-em-dash.sh` now runs first in the pre-commit hook (staged diff), in CI (pushed range) and under `--selftest`; the sweep went in five slices before any doctrine edit so the diffs stayed readable. In a worktree the hook only bites after merge, since `core.hooksPath` points at the main checkout; CI covers the gap.
+
+Archived 2026-09-26: graduated, `CLAUDE.md:8` and `scripts/check-no-em-dash.sh`.
+
+---
+
+## [gotcha] 2026-09-03 | the commit-message gate was vacuous on a push to main
+
+`check-commit-messages.sh` walked `origin/main..HEAD`, which is empty on a push to main, so the gate printed "no commits in range" and passed every message. The push path now takes `github.event.before` through a `GITHUB_EVENT_BEFORE` job env (the zero SHA of a new branch falls back to `HEAD~1..HEAD`); the same default went into `check-commit-range.sh` and the em-dash gate. The red fixture that proves it is a `wip:` commit with `refs/remotes/origin/main` pointed at HEAD.
+
+Archived 2026-09-26: graduated, `skills/atelier/assets/check-commit-messages.sh:19` (`GITHUB_EVENT_BEFORE`).
+
+---
+
+## [decision] 2026-09-03 | boundary factories return Result, constructors assert
+
+The branded factory threw while rules 16-17 and eval task a2 wanted a `Result`, and Money was integer cents in one reference and a float in four. The form is two-tier, mirroring `assets/java/Email.java`: `parseX(raw)` returns `Result<X, XError>` and is the only entry for untrusted input; `x(value)` asserts and throws as a programmer-bug check for values already proven. Sink guards became `parseSafeUrl` and `parseSafePath`; Money is `{ cents, currency }` with one canonical copy in object-design.md.
+
+Archived 2026-09-26: graduated, `skills/atelier/references/result-type.md:36`.
+
+---
+
+## [gotcha] 2026-09-03 | re-anchor citations per slice, never in bulk
+
+`citations-lock.json` pins the first 72 characters of every `file:line` the matrix cites, so any slice that moves or rewrites a pinned line breaks V3. A bulk `--lock` at the end would have blessed wrong lines silently; the discipline that worked was a snippet-matching re-anchor per slice (same file, rule-number or heading prefix when the line was rewritten, cross-file when the text moved), exiting non-zero on anything ambiguous, and only then `--lock`. Rewriting a pinned line in place is a re-lock, not a move.
+
+Archived 2026-09-26: graduated, `CLAUDE.md:32` (`--reanchor`).
+
+---
+
+## [decision] 2026-08-30 | the Java variant never saw its own tripwires
+
+All four discipline tripwires ship Java detection (ROUTE_GLOBS_JAVA, @QueryParam, HttpClient, deleteById), but java-quarkus.md named none of them, so a Java bootstrap followed verbatim copied zero of the four. The capability existed and the install path hid it, the same shape as the field test's other findings. Fixed by adding them to the Java asset list with their Java triggers and proving all four in smoke-test-java (six new checks, red on the violation, green on the fix). Rule for next time: an asset that handles a variant is not shipped to that variant until the variant's bootstrap names it.
+
+Archived 2026-09-26: graduated, `skills/atelier/references/java-quarkus.md:419` copies the tripwires; `scripts/check-workflow-assets.sh` enforces the copy.
+
+---
+
+## [decision] 2026-08-30 | staleness is now a gate, and the size rule got its CI half
+
+Two gates from the field test's findings. check-commit-range.sh walks every non-merge commit in a pushed range against the same <=10 files / <=300 lines cap the hook applies to one staged diff: the size gate's --no-verify-proof half, exactly what check-commit-messages.sh is to the commit-msg hook, adopted from the consumer that had written it independently. check-skill-pin.sh compares a vendored SKILL.md against upstream and fails when it is behind; it rides in audit.yml beside the CVE scan rather than blocking commits, because upstream doctrine changes independently of your diff, and it degrades when it cannot reach upstream while saying plainly that unverified is not current. Proven on the real stale consumer copy before shipping.
+
+Archived 2026-09-26: graduated, `skills/atelier/assets/check-skill-pin.sh` and `check-commit-range.sh`.
+
+---
+
+## [gotcha] 2026-08-30 | line-referenced evidence rots in bulk; one day of insertions broke 38 citations
+
+The full-repo audit found 27 HIGH + 11 MED stale `file:line` citations in conformance-matrix.md, nearly all from the same day's canon and reference insertions shifting everything below them. Worse, the shipped `assets/ci.yml`/`ci-java.yml` would fail in any consumer repo (bare `gitleaks`, no install step; a CI script the Java bootstrap never copies) and no gate ever caught it, because nothing executes the workflow assets: gates never seen red, exactly canon 15.10. Two gates added, each proven red before the fix landed: `scripts/check-citations.py` pins every cited line's content in `citations-lock.json` (verify/`--lock`/`--selftest`), and `scripts/check-workflow-assets.sh` lints the shipped workflows (referenced scripts must ship in assets/ and be copied by the variant's bootstrap reference; non-preinstalled binaries need an install step). Rule for next time: evidence cited by line number is a liability without a content pin; and an asset nothing executes is untested code, however green the repo looks.
+
+Archived 2026-09-26: graduated, `scripts/check-citations.py` with `citations-lock.json`, and `scripts/check-workflow-assets.sh`.
 
 ---
 
@@ -120,6 +192,25 @@ Archived 2026-09-26: superseded by "5.3 P6 revision ACCEPTED" (2026-07-20).
 
 ---
 
+## [decision] 2026-07-19 | rule 26 final form, identity in commit metadata only, never in file contents
+
+Three same-day iterations converged here. The standard first treated attribution as a leak
+(pre-publish identity audits, an identity red flag), then flipped to "identity is normal,
+anonymity is an up-front opt-in", then dropped the opt-in too. The final rule splits by
+location: contributor identity in commit metadata is normal, public by design, and never a
+finding, an audit item, or a publish blocker; file contents are the opposite, no tracked
+file ever names a person, an employer, or a client (neutral handles like `atelier` where a
+holder string is required; CODEOWNERS and .mailmap exempt as metadata in file form). There
+is no per-repo identity decision left to make. Enforcement moment is review (review-me's
+universal checks); scrubbing after a push stays a gated filter-repo rewrite that leaves
+cached commits exposed. Supersedes the entry below, whose own naming of the contributor
+showed the problem: the acceptance it records stands for commit metadata, and its wording
+is redacted at tip to conform (pushed history keeps the original, accepted as exposed).
+
+Archived 2026-09-26: graduated, `skills/atelier/SKILL.md:62` (rule 26) and `skills/atelier/assets/check-identity.sh`.
+
+---
+
 ## [decision] 2026-07-19 | commit identity is the contributor's work email, deliberately; public push approved
 
 Rule 26 separates accidental identity leaks from a conscious choice of attribution. For this
@@ -136,8 +227,48 @@ Archived 2026-09-26: superseded by "rule 26 final form" (2026-07-19).
 
 ---
 
+## [gotcha] 2026-07-12 | the conformance grader must grade the agent's diff, not fixture scaffolding
+
+grade.py graded every file in the run directory, so the fixture's own `src/domain/result.ts` (it defines `Result` and `ok: false`) satisfied the present-mode "failure is a value" assertion for BOTH arms of e1, e5, and e10 regardless of what the agent wrote. The module even computed a FIXTURE_FILES set for exactly this exclusion and never used it. The e10 Sonnet baseline exposed it, returning bare `Promise<string>` that throws on error yet scoring the Result assertion. Fix: grade only files whose bytes differ from their fixture original (agent-created or agent-modified, keyed on content so genuine edits still count), and exclude the `skills/` subtree that older run dirs nested from a transiently polluted fixture. `python3 scripts/conformance-eval/grade.py --selftest` proves it, a pristine fixture copy must score 0, red under the old grader and green now, and it is wired as its own CI job. Re-grading the existing runs moved exactly one cell (e10 baseline 2/3 to 1/3); e1 and e5 baselines were unchanged, so the Fable e1-e9 verdict (24/25 vs 22/25) was honest and only the new e10 row needed correcting. Rule for next time: an eval that seeds a fixture must grade the DIFF from that fixture, or shared scaffolding silently passes assertions for every arm and flatters the weaker one.
+
+Archived 2026-09-26: graduated, `scripts/conformance-eval/grade.py:165` (a pristine fixture copy scores 0, selftested).
+
+---
+
 ## [decision] 2026-07-12 | conformance evals are the skill's benchmark
 
 Trigger evals prove the skill LOADS; conformance evals prove the produced code FOLLOWS the rules: each task in `scripts/conformance-eval/tasks.json` runs with-skill and baseline in isolated fixture copies via `claude -p --permission-mode acceptEdits`, then declarative regex assertions grade the output (`grade.py`). First measurement: with-skill 14/14, baseline 11/14; the deltas were exactly the discipline rules (soft delete, POST-not-query, deadline). Rerun with `bash scripts/conformance-eval/run.sh` after any change to SKILL.md's rules or the discipline references.
 
 Archived 2026-09-26: superseded by "the conformance harness has three tiers" (2026-09-03) and "the conformance eval runs locally" (2026-08-30).
+
+---
+
+## [decision] 2026-07-12 | discipline guards are staged-diff tripwires
+
+The rule 27-30 guards check STAGED ADDED LINES by default (like gitleaks protect), with `--all` for adopt-mode tree audits, and exceptions ride on path conventions (erasure/retention paths, `*contract*` migrations, `*public*`/`*health*` routes), never inline suppressions (rule 15). They are tripwires, not proofs: conservative patterns, review keeps the full duty.
+
+Archived 2026-09-26: graduated, `skills/atelier/references/workflow.md` (the tripwire sections) and `assets/check-disciplines.sh`.
+
+---
+
+## [gotcha] 2026-07-12 | git add of a directory sweeps bytecode
+
+`git add scripts/trigger-eval` happily staged `__pycache__/run_eval.cpython-312.pyc` because nothing ignored it; the repo had never held Python before. When a commit adds a directory wholesale, list what got staged before committing, and extend .gitignore the moment a new language enters the repo.
+
+Archived 2026-09-26: graduated, `.gitignore:28` (`__pycache__/`).
+
+---
+
+## [gotcha] 2026-07-12 | setup-java cache maven requires a pom in the repo
+
+`actions/setup-java` with `cache: maven` fails the job in seconds ("No file matched to [**/pom.xml]") when the repository holds no pom, which is exactly this repo's shape: the smoke test generates its pom at runtime from the reference doc. Drop the cache option; the probe re-downloads plugins each run and that is fine.
+
+Archived 2026-09-26: graduated, `.github/workflows/ci.yml:65`.
+
+---
+
+## [gotcha] 2026-07-11 | pit moved incremental history behind a paid plugin
+
+`-DwithHistory` on pitest-maven >= 1.25 fails the build outright ("no history plugin installed"); the free incremental analysis is gone. The open-source speed levers are a narrow `targetClasses` scope plus running the gate only when staged files touch it, which `assets/pre-commit-java` does. Applies to: any doc or hook that suggests PIT incremental runs.
+
+Archived 2026-09-26: graduated, `skills/atelier/references/java-quarkus.md:400` (Arcmutate's `+arcmutate_history`).
