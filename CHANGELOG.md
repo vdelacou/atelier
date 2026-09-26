@@ -19,7 +19,9 @@ whole, not any single skill.
   accounted for. It runs nothing from the repo and needs no network. Trigger set `atelier-distill.json`
   12/12 from the new `probe-root-journal` fixture; suite routing 14/16 with all five skills registered,
   no query routed to the wrong skill (the two misses are older rows that invoked none, as in every run
-  of the day, on premises the Bun fixture lacks).
+  of the day, on premises the Bun fixture lacks). First pass on this repo: `LESSONS.md` from 94
+  entries and 104 KB to 15 entries and 16.7 KB, the 93 originals in `.claude/lessons.archive.md`, and
+  the agent memory folder from 70 KB to 10.5 KB.
 
 ### Security
 - **`check-docs.sh` no longer runs README text as shell.** It ran the README's `## Verify` block

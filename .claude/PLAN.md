@@ -30,9 +30,9 @@ because the oldest entry is 2026-07-11; agent memory 70 KB, `conformance-audit-p
    the distill set and the suite set with all five skills registered; no regression on existing rows.
 4. [x] README (five skills, five moments; the skills/ line), CLAUDE.md (companion list, cascade sweep list),
    CHANGELOG Unreleased; em dash and identity gates.
-5. [ ] Field run on this repo: report with no writes, the owner approves by group, apply, ledger, commits
+5. [x] Field run on this repo: report with no writes, the owner approves by group, apply, ledger, commits
    sliced under 10 files / 300 lines, each on the yes; agent memory backed up first.
-6. [ ] LESSONS entries for this work; wrap-up.
+6. [x] LESSONS entries for this work; wrap-up.
 
 Commits: steps 1 to 4 one commit each, asked per landing; step 5 several.
 
@@ -46,3 +46,11 @@ fixture's `.claude/` minus `commands/`). A pointer-block negative moved to suite
 competes. Final: distill set 12/12, suite routing 14/16 (the two misses are older rows, none invoked, all
 three runs). Field run: report in the scratchpad (`distill-report.md`), 94 entries to 15 (104 KB to
 16.7 KB), memory 70 KB to 10.5 KB, eight slices under 300 lines; waiting on the owner's groups.
+
+Steps 5-6 done 2026-09-26 20:xx, on the owner's yes to all three groups. Build landed as five commits
+(7195db3..6e2e4ab, pushed). The pass landed as eight slices, each under 300 lines: 12 archived, 27
+graduated, 50 merged into 10, 4 tightened, 1 kept; the ledger has every title live or archived, none
+twice. Memory folder backed up to `memory.bak-2026-09-26/`, then 7 files deleted and 8 tightened, index
+rewritten (70 KB to 10.5 KB). CLAUDE.md: rules 1-37, the archive named. No new journal entry: the
+trigger-eval finding of the day is already in the merged trigger-eval entry. Next: promote the gate-proof
+checklist into CLAUDE.md, then graduate entries I and J to bring the journal under the cap.

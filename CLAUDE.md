@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 This repo IS the atelier coding standard, packaged as an Agent Skill suite. It is not a
-Bun/Java application, so the hard rules 1-34 are the *product*, not constraints on this
+Bun/Java application, so the hard rules 1-37 are the *product*, not constraints on this
 tree. What binds work HERE is the authoring and process discipline below.
 
 ## Authoring conventions
@@ -75,5 +75,6 @@ tree. What binds work HERE is the authoring and process discipline below.
   audit found every companion gap was a missed cascade.
 - **Every new gate proves it can fail**: ship a fixture violation case alongside it, and wire
   it into the matching smoke test so a toolchain major cannot silently disable it.
-- **Read `.claude/LESSONS.md` at session start**: it holds the toolchain gotchas (TypeScript 7
-  vs sonarjs, PIT history, the eval-harness pitfalls) that cost real time to find.
+- **Read `.claude/LESSONS.md` at session start**: it holds the eval-harness, gate-proof and
+  toolchain lessons that cost real time to find; `.claude/lessons.archive.md` holds the history
+  the compaction pass retired (grep it, never read it at session start).

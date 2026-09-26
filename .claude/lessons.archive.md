@@ -4,6 +4,14 @@ Entries a compaction pass retired from `.claude/LESSONS.md`, verbatim, newest fi
 
 ---
 
+## [decision] 2026-09-26 | a gate that executes documentation is a code channel; pin artifacts, not only versions
+
+The owner saw a security warning installing the suite with `npx skills`. Reproduced in a scratch HOME: the CLI prints third-party assessments per skill, and `atelier` read Gen "Med Risk", Socket "1 alert", Snyk "Low Risk", the companions all clean; skills.sh has per-provider pages under `/<owner>/<repo>/<skill>/security/<provider>` with the findings. Socket's one alert and one of Gen's three findings were the same file: `check-docs.sh` ran the README's Verify block through `bash -eu -c`, which made README text a second way to run code in CI, and the script's own comment had accepted that risk rather than removed it. The canon's 12.1 Do says to run the documented commands, so dropping execution would have needed a canon revision; the fix keeps execution and removes the channel: only repo entry points run, as argument lists, and any shell syntax refuses the block before anything runs. Gen's second finding had a real gap under a benign verdict: the gitleaks tarball was pinned by version and installed with `sudo` unverified; the three workflows now check its SHA-256 and the asset gate fails a release download without a checksum. The third was a quoted injection payload in teaching text, reworded. Also found on the way: the README had the CLI's install scope backwards. Rule for next time: when a check executes content from a file that is not code, it is a code channel whatever the comment says; and a pinned version is not a pinned artifact.
+
+Archived 2026-09-26: tightened; the rewrite stays in LESSONS.md.
+
+---
+
 ## [gotcha] 2026-09-26 | a clean fixture must be clean on every rule, and the grader must read the review the skill asks for
 
 Cleaning the two review-eval files the reviewer had rightly accused took one edit each and surfaced two more grader defects in the rerun, the eighth and ninth, both punishing the better review again. The first came from the skill's own instruction: review-me says to name an embedded claim in the diff and verify it, so a correct review writes "the doc comment at settings.ts asserts its own rule 17 compliance" and gives the verdict in the next sentence, and a grader that judges sentences alone reads the report as an accusation. The second was grammar: "breaks rules 3 and 1" cited neither rule because the pattern only knew the singular. A third finding is doctrine, not measurement: SKILL.md's behavioural guidelines and hard rules share the numbers 1 to 5, and a reviewer citing "rule 3" for surgical changes asserts the `interface` ban against a clean file. Rule for next time: when a grader and a skill disagree, check first whether the skill told the reviewer to write the very sentence the grader penalises; and two numbered lists that share numbers need distinct citation forms before any tool counts citations.
@@ -33,6 +41,14 @@ Archived 2026-09-26: merged into "read a tier-1 miss against variance and sessio
 The hunt after the six-pack removal re-probed the two rows found on 2026-09-10: rule 4 had no machine check in Java and rule 20 none in Next or Java. Closed in one slice, probed on a scratch Maven tree built from the canonical pom before any doctrine moved. What the probe changed: PMD 7.17's own `AvoidPrintStackTrace` reports nothing on `e.printStackTrace()`, bare or inside a catch, so the shipped rule is an XPath of ours over the PMD 7 AST (`//MethodCall[@MethodName='printStackTrace']`), red on both forms, green on the skeleton; `SystemPrintln` covers `System.out` and `System.err`. The ArchUnit half needed the same care as rule 37's: `resideInAnyPackage("..domain..", "..usecases..")` keeps the `that()` clause non-empty on a tree with a domain and no use-cases (ArchUnit fails a rule that matched no class), `java.nio.file..` is a package match and the `java.io` File classes a name match, since `java.io..` as a whole would ban `Serializable` and `IOException` from records that may legitimately carry them; infra reading the disk stays green, proven. In Next the ban is `no-restricted-imports` patterns on the `domain` and `use-cases` zones only, because Node is the runtime everywhere else in a Next package and the static layout has no server layers; the smoke test proves `src/lib` importing `node:fs` still green beside the domain red. Rule for next time: when a tool ships a rule with the right name, run it on the plant before shipping it; a rule that fires nowhere is prose with a rule id.
 
 Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixture, probed on the toolchain first".
+
+---
+
+## [decision] 2026-09-19 | the six-pack leaves the repository
+
+The owner asked to remove everything about the six-pack. Gone: `packs/six-pack/`, `get-atelier-six-pack`, `scripts/check-six-pack.sh` and its CI job, the swarm-forge block of `.gitignore`, the README's six-agent section, first-run paragraph and intro sentence, the CLAUDE.md bullets, and the one reverse-matrix aside. Kept on purpose: the 2.2.0 changelog entry and the earlier Unreleased notes (Keep a Changelog records what shipped, and a consumer who installed 2.2.0's pack reads them), and every LESSONS entry (append-only). CI runs eight jobs; the README and CLAUDE.md say so. Rule for next time: a removal is a census first (`git grep` the name across the tree, the lock, the workflows and the ignore file), then one commit that deletes the artifacts and every current-state mention together, leaving history untouched; a mention left behind is a pointer to a file that is gone, which is the doc drift the docs-check gate exists to catch in consumers.
+
+Archived 2026-09-26: tightened; the rewrite stays in LESSONS.md.
 
 ---
 
@@ -73,6 +89,14 @@ Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixt
 The 2.3.0 tier-2 pass read the skill arm 60/61. The miss was h4's absent check for caller-controlled org ids, `(params|query|body|headers)\s*\.\s*[a-z_]*(org|tenant)`, matching `query.byOrg(orgId)` in the skill arm's repository adapter, where `query` is the injected query builder; the org id itself came from the claims through a branded `OrgId`. The pattern had been written from the violation (`req.query.orgId`) and never run against a conforming tree that shares its vocabulary, and no earlier h4 run had used that shape, so the check stayed green for the wrong reason for six weeks. Fixed with a lookahead that refuses a call, the selftest pins a property read red and the call green, the directory re-grades 61/61, and the baseline arm is re-frozen from the same pass (one pass; the three-pass directories behind the 2.1.0 fixture are gone from the workspace, so a top-up is a later choice). Rule for next time: an absent-mode assertion gets a green fixture from a conforming shape that shares its words the day it is written; the fifth grader defect, and all five punished the better code.
 
 Archived 2026-09-26: merged into "grader defects favour the weaker answer; read the answer before the number".
+
+---
+
+## [decision] 2026-09-09 | the README is a pitch written from scratch; the gate copy block lives in the bootstrap checklists
+
+Supersedes the 2026-09-06 decision. The owner asked for the README deleted and rewritten from scratch with a marketing mindset. The first pass reshaped: new opening, new proof table, but the gate copy block, the six-pack walkthrough, the roles table, the credits and the layout tree came through verbatim, and it was sent back with "i asked you to rewrite from scratch". The second pass carried nothing over: why agents need a standard, the three things the suite delivers (a standard, enforcement, proof), a before-and-after snippet, three steps to start, the six-pack as a team, the stack table, the four skills by moment, the rules at a glance, the scorecards from the two baseline files and the first six-pack run, a six-question FAQ, a contributor pointer and the lineage, 240 lines against 449. The copy block's reason to survive (the Bun smoke test mirrors it line for line) was real, but it was a reason to move the block, not to keep it: each variant's reference already carries the same steps in its Bootstrap checklist, so the README points there and `smoke-test.sh`'s header names the checklist as the block it replays. Numbers in the pitch come only from files in the repo (conformance and review `baseline.md`, the first-run paragraph, the matrix and citation counts); the one loose figure found on the way ("nine commits old" for the field-test consumer, where `field-test.md` says 49 days and nine SKILL.md commits) was fixed to the source. Rule for next time: "rewrite from scratch" means every section is new copy and no block is pasted through; when an old block has a technical consumer, move the block to where that consumer can read it and repoint the consumer, then write the new document without it.
+
+Archived 2026-09-26: tightened; the rewrite stays in LESSONS.md.
 
 ---
 
@@ -455,6 +479,14 @@ Archived 2026-09-26: graduated, `scripts/check-citations.py` with `citations-loc
 The reverse audit's stricter-than deltas produced two accepted rows: 15.10 "Prove the gate can fail" (a new pillar-15 sub-concept distilled from this repo's own smoke-test discipline; forward row 15.4 slimmed from STRICTER to COVERED because its surplus WAS this rule) and the 10.2 strengthening fixing where a catch may live (reverse row 17 flipped to CANON-ROW, tally 20/5/9). A third batched row applied six mechanical repairs, the sharpest being 8.1's exemplar commit message violating the 1.3 grammar the canon itself mandates. `bun audit` also left the gates job: `assets/audit.yml` now ships the doc's canonical scoped workflow (daily schedule + dependency-scoped PR runs) instead of blocking unrelated commits. The 12.7 cascade lesson held again: count asserted in the drift checker (twice), tally, prose, and now the citations lock.
 
 Archived 2026-09-26: graduated, `conformance-matrix.md:368` (15.10 COVERED); counts held by `scripts/check-matrix-drift.py`.
+
+---
+
+## [decision] 2026-08-30 | the conformance eval runs locally, not in CI; eval.yml deleted
+
+`.github/workflows/eval.yml` was the Phase 4 behavioral gate: on a skill-touching PR, run one eval pass and block below `grade.py --min-with-skill 24 --min-delta 4`. It never once ran. The job spawns a nested `claude -p` per task per arm, so it needs an `ANTHROPIC_API_KEY` secret in the repo, and without the secret it skipped rather than blocked, which left a gate that looked wired and was inert, plus a standing "add the secret" item in every status report. Owner's call: do not run the eval on CI at all. The workflow is deleted and the eval is a pre-land step run on the author's machine, where the `claude` OAuth session already pays for the agent runs and no API key exists. `baseline.md` now carries the exact two commands and the model/tag convention. What this gives up, stated plainly: a CI job cannot be forgotten and a local step can, so rule 4.8's "a skill edit ships on its eval score" is now discipline rather than enforcement. What stays enforced in CI is the cheap half, `check-matrix-drift.py`, which is the gate that actually caught a real regression (the 2026-08-30 canon revert). Rule for next time: a gate that cannot run in the environment it is installed in is not a gate, it is a reminder; either give it what it needs or move it to where it runs.
+
+Archived 2026-09-26: tightened; the rewrite stays in LESSONS.md as "the conformance eval runs locally, never in CI".
 
 ---
 
