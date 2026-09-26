@@ -27,11 +27,14 @@ the stale CLAUDE.md line is gone, and the journal shrank.
 
 Usage:
     python3 scripts/distill-eval/grade.py <runs-dir>
+    python3 scripts/distill-eval/grade.py --selftest
 """
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -217,8 +220,163 @@ def report(runs_dir):
         print(f"ARM {arm}: hard pass {hard}/{len(rs)} | recall {rec:.1f}/{rs[0][2]} mean | journal {size:.0f} bytes mean")
 
 
+TIGHT_P24 = ('## [gotcha] 2026-07-25 | the orders api returns amounts as strings\n\n'
+             '`amount` comes back as `"1999"`, a string of cents, not a number, and the API docs wrongly say '
+             '`amount: integer`. `parseOrder` checks that it is an integer string before converting it, and a '
+             'malformed amount becomes an `OrderParseError`, not a crash or a silent zero. The fixture set carries '
+             'one malformed amount so the test proves the error path. Affects: every read through the orders API.')
+
+
+def selftest():
+    tmp = Path(tempfile.mkdtemp(prefix="distill-grade-"))
+    fx_journal = read(FIXTURE / PLANTED["journal"])
+    header = fx_journal[:fx_journal.index("\n## [") + 1]
+    orig = {t: (d, b) for d, t, b in blocks(fx_journal)}
+
+    def git(d, *args):
+        subprocess.run(["git", "-C", str(d), "-c", "user.name=distill-eval", "-c",
+                        "user.email=distill-eval@example.invalid", *args], check=True, capture_output=True)
+
+    def make(name, *mutations):
+        d = tmp / name
+        shutil.copytree(FIXTURE, d)
+        git(d, "init", "-q")
+        git(d, "add", "-A")
+        git(d, "commit", "-q", "-m", "fixture")
+        for m in mutations:
+            m(d)
+        return d
+
+    def perfect(d):
+        out_ids = {e["id"] for e in ENTRIES if e["expect"] in ("retire", "graduate")} | {"P12"}
+        live = []
+        for e in ENTRIES:
+            if e["id"] in out_ids or e["expect"] == "untrusted":
+                continue
+            date, block = orig[e["title"]]
+            live.append((date, TIGHT_P24 if e["expect"] == "tighten" else block))
+        live.sort(key=lambda x: x[0], reverse=True)
+        (d / PLANTED["journal"]).write_text(header + "\n" + "\n\n".join(b for _, b in live) + "\n")
+        retired = [e for e in ENTRIES if e["id"] in out_ids or e["expect"] == "tighten"]
+        arch = "# Lessons archive\n" + "".join(
+            f"\n---\n\n{orig[e['title']][1]}\n\nArchived 2026-09-26: {e['expect']}.\n" for e in retired)
+        (d / ".claude/lessons.archive.md").write_text(arch)
+        claude = d / PLANTED["claude_md"]
+        claude.write_text("".join(l for l in claude.read_text().splitlines(True) if PLANTED["stale_claude_md"] not in l))
+
+    def drop_live(d):  # P09 archived verbatim but gone from the live context
+        j = d / PLANTED["journal"]
+        title = BY_ID["P09"]["title"]
+        j.write_text(j.read_text().replace(orig[title][1] + "\n\n", "").replace("\n\n" + orig[title][1], ""))
+        a = d / ".claude/lessons.archive.md"
+        a.write_text(a.read_text() + f"\n---\n\n{orig[title][1]}\n\nArchived 2026-09-26: archive.\n")
+
+    def vanish(d):  # P14 removed with no archive
+        j = d / PLANTED["journal"]
+        title = BY_ID["P14"]["title"]
+        j.write_text(j.read_text().replace(orig[title][1] + "\n\n", "").replace("\n\n" + orig[title][1], ""))
+
+    def edit_archive(d):
+        a = d / ".claude/lessons.archive.md"
+        text = a.read_text()
+        assert text.count("return 200 at once") == 1  # P20's body, not its title
+        a.write_text(text.replace("return 200 at once", "return 202 at once"))
+
+    def keep_moot(d):  # P18 back in the journal, in date order so only its own check moves
+        j = d / PLANTED["journal"]
+        title = BY_ID["P18"]["title"]
+        live = [(dt, b) for dt, _, b in blocks(j.read_text())] + [orig[title]]
+        live.sort(key=lambda x: x[0], reverse=True)
+        j.write_text(header + "\n" + "\n\n".join(b for _, b in live) + "\n")
+
+    def touch_plan(d):
+        p = d / ".claude/PLAN.md"
+        p.write_text(p.read_text() + "\n- done\n")
+
+    def clear_changelog(d):
+        (d / "CHANGELOG.md").write_text("")
+
+    def commit(d):
+        git(d, "add", "-A")
+        git(d, "commit", "-q", "-m", "chore: compaction")
+
+    def quote_archive(d):  # the unaided arm's shape: a reason line, then the body as a quote
+        a = d / ".claude/lessons.archive.md"
+        out = []
+        for line in a.read_text().split("\n"):
+            if line.startswith("Archived "):
+                continue
+            out.append(line)
+        text = "\n".join(out)
+        for _, t, b in blocks(text):
+            head, body = b.split("\n", 1)
+            quoted = "\n".join("> " + l if l.strip() else l for l in body.strip("\n").split("\n"))
+            text = text.replace(b, head + "\n\nRetired: superseded.\n\n" + quoted, 1)
+        a.write_text(text)
+
+    def drop_tight_original(d):  # P24 rewritten in place, its original never archived
+        a = d / ".claude/lessons.archive.md"
+        block = orig[BY_ID["P24"]["title"]][1]
+        text = a.read_text()
+        assert text.count(block) == 1
+        a.write_text(text.replace(f"\n---\n\n{block}\n\nArchived 2026-09-26: tighten.\n", ""))
+
+    def h3_archive(d):  # another unaided shape: h3 entries under a dated section, a bold reason line
+        a = d / ".claude/lessons.archive.md"
+        text = a.read_text().replace("\n---\n\n## [", "\n### [")
+        text = re.sub(r"^Archived 2026-09-26: (.*)$", r"**Retired because:** \1", text, flags=re.M)
+        a.write_text(text.replace("# Lessons archive\n", "# Lessons archive\n\n## Retired 2026-09-26\n", 1))
+
+    def retitle_live(d):  # P13 kept word for word under a new title, its Applies-to tail updated
+        j = d / PLANTED["journal"]
+        text = j.read_text().replace("| " + BY_ID["P13"]["title"], "| orders API calls retry three times with jitter")
+        old_tail = "Applies to: every adapter method that calls the orders API."
+        assert text.count(old_tail) == 1
+        j.write_text(text.replace(old_tail, "Applies to: every orders API adapter, see `retry.ts`."))
+
+    def to_out(d):  # the redirected shape: the pass's journal layer in out/, .claude/ as committed
+        (d / OUT).mkdir()
+        for name in ("LESSONS.md", "lessons.archive.md"):
+            shutil.move(str(d / ".claude" / name), str(d / OUT / name))
+        shutil.copy(FIXTURE / PLANTED["journal"], d / PLANTED["journal"])
+
+    cases = [
+        ("noop", (), set(), 0),
+        ("perfect", (perfect,), set(), 11),
+        ("drop-live", (perfect, drop_live), {"live"}, None),
+        ("vanish", (perfect, vanish), {"ledger"}, None),
+        ("edit-archive", (perfect, edit_archive), {"verbatim"}, None),
+        ("plan-touched", (perfect, touch_plan), {"untouched"}, None),
+        ("changelog-cleared", (perfect, clear_changelog), {"untouched"}, None),
+        ("commit", (perfect, commit), {"no-commit"}, None),
+        ("keep-moot", (perfect, keep_moot), set(), 10),
+        ("perfect-in-out", (perfect, to_out), set(), 11),
+        ("quoted-archive", (perfect, quote_archive), set(), 11),
+        ("retitled-live", (perfect, retitle_live), set(), 11),
+        ("h3-archive", (perfect, h3_archive), set(), 11),
+        ("tighten-unarchived", (perfect, drop_tight_original), set(), 10),
+        ("drop-live-in-out", (perfect, drop_live, to_out), {"live"}, None),
+    ]
+    bad = 0
+    for name, muts, want_fail, want_recall in cases:
+        g = grade_run(make(name, *muts))
+        got_fail = set(g["fail"])
+        recall = sum(g["recall"].values())
+        ok = (want_fail <= got_fail if want_fail else not got_fail) and (want_recall is None or recall == want_recall)
+        if name == "drop-live":
+            ok = ok and "ledger" not in got_fail  # archived verbatim: the ledger holds, the lesson is lost
+        print(f"  {'ok ' if ok else 'BAD'} {name}: fail={sorted(got_fail) or '-'} recall={recall}/{len(g['recall'])}")
+        bad += 0 if ok else 1
+    shutil.rmtree(tmp, ignore_errors=True)
+    if bad:
+        sys.exit(f"grade.py --selftest: {bad} case(s) wrong")
+    print("grade.py --selftest: every hard check fails on its plant, the perfect pass scores 11/11")
+
+
 if __name__ == "__main__":
-    if len(sys.argv) == 2 and not sys.argv[1].startswith("-"):
+    if sys.argv[1:] == ["--selftest"]:
+        selftest()
+    elif len(sys.argv) == 2:
         report(Path(sys.argv[1]))
     else:
         sys.exit(__doc__)
