@@ -85,6 +85,11 @@ def run_single_query(
     fixture = Path(project_root)
     for item in fixture.iterdir():
         if item.name == ".claude":
+            # patched: a fixture may carry agent memory under .claude/ (a lessons
+            # journal for the atelier-distill probes); copy it, never its
+            # commands/, where each probe writes its own synthetic skills.
+            shutil.copytree(item, isolated_root / item.name,
+                            ignore=shutil.ignore_patterns("commands"))
             continue
         if item.is_dir():
             shutil.copytree(item, isolated_root / item.name)

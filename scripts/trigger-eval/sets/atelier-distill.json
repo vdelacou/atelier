@@ -1,0 +1,50 @@
+[
+  {
+    "query": "our .claude/LESSONS.md is 90 KB now and full of stale entries, clean it up",
+    "should_trigger": true
+  },
+  {
+    "query": "prune the lessons journal in this repo, half the entries were superseded by later decisions",
+    "should_trigger": true
+  },
+  {
+    "query": "dedupe my claude memory files against LESSONS.md and CLAUDE.md, they keep repeating each other",
+    "should_trigger": true
+  },
+  {
+    "query": "the lessons file is way past its cap, compact it and put it back in newest-first order",
+    "should_trigger": true
+  },
+  {
+    "query": "tidy up CLAUDE.md and the lessons journal, a lot of it went stale when we removed the old deploy pipeline",
+    "should_trigger": true
+  },
+  {
+    "query": "yes, run the compaction pass on the lessons journal like you offered",
+    "should_trigger": true
+  },
+  {
+    "query": "anything worth adding to the lessons file before we wrap up?",
+    "should_trigger": false
+  },
+  {
+    "query": "review my staged diff against the standard",
+    "should_trigger": false
+  },
+  {
+    "query": "clean up the dead code in src/infra, there are two unused adapters",
+    "should_trigger": false
+  },
+  {
+    "query": "write the changelog entry for the 2.5.0 release",
+    "should_trigger": false
+  },
+  {
+    "query": "add a section to CLAUDE.md explaining how to run the e2e tests locally",
+    "should_trigger": false
+  },
+  {
+    "query": "my disk is full, help me delete old node_modules folders across my projects",
+    "should_trigger": false
+  }
+]

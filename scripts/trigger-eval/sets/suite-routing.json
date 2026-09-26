@@ -50,6 +50,21 @@
     "expected_skill": "atelier-grill-me"
   },
   {
+    "query": "LESSONS.md is way past its cap and half the entries are superseded, compact it",
+    "should_trigger": true,
+    "expected_skill": "atelier-distill"
+  },
+  {
+    "query": "dedupe my memory files against the lessons journal and CLAUDE.md, then reorganize the journal",
+    "should_trigger": true,
+    "expected_skill": "atelier-distill"
+  },
+  {
+    "query": "add the atelier pointer block to this repo's CLAUDE.md",
+    "should_trigger": true,
+    "expected_skill": "atelier"
+  },
+  {
     "query": "add a dark mode toggle to our vite + react app, state is in zustand, repo uses pnpm workspaces",
     "should_trigger": false
   },
