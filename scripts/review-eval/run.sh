@@ -51,17 +51,27 @@ esac
 OUT="$REPO_ROOT/skills/atelier-workspace/review-eval-$(date +%F)/runs${REVIEW_MODEL:+-$REVIEW_MODEL}${VARIANT:+-$VARIANT}${REVIEW_TAG:+-$REVIEW_TAG}"
 ARMS="${REVIEW_ARMS:-with_skill baseline}"
 mkdir -p "$OUT"
+# Isolation (2026-09-26): a session started inside this repo loads the repo's CLAUDE.md and its project
+# memory by directory walk-up, and the user setting source lists every skill under ~/.claude/skills,
+# the atelier suite included, so the skill-less reviewer carried atelier context by construction. Each
+# review runs in a scratch folder outside the repo, copied back into its run dir when it ends, with the
+# user setting source off and the user's settings file passed back (the permission mode and output
+# style both arms have always run with).
+SESSION_ROOT="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/atelier-review.XXXXXX")" && pwd -P)"
+trap 'rm -rf "${SESSION_ROOT:?}"' EXIT
+ISOLATE=(--setting-sources project,local)
+[ ! -f "$HOME/.claude/settings.json" ] || ISOLATE+=(--settings "$HOME/.claude/settings.json")
 
 run_one() { # $1 = arm
   local arm="$1"
-  local dir="$OUT/review-$arm"
-  rm -rf "$dir" && mkdir -p "$dir"
+  local dir="$OUT/review-$arm" sdir="$SESSION_ROOT/review-$arm"
+  rm -rf "$dir" "${sdir:?}" && mkdir -p "$dir" "$sdir"
 
   # Base state: (fixture underlay for bun) + base overlay, committed; then the
   # changed overlay on top.
-  [ -n "$FIXTURE" ] && cp -r "$FIXTURE/." "$dir/"
-  cp -r "$BASE/." "$dir/"
-  ( cd "$dir" \
+  [ -n "$FIXTURE" ] && cp -r "$FIXTURE/." "$sdir/"
+  cp -r "$BASE/." "$sdir/"
+  ( cd "$sdir" \
     && git init -q \
     && git config user.email 'review-eval@example.invalid' \
     && git config user.name 'review-eval' \
@@ -77,18 +87,24 @@ run_one() { # $1 = arm
 
   local prompt
   if [ "$arm" = "with_skill" ]; then
-    mkdir -p "$dir/skills"
-    cp -r "$REPO_ROOT/skills/atelier" "$REPO_ROOT/skills/atelier-review-me" "$dir/skills/"
-    prompt="You are reviewing a change in the repo at $dir before it lands. This repo follows the atelier coding standard: read ./skills/atelier-review-me/SKILL.md FIRST and run its review procedure, using the hard rules in ./skills/atelier/SKILL.md (and files under ./skills/atelier/references/ where directed). The change under review is ./changes.diff (the full post-change files are in the tree; changed files: $changed_files). Report only, never edit any file. Output the findings as the review-me skill specifies: each names the file, the exact rule number it breaks, why, and the fix, grouped by severity, ending with the one-line verdict."
+    mkdir -p "$sdir/skills"
+    cp -r "$REPO_ROOT/skills/atelier" "$REPO_ROOT/skills/atelier-review-me" "$sdir/skills/"
+    prompt="You are reviewing a change in the repo at $sdir before it lands. This repo follows the atelier coding standard: read ./skills/atelier-review-me/SKILL.md FIRST and run its review procedure, using the hard rules in ./skills/atelier/SKILL.md (and files under ./skills/atelier/references/ where directed). The change under review is ./changes.diff (the full post-change files are in the tree; changed files: $changed_files). Report only, never edit any file. Output the findings as the review-me skill specifies: each names the file, the exact rule number it breaks, why, and the fix, grouped by severity, ending with the one-line verdict."
   else
-    prompt="You are a senior engineer reviewing a change in the $REPO_KIND repo at $dir before it lands. The change under review is ./changes.diff (the full post-change files are in the tree; changed files: $changed_files). Review it for problems worth blocking or fixing before merge. Report only, never edit any file. For each finding name the file, what is wrong, and the fix, most important first."
+    prompt="You are a senior engineer reviewing a change in the $REPO_KIND repo at $sdir before it lands. The change under review is ./changes.diff (the full post-change files are in the tree; changed files: $changed_files). Review it for problems worth blocking or fixing before merge. Report only, never edit any file. For each finding name the file, what is wrong, and the fix, most important first."
   fi
 
-  ( cd "$dir" && env -u CLAUDECODE claude -p "$prompt" \
+  local status=0
+  ( cd "$sdir" && env -u CLAUDECODE claude -p "$prompt" \
+      "${ISOLATE[@]}" \
       ${REVIEW_MODEL:+--model "$REVIEW_MODEL"} \
-      < /dev/null > "$dir/.review.txt" 2> "$dir/.run.log" ) \
-    && echo "done: review-$arm ($(wc -l < "$dir/.review.txt" | tr -d ' ') lines)" \
-    || echo "FAILED: review-$arm (see $dir/.run.log)"
+      < /dev/null > "$dir/.review.txt" 2> "$dir/.run.log" ) || status=$?
+  cp -R "$sdir/." "$dir/" && rm -rf "${sdir:?}"
+  if [ "$status" -eq 0 ]; then
+    echo "done: review-$arm ($(wc -l < "$dir/.review.txt" | tr -d ' ') lines)"
+  else
+    echo "FAILED: review-$arm (see $dir/.run.log)"
+  fi
 }
 
 for arm in $ARMS; do

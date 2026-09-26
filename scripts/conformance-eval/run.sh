@@ -44,6 +44,16 @@ ARMS="${CONFORMANCE_ARMS:-with_skill}"
 [ "$ARMS" != "both" ] || ARMS="with_skill baseline"
 mkdir -p "$OUT"
 CAPPED="$OUT/.capped"
+# Isolation (2026-09-26): a session started inside this repo loads the repo's CLAUDE.md and its project
+# memory by directory walk-up, and the user setting source lists every skill under ~/.claude/skills,
+# the atelier suite included, so the unaided arm carried atelier context by construction. Each session
+# runs in a scratch folder outside the repo, copied back into its run dir when it ends, with the user
+# setting source off and the user's settings file passed back (the permission mode, output style and
+# effort both arms have always run with).
+SESSION_ROOT="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/atelier-conformance.XXXXXX")" && pwd -P)"
+trap 'rm -rf "${SESSION_ROOT:?}"' EXIT
+ISOLATE=(--setting-sources project,local)
+[ ! -f "$HOME/.claude/settings.json" ] || ISOLATE+=(--settings "$HOME/.claude/settings.json")
 : > "$CAPPED"
 
 # bash-3.2-safe (macOS): no mapfile, no wait -n
@@ -77,30 +87,31 @@ print(next(t['prompt'] for t in tasks if t['id'] == sys.argv[1]))
 
 run_one() { # $1 = task id, $2 = arm
   local id="$1" arm="$2"
-  local dir="$OUT/$id-$arm"
-  rm -rf "$dir" && mkdir -p "$dir" && cp -r "$HERE/fixture/." "$dir/"
+  local dir="$OUT/$id-$arm" sdir="$SESSION_ROOT/$id-$arm"
+  rm -rf "$dir" "${sdir:?}" && mkdir -p "$dir" "$sdir" && cp -r "$HERE/fixture/." "$sdir/"
   # with_skill: copy the skill INTO the run dir. A nested `claude -p` sandboxes
   # file reads to its own working directory, so an absolute path to the skill
   # OUTSIDE the run dir cannot be read, and a with_skill run would then execute
   # skill-less (measuring baseline vs baseline). grade.py excludes the skills/
   # subtree, so these injected files are never counted as the agent's output.
   if [ "$arm" = "with_skill" ]; then
-    mkdir -p "$dir/skills" && cp -r "$SKILL_PATH" "$dir/skills/"
+    mkdir -p "$sdir/skills" && cp -r "$SKILL_PATH" "$sdir/skills/"
   fi
   local task
   task=$(task_prompt "$id")
   local prompt
   if [ "$arm" = "with_skill" ]; then
-    prompt="You are executing a coding task in the repo at $dir. This repo follows the coding standard defined by the atelier skill, copied into this repo at ./skills/atelier. Read ./skills/atelier/SKILL.md FIRST and follow it exactly, consulting files under ./skills/atelier/references/ where the SKILL.md directs you to. Then implement the task. Work only inside the repo directory named above; the ./skills/atelier tree is read-only reference, so do not edit it or count it as your output. Do not run git. Do not install packages. Task: $task When done, reply with only the list of files you created or changed, one relative path per line."
+    prompt="You are executing a coding task in the repo at $sdir. This repo follows the coding standard defined by the atelier skill, copied into this repo at ./skills/atelier. Read ./skills/atelier/SKILL.md FIRST and follow it exactly, consulting files under ./skills/atelier/references/ where the SKILL.md directs you to. Then implement the task. Work only inside the repo directory named above; the ./skills/atelier tree is read-only reference, so do not edit it or count it as your output. Do not run git. Do not install packages. Task: $task When done, reply with only the list of files you created or changed, one relative path per line."
   else
-    prompt="You are a senior engineer executing a coding task in the repo at $dir. It is a small Bun/TypeScript repo. Implement the task well, using your own judgment. Work only inside the repo directory named above. Do not run git. Do not install packages. Task: $task When done, reply with only the list of files you created or changed, one relative path per line."
+    prompt="You are a senior engineer executing a coding task in the repo at $sdir. It is a small Bun/TypeScript repo. Implement the task well, using your own judgment. Work only inside the repo directory named above. Do not run git. Do not install packages. Task: $task When done, reply with only the list of files you created or changed, one relative path per line."
   fi
   # Wall-clock cap, portable (macOS ships no `timeout`): the session runs in the
   # background with a sleeping watchdog; whichever finishes first kills the other.
   # A capped run keeps whatever it produced and is graded like any other, so a
   # wandering session costs one slot for TIMEOUT_MIN minutes, never the batch.
-  ( cd "$dir" && env -u CLAUDECODE claude -p "$prompt" \
+  ( cd "$sdir" && env -u CLAUDECODE claude -p "$prompt" \
       --permission-mode acceptEdits \
+      "${ISOLATE[@]}" \
       ${MAX_TURNS:+--max-turns "$MAX_TURNS"} \
       ${CONFORMANCE_MODEL:+--model "$CONFORMANCE_MODEL"} \
       --output-format stream-json --verbose \
@@ -111,6 +122,7 @@ run_one() { # $1 = task id, $2 = arm
   local status=0
   wait "$session" 2>/dev/null || status=$?  # 2>/dev/null: no "Terminated" job notice on a capped run
   kill "$watchdog" 2>/dev/null; wait "$watchdog" 2>/dev/null || true
+  cp -R "$sdir/." "$dir/" && rm -rf "${sdir:?}"  # the tree the grader reads
   # The transcript is the evidence (2026-09-26); .result.txt is derived from its final event in
   # the text-mode shape every consumer already reads (transcript.py says how).
   python3 "$HERE/transcript.py" "$dir/.transcript.jsonl" "${MAX_TURNS:-0}" > "$dir/.result.txt" 2>/dev/null || true

@@ -11,11 +11,13 @@
 #               (.claude/skills/), the prompt pointing at the skill
 #   baseline    the same request, no skill
 #
-# Both arms get the owner's own request, headless and pre-approved. Sessions run with
-# --setting-sources project,local, so skills installed under ~/.claude/skills stay out
-# of both arms (the trigger eval's lesson of 2026-09-26). The fixture is committed in the
-# run dir first: the pass reads `git show HEAD:` for its ledger, and the grader checks
-# that no commit followed.
+# Both arms get the owner's own request, headless and pre-approved. Each session runs in a
+# scratch folder outside this repo, copied back into its run dir when it ends: started inside
+# the tree, a session loads this repo's CLAUDE.md and project memory by directory walk-up.
+# The user setting source is off, so skills installed under ~/.claude/skills stay out of both
+# arms, and the user's settings file is passed back (the output style the other evals run
+# with). The fixture is committed in the session folder first: the pass reads
+# `git show HEAD:` for its ledger, and the grader checks that no commit followed.
 #
 # A headless session may not write under .claude/, the journal's home: acceptEdits and
 # every allow rule tried on 2026-09-26 were refused, and the first six sessions left the
@@ -47,16 +49,20 @@ PASSES="${DISTILL_PASSES:-3}"
 MAX_TURNS="${DISTILL_MAX_TURNS:-80}"
 TIMEOUT_MIN="${DISTILL_TIMEOUT_MIN:-30}"
 mkdir -p "$OUT"
+SESSION_ROOT="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/atelier-distill.XXXXXX")" && pwd -P)"
+trap 'rm -rf "${SESSION_ROOT:?}"' EXIT
+ISOLATE=(--setting-sources project,local)
+[ ! -f "$HOME/.claude/settings.json" ] || ISOLATE+=(--settings "$HOME/.claude/settings.json")
 
 REQUEST="Clean up this repo's agent memory, .claude/LESSONS.md and CLAUDE.md: delete what is not needed and organize it better."
 HEADLESS="You are running unattended and the owner has pre-approved every change you propose: apply them all, then reply with a short summary of what you did. Do not commit, and do not ask questions. This harness cannot write under .claude/: write each file you would create or change there to ./out/ under the same name instead (./out/LESSONS.md, ./out/lessons.archive.md), leave .claude/ as it is, and edit CLAUDE.md in place."
 
 run_one() { # $1 = arm, $2 = pass
   local arm="$1" n="$2"
-  local dir="$OUT/$arm-$n"
-  rm -rf "$dir" && mkdir -p "$dir"
-  cp -R "$HERE/fixture/." "$dir/"
-  ( cd "$dir" \
+  local dir="$OUT/$arm-$n" sdir="$SESSION_ROOT/$arm-$n"
+  rm -rf "$dir" "${sdir:?}" && mkdir -p "$dir" "$sdir"
+  cp -R "$HERE/fixture/." "$sdir/"
+  ( cd "$sdir" \
     && git init -q \
     && git config user.email 'distill-eval@example.invalid' \
     && git config user.name 'distill-eval' \
@@ -65,16 +71,16 @@ run_one() { # $1 = arm, $2 = pass
   local prompt
   if [ "$arm" = "with_skill" ]; then
     # Installed after the fixture commit, so the skills are untracked and never graded.
-    mkdir -p "$dir/.claude/skills"
-    cp -R "$REPO_ROOT/skills/atelier" "$REPO_ROOT/skills/atelier-distill" "$dir/.claude/skills/"
+    mkdir -p "$sdir/.claude/skills"
+    cp -R "$REPO_ROOT/skills/atelier" "$REPO_ROOT/skills/atelier-distill" "$sdir/.claude/skills/"
     prompt="$REQUEST Use the atelier-distill skill: read ./.claude/skills/atelier-distill/SKILL.md first and follow it; the doctrine it applies is ./.claude/skills/atelier/references/lessons.md. $HEADLESS"
   else
     prompt="$REQUEST $HEADLESS"
   fi
   # Wall-clock cap, portable (macOS ships no `timeout`), in the conformance runner's shape.
-  ( cd "$dir" && env -u CLAUDECODE claude -p "$prompt" \
+  ( cd "$sdir" && env -u CLAUDECODE claude -p "$prompt" \
       --permission-mode acceptEdits \
-      --setting-sources project,local \
+      "${ISOLATE[@]}" \
       --allowedTools "Bash(git show:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(wc:*),Bash(ls:*)" \
       --max-turns "$MAX_TURNS" \
       ${DISTILL_MODEL:+--model "$DISTILL_MODEL"} \
@@ -86,6 +92,7 @@ run_one() { # $1 = arm, $2 = pass
   local status=0
   wait "$session" 2>/dev/null || status=$?
   kill "$watchdog" 2>/dev/null; wait "$watchdog" 2>/dev/null || true
+  cp -R "$sdir/." "$dir/" && rm -rf "${sdir:?}"  # the tree the grader reads, .git included
   if [ -f "$dir/.capped" ]; then
     echo "capped: $arm-$n after ${TIMEOUT_MIN} min (graded as produced)"
   elif [ "$status" -eq 0 ]; then
