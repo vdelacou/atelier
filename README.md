@@ -65,10 +65,10 @@ The id is validated once, at the boundary, and carries its proof as a type. The 
 **Install the skills, once per machine.** The [`skills`](https://www.npmjs.com/package/skills) CLI by Vercel Labs finds all four in this repo:
 
 ```bash
-bunx skills add vdelacou/atelier
+bunx skills add vdelacou/atelier -g
 ```
 
-`npx` works the same. The default target is Claude Code's user skills directory, `~/.claude/skills/`. Pass `-g` for a project-local install, or `-a <agent>` for `opencode`, `cursor` and the other agents the CLI supports.
+`npx` works the same. `-g` installs for your user, into `~/.claude/skills/`, the path the next step reads; without it the CLI installs into the current project, under `./.claude/skills/`, and the next step's path changes to match. `-a <agent>` targets `opencode`, `cursor` and the other agents the CLI supports. The CLI prints third-party security assessments as it installs; `skills.sh/vdelacou/atelier` links each audit's details.
 
 **Point the repo at the standard, once per repo.** Skill triggering depends on your prompt matching a description. A pointer block at the top of `CLAUDE.md` is loaded on every session whatever you type, so it is the primary mechanism and triggering is the fallback:
 
