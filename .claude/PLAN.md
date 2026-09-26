@@ -49,3 +49,6 @@ Two skill gaps found and fixed with a rerun each: every rewritten original is ar
 and a graduate must cover the rule, not only the instance (the tsconfig lesson stayed live 3/3; the
 example first written into the skill mirrored the fixture, so that run was stopped and relaunched
 without it). Final: skill 33/33, unaided 26/33; scripts/distill-eval/baseline.md holds the record.
+
+Closed 2026-09-26: three journal entries appended on the owner's yes (the .claude/ write guard, a grader
+that flatters, no fixture-shaped fixes); the journal is 16 entries, 14,956 bytes, under its cap.

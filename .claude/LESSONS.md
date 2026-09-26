@@ -2,6 +2,18 @@
 
 Journal of mistakes, decisions, and gotchas for this repo, newest first. Append-only between compaction passes: supersede a decision with a newer `[decision]`; only an approved compaction pass rewrites or retires entries, into `.claude/lessons.archive.md`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [gotcha] 2026-09-26 | a headless session cannot write under .claude/, so a journal eval writes into out/
+
+Under `claude -p`, `acceptEdits` and four allow-rule forms all left `.claude/LESSONS.md` unwritable, so the first distill-eval run scored 1/11 on both arms, and bypassing permissions was refused by the auto-mode classifier. Both arms now write what they would change under `.claude/` into `./out/`, which `grade.py` reads as the journal layer.
+
+## [gotcha] 2026-09-26 | a grader can flatter the skill arm too: grade the words, not the format
+
+The eleventh grader defect read format as content and failed the unaided arm's faithful archives (quoted bodies, `###` entries, a retitled entry), the first to run that way; this revises "grader defects favour the weaker answer" (2026-09-26). Rule for next time: read the unaided arm's files as closely as the skill arm's.
+
+## [gotcha] 2026-09-26 | a skill fix made because of an eval must not describe the fixture's case
+
+The first wording of the distill graduate fix mirrored the planted tsconfig entry, which would score the fixture rather than the behaviour, so that run was stopped and relaunched with the general rule. Rule for next time: phrase an eval-driven fix as the general rule, and grep the fixture for its wording before rerunning.
+
 ## [decision] 2026-09-26 | a gate that executes documentation is a code channel; pin artifacts, not only versions
 
 The skills.sh audits that `npx skills add` prints (Gen, Socket, Snyk) flagged `check-docs.sh` for running the README's Verify block through `bash -eu -c`: README text had become a second way to run code in CI, and the script's own comment accepted that risk instead of removing it. Canon 12.1 says to run the documented commands, so the fix kept execution and removed the channel: only repo entry points run, as argument lists, and any shell syntax refuses the whole block before anything runs. The gitleaks tarball was pinned by version and installed with `sudo` unverified; the workflows now check its SHA-256, and `check-workflow-assets.sh` fails a release download without a `sha256sum -c` before its first use. The providers re-audit on their own schedule, so the install output lags a pushed fix.
