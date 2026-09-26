@@ -5,7 +5,8 @@
 #   1. A workflow step runs `scripts/<name>` but assets/ does not ship <name>,
 #      so a bootstrapped repo fails CI on a missing file.
 #   2. A workflow step invokes a binary GitHub's ubuntu-latest does not
-#      preinstall (gitleaks) with no earlier install step in the file.
+#      preinstall (gitleaks) with no earlier install step in the file, or
+#      downloads it from a release without a sha256sum -c before its first use.
 #
 # Usage:
 #   bash scripts/check-workflow-assets.sh              # lint the shipped assets
@@ -81,6 +82,16 @@ lint_workflow() {
     if [ -z "$install_line" ] || [ "$install_line" -ge "$first_use" ]; then
       echo "FAIL $wf: invokes '$bin' (line $first_use) with no earlier install step" >&2
       fails=1
+    elif grep -nE "releases/download.*${bin}" "$wf" >/dev/null; then
+      # 2b. a binary fetched from a release is checksum-verified before its first use:
+      # a pinned version is not a pinned artifact (2026-09-26, the skills.sh Gen audit
+      # flagged the download; the tarball went through sudo install unverified).
+      local verify_line
+      verify_line=$(grep -nE "sha256sum[[:space:]]+(-c|--check)" "$wf" | head -1 | cut -d: -f1 || true)
+      if [ -z "$verify_line" ] || [ "$verify_line" -ge "$first_use" ]; then
+        echo "FAIL $wf: downloads '$bin' from a release with no sha256sum -c before its first use (line $first_use)" >&2
+        fails=1
+      fi
     fi
   done
   return $fails
@@ -122,12 +133,17 @@ selftest() {
   if lint_workflow "$tmp/v2.yml" "$tmp/assets" 2>/dev/null; then
     echo "selftest FAIL: bare-binary violation was accepted" >&2; exit 1
   fi
+  # violation 4: a release download installed with no checksum (the pre-2026-09-26 shape)
+  printf 'steps:\n  - run: |\n      curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/vX/g.tar.gz | tar -xz gitleaks\n  - run: gitleaks detect --redact\n  - run: bash scripts/present.sh\n' > "$tmp/v4.yml"
+  if lint_workflow "$tmp/v4.yml" "$tmp/assets" 2>/dev/null; then
+    echo "selftest FAIL: unverified-download violation was accepted" >&2; exit 1
+  fi
   # compliant fixture must pass
-  printf 'steps:\n  - run: |\n      curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/vX/g.tar.gz | tar -xz gitleaks\n  - run: gitleaks detect --redact\n  - run: bash scripts/present.sh\n' > "$tmp/ok.yml"
+  printf 'steps:\n  - run: |\n      curl -sSfL -o g.tar.gz https://github.com/gitleaks/gitleaks/releases/download/vX/g.tar.gz\n      echo "0000  g.tar.gz" | sha256sum -c -\n      tar -xzf g.tar.gz gitleaks\n  - run: gitleaks detect --redact\n  - run: bash scripts/present.sh\n' > "$tmp/ok.yml"
   if ! lint_workflow "$tmp/ok.yml" "$tmp/assets"; then
     echo "selftest FAIL: compliant fixture was rejected" >&2; exit 1
   fi
-  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, and an uncopied bootstrap script"
+  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, an unverified release download, and an uncopied bootstrap script"
 }
 
 if [ "${1:-}" = "--selftest" ]; then

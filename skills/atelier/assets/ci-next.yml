@@ -51,10 +51,12 @@ jobs:
         run: bash scripts/check-commit-range.sh
       - name: package.json (rules 5 and 19, no latest, no foreign lockfile, no node or npm in scripts)
         run: bash scripts/check-package-json.sh
-      - name: install gitleaks (pinned; not preinstalled on ubuntu runners)
+      - name: install gitleaks (pinned and checksum-verified; not preinstalled on ubuntu runners)
         run: |
-          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | tar -xz gitleaks
-          sudo install gitleaks /usr/local/bin/ && rm gitleaks
+          curl -sSfL -o gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          # SHA-256 from the release's gitleaks_8.30.1_checksums.txt; a version bump changes both lines
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks && sudo install gitleaks /usr/local/bin/ && rm gitleaks gitleaks.tar.gz
       - name: secret scan (full history)
         run: gitleaks detect --redact --no-banner
       - name: identity in file contents (rule 26, the whole tree)

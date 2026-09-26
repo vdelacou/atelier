@@ -11,6 +11,8 @@ on:
       - package.json
       - bun.lock
       - .claude/skills/**        # a re-sync of the standard is a dependency change
+permissions:
+  contents: read
 jobs:
   audit:
     runs-on: ubuntu-latest
