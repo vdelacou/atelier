@@ -10,7 +10,11 @@ public record MemberId(String value) {
     }
   }
 
-  public static Result<MemberId, String> parse(String raw) {
-    return SHAPE.matcher(raw).matches() ? new Ok<>(new MemberId(raw)) : new Err<>("invalid_member_id");
+  public enum Error {
+    MALFORMED
+  }
+
+  public static Result<MemberId, Error> parse(String raw) {
+    return SHAPE.matcher(raw).matches() ? new Ok<>(new MemberId(raw)) : new Err<>(Error.MALFORMED);
   }
 }

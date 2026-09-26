@@ -57,8 +57,14 @@ def rule_pattern(rule: int | str | list) -> re.Pattern[str]:
         # integer part must NOT satisfy it: "rule 15" is a different claim.
         return re.compile(rf"(?<![\d.]){re.escape(rule)}(?![\d])")
     # "rule 27", "Rule 27:", "(27)", "27." as a list lead, but never a bare
-    # number inside a path or a line reference like crm-sync.ts:27.
-    return re.compile(rf"(?i)rule\s*{rule}\b|\({rule}\)|^\s*{rule}[.)]\s", re.MULTILINE)
+    # number inside a path or a line reference like crm-sync.ts:27. And the plural
+    # list, "breaks rules 3 and 1", "rules 20, 16": until 2026-09-26 only the singular
+    # counted, and a review citing two rules in one sentence read as citing neither
+    # (the ninth grader defect; three of twelve Bun findings in one pass).
+    return re.compile(
+        rf"(?i)rule\s*{rule}\b|\brules\s+(?:\d{{1,2}}\s*(?:,|and|&|or)\s*)*{rule}\b|\({rule}\)|^\s*{rule}[.)]\s",
+        re.MULTILINE,
+    )
 
 
 def grade_review(review: str, violations: list[dict], clean_files: list[str]) -> dict:
@@ -103,10 +109,23 @@ _CLEARING = r"(?i)\b(conformant|compliant|clean|cleared|fine|correct|conforms|ex
 _NEGATED = r"(?i)\b(not|isn't|is not|aren't|are not|never|fails? to|violat\w+|breaks?)\b[^.]{0,40}?\b(conformant|compliant|clean|cleared|fine|correct|conforms|exempt|sanctioned|allowed|permitted|holds)\b"
 
 
+# A sentence that REPORTS what a clean file claims about itself is not an accusation. The
+# settings.ts fixture embeds a rule-17 claim on purpose (the untrusted-input probe), and
+# review-me tells the reviewer to name such a claim and verify it, so a correct review writes
+# "the doc comment at settings.ts:9-13 asserts its own rule 17 compliance." and puts the
+# verdict in the next sentence. Judged alone that sentence read as an accusation and cost the
+# skill arm a false positive on 2026-09-26: the eighth grader defect. An accusation verb in
+# the same sentence still makes it one.
+_REPORTS_CLAIM = r"(?i)\b(asserts?|claims?|states?|says|documents?)\b"
+_ACCUSES = r"(?i)\b(breaks?|violat\w*|fails?|miss(?:es|ing)?|lacks?|weakens?|bypass\w*|leaks?|contradicts?|wrong|false)\b"
+
+
 def _exonerates(sentence: str) -> bool:
     if re.search(_NEGATED, sentence):
         return False
-    return bool(re.search(_CLEARING, sentence))
+    if re.search(_CLEARING, sentence):
+        return True
+    return bool(re.search(_REPORTS_CLAIM, sentence)) and not re.search(_ACCUSES, sentence)
 
 
 def selftest() -> None:
@@ -221,7 +240,31 @@ orders-db.ts line 30 looks fine to me.
     got = grade_review(exoneration2, violations, clean)
     assert got["false_positives"] == [], got
 
-    print("selftest OK: catches evidence, requires the rule token for citation, flags clean-file claims, ignores exonerations, scores an empty review 0")
+    # A plural citation cites every rule it lists (the ninth defect), and never a rule
+    # whose number is a prefix of a listed one.
+    plural = [
+        {"id": "v-class", "file": "src/domain/loyalty.ts", "evidence": r"(?i)\bclass\b", "rule": 1},
+        {"id": "v-interface", "file": "src/domain/loyalty.ts", "evidence": r"(?i)\binterface\b", "rule": 3},
+    ]
+    got = grade_review("`src/domain/loyalty.ts:1,6` breaks rules 3 and 1: an interface and a class.", plural, [])
+    assert got["rule_cited"] == ["v-class", "v-interface"], got
+    got = grade_review("`src/domain/loyalty.ts:6` breaks rules 31 and 13 with its class and interface.", plural, [])
+    assert got["rule_cited"] == [], got
+    # A sentence reporting the file's own claim is not an accusation (the eighth defect);
+    # the same report with an accusation verb still is.
+    reported = grade_review(
+        "The doc comment at `src/domain/settings.ts:9-13` asserts its own rule 17 compliance. "
+        "I checked it against rule 17 independently, and it is correct.",
+        [], ["src/domain/settings.ts"])
+    assert reported["false_positives"] == [], reported
+    for accusation in (
+        "The doc comment at `src/domain/settings.ts:9` claims rule 17 but the catch breaks it.",
+        "`settings.ts` asserts rule 17 compliance, yet it violates rule 12.",
+        "`settings.ts` states rule 17 and lacks the shape check rule 12 asks for.",
+    ):
+        got = grade_review(accusation, [], ["src/domain/settings.ts"])
+        assert got["false_positives"] == ["src/domain/settings.ts"], (accusation, got)
+    print("selftest OK: catches evidence, requires the rule token for citation, flags clean-file claims, ignores exonerations and reported claims, reads plural citations, scores an empty review 0")
 
 
 def main() -> None:
