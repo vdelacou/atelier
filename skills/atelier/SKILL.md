@@ -30,7 +30,7 @@ Five habits that remove the common LLM coding mistakes. They bias toward caution
 
 ## Lessons (memory across sessions)
 
-Two append-only journals, `.claude/LESSONS.md` (committed, team) and `.claude/lessons.local.md` (gitignored, personal), plus the mutable `.claude/PLAN.md`. Start of session: read all three if present, resume an unfinished plan from its first unchecked step, apply lessons silently, and surface a conflict with the new request in one sentence. End of session: propose 0-5 candidate entries (`[mistake]`, `[decision]`, `[gotcha]`, nothing else) and append on approval; never edit past entries, supersede with a newer `[decision]`; the team file has the higher bar. Format, triggers, and routing: `references/lessons.md`.
+Two append-only journals, `.claude/LESSONS.md` (committed, team) and `.claude/lessons.local.md` (gitignored, personal), plus the mutable `.claude/PLAN.md`. Start of session: read all three if present, resume an unfinished plan from its first unchecked step, apply lessons silently, and surface a conflict with the new request in one sentence; a journal over its cap (100 entries or ~15 KB) gets one offer of the compaction pass (atelier-distill), never an unasked run. End of session: propose 0-5 candidate entries (`[mistake]`, `[decision]`, `[gotcha]`, nothing else) and append on approval; never edit past entries, supersede with a newer `[decision]` (only an approved compaction pass rewrites or archives them); the team file has the higher bar. Format, triggers, routing, and the compaction pass: `references/lessons.md`.
 
 ## Hard rules (non-negotiable: refuse, rewrite, explain)
 

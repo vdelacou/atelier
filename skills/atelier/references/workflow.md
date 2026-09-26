@@ -33,7 +33,7 @@ Status: in progress. Started YYYY-MM-DD.
 - **Commit it alongside the work slices** it describes (it rides with the same commits, not a separate noisy stream), so a fresh clone has the current plan.
 - **Close it out at task end.** All boxes ticked, or a note on what remains for next time. When the next task begins, overwrite it.
 
-**PLAN.md is not LESSONS.md.** `PLAN.md` is the *mutable current plan* and is rewritten and overwritten freely. `.claude/LESSONS.md` is *append-only memory* (decisions, gotchas) and is never rewritten. A durable decision that outlives the task graduates from a PLAN breadcrumb into a `[decision]` lesson; the plan step itself is transient. See `references/lessons.md`.
+**PLAN.md is not LESSONS.md.** `PLAN.md` is the *mutable current plan* and is rewritten and overwritten freely. `.claude/LESSONS.md` is *append-only memory* (decisions, gotchas), rewritten only by an approved compaction pass (`references/lessons.md`). A durable decision that outlives the task graduates from a PLAN breadcrumb into a `[decision]` lesson; the plan step itself is transient. See `references/lessons.md`.
 
 **On resume.** Start of session, read `.claude/PLAN.md` (alongside the lesson files). If it shows an unfinished task, continue from the first unchecked step rather than re-planning. If the user's new request supersedes the open plan, say so in one sentence and overwrite it.
 
