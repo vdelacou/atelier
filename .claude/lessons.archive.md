@@ -28,11 +28,43 @@ Archived 2026-09-26: merged into "read a tier-1 miss against variance and sessio
 
 ---
 
+## [decision] 2026-09-19 | rules 4 and 20 get their Java and Next gates; PMD's AvoidPrintStackTrace is not one of them
+
+The hunt after the six-pack removal re-probed the two rows found on 2026-09-10: rule 4 had no machine check in Java and rule 20 none in Next or Java. Closed in one slice, probed on a scratch Maven tree built from the canonical pom before any doctrine moved. What the probe changed: PMD 7.17's own `AvoidPrintStackTrace` reports nothing on `e.printStackTrace()`, bare or inside a catch, so the shipped rule is an XPath of ours over the PMD 7 AST (`//MethodCall[@MethodName='printStackTrace']`), red on both forms, green on the skeleton; `SystemPrintln` covers `System.out` and `System.err`. The ArchUnit half needed the same care as rule 37's: `resideInAnyPackage("..domain..", "..usecases..")` keeps the `that()` clause non-empty on a tree with a domain and no use-cases (ArchUnit fails a rule that matched no class), `java.nio.file..` is a package match and the `java.io` File classes a name match, since `java.io..` as a whole would ban `Serializable` and `IOException` from records that may legitimately carry them; infra reading the disk stays green, proven. In Next the ban is `no-restricted-imports` patterns on the `domain` and `use-cases` zones only, because Node is the runtime everywhere else in a Next package and the static layout has no server layers; the smoke test proves `src/lib` importing `node:fs` still green beside the domain red. Rule for next time: when a tool ships a rule with the right name, run it on the plant before shipping it; a rule that fires nowhere is prose with a rule id.
+
+Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixture, probed on the toolchain first".
+
+---
+
 ## [gotcha] 2026-09-10 | an absent-mode check needs the tripwire's scope, not only its pattern
 
 The tier-1 pass for the discipline gates read the skill arm 36/37; the miss was h3's "no hard delete" check matching `live.delete(order)` in the repository fake under `src/test-helpers/`, a `Map.delete` behind a `softDelete` port, in a tree that shipped the soft-delete migration the next check credited. The shipped tripwire for the same rule already exempts tests and test helpers; the grader's assertion had the pattern and not the scope. Fixed by giving the assertion an `exclude` of `src/test-helpers/*` and `*.test.ts` and making `exclude` entries fnmatch patterns (exact paths still match), a selftest that plants the fake's `.delete(` green beside a soft-deleting adapter and an adapter's `.delete(` red (red under the old tasks.json), and a re-freeze from the same three passes, which the workspace still held. Yesterday's h4 defect was the pattern reading code it was not written for; this one is the scope. Rule for next time: when a tripwire and a grader assertion prove the same rule, they share the scope as well as the pattern, and the grader's absent-mode checks on production disciplines exclude the test tier by default.
 
 Archived 2026-09-26: merged into "grader defects favour the weaker answer; read the answer before the number".
+
+---
+
+## [decision] 2026-09-10 | three tripwires are default gates behind one wrapper; isolation stays opt-in
+
+Slice 2 of the gap hunt. The four rule 27-30 guards had been "optional gates" since they shipped: the doctrine said wire them where the concern exists, the Bun and Next checklists never copied them, no hook or CI workflow called them, and the Java checklist copied them with the wiring as prose, the same shape as the rule 37 grep and the rule 36 table row. Three of them are inert without the concern and wrong with it (a natural identifier in a query string or a log line, an outbound call with no deadline, a hard delete or destructive DDL), so they are core now: `check-disciplines.sh` runs them in order and keeps going after a failure, one hook step and one CI step per variant. The fourth is the reason the old wording existed: the isolation guard demands a cross-tenant 404 test of every new route, which is wrong for a single-user app, so it stays opt-in where tenants or owners exist, called beside the wrapper. Probed in a scratch repo first (a pii leak and a missing deadline staged together report both rules; a missing guard is a failure, not a skip), then the hook path in the smoke tests: the same staged leak the standalone check already proved is now red through the hook itself, with the rule number, before lint runs. Rule for next time: "optional gate" is a design decision only when the doctrine says which repos opt out and why; when the answer is "repos without the concern", the gate is inert there and should be on.
+
+Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixture, probed on the toolchain first".
+
+---
+
+## [decision] 2026-09-09 | rule 26 gets its tripwire; a one-word git name is a handle
+
+The gap hunt after 2.3.0 took the table of what enforces each rule per variant and found two rows with nothing behind them: rule 26 (identity in commit metadata, never in file contents) had no gate anywhere, and the four rule 27-30 tripwires ship but no hook or CI runs them (the Bun and Next checklists never copy them; Java copies them with "wire them" as prose). The owner chose both closures, rule 26 first. Landed as `check-identity.sh` in the shape of the discipline guards, but as a core gate: staged lines in every hook, `--all` in every CI workflow, this repo included. The identity set comes from git config (the hook), the history's authors and committers (`--all`), and `IDENTITY_DENYLIST` for employers and clients, an environment variable on purpose: a tracked denylist would itself name what the rule forbids. Probed in a scratch repo before any doctrine, 20 cases, and the probe changed the design once: the Bun and Java smoke fixtures set one-word git names (`atelier`, `atelier-smoke`) that also appear as project names in their files, and the rule itself says a handle is fine where a holder string is required, so a one-word git name is a handle and is skipped; a person is a multi-word name, matched in both orders, plus the email. A lone first name stays a review duty, since a one-word match would flag "will" and "grace" in prose. Rule for next time: when the enforcement table says nothing for a rule and a field test has already seen the leak, the gate is overdue; and probe the fixture trees the gate will run in, not only the violation, because the fixtures' own identities are where the false positive hides.
+
+Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixture, probed on the toolchain first".
+
+---
+
+## [decision] 2026-09-09 | rule 37 in Next is two directions, and a zone must carry the bans it replaces
+
+The matrix row for rule 37 called the Next variant a follow-up for the server archetype, and the static layout had a dependency rule of its own that nothing linted: `atomic-design.md` says imports point strictly upward, an atom never a molecule, a molecule never an organism, while the design-system block only sealed components from app code (rule 21). Landed as one `layerZone` helper with two messages (upward for `src/components/*`, inward for the server layers) and eight zones: the Bun lists for the server sub-variant, `.tsx` included, plus `lib`, `page` and `components` as what no server layer may reach. The thing to keep: ESLint replaces a rule's options per matching block, so an atoms zone placed after the design-system block would have silently dropped the rule-21 and rule-13 bans for atoms; the zone spreads `DESIGN_SYSTEM_BANS` and `MOCK_BAN`, and the existing atom fixtures for both rules (`bad-widget`, `mocky`) are the proof that the copy survived, which is why they stay under `src/components/atoms`. Probed red first: three fixtures, exactly three FAILs with the unchanged config, then green with it. Rule for next time: when a new scoped block sets a rule an earlier block already sets for the same files, the earlier block's fixture must live in the new block's files, or the replacement goes unseen.
+
+Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixture, probed on the toolchain first".
 
 ---
 
@@ -52,6 +84,46 @@ Archived 2026-09-26: graduated, `scripts/check-citations.py` pins both ends of a
 
 ---
 
+## [gotcha] 2026-09-08 | a pin on a blank line pins nothing
+
+The citation gate compared the pinned snippet with the current line and called an empty string a match. Three range citations (`observability.md:21-22`, `product.md:47-48`, `product.md:51-52`) had started on the blank line after a heading since the lock was created, so they guarded nothing, and twice today `--lock` re-pinned a shifted citation onto a blank line, which only the lock diff exposed. The gate now fails a blank target in verify and refuses it in lock, the selftest proves both, and the three rows cite the paragraph their note quotes. Only the start of an `N-M` range is pinned, which is how a heading drift leaves a range on a blank; pinning the end line too is a separate decision. Rule for next time: when a gate compares strings, ask what the empty string does; equality with nothing is the quietest way to pass.
+
+Archived 2026-09-26: merged into "how a gate lies: proofs that were green for the wrong reason".
+
+---
+
+## [decision] 2026-09-08 | rule 5 lives in gate 2, and "directly" is the boundary
+
+Rule 5 (Bun only) had no gate of any kind; a tracked package-lock.json passed every hook and CI step. It joins check-package-json.sh, which already walks every manifest and runs in the hook and in CI, as two more collectors: a foreign lockfile anywhere (git ls-files, cached and untracked) and a scripts entry whose command, or a segment after &&, ||, ; or |, starts with node, npm, npx, pnpm, yarn or vite once env prefixes are stripped. The word "directly" in the rule text fixes the boundary: `bunx vite` and `bun run node-fetch` pass, `vite build` and `LINT_STRICT=1 npx eslint` do not, and the probe matrix pins both sides. The script had an early `exit 0` after the version check that would have hidden the new collectors; it now collects three findings and exits once. Two edit attempts failed on anchors because I had read the file through `grep -v '^$'`, which hides the blank lines the anchors needed; read the raw text before anchoring on it. Also found: the Next variant never runs check-package-json.sh (its hook is simple-git-hooks: test, lint, commitlint), so rules 5 and 19 are ungated there, a follow-up. And a second time today: `check-citations.py --lock` re-pins whatever sits at a shifted line, an empty line included, so after any insertion the order is re-anchor by snippet, then lock, then read the lock diff for a pin that changed content instead of line number. The first smoke run also taught the lockfile check its one exclusion: installed packages ship their own lockfiles (`node_modules/uri-js/yarn.lock` was the hit), so `node_modules/` is out of scope whether or not the repo ignores it. The Next variant turned out to run no package.json gate at all (its hook was test, lint, commitlint; it ships no CI workflow), so gate 2 now leads its `simple-git-hooks` pre-commit; a Next CI workflow remains unshipped, which is the next gap of that kind. Shipped the same night as `assets/ci-next.yml`; the commit-message re-check runs commitlint over the range rather than `check-commit-messages.sh`, because that script delegates to the shell `commit-msg` hook the Next variant never installs, and one grammar per variant means the CI half must speak the hook's. The first draft did not parse: a step name with "rules 5 and 19: no latest" is a mapping inside a scalar to YAML, the same colon-space trap as the frontmatter rule, and nothing in the repo parses the shipped workflows (the asset gate greps them), so parse a new workflow by hand before shipping it. Closed the same night: the asset gate parses every workflow first (python3 with PyYAML, else ruby), and its selftest carries the colon-space fixture. Two things the simulation taught: a parser that exits with an unexpected code must count as a failure, not fall between the failure and the no-parser branches (the first draft let a crashed parser pass), and my first "Bun.YAML rejects the workflows" was an argv indexing slip in my own one-liner, not a Bun defect; check an accusation against a tool before writing it into a comment.
+
+Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixture, probed on the toolchain first".
+
+---
+
+## [decision] 2026-09-08 | the Java half of rule 15: the grep is the authority, PMD is the depth
+
+Three forms, three layers, probed before writing. A PMD XPath rule on `//Annotation[pmd-java:typeIs('java.lang.SuppressWarnings')]` is red on `@SuppressWarnings("unchecked")` and green on the skeleton, but `@SuppressWarnings("PMD")` on the annotated class is green: PMD honours that argument on the very rule that flags it, so a PMD rule cannot be the authority for a ban on PMD suppression. `// NOPMD` is defeated differently: maven-pmd-plugin's `suppressMarker` set to an impossible token makes the comment inert, and a complexity-11 method behind it goes red again (green with the default marker, the hole made visible). The authority is text: `check-no-suppressions.sh`, the tripwire idiom (staged added lines in the hook, `--all` in CI), because no tool can suppress a grep of its own marker. Under `-q`, maven-pmd-plugin prints only "has found N violation(s)"; the rule name is in `target/pmd.xml`, which the smoke fixture greps so a bystander violation cannot pass as proof. PMD 7.17 on JDK 26 prints about 21 "ParseLock ClassStub" errors per run and still passes; noise, not a finding. Rule for next time: a ban on a tool's own suppression mechanism cannot live inside that tool.
+
+Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixture, probed on the toolchain first".
+
+---
+
+## [decision] 2026-09-08 | rule 15 is lint; the gate that guards the gates was prose
+
+Hunting the next gap after the Java mock ban, the probe took the rule that protects every other lint rule: "no inline ignores, ever". Under the canonical config a file-level `/* eslint-disable */` followed by a `class` passed, and so did `eslint-disable-next-line`, a described `@ts-expect-error`, `prettier-ignore`, `NOSONAR`, `Stryker disable` and `c8 ignore`; only `@ts-ignore` was red, because typescript-eslint's recommended preset bans that one form. So every ban landed this morning could be switched off by one comment. Landed with no plugin: ESLint's `linterOptions.noInlineConfig: true` makes every directive inert and reports it (the report reads "has no effect because you have 'noInlineConfig'"), which under `--max-warnings=0` fails the run on the comment and lets the hidden violation surface beside it; `ban-ts-comment` set to ban all four `@ts-` forms; core `no-warning-comments` with the other tools' markers as terms, `location: 'anywhere'`. The existing `sonarjs/todo-tag` already rejected TODO comments, which the probe found by accident when checking that a plain comment stays legal. Rule for next time: when a rule's job is to keep the other rules honest, probe it first; a suppression comment is the cheapest bypass there is, and it needs a gate that cannot itself be suppressed, which is what `noInlineConfig` is.
+
+Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixture, probed on the toolchain first".
+
+---
+
+## [decision] 2026-09-08 | the Java mock ban is the enforcer plus the hook, and the transitive route is the one that matters
+
+Rule 13's Java row said "enforce by keeping mock libraries out of the pom entirely" and nothing did. Landed as two gates in the shape the pom conventions already had: the maven-enforcer-plugin's `bannedDependencies` as the build-time authority and a third check in `check-pom.sh` as the fast pre-commit echo. Probed first: enforcer 3.6.3 rejects `searchTransitives` (the 3.x rule walks the whole tree unconditionally, the parameter is gone), the six excludes are green on the canonical pom, red on a direct `mockito-core`, and red through `quarkus-junit5-mockito`, whose tree carries mockito-junit-jupiter and mockito-core, which is the route a Quarkus repo actually takes. The hook's grep matches `<groupId>` and `<artifactId>` declarations only, so the enforcer's own `<exclude>org.mockito:*</exclude>` lines do not trip it. The probe also caught my own extraction bug: an awk that printed the fence line gave Maven a pom starting with three backticks, and the first "red" was a parse error, not the ban, which is why the smoke fixture greps for "(rule 13)". Rule for next time: for a dependency ban, plant the transitive route in the proof, not just the direct coordinate.
+
+Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixture, probed on the toolchain first".
+
+---
+
 ## [decision] 2026-09-08 | the tier-1 selector measures changed references, not changed lines
 
 Fixing the "(1-37)" over-selection found three defects, not one. The count: a range from rule 1 over at least half the set is the size of the rule list (red flags, pointer block) and names no rule; it is reported and skipped. The ceiling: `MAX_RULE = 35` was a constant, so "rule 36" and "rule 37" in a changed line had selected nothing since rule 36 landed; the ceiling is now the highest number in the hard-rules section. The line: the selector read every reference on a changed line, so editing the count on the red-flags line selected the discipline tier through its unchanged "(27-34)"; it now takes, per hunk, the symmetric difference of the references in the removed and the added text. Per hunk and not per file, because the first draft cancelled a genuinely new "(hard rule 13)" in the mock-ban message against a rewritten bullet elsewhere in the same file that had named rule 13 before and after. Each fix has a selftest case, and each case was run against a copy with that fix reverted to see it fail. The lint-gates diff of the morning selects 5 of 21 under the new selector. Rule for next time: a selector that reads lines will select on context; diff the references, not the text.
@@ -60,11 +132,43 @@ Archived 2026-09-26: graduated, `scripts/conformance-eval/select-tasks.py:19` (c
 
 ---
 
+## [gotcha] 2026-09-08 | the oldest gate had never been seen red
+
+The mock ban (rule 13) shipped with the first canonical config and every smoke run since had passed it green without a fixture that imports `mock`; the rule 37 sweep only noticed because its `ban_red` helper greps the rule tag and the Bun message had none. Both smoke tests now plant the import twice, in a test file for the base block and in a scoped production file for the hand-repeated copy, since a layer zone or the design-system block that dropped `MOCK_BAN` would pass silently. Rule for next time: when a new red-fixture helper lands, walk the existing gates through it; the ones written before the habit are the ones without a fixture.
+
+Archived 2026-09-26: merged into "how a gate lies: proofs that were green for the wrong reason".
+
+---
+
+## [decision] 2026-09-08 | the Java half of rule 37 is a shipped ArchUnit test, not a grep
+
+`java-quarkus.md` stated the dependency table and offered `grep -rn "import jakarta.ws.rs\|import io.quarkus"` as "the check", which nothing ran. Landed as `assets/java/LayerRulesTest.java`: ArchUnit 1.5.0's `layeredArchitecture().consideringOnlyDependenciesInLayers().withOptionalLayers(true)` over the five packages plus two framework bans, `DoNotIncludeTests` so the fakes stay out, `archunit-junit5` in the canonical pom, copied by the bootstrap like the domain assets. Probed on the Java smoke skeleton first: Surefire's platform provider runs ArchUnit's engine next to Jupiter with no configuration, PIT is untouched (the rules cover no mutant), Spotless owns the formatting (the asset is the `spotless:apply` output, the chained builder goes one call per line), and a domain class importing a use-case is red on `mvn test` with "Architecture Violation" in the log, which the smoke fixture greps for, so a red for another reason is not proof. `withOptionalLayers(true)` matters: a walking skeleton has no infra, api or composition class, and the default fails on an empty layer. The grep stays as the adopt-mode audit for a tree with no test yet. Rule for next time: when a reference says "the check is mechanical" and then prints a command, ask what runs it; a command in prose is a habit, the same shape as the rule 36 and rule 37 gaps.
+
+Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixture, probed on the toolchain first".
+
+---
+
+## [decision] 2026-09-08 | the style rules and the dependency rule are lint; hard rule 37
+
+Asked for the next gap after rule 36, the hunt started from SKILL.md's own sentence that the hard rules "are enforced by ESLint and by the review bar". A throwaway tree with the canonical config extracted from `bun-typescript.md` (eslint 10, typescript-eslint 8.68, sonarjs 4.2) took a `class`, a `class ... extends Error`, an inline `type` specifier, a `try/catch` in `src/use-cases`, a curried arrow, `node:fs` in the domain and a domain file importing infra without a word; only `require` and complexity 11 failed as claimed. Rules 1, 7, 10, 17, 18, 20 were prose and habit, the dependency rule was a grep nobody ran, and six-pack-live's swarm had already hand-rolled the layer zones on its first live run, which is what a felt gap looks like. Landed as `STYLE_BANS`, `TRY_BAN`, `FS_BAN` and `layerZone` in both canonical configs (Next without the `fs` ban, it runs on Node), hard rule 37 for the dependency table (canon 3.1 already existed; the reverse matrix had filed rules 1, 7, 18, 20 as stack bindings whose enforcement is the profile's job), the lint named in each rule's text, and a red fixture per ban that also checks the rule number in the message. Three things worth keeping. ESLint replaces a rule's options when a second block matches the same file, so every scoped `no-restricted-syntax` block spreads the shared list and every zone repeats the mock ban; the first draft lost the `fs` ban under `src/use-cases` exactly that way. `consistent-type-imports` accepts `import { type Foo, bar }`, so rule 7 needs the `ImportSpecifier[importKind="type"]` selector, and the standard's own Bun smoke fixture had carried an inline `type` import through every green run since it was written. A red fixture that only checks the exit code would accept a formatting slip as proof, so the smoke helper greps the rule tag too. Rule for next time: when a rule's text names no lint rule and the reverse matrix calls it a stack binding, probe it on the toolchain before believing the sentence at the top of the skill.
+
+Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixture, probed on the toolchain first".
+
+---
+
 ## [gotcha] 2026-09-08 | a rule range in prose turns tier 1 into tier 2
 
 The tier-1 selector maps a changed line that says `(1-37)` to rules 1 through 37, which is right for `rules 27-34` in a discipline sentence and wrong for the Red flags count that moves with every new rule: the run after rule 37 selected 21 of 21 tasks and started six opus sessions before the dry run was read. Dry-run first (`select-tasks.py --since <ref>`, the reasoning on stderr names the touched rules), and when the selection is the whole matrix for a doctrine edit that touched six rules, pass the task ids to `run.sh` by hand (`CONFORMANCE_SINCE` and explicit ids are exclusive) and kill the wide run by process group, `kill -TERM -- -<pgid>`, since `run.sh` forks one subshell per job and `nohup` leaves them all in one group. The selector fix (a range wider than the hard-rules section's own hunks is a count, not a change) is a harness change for its own slice.
 
 Archived 2026-09-26: merged into "running the conformance harness: dry-run the selector, tag a second run, never edit it mid-run".
+
+---
+
+## [decision] 2026-09-06 | tests run in random order; canon 4.9 and hard rule 36
+
+Asked whether the standard guarantees that no test waits for another, the honest answer was no: one smells-table row said shared state is a flake, and every `bun test` the standard shipped ran in declaration order, the Java pom likewise. A suite green only in one order passed every gate. Landed as canon sub-concept 4.9 under pillar 4 (count 120, accepted by the owner the same day) and hard rule 36: `bun test --randomize` is the one test script (package.json, ci.yml, Stryker's runner, the inner loop), a red run prints `--seed=<n>` and the seed replays it; Java sets `MethodOrderer$Random` and `ClassOrderer$Random` in `junit-platform.properties`. Proven on bun 1.4.0 first: a pair whose second test reads the first one's counter is green in declaration order and red under six of eight seeds. The fixture every smoke test plants is a three-step chain, not a pair: on the Java side `java.util.Random` shuffles two elements the same way for seeds 1 to 8, so the pair stayed green under every seed while a three-method chain went red under all six, and the declaration-order proof forces `MethodOrderer$MethodName` on the command line, which overrides the properties file (canon 15.10: a gate only ever seen green is a hypothesis, and this one was green for the wrong reason for one run). Landed after the 2.2.0 tag so the running tier-2 pass stayed valid, as the first 2.3.0 change with its own tier-1 pass. Two harness notes from the same evening: a tier-1 rerun on the day of a tier-2 pass lands in the same `runs-claude-opus-5` directory and `run.sh` wipes each task's directory first, so five of the 2.2.0 skill-arm directories now hold rule-36 sessions (the record is baseline.md, which is why it exists); set `CONFORMANCE_TAG=<name>` for any second run of a day. And `grade.py --task <id> --frozen-baseline` refused the fixture as measured against a different tasks.json because the `--task` filter ran before the hash; the hash is over the full task list now. Rule for next time: when a rule is only a table row and a habit, it is not a rule; the gate that shuffles is what makes it one.
+
+Archived 2026-09-26: merged into "a gap closes as canon, rule, gate and red fixture, probed on the toolchain first".
 
 ---
 
@@ -258,6 +362,14 @@ Archived 2026-09-26: merged into "read a tier-1 miss against variance and sessio
 
 ---
 
+## [gotcha] 2026-08-30 | check-skill-pin hashed ONE file and spoke for the whole standard
+
+Using the staleness gate on the real consumer repo showed it reporting "matches upstream" over a tree with six stale files (references/java-quarkus.md and four assets, plus a missing audit-java.yml). SKILL.md had genuinely not changed since the re-sync, so the check was right about the file it read and wrong about the claim it made, which is the gate-that-cannot-fail shape inside the gate built to catch staleness. Fixed test-first: tree mode compares every file under the vendored skill, names each stale one, and when it can only see a single upstream file it says so instead of implying the tree is current. Rule for next time: when a check reads a sample and reports on a population, the report has to name the sample.
+
+Archived 2026-09-26: merged into "how a gate lies: proofs that were green for the wrong reason".
+
+---
+
 ## [gotcha] 2026-08-30 | the doctrine delta sits below generator variance; the 2-1 was noise
 
 Re-ran the current-vs-July doctrine A/B with three generations per side on the two tasks that had split: current 3, july 2, 1 inconsistent over 6 pairs. Pooled with the first reading it is even, so the earlier 2-1 for July was sampling noise, exactly as the scorecard warned before the result existed. Two by-products worth more than the null: the judge's inconsistency rate is 1/6 when the sides are close against 0/7 when they are far apart, so position bias appears precisely at the near-tie and must be reported per-comparison rather than assumed away; and the power bar is now known, three generations on two tasks cannot resolve 49 days of doctrine drift. Rule for next time: to attribute a code-quality delta to a doctrine edit, ablate ONE rule and measure on the task that rule governs, rather than comparing two dates and hoping the difference is the edit.
@@ -314,6 +426,14 @@ Archived 2026-09-26: graduated, `skills/atelier/assets/check-skill-pin.sh` and `
 
 ---
 
+## [gotcha] 2026-08-30 | a smoke fixture that stages -A and hard-resets eats the next scenario's setup
+
+The commit-range fixture used `git add -A` plus `git reset --hard HEAD~1`, which swept an untracked domain file into its commit and then deleted it, breaking the two mutate:changed scenarios that depended on that file existing untracked. The smoke suite caught it immediately, which is the argument for wiring every new gate into it. Fix: stage only the fixture's own paths and undo with a mixed reset plus an explicit rm. Rule for next time: a smoke fixture shares one working tree with every scenario after it, so it must clean up exactly what it created and nothing else.
+
+Archived 2026-09-26: merged into "how a gate lies: proofs that were green for the wrong reason".
+
+---
+
 ## [decision] 2026-08-30 | Phase 5 field test: the skill is fine, the pin is the problem
 
 Audited a real consumer repo built under this standard (read-only, at its foundations milestone). Authoring held: 18/19 commits pass the shipped commit-msg validator, coverage tiers arrived correct and monorepo-adapted, auth rented and the model behind a port before any code. Four skill defects found, all invisible to the evals and the CI gates because those measure the skill against itself: check-package-json.sh read only the root manifest (a workspace pinning "latest" passed; the consumer had already rewritten it, and so did we, red fixture first), the shipped CI called gitleaks with no install step (the consumer had independently patched the same defect the same week), the prescribed ADR convention's Deciders field invites the rule 26 violation it then commits, and the skeleton defined no `test` script so the consumer invented one with --pass-with-no-tests, a gate that cannot fail. Everything else non-conforming in that repo traced to ONE cause: it pins the skill at a hash 49 days and 9 SKILL.md commits old, so it faithfully runs the retired eight-gate hook and the superseded rule 26. Rule for next time: a vendored standard is a dependency and goes stale silently while every gate stays green; governance.md now carries the re-sync ritual and the pointer block says it in the one file a consumer always reads. Only a real repo measures the skill against time.
@@ -346,11 +466,27 @@ Archived 2026-09-26: merged into "when the unpinned toolchain contradicts the st
 
 ---
 
+## [gotcha] 2026-08-29 | a diff-derived scope silently excludes untracked files, and `|| true` turns a dead base ref into a green run
+
+`assets/mutate-changed.sh` built its mutation scope from three `--diff-filter=ACMR` diffs unioned together, which cannot see a file that was never `git add`-ed: a brand-new `src/domain/*.ts` was in none of them, so the gate printed "no files in mutation scope changed" and exited 0 having measured nothing. Every new domain or use-case file a consumer repo ever added hit this, and it is the only failure mode that reports a PASS over code that was never mutated. Second trap in the same pipeline: an unresolvable `BASE` (a shallow CI checkout with no `origin/main`, or a typo) makes each diff fail, and the `|| true` guarding the `grep` chain swallows the fatal git error into the same empty-scope exit 0. Verified both empirically. Fixes: union `git ls-files --others --exclude-standard` into the scope, and `git rev-parse --verify --quiet "$BASE^{commit}"` up front with exit 1. Third, `origin/*` is a LOCAL cache moved only by a fetch, so a stale ref widens the scope with long-pushed files AND reads as evidence of unpushed work; the script now fetches when `BASE` is remote-tracking (`|| true` for offline, `MUTATE_NO_FETCH=1` to opt out) and prints the resolved base (short SHA, relative date, ahead count), because the print is what makes staleness visible when someone overrides or opts out. Fourth, both mutate scripts cleared Stryker's cache with `rm -f reports/stryker-incremental.json`, hardcoding a path that `stryker.conf.json` owns via `incrementalFile`: change the config and the delete becomes a silent no-op, restoring the stale-score trap it was added for (13d62a8), and it destroys the cache even when the run then crashes. Replaced with the documented `--force` in BOTH `mutate-changed.sh` and `mutate-staged.sh`; the smoke test's Stryker runs now double as proof the flag still exists on the unpinned toolchain. Rules for next time: a scope built from `git diff` is a scope that ignores new files, so state explicitly whether untracked belongs (for `mutate:staged` it does not, staged-only IS the gate-8 contract); and `|| true` on a pipeline whose FIRST command can fatally fail converts an error into a pass, so validate the input before the pipeline rather than guarding the whole thing. Note the deliberate behaviour change: a greenfield repo with no remote now exits 1 instead of passing vacuously, documented in workflow.md rather than special-cased in the script.
+
+Archived 2026-09-26: merged into "how a gate lies: proofs that were green for the wrong reason".
+
+---
+
 ## [decision] 2026-07-20 | canon P6: 11.3 softened toward burn-rate, 12.7 added as a new sub-concept (count 116)
 
 Resolved the last two P6 rows from the internal-consistency pass. 11.3: the pillar-11 prose said "alert on anomalies rather than only fixed thresholds", but sub 11.3 and the skill's observability.md teach symptom/error-budget-burn alerting, the lower-noise and more actionable practice (the Google SRE workbook favors burn-rate over anomaly detection). Closed the drift by softening the PROSE toward the sub, not by loading anomaly detection onto the checklist; no skill change. 12.7: "pick one working language" lived only in pillar-12 prose with no sub-concept, so added a first-class sub-concept 12.7 "One working language" (Option A, over folding into 12.1). That raised the canonical count 115 -> 116, which cascades in lockstep: the "Every sub-concept" index line in dos-and-donts, a new conformance-matrix.md row, the verdict tally (COVERED 112 -> 113, Total 116), the work-list line, ci.yml's comment, and check-matrix-drift.py in TWO places (the `!= 115` row-count assertion AND PER_PILLAR[pillar 12] 6 -> 7, whose sum must equal the new count). Miss any one and the drift gate fails. Rule for next time: adding a sub-concept is not a one-line edit; the count is asserted in the checker (twice), the tally, and prose, and the per-pillar list must re-sum. Both canon files re-pinned; matrix 116/116, gate + selftest green.
 
 Archived 2026-09-26: graduated, `scripts/check-matrix-drift.py:22` asserts the per-pillar counts; `conformance-matrix.md:335` (12.7).
+
+---
+
+## [gotcha] 2026-07-20 | openssl prints a Protocol line even on a REFUSED handshake, so grepping it false-FAILs
+
+Applying P6 row 15.5 (the canon's TLS "compliance is not proof" example probed only TLS 1.1 yet concluded the endpoint "refuses TLS < 1.2"). The drafted fix looped over ssl3/tls1/tls1_1 but detected acceptance with `grep -qi "Protocol.*:.*\(SSL\|TLS\)"`. Verified live against OpenSSL 3.6: forcing `-tls1` or `-tls1_1` at an endpoint that REFUSES them still prints `Protocol: TLSv1.3` in the SSL-Session summary (the session default, not a negotiated version), so the grep matches on a refusal and prints FAIL for a server that is actually fine. The robust signal is the EXIT CODE: a forced-protocol `openssl s_client ... </dev/null >/dev/null 2>&1` exits 0 only when the handshake COMPLETES (the server accepted that protocol), non-zero when refused. Second trap: OpenSSL 3.x dropped `-ssl3`, so that leg is unprobeable on a modern build (the flag errors, exits non-zero, reads as not-accepted); the OK line must therefore claim only what this openssl can probe, never a blanket "refuses everything below 1.2". Landed the exit-code form. Rule for next time: for a shell proof, key on the tool's exit status, not on grepping human-readable output that carries defaults even on failure; and a proof's success message must claim exactly the range it actually tested. This same self-undermining pattern (a proof that overclaims what it checked) is what 15.5 exists to forbid, so the fix had to not reproduce it.
+
+Archived 2026-09-26: merged into "how a gate lies: proofs that were green for the wrong reason".
 
 ---
 
@@ -572,6 +708,14 @@ Archived 2026-09-26: superseded by "rule 26 final form" (2026-07-19).
 
 ---
 
+## [gotcha] 2026-07-12 | PIT 1.25.7 needs a history plugin for ALL incremental; the smoke test beats the docs
+
+Prompted to correct the 2026-07-11 PIT entry, I trusted pitest.org docs (via ctx7) that present withHistory and historyInputFile/historyOutputFile as free, live parameters, and enabled withHistory in the pom. smoke-test-java then failed TWICE: both withHistory=true AND explicit historyInputFile/historyOutputFile error "History has been enabled but no history plugin has been installed/activated" (pointing at Arcmutate's +arcmutate_history). So in PIT 1.25.7 with the base pitest-maven + junit5 plugins, incremental history of ANY kind is gated behind Arcmutate's commercial history plugin; the 2026-07-11 entry was RIGHT. The free speed levers are the narrow scope (targetClasses/targetTests), parallel threads (now added to the pom, a lever the earlier note missed), and staged-file gating; incremental speed at scale means Arcmutate, a licence decision not a library swap. Reverted the withHistory change. Lesson: for toolchain BEHAVIOR, not just API shape, the smoke test is ground truth over the docs; run it before overturning a hard-won gotcha. The challenge to the claim was still worth it, because it forced the empirical check that upgraded the original from asserted to verified and pinned the exact gate (Arcmutate's history plugin, not merely a vague "commercial add-on").
+
+Archived 2026-09-26: merged into "how a gate lies: proofs that were green for the wrong reason".
+
+---
+
 ## [gotcha] 2026-07-12 | trigger-eval is high-variance at 3 runs/query; single-run routing verdicts overstate regressions
 
 The committed suite-routing tier finding (13/13 fable to 8/13 sonnet to 4/13 haiku) was single-run per tier. Replicating the Sonnet routing 3 times with the SAME description gave 12/13, 12/13, 12/13, so the 8/13 was one unlucky draw and the real Sonnet routing is about 12/13, near Fable parity. The logs were clean (no probe timeouts), so this is genuine run-to-run variance in whether the model invokes a skill, not a harness fault. The earlier "sharp Sonnet recall regression" was therefore mostly a measurement artifact, and the Haiku 4/13 is likewise a single unverified draw. Rule for next time: a routing/trigger verdict needs replication (at least 3 harness runs, so at least 9 samples per query) before a tier delta is claimed; one 3-runs-per-query pass is too noisy for the routing set. Aside: the grill-me description was restructured trigger-first as a structural-lever test, and a replicated A/B showed a small real lift on its own cases (0.89 to 1.00) with the unedited control flat (0.66 to 0.66) and negatives at 0, so it was kept, but the effect is marginal and the motivating regression was largely noise. Partially supersedes the two tier-finding entries below.
@@ -593,6 +737,14 @@ Archived 2026-09-26: merged into "the evals catch regressions, not improvements;
 Running the trigger sets on Sonnet and Haiku (TRIGGER_EVAL_MODEL) showed recall degrading monotonically while precision stayed perfect: atelier-bun 29/31 sonnet to 24/31 haiku, suite-routing 13/13 fable to 8/13 sonnet to 4/13 haiku, and EVERY failure was under-trigger (over-trigger=0 on all sets/tiers). Smaller/faster models invoke NONE rather than the wrong skill; the companion skills (grill-me, greenfield) under-fire hardest. So a description tuned to trigger on Fable is not a guarantee on the tier a user actually runs, and lifting small-tier recall is a recall-vs-precision retune (more assertive descriptions risk Fable false-fires), its own task. Conformance across tiers was measured at n=1 per task and came out noisy (sonnet with_skill 7/13 = baseline 7/13, haiku 9/13 vs 7/13, inconsistent direction), so a tier-trend on the skill's code-quality delta needs at least 3 runs per task before it can be claimed; a spot-check confirmed the noise is real agent variance (sonnet e2 with_skill hard-deleted, no test), not a grader bug. Harness: both run.sh now namespace output by model so tiers no longer overwrite each other.
 
 Archived 2026-09-26: merged into "a trigger verdict is only as valid as the choice set the probe shows the model".
+
+---
+
+## [decision] 2026-07-12 | discipline guards catch construction-based evasions, not only literal syntax
+
+The rule-27 pii guard blocked `?email=` in a URL literal but not `new URLSearchParams({ email })`, which builds the same query string, so an earlier e1 baseline slipped PII into a query through the constructor. Added a URLSearchParams-construction pattern and kept it URLSearchParams-specific, so a POST body or FormData carrying email (the correct channel) is untouched; the incremental `.set`/`.append` form stays a review duty, because a line-local grep cannot know a variable is a URLSearchParams. The battery now pins both directions, the constructor evasion blocked and the POST-body form allowed. Rule for next time: a tripwire matching one syntax for a leak must consider the other constructors that reach the same sink.
+
+Archived 2026-09-26: merged into "how a gate lies: proofs that were green for the wrong reason".
 
 ---
 
@@ -665,6 +817,14 @@ Archived 2026-09-26: merged into "a trigger verdict is only as valid as the choi
 `-DwithHistory` on pitest-maven >= 1.25 fails the build outright ("no history plugin installed"); the free incremental analysis is gone. The open-source speed levers are a narrow `targetClasses` scope plus running the gate only when staged files touch it, which `assets/pre-commit-java` does. Applies to: any doc or hook that suggests PIT incremental runs.
 
 Archived 2026-09-26: graduated, `skills/atelier/references/java-quarkus.md:400` (Arcmutate's `+arcmutate_history`).
+
+---
+
+## [gotcha] 2026-07-11 | -SNAPSHOT grep must match version elements only
+
+`check-pom.sh` originally flagged any `-SNAPSHOT` inside dependency/plugin blocks, which false-positived on the enforcer's own `<message>No -SNAPSHOT dependencies</message>` prose in the canonical pom, blocking a fully conforming commit. The gate now matches `<version>[^<]*-SNAPSHOT` only, and scans untracked poms too (`git ls-files --others`), since a brand-new pom is otherwise invisible before its first commit. Rule for next time: a gate that greps for a token must consider the token appearing in prose about the rule itself.
+
+Archived 2026-09-26: merged into "how a gate lies: proofs that were green for the wrong reason".
 
 ---
 
