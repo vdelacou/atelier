@@ -17,7 +17,7 @@
     "id": "v-console",
     "file": "src/use-cases/award-points.ts",
     "rule": 4,
-    "evidence": "(?i)console\\.(log|error|warn)|console\\b.*logger|logger port",
+    "evidence": "(?i)console\\.(log|error|warn|\\*)|console\\b.*logger|logger port",
     "desc": "console.log instead of the Logger port"
   },
   {

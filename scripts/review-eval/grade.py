@@ -259,6 +259,11 @@ orders-db.ts line 30 looks fine to me.
     ):
         got = grade_review(phrasing, [gate], [])
         assert got["rule_cited"] == ["v-gate-nofixture"], (phrasing, got)
+    # The shipped console evidence reads the rule's own wording too (2026-09-26, the first
+    # isolated pass: "breaks rule 4 (no `console.*`)" read as a miss).
+    console = next(x for x in json.loads((HERE / "violations.json").read_text()) if x["id"] == "v-console")
+    got = grade_review("**3. `src/use-cases/award-points.ts:14` breaks rule 4 (no `console.*`).**", [console], [])
+    assert got["caught"] == ["v-console"] and got["rule_cited"] == ["v-console"], got
     # A sentence reporting the file's own claim is not an accusation (the eighth defect);
     # the same report with an accusation verb still is.
     reported = grade_review(
