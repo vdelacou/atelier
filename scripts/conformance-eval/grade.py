@@ -23,6 +23,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from transcript import num_turns, result_text
+
 HERE = Path(__file__).parent
 FIXTURE_DIR = HERE / "fixture"
 FROZEN_DEFAULT = HERE / "baseline-arm.json"
@@ -374,7 +376,27 @@ def selftest() -> None:
         if not turn_capped(cut) or session_failed(cut) is not None:
             print("SELFTEST FAILED: a max-turns session must be marked turn-capped and still scored")
             sys.exit(1)
-    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8, 7.1 and 7.5 credit shape over vocabulary, 10.9 and 6.3 read production code only, the frozen baseline is keyed to its assertions and checked before any --task filter, a dead session is not scored, a turn-capped one is marked and scored")
+    # The transcript (2026-09-26): .result.txt is derived from the stream's final event in the
+    # text-mode shape the checks above read, and the turn count comes from the same event.
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        (t / "ok.jsonl").write_text('{"type":"system","subtype":"init"}\n{"type":"result","subtype":"success","num_turns":7,"result":"src/a.ts"}\n')
+        (t / "cap.jsonl").write_text('{"type":"result","subtype":"error_max_turns","num_turns":121,"errors":["Reached maximum number of turns (120)"]}\n')
+        (t / "refused.jsonl").write_text("Failed to authenticate. API Error: 403 Request not allowed\n")
+        (t / "killed.jsonl").write_text('{"type":"system","subtype":"init"}\n')
+        checks = [
+            (result_text(t / "ok.jsonl", "120"), "src/a.ts"),
+            (result_text(t / "cap.jsonl", "120"), "Error: Reached max turns (120)"),
+            (result_text(t / "refused.jsonl", "120"), "Failed to authenticate. API Error: 403 Request not allowed"),
+            (result_text(t / "killed.jsonl", "120"), ""),
+            (num_turns(t / "ok.jsonl"), 7),
+            (num_turns(t / "killed.jsonl"), None),
+        ]
+        for got, want in checks:
+            if got != want:
+                print(f"SELFTEST FAILED: transcript read {got!r}, expected {want!r}")
+                sys.exit(1)
+    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8, 7.1 and 7.5 credit shape over vocabulary, 10.9 and 6.3 read production code only, the frozen baseline is keyed to its assertions and checked before any --task filter, a dead session is not scored, a turn-capped one is marked and scored, a transcript yields the result text and the turn count")
 
 
 def _flag_val(args: list[str], name: str) -> int | None:
@@ -431,6 +453,8 @@ def main() -> None:
     # by_rule[rule][arm] = [passed, total], so the scorecard maps to conformance-matrix rows
     by_rule: dict[str, dict[str, list[int]]] = {}
     capped: dict[str, list[str]] = {"with_skill": [], "baseline": []}
+    turns: dict[str, list[int]] = {"with_skill": [], "baseline": []}
+    turns_of: dict[tuple[str, str], int] = {}
     for task in tasks:
         rows = []
         for arm in ("with_skill", "baseline"):
@@ -444,6 +468,10 @@ def main() -> None:
                 continue
             if turn_capped(run_dir):
                 capped[arm].append(task["id"])
+            n = num_turns(run_dir / ".transcript.jsonl")
+            if n is not None:
+                turns[arm].append(n)
+                turns_of[(task["id"], arm)] = n
             marks = grade_run(run_dir, task["assertions"])
             grand[arm][0] += sum(1 for _, _, p in marks if p)
             grand[arm][1] += len(marks)
@@ -467,7 +495,8 @@ def main() -> None:
             score = sum(1 for _, _, p in marks if p)
             detail = "  ".join(("PASS" if p else "fail") + f"[{r}]:{d[:30]}" for d, r, p in marks)
             cap = "  (turn cap, graded as produced)" if task["id"] in capped[arm] else ""
-            print(f"  {arm:<11} {score}/{len(marks)}  {detail}{cap}")
+            used = f"  turns={turns_of[(task['id'], arm)]}" if (task["id"], arm) in turns_of else ""
+            print(f"  {arm:<11} {score}/{len(marks)}  {detail}{used}{cap}")
             if frozen is not None and arm == "with_skill":
                 expected = frozen_expected(frozen, task["id"], len(marks))
                 if expected is None:
@@ -483,6 +512,10 @@ def main() -> None:
     for arm, ids in capped.items():
         if ids:
             print(f"  turn-capped {arm}: {len(ids)} ({', '.join(ids)}), scored as produced")
+    for arm, ns in turns.items():
+        if ns:
+            ns = sorted(ns)
+            print(f"  turns {arm}: median {ns[len(ns) // 2]}, max {ns[-1]}, over {len(ns)} transcripts")
     if frozen is not None:
         print(f"  {'frozen-bl':<11} {frozen_grand[0]:.1f}/{frozen_grand[1]}  "
               f"({frozen.get('passes', '?')} pass(es) frozen {frozen.get('frozen', '?')}, {frozen.get('model', '?')})")

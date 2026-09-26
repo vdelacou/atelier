@@ -1,23 +1,26 @@
-# Plan: release 2.4.0 (2026-09-19), closed 2026-09-20
+# Plan: harness slices after 2.4.0 (2026-09-26)
 
-Goal: ship the changes since v2.3.0 as 2.4.0, the 2.3.0 shape: tier 2 on the release tree, release
-notes with an "Upgrading from 2.3.0" list, the pass recorded, the annotated tag, main and the tag
-pushed. Minor version with a breaking marker on the six-pack removal commit (05614a6).
+Open since the release: the harness keeps no transcript (`.run.log` is the CLI's empty stderr,
+`.result.txt` its final message), so a turn-capped session cannot be explained; and the frozen
+baseline arm is one pass at the 120-turn cap. Also a doc drift of mine: CLAUDE.md still says the
+wall-clock default is 20 (40 since 2026-09-19) and does not name the 120-turn cap.
 
-Definition of done: CHANGELOG has `## [2.4.0] - 2026-09-19` with a release paragraph and the upgrade
-list distilled from the Consumers notes; README names 2.4.0; `baseline.md` records the tier-2 pass
-(both arms, 21 tasks, opus, scores, capped, tree under test) and the fixture stays the three-pass one
-unless tasks.json changed (it did not since 2026-09-10); tag `v2.4.0` on the record commit with a
-message in the v2.3.0 shape; `git ls-remote --tags origin` shows it; CI green. The owner's "release"
-covers the commits, the tag and the push (the 2.3.0 precedent).
+## Slice 1: a transcript per session
 
-1. [x] (21:55 to 22:47, 42 sessions, exit 0, none wall-clock capped; four skill-arm sessions ended on the CLI's 60-turn cap, e7 h3 h6 h7, against none in any earlier pass; skill 58/61 as read, 59/61 once the 6.3 checks learned the test-tier scope, unaided 45/61) Tier 2: `CONFORMANCE_ARMS=both CONFORMANCE_MODEL=claude-opus-5 CONFORMANCE_JOBS=6
-       CONFORMANCE_TAG=release-2.4.0`, nohup + Monitor. DoD: 42 sessions, none capped, graded.
-2. [x] (3d7093a) Release notes while it runs (CHANGELOG.md, README.md). Commit `docs(release): 2.4.0 changelog
-       and upgrade notes`.
-3. [x] (recorded in baseline.md; seventh grader defect fixed: 6.3 absent checks in h3 and e6 exclude the test tier, selftest red-then-green; grade.py marks turn-capped sessions, selftested; fixture re-frozen from four passes, 184/244; a same-cap rerun of the four capped tasks launched 22:49 as the variance check; rerun capped three of four again, the 120-turn probe finished h6 5/5 and h7 4/4) Record the pass in `baseline.md`; if the skill arm is below full marks, stop and report before
-       tagging (a grader defect is the usual cause; fix, selftest red-then-green, re-freeze from the
-       workspace's three baseline directories if tasks.json changes). Commit
-       `chore(conformance-eval): the 2.4.0 tier-2 pass`.
-3b. [x] (recorded; first 120-turn launch 23:29 to 00:03: 24 of 42 sessions refused with "Failed to authenticate. API Error: 403" after the first 15 finished, the environmental tell; grade.py now treats a refused empty tree as a dead session, selftested; the CLI answered a one-turn probe at 00:04, second launch 00:06 to 01:08: 42 sessions, skill 61/61, unaided 45/61, no cap of either kind, no refusal; fixture re-frozen at 120 from its baseline arm, one pass) Owner's call on the 59/61 reading: rerun tier 2 at 120 turns first (both arms, `run.sh` defaults now 120 turns and 40 minutes, tag release-2.4.0-t120), re-freeze the fixture from that run's baseline arm (one pass at the new cap), record, then tag on that reading. Top-up to three passes at 120 after the tag.
-4. [x] (v2.4.0 on 8bf86e5, pushed with main; released 2026-09-20 01:1x) `git tag -a v2.4.0` on the record commit; `git push origin main v2.4.0`; plan closed.
+Definition of done: `run.sh` runs each session with `--output-format stream-json --verbose`, writes
+the stream to `<run-dir>/.transcript.jsonl`, and derives `.result.txt` from the final `result` event
+so every consumer reads what it read before (the final text on success, "Error: Reached max turns
+(N)" on a turn cap, the error text on a refusal); `grade.py` prints `turns=N` on each scorecard line
+when a transcript exists; probed on single cheap sessions first (a normal one, a forced turn cap);
+CLAUDE.md's cap line corrected; selftests green; commit on the yes.
+
+1. [x] (success carries `result` and `num_turns`; a turn cap carries `subtype: error_max_turns`, `errors`, `terminal_reason: max_turns`, no `result`; nothing on stderr) Probe the stream shapes (success, max turns) with one-turn sessions.
+2. [x] (transcript.py; run.sh streams to .transcript.jsonl and derives .result.txt; grade.py turns= and census; selftest red with the max-turns branch removed; old runs grade unchanged; CLAUDE.md) run.sh and grade.py edits, selftest scenario for the turn read, CLAUDE.md line.
+3. [x] (a4 skill arm 2/2, turns=24 on the scorecard; 167-event transcript, 9 Read, 10 Bash, 4 Write; .result.txt the plain file list; stderr empty) One real task through the new run.sh (a4-tdd-feature, skill arm) to prove the pipeline end to end.
+
+## Slice 2: the fixture back to three passes at 120
+
+Definition of done: two baseline-arm passes (`bl120-2`, `bl120-3`, opus, defaults 120 turns / 40 min)
+on the new run.sh, none refused or capped; `freeze-baseline.py` over them and the 2026-09-20 release
+pass's baseline arm writes `passes: 3`; the release run grades 61/61 against it; `baseline.md`
+records it with the turn census the transcripts now allow; CHANGELOG Harness bullet; commit on the yes.

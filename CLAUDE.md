@@ -44,7 +44,9 @@ tree. What binds work HERE is the authoring and process discipline below.
   edit is `CONFORMANCE_SINCE=<ref> CONFORMANCE_MODEL=claude-opus-5 bash scripts/conformance-eval/run.sh`
   (only the tasks the skill diff can affect, skill arm, then `grade.py <runs-dir> --frozen-baseline`);
   tier 2, the full matrix with `CONFORMANCE_ARMS=both`, only on a description change or before a
-  release. Sessions are capped (`CONFORMANCE_TIMEOUT_MIN`, default 20).
+  release. Sessions are capped (`CONFORMANCE_TIMEOUT_MIN`, default 40; `CONFORMANCE_MAX_TURNS`,
+  default 120) and each run dir keeps the session's stream-json transcript (`.transcript.jsonl`);
+  the scorecard prints `turns=N` per session and flags a turn cap.
 - Grade against the frozen baseline arm: `python3 scripts/conformance-eval/grade.py <runs-dir>
   --frozen-baseline`. The fixture (`baseline-arm.json`) is keyed to the prompts and assertions; after
   a tasks.json change, `CONFORMANCE_ARMS=baseline bash scripts/conformance-eval/run.sh` then

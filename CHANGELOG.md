@@ -6,6 +6,18 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Harness
+- **A transcript per conformance session.** `run.sh` runs each session with `--output-format
+  stream-json --verbose` and keeps the stream as `<run-dir>/.transcript.jsonl`; the new
+  `transcript.py` derives `.result.txt` from its final event in the text-mode shape every consumer
+  already read (the final message, "Error: Reached max turns (N)" on a turn cap, the error text on a
+  refusal, nothing for a session the watchdog killed). `grade.py` prints `turns=N` on each scorecard
+  line and a per-arm census (median, max) in the totals. The 2.4.0 pass had four skill-arm sessions
+  hit the 60-turn cap and nothing on disk to say where their turns went; the next such pass can be
+  read. Neither grader nor judge sees the file (suffix and dotfile filters). Selftested, red under an
+  extractor that drops the max-turns branch. CLAUDE.md's cap line had kept the pre-2.4.0 default
+  (20 minutes) and now names both caps and the transcript.
+
 ## [2.4.0] - 2026-09-19
 
 The gates release: five closures of the gap hunt turn the last prose rules into machine checks

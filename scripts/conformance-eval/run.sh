@@ -22,7 +22,8 @@
 #                      2026-09-19, when four skill-arm sessions of the 2.4.0 tier-2 pass hit it
 #                      and a 120-turn rerun finished them; a 120-turn session needs the 40 min)
 #
-# Results land in skills/atelier-workspace/conformance-<date>/runs/ (gitignored).
+# Results land in skills/atelier-workspace/conformance-<date>/runs/ (gitignored). Each run dir
+# keeps the session's stream-json transcript (.transcript.jsonl) and the derived .result.txt.
 # Grade afterwards, against the frozen baseline arm:
 #   python3 scripts/conformance-eval/grade.py <runs-dir> --frozen-baseline
 # Refresh the frozen arm only when tasks.json changes (prompts or assertions):
@@ -102,13 +103,17 @@ run_one() { # $1 = task id, $2 = arm
       --permission-mode acceptEdits \
       ${MAX_TURNS:+--max-turns "$MAX_TURNS"} \
       ${CONFORMANCE_MODEL:+--model "$CONFORMANCE_MODEL"} \
-      < /dev/null > "$dir/.result.txt" 2> "$dir/.run.log" ) &
+      --output-format stream-json --verbose \
+      < /dev/null > "$dir/.transcript.jsonl" 2> "$dir/.run.log" ) &
   local session=$!
   ( sleep $((TIMEOUT_MIN * 60)) && kill "$session" 2>/dev/null && echo "$id-$arm" >> "$CAPPED" ) &
   local watchdog=$!
   local status=0
   wait "$session" 2>/dev/null || status=$?  # 2>/dev/null: no "Terminated" job notice on a capped run
   kill "$watchdog" 2>/dev/null; wait "$watchdog" 2>/dev/null || true
+  # The transcript is the evidence (2026-09-26); .result.txt is derived from its final event in
+  # the text-mode shape every consumer already reads (transcript.py says how).
+  python3 "$HERE/transcript.py" "$dir/.transcript.jsonl" "${MAX_TURNS:-0}" > "$dir/.result.txt" 2>/dev/null || true
   if grep -qx "$id-$arm" "$CAPPED"; then
     echo "capped: $id-$arm after ${TIMEOUT_MIN} min (graded as produced)"
   elif [ "$status" -eq 0 ]; then
