@@ -76,6 +76,22 @@ Archived 2026-09-26: superseded by "the README is a pitch written from scratch" 
 
 ---
 
+## [decision] 2026-09-05 | sonarjs/function-return-type is the third rule turned off and re-probed; the fixture now returns through the helpers
+
+Landed in the 2026-08-29 shape. The rule is off in the canonical Bun config with a dated reason: `Result<T, never>` from `ok()` and `Result<never, E>` from `err()` are two return types to it, so no function written to hard rule 16 can satisfy it, while `strict: true` and rule 6's explicit return types already own the bug class it targets (a function whose branches disagree fails to typecheck against its annotation). The smoke fixture gained `src/domain/result.ts`, the helpers verbatim from `references/result-type.md`, and `parseName`, the two-tier boundary form returning through them; proven red before the config change (`lint:strict` failed on exactly that function, every other gate green) and green after. The canary probe set names three rules, and every sentence that counted two was updated (canary.yml, smoke-test.sh, bun-typescript.md, workflow.md, CLAUDE.md, README.md). Not pinned back for the same reason as before: sonarjs 4.1.0 does not load under ESLint 10. Rule for next time: a fixture proves a lint rule only when it uses the idiom the reference teaches, so when a reference ships a helper, the fixture calls the helper.
+
+Archived 2026-09-26: merged into "when the unpinned toolchain contradicts the standard, turn the rule off and re-probe it; do not pin the world back".
+
+---
+
+## [gotcha] 2026-09-05 | sonarjs/function-return-type fires on `ok()`/`err()` returns, and the smoke fixture cannot see it
+
+Found by the six-pack's cleaner under `lint:strict`: `sonarjs/function-return-type` reports every function that returns through the `ok`/`err` helpers, because `Result<T, never>` and `Result<never, E>` are two return types to the rule; six errors on a conforming tree, none under the inner-loop `bun run lint` since the rule is type-aware. This repo's smoke fixture returns `{ ok: true, ... }` and `{ ok: false, ... }` literals under one union annotation, which the rule accepts, so CI here stays green while every consumer that returns through the helpers `references/result-type.md` teaches is red. Reproduced with the canary's method, `LINT_STRICT=1 bunx eslint --rule 'sonarjs/function-return-type: error' src`. The fix is the 2026-08-29 shape: off in the canonical config with a dated reason, one helper-returning function in the smoke fixture so the gate proves it, the rule added to the canary probe set. Rule for next time: a fixture that satisfies a rule by accident proves nothing about the rule; the fixture must use the idiom the reference teaches.
+
+Archived 2026-09-26: merged into "when the unpinned toolchain contradicts the standard, turn the rule off and re-probe it; do not pin the world back".
+
+---
+
 ## [decision] 2026-09-05 | the six-pack's first live run, and the three things it changed in the pack
 
 Empty repository, one card (a Bun CLI totalling invoices per customer, names and emails in the file): card to Done in 1h56 with one Attention approval and zero clarifications; 35 commits (specifier 3, coder 8, cleaner 5, architect 6, hardener 9, reviewer 4), 88 tests, coverage 100 on every tier, mutation 100 with 168 killed, two ADRs, verdict conformant with one Low finding fixed by the reviewer and two accepted deviations argued in ADRs. An independent re-run of every gate on the merged main agreed. Three costs the run exposed, folded into the pack: every pane asks Claude Code's folder-trust and bypass-mode questions on first start (documented, twelve answers per fresh project); two roles spent minutes reading `swarm_handoff.bb` after `AUDIT_REQUIRED` (each role prompt now says the first call is a re-read, then the same call again); the inner loop's `bun run lint` hides the type-aware rules CI runs (`lint:strict` joined the pre-handoff loop). Rule for next time: a pipeline of agents surfaces the cost of every unstated step, because nobody in it can shrug and move on.
@@ -156,6 +172,22 @@ Archived 2026-09-26: graduated, `skills/atelier/references/result-type.md:36`.
 
 ---
 
+## [gotcha] 2026-09-03 | BSD awk -v strips backslash escapes
+
+Passing a regex through `awk -v pat='\\.'` on macOS delivers `.` to the program, so the PII tripwire exited 2 on every case while the Linux CI would have been fine. Regexes live as awk literals inside the program text now; lines are lowercased once and matched against lowercase patterns. Same family: zsh does not word-split an unquoted variable and has no `PIPESTATUS`, so a gate script that must run under both shells names its paths explicitly.
+
+Archived 2026-09-26: merged into "the environment is an input: a gate proven on one machine is proven on that machine".
+
+---
+
+## [gotcha] 2026-09-03 | a pipe to tail masks a failing verifier
+
+`python3 scripts/check-citations.py | tail -1` returns tail's status, so a slice committed with two citations beyond workflow.md's end of file and the failure surfaced one slice later. Verification chains are `&&` sequences with the verifier's own exit status deciding, and the reanchor helper now treats "beyond end of file" like "content changed".
+
+Archived 2026-09-26: merged into "the environment is an input: a gate proven on one machine is proven on that machine".
+
+---
+
 ## [gotcha] 2026-09-03 | re-anchor citations per slice, never in bulk
 
 `citations-lock.json` pins the first 72 characters of every `file:line` the matrix cites, so any slice that moves or rewrites a pinned line breaks V3. A bulk `--lock` at the end would have blessed wrong lines silently; the discipline that worked was a snippet-matching re-anchor per slice (same file, rule-number or heading prefix when the line was rewritten, cross-file when the text moved), exiting non-zero on anything ambiguous, and only then `--lock`. Rewriting a pinned line in place is a re-lock, not a move.
@@ -207,6 +239,14 @@ Also: a Python file named `select.py` shadows the stdlib module `subprocess` nee
 error surfaces three frames deep in `selectors.py`.
 
 Archived 2026-09-26: merged into "grader defects favour the weaker answer; read the answer before the number".
+
+---
+
+## [gotcha] 2026-09-03 | a selftest inherits the CI job's environment
+
+The first push to main after the em-dash gate landed went red on the gate's own `--selftest`, green on every developer machine. The push job exports `GITHUB_EVENT_NAME=push`, so inside the selftest's one-commit temp repo the gate took the range branch, found no `HEAD~1`, printed "nothing to compare" and exited 0 on the staged dash. A selftest that shells out to the gate under test has to run it with the Actions variables unset (`env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_EVENT_BEFORE`), and the reproduction is to run the selftest locally with the job's env exported. Same family as the awk `-v` and zsh entries: the environment is an input, and a gate proven only on one machine is proven on that machine.
+
+Archived 2026-09-26: merged into "the environment is an input: a gate proven on one machine is proven on that machine".
 
 ---
 
@@ -295,6 +335,14 @@ Archived 2026-09-26: graduated, `scripts/check-citations.py` with `citations-loc
 The reverse audit's stricter-than deltas produced two accepted rows: 15.10 "Prove the gate can fail" (a new pillar-15 sub-concept distilled from this repo's own smoke-test discipline; forward row 15.4 slimmed from STRICTER to COVERED because its surplus WAS this rule) and the 10.2 strengthening fixing where a catch may live (reverse row 17 flipped to CANON-ROW, tally 20/5/9). A third batched row applied six mechanical repairs, the sharpest being 8.1's exemplar commit message violating the 1.3 grammar the canon itself mandates. `bun audit` also left the gates job: `assets/audit.yml` now ships the doc's canonical scoped workflow (daily schedule + dependency-scoped PR runs) instead of blocking unrelated commits. The 12.7 cascade lesson held again: count asserted in the drift checker (twice), tally, prose, and now the citations lock.
 
 Archived 2026-09-26: graduated, `conformance-matrix.md:368` (15.10 COVERED); counts held by `scripts/check-matrix-drift.py`.
+
+---
+
+## [decision] 2026-08-29 | sonarjs 4.2.0 flags the branded-type doctrine; disable the two rules, do not pin the plugin back
+
+The unpinned-toolchain canary fired again, this time as a doctrine-vs-tool conflict rather than a crash. Under eslint-plugin-sonarjs 4.2.0 with eslint 10.9.1, typescript-eslint 8.68.0 and typescript 5.9.3, `lint:strict` reported three errors on the smoke fixture's own conforming code: `sonarjs/no-useless-intersection` on the canonical branded type and `sonarjs/null-dereference` on two non-nullable values. Both fire ONLY in the type-aware lane (plain `bun run lint` exits 0), so the trigger is `projectService` handing these rules a program, not a new release adding them; both rules already shipped in 4.0.3. Probed the exact shape before deciding: the intersection rule flags the PRIMITIVE side of every branded type (`string & { __brand }` reported at the `string`, `number & { __brand }` likewise) while object-object intersections pass, so it contradicts hard rule 12 in every conforming repo, on every branded type; and `null-dereference` reports `(v: string) => v.trim()` AND `(v: string | undefined) => v === undefined ? 0 : v.trim()`, i.e. it ignores declared types and explicit narrowing alike, so no correct code can satisfy it while `strict: true` already owns that bug class at typecheck. Decisive finding against the obvious "pin it back like typescript@^5" move: sonarjs 4.1.0 DOES NOT LOAD under eslint 10 at all (`TypeError: Cannot read properties of undefined (reading 'FunctionType')` at S2201/rule.js), so holding the plugin back would drag pins onto eslint and typescript-eslint too, which is precisely the "pin everything" the 2026-07-12 entry rejects. So: keep sonarjs current, turn the two rules off in the canonical config with dated reasons beside the three that were already off, and add a second canary job (`SMOKE_SONARJS_PROBE=1`) that re-enables them weekly with `eslint --rule`, which overrides flat config and therefore needs no env branch in the shipped consumer artifact. Rules for next time: when a linter contradicts the standard, check whether the rule can be satisfied by correct code at all before reaching for a rule-level opt-out, and verify the downgrade path actually works before treating a version pin as the cheap option, because a plugin that cannot load is not a fallback. Note the asymmetry worth keeping: a tool that is merely noisy gets narrowed, a tool that is wrong about mandated doctrine gets turned off and re-probed.
+
+Archived 2026-09-26: merged into "when the unpinned toolchain contradicts the standard, turn the rule off and re-probe it; do not pin the world back".
 
 ---
 
@@ -524,11 +572,27 @@ Archived 2026-09-26: superseded by "rule 26 final form" (2026-07-19).
 
 ---
 
+## [gotcha] 2026-07-12 | trigger-eval is high-variance at 3 runs/query; single-run routing verdicts overstate regressions
+
+The committed suite-routing tier finding (13/13 fable to 8/13 sonnet to 4/13 haiku) was single-run per tier. Replicating the Sonnet routing 3 times with the SAME description gave 12/13, 12/13, 12/13, so the 8/13 was one unlucky draw and the real Sonnet routing is about 12/13, near Fable parity. The logs were clean (no probe timeouts), so this is genuine run-to-run variance in whether the model invokes a skill, not a harness fault. The earlier "sharp Sonnet recall regression" was therefore mostly a measurement artifact, and the Haiku 4/13 is likewise a single unverified draw. Rule for next time: a routing/trigger verdict needs replication (at least 3 harness runs, so at least 9 samples per query) before a tier delta is claimed; one 3-runs-per-query pass is too noisy for the routing set. Aside: the grill-me description was restructured trigger-first as a structural-lever test, and a replicated A/B showed a small real lift on its own cases (0.89 to 1.00) with the unedited control flat (0.66 to 0.66) and negatives at 0, so it was kept, but the effect is marginal and the motivating regression was largely noise. Partially supersedes the two tier-finding entries below.
+
+Archived 2026-09-26: merged into "a trigger verdict is only as valid as the choice set the probe shows the model".
+
+---
+
 ## [gotcha] 2026-07-12 | the skill's conformance delta SHRINKS on smaller tiers (soft-delete collapses)
 
 Firming the earlier noisy n=1 read with 3 runs/task/tier resolved it: the skill helps on both tiers but by less as the tier shrinks, the OPPOSITE of the prior hypothesis that the delta would grow on smaller models. On the e1+e2+e6 overlap the with_skill-minus-baseline delta is Fable +3.0/10, Sonnet +0.67/10, Haiku +0.33/10; adding e10 the subset delta is Sonnet +2.0/13 (with_skill 8.3 vs baseline 6.3) and Haiku +0.7/13 (8.0 vs 7.3). The single-sample "Sonnet delta 0" was bad luck. Driver of the shrink: the soft-delete discipline (e2) collapses on both small tiers EVEN WITH the skill (with_skill e2 pass-count Fable 3/3 to Sonnet [0,1,0] to Haiku [0,0,0]); agents hard-delete regardless. The skill's most robust win is e10, the LLM-adapter port+pin discipline (Sonnet with_skill [3,3,3] vs baseline [2,1,2]). Combined with the trigger under-invoke finding, smaller/faster models both reach for the skill less AND apply its disciplines less thoroughly. Harness: conformance run.sh gained CONFORMANCE_TAG so N variance passes land in runs-<model>-<tag> without overwriting. Supersedes the "conformance across tiers is too noisy to call" caveat in the entry below.
 
 Archived 2026-09-26: merged into "the evals catch regressions, not improvements; credit a doctrine edit by ablation".
+
+---
+
+## [gotcha] 2026-07-12 | the trigger contract is tuned for Fable; smaller tiers under-invoke
+
+Running the trigger sets on Sonnet and Haiku (TRIGGER_EVAL_MODEL) showed recall degrading monotonically while precision stayed perfect: atelier-bun 29/31 sonnet to 24/31 haiku, suite-routing 13/13 fable to 8/13 sonnet to 4/13 haiku, and EVERY failure was under-trigger (over-trigger=0 on all sets/tiers). Smaller/faster models invoke NONE rather than the wrong skill; the companion skills (grill-me, greenfield) under-fire hardest. So a description tuned to trigger on Fable is not a guarantee on the tier a user actually runs, and lifting small-tier recall is a recall-vs-precision retune (more assertive descriptions risk Fable false-fires), its own task. Conformance across tiers was measured at n=1 per task and came out noisy (sonnet with_skill 7/13 = baseline 7/13, haiku 9/13 vs 7/13, inconsistent direction), so a tier-trend on the skill's code-quality delta needs at least 3 runs per task before it can be claimed; a spot-check confirmed the noise is real agent variance (sonnet e2 with_skill hard-deleted, no test), not a grader bug. Harness: both run.sh now namespace output by model so tiers no longer overwrite each other.
+
+Archived 2026-09-26: merged into "a trigger verdict is only as valid as the choice set the probe shows the model".
 
 ---
 
@@ -556,6 +620,14 @@ Archived 2026-09-26: graduated, `skills/atelier/references/workflow.md` (the tri
 
 ---
 
+## [gotcha] 2026-07-12 | single-skill trigger probes cannot measure suite routing
+
+A probe registering only one synthetic skill scores "review my diff" as an atelier miss and "set up eslint in this existing repo" as a greenfield false-trigger, because the skill that SHOULD win is not in the model's choice set. Fixed by suite mode in `scripts/trigger-eval/run_eval.py` (`--suite`, cases carry `expected_skill`): with all four registered, routing scored 13/13. Rule for next time: a triggering verdict is only as valid as the choice set the probe shows the model.
+
+Archived 2026-09-26: merged into "a trigger verdict is only as valid as the choice set the probe shows the model".
+
+---
+
 ## [gotcha] 2026-07-12 | git add of a directory sweeps bytecode
 
 `git add scripts/trigger-eval` happily staged `__pycache__/run_eval.cpython-312.pyc` because nothing ignored it; the repo had never held Python before. When a commit adds a directory wholesale, list what got staged before committing, and extend .gitignore the moment a new language enters the repo.
@@ -564,11 +636,27 @@ Archived 2026-09-26: graduated, `.gitignore:28` (`__pycache__/`).
 
 ---
 
+## [gotcha] 2026-07-12 | typescript 7 crashes eslint-plugin-sonarjs at rule load
+
+The smoke test's unpinned toolchain install pulled TypeScript 7.0.2, and sonarjs (<= 4.1.0, dependency spec `typescript: '>=5'`) crashed ESLint outright: its rules read `ts.SyntaxKind.*` at module scope, and TS 7's module shape breaks the CJS default-export interop (`Cannot read properties of undefined`). `tsc` itself is fine; only programmatic API consumers break. Fix: `typescript@^5` is the one deliberate pin in the smoke-test install (matching the canonical skeleton's `^5.0.0`), lifted when sonarjs supports TS 7. Rule for next time: an unpinned-toolchain canary that fires is a success; respond by pinning the one incompatible dep with a dated reason, not by pinning everything.
+
+Archived 2026-09-26: merged into "when the unpinned toolchain contradicts the standard, turn the rule off and re-probe it; do not pin the world back".
+
+---
+
 ## [gotcha] 2026-07-12 | setup-java cache maven requires a pom in the repo
 
 `actions/setup-java` with `cache: maven` fails the job in seconds ("No file matched to [**/pom.xml]") when the repository holds no pom, which is exactly this repo's shape: the smoke test generates its pom at runtime from the reference doc. Drop the cache option; the probe re-downloads plugins each run and that is fine.
 
 Archived 2026-09-26: graduated, `.github/workflows/ci.yml:65`.
+
+---
+
+## [gotcha] 2026-07-11 | stock trigger-eval runner false-zeros with fable
+
+The skill-creator `run_eval.py` scored every should-trigger case ~0/5 against a previously optimized description. Three compounding causes: it concludes False on the first non-Skill tool call (Fable explores the repo before consulting a skill), its 30s timeout straddles Fable's thinking latency, and, decisively, parallel workers share one probe root's `.claude/commands`, so each probe's model sees N uuid-suffixed clones and almost never invokes the uuid its own detector greps for. A patched runner (full-stream detection, per-probe isolated roots, 90s timeout) lives in the gitignored `skills/atelier-workspace/trigger-eval-2026-07-11/`; with it the same description scored 31/34. Rule for next time: uniform ~0 trigger rates mean harness artifact, not description failure; verify with one manual `claude -p` probe before touching the description.
+
+Archived 2026-09-26: merged into "a trigger verdict is only as valid as the choice set the probe shows the model".
 
 ---
 
