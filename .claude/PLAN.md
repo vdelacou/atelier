@@ -1,19 +1,16 @@
-# Plan: review-eval fixtures clean on every rule (2026-09-26)
+# Plan: guideline citations in review-me (2026-09-26)
 
-Goal: the post-cascade review eval scored one false positive per variant on files the eval treats as
-clean, and both findings were true on the fixture's text: `changed/src/domain/settings.ts` is new
-production code with no test (rule 11) and casts parsed JSON unchecked (rule 12); `changed-java/.../
-MemberId.java` returns `Result<MemberId, String>` where the shipped `Email` exemplar uses a typed
-error (rule 16). A clean file must be clean on every rule, not only the one it was planted for.
+Goal: two of the three skill-arm false positives in the clean-fixture rerun cited "rule 3" and
+"rule 2" for SKILL.md's behavioural guidelines 3 (surgical changes) and 2 (simplicity). The
+guidelines and the hard rules both number from 1, and review-me says only "the exact rule number",
+so a guideline finding reads as a false hard-rule claim (rule 3 is the `interface` ban).
 
-Definition of done: `settings.ts` keeps its rule-17 carve-out and its embedded claim (the injection-
-resistance probe) and gains a shape check with a typed `malformed-shape` error; `settings.test.ts`
-lands beside it in the changed tree and joins `clean-files.json`; `MemberId` returns a typed error in
-the `Email` exemplar's shape, its test and every caller follow; no planted violation's evidence moves
-(violations.json and violations-java.json untouched); the grader selftest green; the full eval rerun,
-both arms, both variants, three passes each (the recorded shape); `review-eval/baseline.md` records
-the new fixture version and numbers; CHANGELOG Harness bullet; commit on the yes.
+Definition of done: review-me's Output section says to cite a hard rule as `rule N` and a behavioural
+guideline as `guideline N`, with the collision named; the description untouched (no trigger eval);
+fast gates green; the review eval's skill arm rerun, three passes per variant, graded; the record
+shows whether the guideline false positives are gone and nothing regressed (recall, citation); the
+unaided arm is not rerun (it never reads review-me); CHANGELOG and baseline.md; commit on the yes.
 
-1. [x] (settings.ts: parseJson keeps the rule-17 catch and its embedded claim, isStringRecord adds the shape check, typed malformed-shape error; settings.test.ts, 4 scenarios, green under bun against the fixture's result.ts, joins clean-files.json; MemberId: nested enum Error as in the Email exemplar, MemberIdTest follows, compiles; no caller of parse elsewhere; violations manifests untouched; diff 13 files) Read the fixtures, manifests, grader and harness; edit the two files, add the test.
-2. [x] (grader selftest green; the smoke pass is folded into the full run below) Selftest; one skill-arm smoke pass per variant to confirm the two FPs are gone.
-3. [x] (all six passes graded with both grader fixes: skill Bun 36/36 caught and cited, 2 FP; Java 27/27, 27/27, 1 FP; unaided Bun 31/36, 0/36, 1 FP; Java 24/27, 2/27, 0 FP; ninth grader defect, plural citations, fixed with a selftest seen red; recorded; two commits pushed on the yes. Earlier: launched two chains, bun and java, three passes each, both arms; tags fxclean-r1..r3. Pass 1: Bun skill 12/12, 12/12, the one FP a grader defect (the eighth: a sentence reporting settings.ts's embedded rule-17 claim, verdict in the next sentence), fixed with selftests red under the old logic, regrade 0 FP; Java skill 9/9, 8/9, 1 FP on MemberId.parse(null), a reviewer overreach java-quarkus.md settles (null rejected at the HTTP edge), no asset change) Full rerun (12 sessions), grade, record, commit on the yes.
+1. [x] (one sentence in Output; description untouched; frontmatter, citations, em dash, identity green) Edit review-me; gates.
+2. [x] (Bun 36/36 caught, 36/36 cited, 0 FP; Java 27/27, 27/27, 0 FP, after the tenth grader defect, the hyphenated doctrine phrase, fixed in violations.json with a selftest on the shipped manifest seen red) Skill arm, three passes per variant (six sessions); grade.
+3. [x] (recorded; three commits pushed on the yes) Record, commit on the yes.

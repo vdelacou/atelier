@@ -217,3 +217,24 @@ throwing breaks rule 12; `java-quarkus.md` rejects null at the HTTP edge (`@NotN
 keeps shape in the record, so this is a reviewer overreach the doctrine already settles. The unaided
 arm's one false positive calls the settings comment a rule argument, an opinion the standard does not
 hold.
+
+## After the guideline citation form (2026-09-26)
+
+`atelier-review-me` now says to cite a hard rule as `rule N` and a behavioural guideline as
+`guideline N`, naming the collision (both lists number from 1). Skill arm only, three passes per
+variant, opus; the unaided arm does not read review-me and its numbers above stand.
+
+| Variant | Caught | Rule-cited | False positives |
+|---|---|---|---|
+| Bun | 36/36 | 36/36 | 0 |
+| Java | 27/27 | 27/27 | 0 |
+
+Every review used the new form, two or three `guideline N` citations each, and the two guideline
+findings that had read as false hard-rule claims no longer count against a clean file. One more grader
+defect surfaced, the tenth: the gate finding cited "the every-gate-proves-it-can-fail canon" with its
+file and line, and the manifest's doctrine-phrase alternate accepted only the spaced form, so it read
+as uncited (35/36 before the fix). `violations.json` now accepts hyphens between the words, and a
+selftest reads the shipped manifest in both phrasings, red under the previous manifest. This is the
+first reading with no false positive and no uncited finding in either variant; the Java null
+overreach of the previous reading did not recur, which says it was variance on a judgment the
+doctrine settles.

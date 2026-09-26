@@ -7,6 +7,12 @@ whole, not any single skill.
 ## [Unreleased]
 
 ### Changed
+- `atelier-review-me` cites a behavioural guideline as `guideline N` and a hard rule as `rule N`.
+  The two lists both number from 1, so a drive-by edit cited as "rule 3" asserted the `interface`
+  ban against a clean file; two of the three skill-arm false positives in the clean-fixture rerun
+  were that. After the change, three passes per variant, skill arm: Bun 36/36 caught and cited, Java
+  27/27 and 27/27, no false positive, once the tenth grader defect was fixed (the manifest's
+  doctrine phrase accepted only its spaced form, not "every-gate-proves-it-can-fail").
 - **The companion skills catch up with the 2.4.0 gates**, a cascade CLAUDE.md requires and the
   release skipped. `atelier-review-me` adopt mode puts the identity and discipline tripwires in the
   hook on the first slice (staged lines only, so legacy code cannot trip them) and holds their CI
