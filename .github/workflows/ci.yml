@@ -90,7 +90,7 @@ jobs:
       - run: python3 scripts/conformance-eval/judge.py --selftest
 
   review-grader-selftest:
-    name: review-eval grader selftest
+    name: review-eval and distill-eval grader selftests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -99,6 +99,10 @@ jobs:
       # like orders-db.ts:30 as citing rule 30, must flag a rule asserted against
       # a clean file, and must score an empty review 0.
       - run: python3 scripts/review-eval/grade.py --selftest
+      # Proves the distill grader can fail: a live lesson dropped, a title that
+      # vanished, an archived entry edited, PLAN.md or the CHANGELOG touched, and a
+      # commit each fail their hard check, and a moot entry left live costs recall.
+      - run: python3 scripts/distill-eval/grade.py --selftest
   matrix-drift:
     name: conformance-matrix drift gate
     runs-on: ubuntu-latest

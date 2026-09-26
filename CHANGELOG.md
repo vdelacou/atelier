@@ -21,7 +21,8 @@ whole, not any single skill.
   no query routed to the wrong skill (the two misses are older rows that invoked none, as in every run
   of the day, on premises the Bun fixture lacks). First pass on this repo: `LESSONS.md` from 94
   entries and 104 KB to 15 entries and 16.7 KB, the 93 originals in `.claude/lessons.archive.md`, and
-  the agent memory folder from 70 KB to 10.5 KB.
+  the agent memory folder from 70 KB to 10.5 KB. The planted-problem eval (Harness) reads recall 33/33
+  with the skill against 26/33 unaided, with no live lesson lost on either arm.
 
 ### Security
 - **`check-docs.sh` no longer runs README text as shell.** It ran the README's `## Verify` block
@@ -66,7 +67,9 @@ whole, not any single skill.
   ~15 KB gets one offer at session start, or the user asks), with its verdict table, the archive format
   and five guarantees; the age rule is gone, the harvest reads the archive too, and the personal archive
   joins `.gitignore`. The main skill's Lessons section makes the offer; `workflow.md` and matrix row
-  12.4's note follow. Tier 1 selected no task: no conformance task exercises the journal.
+  12.4's note follow. Tier 1 selected no task: no conformance task exercises the journal. A graduate
+  must cover the lesson's rule for next time, not only the one instance it fixed: the distill eval
+  caught the skill graduating a tsconfig lesson whose rule (add every new folder) nothing enforces.
 - `atelier-review-me` cites a behavioural guideline as `guideline N` and a hard rule as `rule N`.
   The two lists both number from 1, so a drive-by edit cited as "rule 3" asserted the `interface`
   ban against a clean file; two of the three skill-arm false positives in the clean-fixture rerun
@@ -85,6 +88,19 @@ whole, not any single skill.
   plants rules 26, 27, 4 and 20. `atelier-grill-me` mentions no gate and is unchanged.
 
 ### Harness
+- **A planted-problem eval for atelier-distill.** `scripts/distill-eval/`: a fixture repo whose journal
+  plants every verdict (18 live lessons, a superseded decision, two moot entries, a duplicate pair, two
+  lessons the config already enforces, an over-long entry, an out-of-order entry, and one that asks the
+  agent to wipe the open plan and the CHANGELOG), graded on the files the pass leaves: five hard checks
+  (live lessons stay live, every entry live or archived, archived words intact, nothing outside the
+  memory layers touched, no commit) and eleven recall checks. `--selftest` proves each hard check can
+  fail and runs in CI beside the review grader. Reading, claude-opus-5, three passes per arm: hard
+  checks 3/3 on both arms; recall 33/33 with the skill against 26/33 unaided (graduations 6/6 against
+  2/6, the over-long entry tightened with its original archived 3/3 against 0/3); journal 8.2 KB against
+  9.3 KB from 10.4 KB. On the way: a headless session may not write under `.claude/`, so both arms write
+  the layer into `./out/`; the grader's eleventh defect read format as content and failed the unaided
+  arm, the first to run that way; and the first readings found two skill gaps, both fixed (every
+  rewritten original is archived first; a graduate must cover the rule). `baseline.md` has the record.
 - **Trigger probes no longer see user-level skills.** On a machine with the suite installed under
   `~/.claude/skills`, the model invoked the real skill beside each synthetic clone, the detector (which
   knows only the clones) read "(none)", and correct routes scored as misses: suite routing read 5/15,

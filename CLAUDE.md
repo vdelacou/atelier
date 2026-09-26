@@ -24,7 +24,9 @@ tree. What binds work HERE is the authoring and process discipline below.
   gates pass AND block their target violation), `trigger-eval/` (does the skill load; suite
   mode measures which skill wins a query), `conformance-eval/` (does produced code follow the
   rules, with-skill vs baseline), `review-eval/` (does atelier-review-me catch planted
-  violations in a diff, recall + rule-citation + false-positives vs a skill-less reviewer).
+  violations in a diff, recall + rule-citation + false-positives vs a skill-less reviewer),
+  `distill-eval/` (does atelier-distill keep every live lesson, account for every entry and touch
+  nothing else, on a journal with every verdict planted, vs an unaided pass).
 
 ## Verify commands
 - `bun run scripts/validate-frontmatter.ts` (fast; the CI frontmatter gate).
@@ -39,6 +41,9 @@ tree. What binds work HERE is the authoring and process discipline below.
   description edit (a description is a triggering contract).
 - `python3 scripts/review-eval/grade.py --selftest` (fast; the CI review-grader gate). The full
   eval: `bash scripts/review-eval/run.sh`, then grade the printed runs dir.
+- `python3 scripts/distill-eval/grade.py --selftest` (fast; CI, in the review-grader job). The
+  full eval: `DISTILL_MODEL=claude-opus-5 bash scripts/distill-eval/run.sh`, then
+  `python3 scripts/distill-eval/grade.py <runs-dir>`.
 - `python3 scripts/conformance-eval/select-tasks.py --selftest` (fast; the CI gate for the tier-1
   selection). Three tiers (baseline.md, Tiers): tier 0 is the CI selftests; tier 1 after any doctrine
   edit is `CONFORMANCE_SINCE=<ref> CONFORMANCE_MODEL=claude-opus-5 bash scripts/conformance-eval/run.sh`
@@ -55,7 +60,8 @@ tree. What binds work HERE is the authoring and process discipline below.
   The judging itself is local and paired: `JUDGE_MODEL=claude-opus-5 python3
   scripts/conformance-eval/judge.py <runs-dir>` over run dirs the conformance eval produced.
 - CI (`.github/workflows/ci.yml`) runs eight jobs on every push (frontmatter, the em-dash and
-  identity gates, the three smoke tests, the two grader selftests, matrix drift with the citation,
+  identity gates, the three smoke tests, two grader-selftest jobs (conformance with the selector
+  and the judge; review with distill), matrix drift with the citation,
   workflow-asset and staleness selftests); `canary.yml` weekly-probes
   the two deliberate toolchain concessions (whether the typescript pin can lift, and whether the
   three disabled sonarjs rules can go back on).

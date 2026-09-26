@@ -144,7 +144,7 @@ CI keeps this honest. A drift gate hashes the vendored canon and refuses a matri
 
 ## How we know it works
 
-Both evals run the same tasks with and without the skill on Claude Opus and grade mechanically. The scorecards are checked in.
+Each eval runs the same tasks with and without the skill on Claude Opus and grades mechanically. The scorecards are checked in.
 
 | Measurement | With atelier | Without |
 |---|---|---|
@@ -154,6 +154,8 @@ Both evals run the same tasks with and without the skill on Claude Opus and grad
 | Review, TypeScript, findings that cite the rule | 33/33 | 0/33 |
 | Review, Java, 9 planted violations over 3 passes | 27/27 caught | 15/27 caught |
 | Review, false positives on clean files | 0 | 0 |
+| Memory cleanup, 27 planted journal entries over 3 passes ([scorecard](scripts/distill-eval/baseline.md)) | 33/33 checks | 26/33 checks |
+| Memory cleanup, live lessons lost | 0 | 0 |
 
 The gap is widest on the rules that hurt most in production. The unaided agent never once preferred soft delete to a hard `DELETE`, in either eval, and built against a port rather than an implementation in one run of six.
 
@@ -175,7 +177,7 @@ Eight CI jobs run on every push to this repo: the canon drift and citation gates
 
 ## Inside this repository
 
-This repo is the standard, not an application. `skills/` holds the five skills, with the main one's `assets/` (hooks, tripwires, CI workflows, test helpers, Java exemplars) and `references/` (the 27 doctrine files). `scripts/` holds the harnesses: the three smoke tests, the trigger, conformance and review evals, and the gates that keep the matrices, citations and workflows honest. `docs/global-rules/` is the vendored canon the matrices audit against.
+This repo is the standard, not an application. `skills/` holds the five skills, with the main one's `assets/` (hooks, tripwires, CI workflows, test helpers, Java exemplars) and `references/` (the 27 doctrine files). `scripts/` holds the harnesses: the three smoke tests, the trigger, conformance, review and distill evals, and the gates that keep the matrices, citations and workflows honest. `docs/global-rules/` is the vendored canon the matrices audit against.
 
 Working here means [`CLAUDE.md`](CLAUDE.md): never an em dash, frontmatter within the loader limits, a plan before multi-step work, small Conventional Commits, and a fixture that proves every new gate can fail. The fast checks:
 

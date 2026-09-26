@@ -10,7 +10,7 @@ Every gap closed between 2026-09-06 and 2026-09-19 went the same way: take the e
 
 Merges: 2026-09-19 (rules 4 and 20), 2026-09-10 (three tripwires default), 2026-09-09 (rule 26 tripwire, rule 37 in Next), 2026-09-08 (rule 5, rule 15 Java and lint, Java mock ban, rule 37 Java, style rules and rule 37), 2026-09-06 (random order).
 
-Archived 2026-09-26: graduated, `CLAUDE.md:83-110` (Writing a gate).
+Archived 2026-09-26: graduated, `CLAUDE.md:89-116` (Writing a gate).
 
 ---
 
@@ -20,7 +20,7 @@ A red fixture proves a gate only when it greps the rule's own tag (a formatting 
 
 Merges: 2026-09-08 (blank pin, oldest gate never red), 2026-08-30 (check-skill-pin, smoke fixture -A), 2026-08-29 (diff-derived scope), 2026-07-20 (openssl), 2026-07-12 (construction-based evasions, PIT history), 2026-07-11 (-SNAPSHOT grep).
 
-Archived 2026-09-26: graduated, `CLAUDE.md:83-110` (Writing a gate).
+Archived 2026-09-26: graduated, `CLAUDE.md:89-116` (Writing a gate).
 
 ---
 
@@ -124,7 +124,7 @@ Archived 2026-09-26: tightened; the rewrite stays in LESSONS.md.
 
 The citation lock pinned the start of every `file:N-M` range and nothing else. A preview of the 56 ranges before widening it found two ending on a blank line and three inverted, end before start (`testing.md:184-127`, `security.md:227-217`, `testing.md:649-531`): every hand re-anchor of the day had moved `file:N` starts by snippet and never touched the `-M`, so the ends drifted for weeks and the gate, which only ever read N, called them intact. Both ends are pinned now, the selftest drifts an end line and requires the red, and the five ranges were repaired against the section text they meant (rule 16 and 17 for the Result row, the whole zero-warnings section for 15.3, the regression, baseline and bypass sections for 4.3, 5.7 and 15.4, the last one two citations that had been fused). Rule for next time: a re-anchor that rewrites a citation must rewrite the whole citation, and the next harness slice is a `--reanchor` mode in the gate itself, since today's hand scripts did the job eight times and missed the ends every time. Landed the next morning: `--reanchor` maps every lock key independently, so a range moves as two points, rewrites the citation tokens with a single regex substitution over each source, and locks only when every snippet resolved to exactly one line; rehearsed on a scratch copy of the repo with one line inserted at the top of SKILL.md, 17 failing citations became 233 intact with only the SKILL.md numbers touched.
 
-Archived 2026-09-26: graduated, `scripts/check-citations.py` pins both ends of a range, and `CLAUDE.md:32` documents `--reanchor`.
+Archived 2026-09-26: graduated, `scripts/check-citations.py` pins both ends of a range, and `CLAUDE.md:34` documents `--reanchor`.
 
 ---
 
@@ -340,7 +340,7 @@ Archived 2026-09-26: merged into "the environment is an input: a gate proven on 
 
 `citations-lock.json` pins the first 72 characters of every `file:line` the matrix cites, so any slice that moves or rewrites a pinned line breaks V3. A bulk `--lock` at the end would have blessed wrong lines silently; the discipline that worked was a snippet-matching re-anchor per slice (same file, rule-number or heading prefix when the line was rewritten, cross-file when the text moved), exiting non-zero on anything ambiguous, and only then `--lock`. Rewriting a pinned line in place is a re-lock, not a move.
 
-Archived 2026-09-26: graduated, `CLAUDE.md:32` (`--reanchor`).
+Archived 2026-09-26: graduated, `CLAUDE.md:34` (`--reanchor`).
 
 ---
 
@@ -370,7 +370,7 @@ change or before a release. The baseline arm is `baseline-arm.json`, keyed by th
 prompts and assertions, refused with the refresh commands when they change. Every session has a
 wall-clock cap and a turn cap, and each task's scorecard line prints as its session lands.
 
-Archived 2026-09-26: graduated, `CLAUDE.md:42-53` (the three tiers and the frozen baseline arm).
+Archived 2026-09-26: graduated, `CLAUDE.md:47-58` (the three tiers and the frozen baseline arm).
 
 ---
 
