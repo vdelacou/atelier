@@ -6,6 +6,34 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Security
+- **`check-docs.sh` no longer runs README text as shell.** It ran the README's `## Verify` block
+  through `bash -eu -c`, so anyone able to edit a README could run code with the CI runner's token;
+  the skills.sh audits flagged it (Socket, one medium alert; Gen, command execution) and put the
+  `atelier` skill at "Med Risk" in the install output. It still runs the documented commands, as
+  canon 12.1 asks, but only lines that name a repo entry point (`bun run <script>` that
+  `package.json` defines, `bun test`, a file under `scripts/`, `./mvnw`, `test -f|-d|-e <path>`),
+  each as an argument list, and it refuses the whole block before anything runs when a line carries
+  a pipe, redirect, quote, variable, substitution or any other command. The Bun smoke test proves the
+  entry points green, a renamed script and a missing file red, and a pipe, a stray command and a
+  command substitution refused with nothing run; the old script ran all three. `governance.md`'s
+  example workflow gains `permissions: contents: read`. Consumers: re-copy `check-docs.sh`, and move
+  any Verify line that is not an entry point (a health curl, a pipeline) into a script it calls.
+- **The shipped CI workflows verify the gitleaks tarball's SHA-256 before `sudo install`.** The
+  version was pinned, the artifact was not. The digest is the one in the release's
+  `gitleaks_8.30.1_checksums.txt` (and GitHub's asset metadata). `check-workflow-assets.sh` now fails
+  a workflow that downloads a binary from a release without a `sha256sum -c` before its first use,
+  selftested red on the previous shape. `audit.yml` and `audit-java.yml` declare `permissions:
+  contents: read` like the other five workflows. Consumers: re-copy the CI workflow and, if used,
+  the audit workflow.
+- `references/ai.md` describes an injected instruction in words instead of quoting the payload, the
+  pattern Gen's prompt-injection check matched (Gen itself called the text benign).
+
+### Fixed
+- The README had the skills CLI's install scope backwards: installs are project-level by default and
+  `-g` makes them user-level. The documented command is now `bunx skills add vdelacou/atelier -g`, which
+  puts the skill in `~/.claude/skills/`, the path the pointer-block step reads.
+
 ### Changed
 - `atelier-review-me` cites a behavioural guideline as `guideline N` and a hard rule as `rule N`.
   The two lists both number from 1, so a drive-by edit cited as "rule 3" asserted the `interface`
