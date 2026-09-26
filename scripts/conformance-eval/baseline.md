@@ -562,3 +562,26 @@ cap); two more baseline passes at 120 summed in restore the three-pass grain, th
 The tree under test is main at 703bd32, which `skills/atelier/` shares with the release-notes commit
 3d7093a. Read with the 60-turn pass above: the standard produced full marks whenever a session had
 the turns to finish, and the harness now says when it did not.
+
+## Frozen baseline arm, three passes at 120 turns (2026-09-26)
+
+Two more baseline-arm passes on the transcribed `run.sh` (`bl120-2`, `bl120-3`, opus, 120 turns and
+40 minutes, three jobs each and run concurrently, 12:54 to 13:3x, none refused, none capped of either
+kind) summed with the 2026-09-20 release pass's baseline arm. Per pass the unaided arm read 45, 47 and
+46 of 61; the fixture holds 138/183 over 63 runs, keyed to the current tasks.json. Against it the
+2.4.0 release run's skill arm reads 61/61 to an expected 46.0/61. Tier 1 compares against this
+fixture from here on.
+
+The first turn census the transcripts allow, unaided arm, both passes (turns per session):
+
+| Task | Turns |
+|---|---|
+| h7-reliability-full | 46, 75 |
+| e7-outbox | 43, 48 |
+| e4-invoices | 26, 36 |
+| h6-ai-full | 28, 32 |
+| median over 42 sessions | 21 |
+
+The 60-turn cap was tight for both arms, not only the skill: the unaided arm needed 75 turns on h7
+in one pass and would have been cut there too. The skill arm's census waits for its next transcribed
+pass (the 2.4.0 release runs predate the transcript; the a4 probe of 2026-09-26 read 24 turns).

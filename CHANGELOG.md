@@ -17,6 +17,9 @@ whole, not any single skill.
   read. Neither grader nor judge sees the file (suffix and dotfile filters). Selftested, red under an
   extractor that drops the max-turns branch. CLAUDE.md's cap line had kept the pre-2.4.0 default
   (20 minutes) and now names both caps and the transcript.
+- The frozen baseline arm holds three passes at the 120-turn cap: two transcribed unaided passes
+  summed with the 2.4.0 release pass's baseline arm, 138/183 over 63 runs. The first turn census
+  shows the unaided arm needing up to 75 turns (h7), so the old 60-turn cap was tight for both arms.
 
 ## [2.4.0] - 2026-09-19
 
