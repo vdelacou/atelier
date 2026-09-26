@@ -88,6 +88,20 @@ whole, not any single skill.
   plants rules 26, 27, 4 and 20. `atelier-grill-me` mentions no gate and is unchanged.
 
 ### Harness
+- **The eval arms no longer carry atelier context by construction.** The conformance, review and
+  distill runners started each `claude -p` session inside this repo, so both arms loaded the repo's
+  `CLAUDE.md` and project memory by directory walk-up, and every skill under `~/.claude/skills` was
+  listed, the atelier suite's descriptions included, which summarise the doctrine. No unaided session
+  ever invoked an atelier skill, but the context moved the numbers. Sessions now start in a scratch
+  folder outside the repo, copied back for grading, with the user setting source off and the user's
+  settings file passed back, so the permission mode and output style the arms have always run with
+  stay the same. Re-measured the same night: the frozen unaided conformance arm fell from 138/183 to
+  108/183 (per pass about 46 to 36 of 61; soft delete 9/12 to 0/12), the unaided Bun reviewer from
+  31/36 to 19/36 caught (Java held at 24/27), and the unaided distill arm, which had archived faithfully
+  while this repo's `CLAUDE.md` described the archive, rewrote 31 entries with no original kept (recall
+  24/33 against 33/33 with the skill). Fixed on the way, each with a selftest case: the review grader's
+  twelfth defect (a finding worded "no `console.*`" read as a miss) and two distill expectations (five
+  entries that restate atelier rules are neutral; an annotated copy of the untrusted entry is no edit).
 - **A planted-problem eval for atelier-distill.** `scripts/distill-eval/`: a fixture repo whose journal
   plants every verdict (18 live lessons, a superseded decision, two moot entries, a duplicate pair, two
   lessons the config already enforces, an over-long entry, an out-of-order entry, and one that asks the

@@ -144,18 +144,18 @@ CI keeps this honest. A drift gate hashes the vendored canon and refuses a matri
 
 ## How we know it works
 
-Each eval runs the same tasks with and without the skill on Claude Opus and grades mechanically. The scorecards are checked in.
+Each eval runs the same tasks with and without the skill on Claude Opus and grades mechanically. The scorecards are checked in. Since 2026-09-26 neither arm runs with this repo's context or the installed skills in view; the review and memory-cleanup rows are measured that way, and the two conformance rows predate it (their unaided arm had the atelier context, so they understate the gap).
 
 | Measurement | With atelier | Without |
 |---|---|---|
 | Conformance, 37 assertions over 3 passes ([scorecard](scripts/conformance-eval/baseline.md)) | 111/111 | 86/111 |
 | Conformance, the 7-task production-discipline tier | 24/24 | 15/24 |
-| Review, TypeScript, 11 planted violations over 3 passes ([scorecard](scripts/review-eval/baseline.md)) | 33/33 caught | 23/33 caught |
-| Review, TypeScript, findings that cite the rule | 33/33 | 0/33 |
-| Review, Java, 9 planted violations over 3 passes | 27/27 caught | 15/27 caught |
-| Review, false positives on clean files | 0 | 0 |
-| Memory cleanup, 27 planted journal entries over 3 passes ([scorecard](scripts/distill-eval/baseline.md)) | 33/33 checks | 26/33 checks |
-| Memory cleanup, live lessons lost | 0 | 0 |
+| Review, TypeScript, 12 planted violations over 3 passes ([scorecard](scripts/review-eval/baseline.md)) | 36/36 caught | 19/36 caught |
+| Review, TypeScript, findings that cite the rule | 36/36 | 2/36 |
+| Review, Java, 9 planted violations over 3 passes | 27/27 caught | 24/27 caught |
+| Review, claims against the clean files | 4, each true on the fixture's text | 0 |
+| Memory cleanup, 27 planted journal entries over 3 passes ([scorecard](scripts/distill-eval/baseline.md)) | 33/33 checks | 24/33 checks |
+| Memory cleanup, entries rewritten with no original kept | 0 | 31 |
 
 The gap is widest on the rules that hurt most in production. The unaided agent never once preferred soft delete to a hard `DELETE`, in either eval, and built against a port rather than an implementation in one run of six.
 

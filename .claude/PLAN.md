@@ -1,54 +1,70 @@
-# Plan: the distill follow-ups (2026-09-26, evening)
+# Plan: eval arms blind to the user's installed skills (2026-09-26, late)
 
-The owner said "do it" to the four next steps of the atelier-distill build. Three are carried out;
-the fourth (delete `memory.bak-2026-09-26/`, outside git) is an irreversible delete and waits for an
-explicit yes at the landing question. Out of scope, flagged as its own task: the conformance and review
-runners also show user-level skills to their unaided arm (no atelier call in 42 baseline sessions; two
-`claude-api` calls on h6).
+The conformance and review runners start nested `claude -p` sessions that see the skills installed under
+`~/.claude/skills` (here, links to this repo's atelier suite), so the unaided arm is not skill-less by
+construction. No atelier skill was invoked in 42 baseline sessions of the frozen fixture's passes; two
+called `claude-api` on h6. The trigger runner was fixed with `--setting-sources project,local`
+(b532bbc); the distill runner shipped with it.
 
 ## Steps and definition of done
 
-1. [x] Promote the gate-writing checklist. CLAUDE.md gains a "Writing a gate" section carrying every rule
-   of the journal entries I ("a gap closes as canon, rule, gate and red fixture") and J ("how a gate
-   lies"); both entries graduate to `.claude/lessons.archive.md` with the pointer to the new lines,
-   verbatim; the LESSONS line in CLAUDE.md follows. DoD: journal under ~15 KB (the main skill's
-   session-start offer stops), the ledger holds (every title live or archived once), gates green.
-2. [x] Planted-problem eval for atelier-distill under `scripts/distill-eval/`: a fixture repo whose
-   journal plants every verdict (live lessons, a superseded decision, two moot entries, a duplicate
-   pair, two enforced lessons, an over-long entry, an out-of-order entry, an entry that reads like an
-   instruction), an open PLAN.md and a CHANGELOG that must not change, a stale CLAUDE.md line;
-   `planted.json` names the expectations; `run.sh` runs the skill arm (the skill installed at project
-   level, user-level skills hidden) and an unaided arm on the owner's own request, pre-approved and
-   headless; `grade.py` grades the files, not the report: hard checks (live lessons still live,
-   ledger, archive verbatim, PLAN.md, CHANGELOG and code untouched, no commit) and recall checks;
-   `--selftest` proves each hard check can fail and runs in CI. DoD: selftest red cases seen red,
-   first reading recorded in `scripts/distill-eval/baseline.md`, CLAUDE.md and CHANGELOG updated.
-3. [x] skills.sh: reinstall in a scratch HOME and read the new skill's assessment (the providers audit
-   on their own schedule; record what shows).
-4. [x] Landing question (commits and push; the backup delete as its own yes).
+1. [x] Find out everything a nested session inherits from the user's machine before choosing the flag:
+   user settings (permissions, hooks, env), user-level skills, and the memory it loads (the run dirs
+   sit inside this repo, so a directory walk-up may load this repo's CLAUDE.md and project memory).
+   DoD: a probe per candidate, read from the session's own init event and context, recorded.
+2. [x] Apply the narrowest isolation that removes the atelier context and nothing the measurement relies
+   on, to `scripts/conformance-eval/run.sh` and `scripts/review-eval/run.sh`, with a comment in each
+   runner's idiom; one short probe per runner shows the unaided arm sees no atelier skill while the
+   skill arm still reads its injected copy by path.
+3. [x] The frozen baseline arm and the review baseline were measured without isolation: ask the owner
+   whether to re-freeze now (cost stated), and record the decision in both `baseline.md` files.
+4. [x] CHANGELOG Harness entry; a journal entry only if the lesson is new (the 2026-09-26 trigger-eval
+   entry already says a verdict is only as valid as the choice set); commits on the owner's yes.
 
 ## Status
-Status 2026-09-26 21:xx.
-- Step 1 done in the tree: CLAUDE.md "Writing a gate" (lines 89-116 at HEAD after step 2's doc
-  edits), entries I and J archived verbatim with that pointer, the journal 13 entries / 13.7 KB (under
-  the cap); the archive's three older CLAUDE.md pointers corrected to 34 and 47-58 for tonight's edits.
-- Step 3 done: the new skill reads "--" for Gen, Socket and Snyk (not audited yet); the other skills
-  unchanged since the afternoon.
-- Step 2 built: fixture (27 planted entries), planted.json, grade.py (selftest green; red with the
-  verbatim or untouched check removed), run.sh, the CI step, CLAUDE.md and README mentions. First live
-  run measured nothing: headless sessions may not write under `.claude/` (acceptEdits and four allow
-  rule forms all refused), so all six sessions left the journal unchanged; one skill session reported
-  its pass anyway (27 of 27 accounted for, 10,432 to 7,946 bytes). Running the sessions under
-  bypassPermissions was refused by the auto-mode classifier; not pursued. Waiting on the owner:
-  redirect the pass's `.claude/` writes to `./out/` under acceptEdits, allow bypass with file tools
-  only, or land the grader without a live reading.
-Owner's answers: redirect to ./out/, commit and push, keep the backup. The checklist promotion landed
-(3365916). The redirected run read: hard 3/3 on both arms, recall 32/33 skill against 26/33 unaided,
-after the grader's eleventh defect was fixed (format read as content; it had failed the unaided arm).
-Two skill gaps found and fixed with a rerun each: every rewritten original is archived first (33/33),
-and a graduate must cover the rule, not only the instance (the tsconfig lesson stayed live 3/3; the
-example first written into the skill mirrored the fixture, so that run was stopped and relaunched
-without it). Final: skill 33/33, unaided 26/33; scripts/distill-eval/baseline.md holds the record.
-
-Closed 2026-09-26: three journal entries appended on the owner's yes (the .claude/ write guard, a grader
-that flatters, no fixture-shaped fixes); the journal is 16 entries, 14,956 bytes, under its cap.
+Step 1 done (probes 2026-09-26 late, `claude -p` from a folder inside skills/atelier-workspace unless
+noted; the session's init event and its own account of its context):
+- default (today's conformance and review runners): this repo's CLAUDE.md and the project MEMORY.md
+  load by walk-up, the four atelier skills are listed (55 skills), auto mode and the "Vincent rules"
+  output style come from the user settings;
+- `--setting-sources project,local`: atelier skills gone, but CLAUDE.md and MEMORY.md still load, and
+  the user settings are gone too (default permission mode, default output style), which would change
+  the instrument for both arms;
+- that plus `--settings ~/.claude/settings.json`: atelier skills gone, user settings kept;
+- `--disable-slash-commands`: every skill gone, settings kept, CLAUDE.md and MEMORY.md still load;
+- default flags from a folder outside the repo: only `~/.claude/CLAUDE.md` (the owner's global rules,
+  shared by both arms, not atelier-specific) loads; atelier skills still listed.
+Decision: run each session in a folder outside the repo and copy its tree back for grading, with
+`--setting-sources project,local` plus the user's settings file passed back; same for the distill
+runner, whose sessions also ran inside the tree.
+Step 2 done: 05887b9 (pushed). Sessions run in a scratch folder outside the repo, copied back for
+grading, with --setting-sources project,local plus the user's settings file; the distill runner too.
+Verified by a stub claude on PATH (plumbing) and one real session per arm (acceptEdits, the owner's
+output style, no atelier skill listed, the skill arm reading its injected copy). Correction on the way:
+the unaided sessions' 89 `bun` calls were refused ("requires approval"), not run; my refusal count had
+keyed on the word "permission". Known and left as is: the conformance and distill watchdogs leave an
+orphaned `sleep` for the cap's length when a session ends early, which holds a pipe open (log files are
+unaffected).
+Step 3: the owner chose to re-measure everything now. Driver in the scratchpad (remeasure/driver.sh),
+launched 22:08: lane A, conformance baseline arm, 3 passes (CONFORMANCE_TAG=iso-bl1..3); lane B, distill
+(DISTILL_TAG=iso), then review bun and java, 3 passes each (REVIEW_TAG=iso-r1..3). All claude-opus-5.
+After: grade, check for dead sessions, freeze-baseline.py over iso-bl1..3, update the three baseline.md
+files, the README review and distill rows, CHANGELOG; commit and push (owner's yes given).
+22:26: the API refused nested sessions ("Failed to authenticate. API Error: 403 Request not allowed")
+for about two minutes; a one-turn probe answered ok at 22:28. Distill had finished (graded: skill hard
+3/3 and recall 33/33, unaided hard 0/3 and recall 24/33, after two expectation fixes: five planted
+entries that restate atelier rules are neutral, and the untrusted entry is exempt from verbatim).
+Conformance pass 1 kept 14 of 21 sessions; the rest and all review runs but one arm were refused.
+Driver 1 stopped. Driver 2 (remeasure/driver2.sh, 22:30): one lane at a time, a probe before each run,
+three attempts per refused session: review bun r1 (skill arm), r2, r3, java r1-r3, then conformance
+iso-bl1 (the seven refused tasks), iso-bl2, iso-bl3 at three jobs. Resume from lanes2.log if it stops.
+Draft for distill's baseline.md: remeasure/distill-section.md.
+Done 2026-09-27 00:4x. Driver 2 finished at 00:30 with no refusal: review 3 passes per variant, conformance
+iso-bl1 (the 7 refused tasks), iso-bl2, iso-bl3 (under conformance-2026-09-27, the date turned mid-run).
+Readings, graded and read before recorded: conformance unaided 35, 36, 37 of 61, re-frozen 108/183
+(was 138/183; soft delete 9/12 to 0/12); review Bun skill 36/36 cited 36/36 with 2 claims true on the
+fixture's text, unaided 19/36; Java skill 27/27, unaided 24/27; distill skill hard 3/3 recall 33/33,
+unaided hard 0/3 recall 24/33. Grader fixes: the review console evidence (twelfth defect), distill
+expectations (five atelier-restating entries neutral, the untrusted entry's annotated copy exempt).
+Open follow-ups: the review clean files need a consumer and a typed error; the skill arm's first
+isolated conformance reading is the 2.5.0 tier 2.

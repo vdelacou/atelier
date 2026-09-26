@@ -53,3 +53,31 @@ tightening an over-long entry with its original kept, and the smaller journal th
    enforced by nothing: a hard fail, and a real one. The graduate verdict now requires the file to cover
    the rule, not only the instance (`references/lessons.md` and the skill's step 3); the rerun kept the
    entry live in all three passes.
+
+## Isolated sessions (2026-09-26, late)
+
+Every session above ran inside this repo, so both arms read its `CLAUDE.md` (which names
+`.claude/lessons.archive.md`) and its project memory, and the skill list held the atelier suite.
+Sessions now start outside the repo with user-level skills hidden (05887b9). Three passes per arm,
+opus:
+
+| | With atelier-distill | Unaided |
+|---|---|---|
+| Hard checks | 3/3 | 0/3 |
+| Recall, 11 checks per pass | 33/33 | 24/33 |
+| Entries rewritten or dropped with no original kept | 0 | 31 |
+| Live lessons lost | 0 | 0 |
+| Journal size, from 10,432 bytes | 7,935 mean | 8,746 mean |
+
+Isolated, the unaided arm reorganised the journal by topic and rewrote entries in place without keeping
+the originals (16, 1 and 14 entries; one pass also reworded two archived ones). Recall missed the
+tighten-with-original and newest-first order in all three passes and the enforced lessons in two. The
+earlier unaided reading (hard checks 3/3, recall 26/33) had this repo's `CLAUDE.md` in context, which
+describes the archive: that difference is the contamination, measured.
+
+Two corrections to the expectations came with the reading, both from reading the answers. Five planted
+lessons restate rules of the atelier standard (Bun only, branded ids parsed at the boundary, dispatch
+records, validation at the use-case, a fake per test); with the standard installed, the skill arm
+graduated one of them to the standard's `SKILL.md`, which the doctrine asks for, so those five are
+neutral now (keep or graduate). And the untrusted instruction entry, which may be deleted outright, is
+exempt from the verbatim check when archived with a note.

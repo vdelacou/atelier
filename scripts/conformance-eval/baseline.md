@@ -585,3 +585,35 @@ The first turn census the transcripts allow, unaided arm, both passes (turns per
 The 60-turn cap was tight for both arms, not only the skill: the unaided arm needed 75 turns on h7
 in one pass and would have been cut there too. The skill arm's census waits for its next transcribed
 pass (the 2.4.0 release runs predate the transcript; the a4 probe of 2026-09-26 read 24 turns).
+
+## Isolated sessions: the frozen arm re-frozen (2026-09-26/27)
+
+Every pass above started inside this repo, so both arms read its `CLAUDE.md` and project memory by
+directory walk-up, and the skill list carried the atelier suite, whose descriptions summarise the
+doctrine (soft delete, hand-written fakes, TDD, AI ports, tenant isolation, deadlines, optimistic
+locking). No unaided session ever invoked an atelier skill; the context was there all the same.
+Sessions now start outside the repo, with user-level skills hidden and the user's settings passed back
+(05887b9). The unaided arm, three passes, opus, 120 turns and 40 minutes, three jobs: 35, 36 and 37 of
+61, against 45, 47 and 46 under the old runner. The API refused sessions for about two minutes at 22:26
+on 2026-09-26; those were rerun after a one-turn probe answered, and every task in the fixture has a
+completed session behind it (the third pass started after midnight, so it sits under
+`conformance-2026-09-27/`; the refused first attempt under `conformance-2026-09-26/...iso-bl3` is not
+in the fixture). The fixture now holds 108/183, keyed to the same tasks.json. The turn census moved
+too: unaided median 16 or 17 turns per pass and at most 41, against 21 and 75.
+
+| Rule | Before (contaminated) | Isolated |
+|---|---|---|
+| 10.9 soft delete | 9/12 | 0/12 |
+| 4.3 a test accompanies the change | 9/9 | 3/9 |
+| 3.9 the model is a dependency | 8/9 | 3/9 |
+| 7.5 the cross-tenant test | 5/6 | 2/6 |
+| 4.5 no mocks | 2/6 | 0/6 |
+| 10.13 deadlines | 21/21 | 17/21 |
+| 10.12 no lost updates | 9/9 | 7/9 |
+| everything else | 75/111 | 76/111 |
+
+The drops sit on the rules the atelier description names, which is the mechanism: the unaided arm had
+been reading a summary of the doctrine. Against this fixture the 2.4.0 release's skill arm (61/61,
+measured under the old runner, its injected copy never depending on the walk-up) faces an expected
+36.0/61 rather than 46.0/61, and every tier-1 delta since 2026-09-03 understated the skill by about
+ten assertions. The skill arm's first isolated reading is the 2.5.0 tier 2.

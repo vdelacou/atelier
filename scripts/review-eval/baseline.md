@@ -245,3 +245,30 @@ doctrine settles.
 the user for a gate result it needs (the skills.sh Gen audit had read two lines as execution). One
 pass per variant, skill arm, opus, as a regression check: Bun 12/12 caught and cited, Java 9/9 and
 9/9, no false positive. Recall does not depend on running the tree.
+
+## Isolated sessions (2026-09-26, late)
+
+Every run above started inside this repo, so both arms read its `CLAUDE.md` and project memory, and
+the skill list carried the atelier suite, whose descriptions summarise the doctrine. Sessions now start
+outside the repo with user-level skills hidden (05887b9). Three passes per variant, both arms, opus:
+
+| Variant | Arm | Caught | Rule-cited | False positives |
+|---|---|---|---|---|
+| Bun | skill | 36/36 | 36/36 | 2 |
+| Bun | unaided | 19/36 | 2/36 | 0 |
+| Java | skill | 27/27 | 27/27 | 2 |
+| Java | unaided | 24/27 | 4/27 | 0 |
+
+The unaided Bun reviewer fell from 31/36 to 19/36: without the atelier context it no longer flags the
+standard's own rules (`class`, `interface`, a mock, try/catch in a use-case, the hard delete, the gate
+without a fixture), which a generic review does not treat as defects. The unaided Java reviewer held at
+24/27 and missed the hard delete in all three passes. The skill arm's four false positives sit in one
+pass per variant, and each is true on the fixture's text: `settings.ts` and `MemberId` have no consumer
+outside their own tests (guideline 2, and rule 14's carve-out assumes port tests they lack), and
+`Refund.java` carries a single-use constant extraction (guideline 3) beside a String error that rule 16
+would type. The clean files need a consumer and a typed error: a fixture follow-up.
+
+One more grader defect, the twelfth across the evals: the skill arm cited the Bun console violation as
+"breaks rule 4 (no `console.*`)", the rule's own wording, and the evidence pattern accepted only
+`console.log|error|warn`, so a caught and cited finding read as a miss (35/36 before the fix). The
+pattern accepts `console.*` now, and a selftest case reads the shipped manifest, red before the fix.
