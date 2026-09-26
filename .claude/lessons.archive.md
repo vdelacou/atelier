@@ -100,6 +100,23 @@ Archived 2026-09-26: graduated, `CLAUDE.md:32` (`--reanchor`).
 
 ---
 
+## [decision] 2026-09-03 | the conformance harness has three tiers and a frozen baseline arm
+
+A full conformance pass was hours of `claude -p` sessions (21 tasks, two arms, three passes,
+6 to 11 minutes each, no cap), and half of it re-measured an arm that never reads the skill.
+The revamp shrank it rather than rebuilding it: tier 0 is the CI selftests; tier 1 after any
+doctrine edit is `CONFORMANCE_SINCE=<ref>`, which maps the skill diff to the tasks whose
+assertions exercise the touched rules (`select-tasks.py`: hard-rule lines by section, explicit
+rule references, references through the trigger table, canon ids) and runs the skill arm once
+against the frozen fixture; tier 2, both arms over the full matrix, only on a description
+change or before a release. The baseline arm is `baseline-arm.json`, keyed by the sha256 of the
+prompts and assertions, refused with the refresh commands when they change. Every session has a
+wall-clock cap and a turn cap, and each task's scorecard line prints as its session lands.
+
+Archived 2026-09-26: graduated, `CLAUDE.md:42-53` (the three tiers and the frozen baseline arm).
+
+---
+
 ## [decision] 2026-08-30 | the Java variant never saw its own tripwires
 
 All four discipline tripwires ship Java detection (ROUTE_GLOBS_JAVA, @QueryParam, HttpClient, deleteById), but java-quarkus.md named none of them, so a Java bootstrap followed verbatim copied zero of the four. The capability existed and the install path hid it, the same shape as the field test's other findings. Fixed by adding them to the Java asset list with their Java triggers and proving all four in smoke-test-java (six new checks, red on the violation, green on the fix). Rule for next time: an asset that handles a variant is not shipped to that variant until the variant's bootstrap names it.
@@ -124,6 +141,22 @@ Archived 2026-09-26: graduated, `scripts/check-citations.py` with `citations-loc
 
 ---
 
+## [decision] 2026-08-30 | canon P6 wave: 15.10, 10.2 catch placement, six repairs; count 119
+
+The reverse audit's stricter-than deltas produced two accepted rows: 15.10 "Prove the gate can fail" (a new pillar-15 sub-concept distilled from this repo's own smoke-test discipline; forward row 15.4 slimmed from STRICTER to COVERED because its surplus WAS this rule) and the 10.2 strengthening fixing where a catch may live (reverse row 17 flipped to CANON-ROW, tally 20/5/9). A third batched row applied six mechanical repairs, the sharpest being 8.1's exemplar commit message violating the 1.3 grammar the canon itself mandates. `bun audit` also left the gates job: `assets/audit.yml` now ships the doc's canonical scoped workflow (daily schedule + dependency-scoped PR runs) instead of blocking unrelated commits. The 12.7 cascade lesson held again: count asserted in the drift checker (twice), tally, prose, and now the citations lock.
+
+Archived 2026-09-26: graduated, `conformance-matrix.md:368` (15.10 COVERED); counts held by `scripts/check-matrix-drift.py`.
+
+---
+
+## [decision] 2026-07-20 | canon P6: 11.3 softened toward burn-rate, 12.7 added as a new sub-concept (count 116)
+
+Resolved the last two P6 rows from the internal-consistency pass. 11.3: the pillar-11 prose said "alert on anomalies rather than only fixed thresholds", but sub 11.3 and the skill's observability.md teach symptom/error-budget-burn alerting, the lower-noise and more actionable practice (the Google SRE workbook favors burn-rate over anomaly detection). Closed the drift by softening the PROSE toward the sub, not by loading anomaly detection onto the checklist; no skill change. 12.7: "pick one working language" lived only in pillar-12 prose with no sub-concept, so added a first-class sub-concept 12.7 "One working language" (Option A, over folding into 12.1). That raised the canonical count 115 -> 116, which cascades in lockstep: the "Every sub-concept" index line in dos-and-donts, a new conformance-matrix.md row, the verdict tally (COVERED 112 -> 113, Total 116), the work-list line, ci.yml's comment, and check-matrix-drift.py in TWO places (the `!= 115` row-count assertion AND PER_PILLAR[pillar 12] 6 -> 7, whose sum must equal the new count). Miss any one and the drift gate fails. Rule for next time: adding a sub-concept is not a one-line edit; the count is asserted in the checker (twice), the tally, and prose, and the per-pillar list must re-sum. Both canon files re-pinned; matrix 116/116, gate + selftest green.
+
+Archived 2026-09-26: graduated, `scripts/check-matrix-drift.py:22` asserts the per-pillar counts; `conformance-matrix.md:335` (12.7).
+
+---
+
 ## [decision] 2026-07-20 | canon internal-consistency pass: 4 P6 rows drafted (10.3, 11.3, 12.7, 15.5)
 
 Ran a canon-vs-canon consistency pass (6 read-only agents over the 18 pillars plus the values doc, pillar
@@ -140,6 +173,42 @@ canon-internal fixes not skill gaps). 12.7 Option A (a new sub-concept) would ma
 the matrix/index/drift-gate per-pillar counts.
 
 Archived 2026-09-26: superseded by the two 2026-07-20 resolutions (11.3 and 12.7; 5.3 accepted).
+
+---
+
+## [decision] 2026-07-20 | 5.3 P6 revision ACCEPTED: canon allows caret + committed lockfile; matrix now 115/115 covered
+
+The canon maintainer accepted the 5.3 P6 revision, so the vendored canon changed. dos-and-donts 5.3 (Do,
+Don't, TS example) and the pillar-prose companion now allow a constrained range (caret or tilde) plus a
+committed lockfile and a frozen-lockfile CI install, instead of mandating exact pins. Canon hashes changed
+(dos-and-donts 5d9eb10c -> 3d84cf69, every-new-project 63f7b8d8 -> 1487a91a); conformance-matrix.md pins
+the new hashes, flips 5.3 CONTRADICTS -> COVERED, and check-matrix-drift.py passes. Tally now COVERED 112,
+STRICTER 3, GAP 0, CONTRADICTS 0 (115/115), work list empty. The skill's dependency gate was UNCHANGED
+(check-package-json.sh already permitted caret + lockfile). proposed-revisions.md 5.3 marked ACCEPTED. The
+P6 loop closed: the skill exposed a rule defect, the fix went back to the canon, not the skill. When you
+edit the vendored canon, update the matrix header pins in the same change or the drift gate fails (by design).
+
+Archived 2026-09-26: graduated, `conformance-matrix.md:244` (5.3 COVERED); the canon pins are held by `scripts/check-matrix-drift.py`.
+
+---
+
+## [decision] 2026-07-20 | optional strengthenings: Java hook split, docs-check + bundle gates, architecture eval tasks
+
+Four strengthenings, each a shipped gate that proves it can fail via the matching smoke test:
+- Java hook split (rule 15.1, mirrors the Bun fix): assets/pre-commit-java is now the 4 fast gates
+  (size, pom, gitleaks, spotless:check); `./mvnw verify` + PIT moved to a new assets/ci-java.yml.
+  Reframed java-quarkus.md + the SKILL variant matrix; smoke-test-java green (fast hook end-to-end,
+  verify + PIT still proven directly).
+- 12.1 docs-check as a gate: assets/check-docs.sh runs the README's `## Verify` bash block; smoke-test.sh
+  proves it passes on a working block and fails on a broken one; governance.md points at it.
+- 17.7 bundle budget as a gate: assets/check-bundle-size.sh (gzipped built JS vs BUDGET_KB); smoke-test-next.sh
+  proves it on the real static export (under a generous ceiling passes, BUDGET_KB=0 fails); product.md points at it.
+- Architecture eval tasks a1-a4 (pillar 3 ports/fakes, branded types, TDD) added to tasks.json, rule-tagged;
+  1-pass sonnet-5 validation with_skill 8/9 vs baseline 6/9, skill ahead on 3.2 (port+fake) and 10.13
+  (deadline). Full 3-pass re-baseline including them is pending (baseline.md notes it).
+Remaining: enable eval.yml with the ANTHROPIC_API_KEY secret; Phase 5 field test.
+
+Archived 2026-09-26: graduated, `assets/pre-commit-java`, `assets/ci-java.yml`, `assets/check-bundle-size.sh`, tasks a1-a4 in `tasks.json`; the docs-check half superseded on 2026-09-26.
 
 ---
 
@@ -173,6 +242,63 @@ deliverable and Phase 4's gate reference (proposed threshold: with_skill >= 80/8
 by >= 15 pts). Re-baseline when tasks.json or the skill changes materially.
 
 Archived 2026-09-26: superseded by the later baselines in `scripts/conformance-eval/baseline.md`.
+
+---
+
+## [decision] 2026-07-19 | conformance-eval checks are now rule-id tagged; the scorecard is per-rule
+
+Phase 3 step: every assertion in scripts/conformance-eval/tasks.json carries the global-rules
+sub-concept id it proves (its `rule`), and grade.py prints a BY RULE scorecard (with_skill vs
+baseline per rule) alongside the per-task and TOTALS lines, so an eval result maps straight to its
+conformance-matrix.md row. 28 assertions across 11 rules (3.9, 4.3, 6.3, 7.1, 8.5, 10.2, 10.5, 10.9,
+10.11, 10.12, 10.13); grade.py --selftest still green and a synthetic run confirms the rendering.
+This is what Phase 4's CI eval-threshold gate reads. The runner (run.sh, `claude -p` per task per
+arm) and the 10 discipline tasks (e1-e10) are unchanged; the plan's architecture-focused tasks and a
+fresh baseline run are the remaining Phase 3 work.
+
+Archived 2026-09-26: graduated, `scripts/conformance-eval/tasks.json` tags every assertion with its `rule`; `grade.py` prints BY RULE.
+
+---
+
+## [decision] 2026-07-19 | conformance: the five remaining gaps closed as doctrine (5.10, 7.7, 10.14, 12.1, 17.7)
+
+Phase 2 finished by closing the last five matrix work-list gaps, each an added doctrine section
+citing its rule id (doctrine counts as COVERED per the matrix convention, as for the org-pillar
+rows). 5.10 -> security.md: single filtering edge plus origin-lock, with the x-edge-secret origin
+check. 7.7 -> isolation.md: no anonymous service-key bulk route, analytical volume from the data
+platform. 10.14 -> reliability.md: OLTP/OLAP separation, ETL/CDC copy, the pipeline as the one
+sanctioned bulk reader. 12.1 -> governance.md: a docs-check CI job that runs the README's documented
+commands, with scripts/smoke-test.sh as the exemplar. 17.7 -> product.md (mobile-first,
+one-primary-action, progressive-disclosure, bundle budget) plus an atomic-design.md note that
+breakpoints scale up from the smallest screen. Matrix tally now COVERED 111, STRICTER 3, CONTRADICTS
+1 (only 5.3, P6 pending), GAP 0. 12.1 and 17.7 are covered as doctrine that prescribes a gate
+(docs-check, bundle budget); shipping those as fixture-tested gates, and splitting the Java
+pre-commit-java hook (same 15.1 shape), are the remaining strengthenings.
+
+Archived 2026-09-26: graduated, `conformance-matrix.md:251` (5.10 COVERED, likewise 7.7, 10.14, 12.1, 17.7).
+
+---
+
+## [decision] 2026-07-19 | conformance 15.1 + 4.6: pre-commit hook runs the fast gates, CI runs the full set
+
+Phase 2 resolved the 15.1 contradiction: the hook ran the full test suite, coverage, and
+1-3 min/file Stryker mutation locally, which the canon confines to CI because a multi-minute
+hook trains --no-verify. The canon is right here, so the skill was amended, not the rule.
+`assets/pre-commit` now runs only five fast gates (commit-size, package.json, gitleaks protect,
+lint:staged, typecheck; each O(staged) or O(1), targeting a ~5s budget), and a new asset
+`assets/ci.yml` runs the full set (strict lint, typecheck, test, coverage, mutation
+changed-on-PR / full-on-main, bun audit) on a frozen lockfile as the required merge check,
+which also closes the 4.6 gap (no consumer CI workflow shipped). New helper
+`assets/lint-staged.sh` does the staged eslint. The "eight gates" branding was reframed across
+SKILL.md, workflow.md, greenfield, review-me, bun-typescript.md, nextjs-monorepo.md, commit-msg,
+and README as "fast hook gates plus the full CI set"; smoke-test.sh now runs the fast hook
+end-to-end and the CI gates (mutation included) directly. Measured on a small conforming repo
+the fast gates are all sub-2s and even mutation is ~4s/file, but the documented lint:strict ~25s
+and mutation 1-3 min/file are the realistic-repo numbers, so the split is by gate nature (scales
+with repo size goes to CI), not day-one speed. The Java `pre-commit-java` hook has the same
+shape and is NOT yet split (deferred). See conformance-matrix.md 15.1 and 4.6.
+
+Archived 2026-09-26: graduated, `skills/atelier/references/workflow.md:302` (the hook and CI split), `assets/pre-commit`, `assets/ci.yml`.
 
 ---
 
@@ -272,3 +398,35 @@ Archived 2026-09-26: graduated, `.github/workflows/ci.yml:65`.
 `-DwithHistory` on pitest-maven >= 1.25 fails the build outright ("no history plugin installed"); the free incremental analysis is gone. The open-source speed levers are a narrow `targetClasses` scope plus running the gate only when staged files touch it, which `assets/pre-commit-java` does. Applies to: any doc or hook that suggests PIT incremental runs.
 
 Archived 2026-09-26: graduated, `skills/atelier/references/java-quarkus.md:400` (Arcmutate's `+arcmutate_history`).
+
+---
+
+## [decision] 2026-07-11 | decision records are two-tier
+
+Every significant decision gets a one-line `[decision]` entry here; a choice with rejected alternatives and a reversal path worth keeping (vendor, storage engine, deliberate lock-in) additionally gets a full ADR in `docs/adr/NNNN-title.md`, committed with the change. The atelier-grill-me output is the natural ADR draft. Supersedes the earlier stance that the repo keeps no ADR tree. See `skills/atelier/references/governance.md`.
+
+Archived 2026-09-26: graduated, `skills/atelier/references/governance.md` (Decision records) and `architecture.md:432`.
+
+---
+
+## [decision] 2026-07-11 | production disciplines are the diff-visible rule tier
+
+The eighteen global-rules pillars split two ways: concerns visible in a diff became hard rules 27-34 (PII channels, tenant isolation, deadlines, data lifecycle, optimistic locking, AI ports, rented auth, synthetic fixtures); organizational pillars (observability, delivery, governance, metrics, product) stay reference doctrine that binds when the concern exists. Rationale: a hard rule must be something an agent can refuse-and-rewrite on sight.
+
+Archived 2026-09-26: graduated, `skills/atelier/SKILL.md:96` (Production disciplines, rules 27-34).
+
+---
+
+## [decision] 2026-07-11 | java variant is quarkus-flavoured only
+
+`references/java-quarkus.md` mirrors the source articles' Quarkus idiom (Panache, JAX-RS, MicroProfile, Flyway) with a one-line note that Spring translates one-to-one. No separate Spring reference until a real repo demands it (YAGNI).
+
+Archived 2026-09-26: graduated, `skills/atelier/references/java-quarkus.md:3`.
+
+---
+
+## [decision] 2026-07-11 | pillar 16 lives in its own metrics reference
+
+DORA, flow metrics, and cost-as-a-metric were split out of `delivery.md` into `references/metrics.md` on review, so the measurement doctrine has its own consult moment instead of hiding inside the deploy file.
+
+Archived 2026-09-26: graduated, `skills/atelier/references/metrics.md`.

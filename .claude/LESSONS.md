@@ -130,10 +130,6 @@ The commit-range fixture used `git add -A` plus `git reset --hard HEAD~1`, which
 
 Audited a real consumer repo built under this standard (read-only, at its foundations milestone). Authoring held: 18/19 commits pass the shipped commit-msg validator, coverage tiers arrived correct and monorepo-adapted, auth rented and the model behind a port before any code. Four skill defects found, all invisible to the evals and the CI gates because those measure the skill against itself: check-package-json.sh read only the root manifest (a workspace pinning "latest" passed; the consumer had already rewritten it, and so did we, red fixture first), the shipped CI called gitleaks with no install step (the consumer had independently patched the same defect the same week), the prescribed ADR convention's Deciders field invites the rule 26 violation it then commits, and the skeleton defined no `test` script so the consumer invented one with --pass-with-no-tests, a gate that cannot fail. Everything else non-conforming in that repo traced to ONE cause: it pins the skill at a hash 49 days and 9 SKILL.md commits old, so it faithfully runs the retired eight-gate hook and the superseded rule 26. Rule for next time: a vendored standard is a dependency and goes stale silently while every gate stays green; governance.md now carries the re-sync ritual and the pointer block says it in the one file a consumer always reads. Only a real repo measures the skill against time.
 
-## [decision] 2026-08-30 | canon P6 wave: 15.10, 10.2 catch placement, six repairs; count 119
-
-The reverse audit's stricter-than deltas produced two accepted rows: 15.10 "Prove the gate can fail" (a new pillar-15 sub-concept distilled from this repo's own smoke-test discipline; forward row 15.4 slimmed from STRICTER to COVERED because its surplus WAS this rule) and the 10.2 strengthening fixing where a catch may live (reverse row 17 flipped to CANON-ROW, tally 20/5/9). A third batched row applied six mechanical repairs, the sharpest being 8.1's exemplar commit message violating the 1.3 grammar the canon itself mandates. `bun audit` also left the gates job: `assets/audit.yml` now ships the doc's canonical scoped workflow (daily schedule + dependency-scoped PR runs) instead of blocking unrelated commits. The 12.7 cascade lesson held again: count asserted in the drift checker (twice), tally, prose, and now the citations lock.
-
 ## [decision] 2026-08-30 | the conformance eval runs locally, not in CI; eval.yml deleted
 
 `.github/workflows/eval.yml` was the Phase 4 behavioral gate: on a skill-touching PR, run one eval pass and block below `grade.py --min-with-skill 24 --min-delta 4`. It never once ran. The job spawns a nested `claude -p` per task per arm, so it needs an `ANTHROPIC_API_KEY` secret in the repo, and without the secret it skipped rather than blocked, which left a gate that looked wired and was inert, plus a standing "add the secret" item in every status report. Owner's call: do not run the eval on CI at all. The workflow is deleted and the eval is a pre-land step run on the author's machine, where the `claude` OAuth session already pays for the agent runs and no API key exists. `baseline.md` now carries the exact two commands and the model/tag convention. What this gives up, stated plainly: a CI job cannot be forgotten and a local step can, so rule 4.8's "a skill edit ships on its eval score" is now discipline rather than enforcement. What stays enforced in CI is the cheap half, `check-matrix-drift.py`, which is the gate that actually caught a real regression (the 2026-08-30 canon revert). Rule for next time: a gate that cannot run in the environment it is installed in is not a gate, it is a reminder; either give it what it needs or move it to where it runs.
@@ -146,41 +142,9 @@ The unpinned-toolchain canary fired again, this time as a doctrine-vs-tool confl
 
 `assets/mutate-changed.sh` built its mutation scope from three `--diff-filter=ACMR` diffs unioned together, which cannot see a file that was never `git add`-ed: a brand-new `src/domain/*.ts` was in none of them, so the gate printed "no files in mutation scope changed" and exited 0 having measured nothing. Every new domain or use-case file a consumer repo ever added hit this, and it is the only failure mode that reports a PASS over code that was never mutated. Second trap in the same pipeline: an unresolvable `BASE` (a shallow CI checkout with no `origin/main`, or a typo) makes each diff fail, and the `|| true` guarding the `grep` chain swallows the fatal git error into the same empty-scope exit 0. Verified both empirically. Fixes: union `git ls-files --others --exclude-standard` into the scope, and `git rev-parse --verify --quiet "$BASE^{commit}"` up front with exit 1. Third, `origin/*` is a LOCAL cache moved only by a fetch, so a stale ref widens the scope with long-pushed files AND reads as evidence of unpushed work; the script now fetches when `BASE` is remote-tracking (`|| true` for offline, `MUTATE_NO_FETCH=1` to opt out) and prints the resolved base (short SHA, relative date, ahead count), because the print is what makes staleness visible when someone overrides or opts out. Fourth, both mutate scripts cleared Stryker's cache with `rm -f reports/stryker-incremental.json`, hardcoding a path that `stryker.conf.json` owns via `incrementalFile`: change the config and the delete becomes a silent no-op, restoring the stale-score trap it was added for (13d62a8), and it destroys the cache even when the run then crashes. Replaced with the documented `--force` in BOTH `mutate-changed.sh` and `mutate-staged.sh`; the smoke test's Stryker runs now double as proof the flag still exists on the unpinned toolchain. Rules for next time: a scope built from `git diff` is a scope that ignores new files, so state explicitly whether untracked belongs (for `mutate:staged` it does not, staged-only IS the gate-8 contract); and `|| true` on a pipeline whose FIRST command can fatally fail converts an error into a pass, so validate the input before the pipeline rather than guarding the whole thing. Note the deliberate behaviour change: a greenfield repo with no remote now exits 1 instead of passing vacuously, documented in workflow.md rather than special-cased in the script.
 
-## [decision] 2026-07-20 | canon P6: 11.3 softened toward burn-rate, 12.7 added as a new sub-concept (count 116)
-
-Resolved the last two P6 rows from the internal-consistency pass. 11.3: the pillar-11 prose said "alert on anomalies rather than only fixed thresholds", but sub 11.3 and the skill's observability.md teach symptom/error-budget-burn alerting, the lower-noise and more actionable practice (the Google SRE workbook favors burn-rate over anomaly detection). Closed the drift by softening the PROSE toward the sub, not by loading anomaly detection onto the checklist; no skill change. 12.7: "pick one working language" lived only in pillar-12 prose with no sub-concept, so added a first-class sub-concept 12.7 "One working language" (Option A, over folding into 12.1). That raised the canonical count 115 -> 116, which cascades in lockstep: the "Every sub-concept" index line in dos-and-donts, a new conformance-matrix.md row, the verdict tally (COVERED 112 -> 113, Total 116), the work-list line, ci.yml's comment, and check-matrix-drift.py in TWO places (the `!= 115` row-count assertion AND PER_PILLAR[pillar 12] 6 -> 7, whose sum must equal the new count). Miss any one and the drift gate fails. Rule for next time: adding a sub-concept is not a one-line edit; the count is asserted in the checker (twice), the tally, and prose, and the per-pillar list must re-sum. Both canon files re-pinned; matrix 116/116, gate + selftest green.
-
 ## [gotcha] 2026-07-20 | openssl prints a Protocol line even on a REFUSED handshake, so grepping it false-FAILs
 
 Applying P6 row 15.5 (the canon's TLS "compliance is not proof" example probed only TLS 1.1 yet concluded the endpoint "refuses TLS < 1.2"). The drafted fix looped over ssl3/tls1/tls1_1 but detected acceptance with `grep -qi "Protocol.*:.*\(SSL\|TLS\)"`. Verified live against OpenSSL 3.6: forcing `-tls1` or `-tls1_1` at an endpoint that REFUSES them still prints `Protocol: TLSv1.3` in the SSL-Session summary (the session default, not a negotiated version), so the grep matches on a refusal and prints FAIL for a server that is actually fine. The robust signal is the EXIT CODE: a forced-protocol `openssl s_client ... </dev/null >/dev/null 2>&1` exits 0 only when the handshake COMPLETES (the server accepted that protocol), non-zero when refused. Second trap: OpenSSL 3.x dropped `-ssl3`, so that leg is unprobeable on a modern build (the flag errors, exits non-zero, reads as not-accepted); the OK line must therefore claim only what this openssl can probe, never a blanket "refuses everything below 1.2". Landed the exit-code form. Rule for next time: for a shell proof, key on the tool's exit status, not on grepping human-readable output that carries defaults even on failure; and a proof's success message must claim exactly the range it actually tested. This same self-undermining pattern (a proof that overclaims what it checked) is what 15.5 exists to forbid, so the fix had to not reproduce it.
-
-## [decision] 2026-07-20 | 5.3 P6 revision ACCEPTED: canon allows caret + committed lockfile; matrix now 115/115 covered
-
-The canon maintainer accepted the 5.3 P6 revision, so the vendored canon changed. dos-and-donts 5.3 (Do,
-Don't, TS example) and the pillar-prose companion now allow a constrained range (caret or tilde) plus a
-committed lockfile and a frozen-lockfile CI install, instead of mandating exact pins. Canon hashes changed
-(dos-and-donts 5d9eb10c -> 3d84cf69, every-new-project 63f7b8d8 -> 1487a91a); conformance-matrix.md pins
-the new hashes, flips 5.3 CONTRADICTS -> COVERED, and check-matrix-drift.py passes. Tally now COVERED 112,
-STRICTER 3, GAP 0, CONTRADICTS 0 (115/115), work list empty. The skill's dependency gate was UNCHANGED
-(check-package-json.sh already permitted caret + lockfile). proposed-revisions.md 5.3 marked ACCEPTED. The
-P6 loop closed: the skill exposed a rule defect, the fix went back to the canon, not the skill. When you
-edit the vendored canon, update the matrix header pins in the same change or the drift gate fails (by design).
-
-## [decision] 2026-07-20 | optional strengthenings: Java hook split, docs-check + bundle gates, architecture eval tasks
-
-Four strengthenings, each a shipped gate that proves it can fail via the matching smoke test:
-- Java hook split (rule 15.1, mirrors the Bun fix): assets/pre-commit-java is now the 4 fast gates
-  (size, pom, gitleaks, spotless:check); `./mvnw verify` + PIT moved to a new assets/ci-java.yml.
-  Reframed java-quarkus.md + the SKILL variant matrix; smoke-test-java green (fast hook end-to-end,
-  verify + PIT still proven directly).
-- 12.1 docs-check as a gate: assets/check-docs.sh runs the README's `## Verify` bash block; smoke-test.sh
-  proves it passes on a working block and fails on a broken one; governance.md points at it.
-- 17.7 bundle budget as a gate: assets/check-bundle-size.sh (gzipped built JS vs BUDGET_KB); smoke-test-next.sh
-  proves it on the real static export (under a generous ceiling passes, BUDGET_KB=0 fails); product.md points at it.
-- Architecture eval tasks a1-a4 (pillar 3 ports/fakes, branded types, TDD) added to tasks.json, rule-tagged;
-  1-pass sonnet-5 validation with_skill 8/9 vs baseline 6/9, skill ahead on 3.2 (port+fake) and 10.13
-  (deadline). Full 3-pass re-baseline including them is pending (baseline.md notes it).
-Remaining: enable eval.yml with the ANTHROPIC_API_KEY secret; Phase 5 field test.
 
 ## [gotcha] 2026-07-19 | conformance-eval with_skill arm ran skill-less: nested claude -p sandboxes reads to the run dir
 
@@ -199,51 +163,6 @@ soft-delete via deletedAt with a test), the agent citing "Rule 30" explicitly. R
 an eval that depends on the agent READING a file must inject that file into the sandboxed working
 directory, never reference an absolute path outside it, and verify skill loading (does the output
 change) before trusting any with_skill vs baseline delta.
-
-## [decision] 2026-07-19 | conformance-eval checks are now rule-id tagged; the scorecard is per-rule
-
-Phase 3 step: every assertion in scripts/conformance-eval/tasks.json carries the global-rules
-sub-concept id it proves (its `rule`), and grade.py prints a BY RULE scorecard (with_skill vs
-baseline per rule) alongside the per-task and TOTALS lines, so an eval result maps straight to its
-conformance-matrix.md row. 28 assertions across 11 rules (3.9, 4.3, 6.3, 7.1, 8.5, 10.2, 10.5, 10.9,
-10.11, 10.12, 10.13); grade.py --selftest still green and a synthetic run confirms the rendering.
-This is what Phase 4's CI eval-threshold gate reads. The runner (run.sh, `claude -p` per task per
-arm) and the 10 discipline tasks (e1-e10) are unchanged; the plan's architecture-focused tasks and a
-fresh baseline run are the remaining Phase 3 work.
-
-## [decision] 2026-07-19 | conformance: the five remaining gaps closed as doctrine (5.10, 7.7, 10.14, 12.1, 17.7)
-
-Phase 2 finished by closing the last five matrix work-list gaps, each an added doctrine section
-citing its rule id (doctrine counts as COVERED per the matrix convention, as for the org-pillar
-rows). 5.10 -> security.md: single filtering edge plus origin-lock, with the x-edge-secret origin
-check. 7.7 -> isolation.md: no anonymous service-key bulk route, analytical volume from the data
-platform. 10.14 -> reliability.md: OLTP/OLAP separation, ETL/CDC copy, the pipeline as the one
-sanctioned bulk reader. 12.1 -> governance.md: a docs-check CI job that runs the README's documented
-commands, with scripts/smoke-test.sh as the exemplar. 17.7 -> product.md (mobile-first,
-one-primary-action, progressive-disclosure, bundle budget) plus an atomic-design.md note that
-breakpoints scale up from the smallest screen. Matrix tally now COVERED 111, STRICTER 3, CONTRADICTS
-1 (only 5.3, P6 pending), GAP 0. 12.1 and 17.7 are covered as doctrine that prescribes a gate
-(docs-check, bundle budget); shipping those as fixture-tested gates, and splitting the Java
-pre-commit-java hook (same 15.1 shape), are the remaining strengthenings.
-
-## [decision] 2026-07-19 | conformance 15.1 + 4.6: pre-commit hook runs the fast gates, CI runs the full set
-
-Phase 2 resolved the 15.1 contradiction: the hook ran the full test suite, coverage, and
-1-3 min/file Stryker mutation locally, which the canon confines to CI because a multi-minute
-hook trains --no-verify. The canon is right here, so the skill was amended, not the rule.
-`assets/pre-commit` now runs only five fast gates (commit-size, package.json, gitleaks protect,
-lint:staged, typecheck; each O(staged) or O(1), targeting a ~5s budget), and a new asset
-`assets/ci.yml` runs the full set (strict lint, typecheck, test, coverage, mutation
-changed-on-PR / full-on-main, bun audit) on a frozen lockfile as the required merge check,
-which also closes the 4.6 gap (no consumer CI workflow shipped). New helper
-`assets/lint-staged.sh` does the staged eslint. The "eight gates" branding was reframed across
-SKILL.md, workflow.md, greenfield, review-me, bun-typescript.md, nextjs-monorepo.md, commit-msg,
-and README as "fast hook gates plus the full CI set"; smoke-test.sh now runs the fast hook
-end-to-end and the CI gates (mutation included) directly. Measured on a small conforming repo
-the fast gates are all sub-2s and even mutation is ~4s/file, but the documented lint:strict ~25s
-and mutation 1-3 min/file are the realistic-repo numbers, so the split is by gate nature (scales
-with repo size goes to CI), not day-one speed. The Java `pre-commit-java` hook has the same
-shape and is NOT yet split (deferred). See conformance-matrix.md 15.1 and 4.6.
 
 ## [gotcha] 2026-07-12 | PIT 1.25.7 needs a history plugin for ALL incremental; the smoke test beats the docs
 
@@ -281,22 +200,6 @@ The skill-creator `run_eval.py` scored every should-trigger case ~0/5 against a 
 
 `check-pom.sh` originally flagged any `-SNAPSHOT` inside dependency/plugin blocks, which false-positived on the enforcer's own `<message>No -SNAPSHOT dependencies</message>` prose in the canonical pom, blocking a fully conforming commit. The gate now matches `<version>[^<]*-SNAPSHOT` only, and scans untracked poms too (`git ls-files --others`), since a brand-new pom is otherwise invisible before its first commit. Rule for next time: a gate that greps for a token must consider the token appearing in prose about the rule itself.
 
-## [decision] 2026-07-11 | decision records are two-tier
-
-Every significant decision gets a one-line `[decision]` entry here; a choice with rejected alternatives and a reversal path worth keeping (vendor, storage engine, deliberate lock-in) additionally gets a full ADR in `docs/adr/NNNN-title.md`, committed with the change. The atelier-grill-me output is the natural ADR draft. Supersedes the earlier stance that the repo keeps no ADR tree. See `skills/atelier/references/governance.md`.
-
-## [decision] 2026-07-11 | production disciplines are the diff-visible rule tier
-
-The eighteen global-rules pillars split two ways: concerns visible in a diff became hard rules 27-34 (PII channels, tenant isolation, deadlines, data lifecycle, optimistic locking, AI ports, rented auth, synthetic fixtures); organizational pillars (observability, delivery, governance, metrics, product) stay reference doctrine that binds when the concern exists. Rationale: a hard rule must be something an agent can refuse-and-rewrite on sight.
-
-## [decision] 2026-07-11 | java variant is quarkus-flavoured only
-
-`references/java-quarkus.md` mirrors the source articles' Quarkus idiom (Panache, JAX-RS, MicroProfile, Flyway) with a one-line note that Spring translates one-to-one. No separate Spring reference until a real repo demands it (YAGNI).
-
-## [decision] 2026-07-11 | pillar 16 lives in its own metrics reference
-
-DORA, flow metrics, and cost-as-a-metric were split out of `delivery.md` into `references/metrics.md` on review, so the measurement doctrine has its own consult moment instead of hiding inside the deploy file.
-
 ## [gotcha] 2026-09-03 | BSD awk -v strips backslash escapes
 
 Passing a regex through `awk -v pat='\\.'` on macOS delivers `.` to the program, so the PII tripwire exited 2 on every case while the Linux CI would have been fine. Regexes live as awk literals inside the program text now; lines are lowercased once and matched against lowercase patterns. Same family: zsh does not word-split an unquoted variable and has no `PIPESTATUS`, so a gate script that must run under both shells names its paths explicitly.
@@ -317,19 +220,6 @@ process hit the half-written text and died with "syntax error near unexpected to
 21 tasks; three run dirs held an empty result and would have been frozen as real zeros. Copy a
 long-running script to the scratchpad before launching it, or finish the edits first; and check
 `done:` lines against run dirs before freezing anything.
-
-## [decision] 2026-09-03 | the conformance harness has three tiers and a frozen baseline arm
-
-A full conformance pass was hours of `claude -p` sessions (21 tasks, two arms, three passes,
-6 to 11 minutes each, no cap), and half of it re-measured an arm that never reads the skill.
-The revamp shrank it rather than rebuilding it: tier 0 is the CI selftests; tier 1 after any
-doctrine edit is `CONFORMANCE_SINCE=<ref>`, which maps the skill diff to the tasks whose
-assertions exercise the touched rules (`select-tasks.py`: hard-rule lines by section, explicit
-rule references, references through the trigger table, canon ids) and runs the skill arm once
-against the frozen fixture; tier 2, both arms over the full matrix, only on a description
-change or before a release. The baseline arm is `baseline-arm.json`, keyed by the sha256 of the
-prompts and assertions, refused with the refresh commands when they change. Every session has a
-wall-clock cap and a turn cap, and each task's scorecard line prints as its session lands.
 
 ## [gotcha] 2026-09-03 | a vocabulary assertion measures naming; assert the shape
 
