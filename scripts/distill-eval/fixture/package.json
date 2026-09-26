@@ -1,0 +1,1 @@
+{ "name": "orders-cli", "module": "src/main.ts", "type": "module", "scripts": { "test": "bun test --randomize", "lint": "eslint --cache --cache-strategy content --max-warnings=0", "typecheck": "tsc --noEmit" } }
