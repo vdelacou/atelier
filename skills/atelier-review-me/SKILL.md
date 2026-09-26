@@ -57,7 +57,7 @@ The output here is a **staged adoption plan** (the ordered slices with the first
 
 ## Output
 
-A rule-cited verdict: each finding names the file, the exact rule number (or the red flag) it breaks, why, and the fix: grouped by severity, in domain language, the single most important fix first. End with a one-line verdict: conformant, or N violations across M files.
+A rule-cited verdict: each finding names the file, the exact rule number (or the red flag) it breaks, why, and the fix: grouped by severity, in domain language, the single most important fix first. Cite a hard rule as `rule N` and one of the main skill's behavioural guidelines as `guideline N`: the two lists both number from 1, so a drive-by edit cited as "rule 3" asserts the `interface` ban instead of the surgical-changes guideline, and a speculative port cited as "rule 2" asserts the ban on function declarations. End with a one-line verdict: conformant, or N violations across M files.
 
 Report only, never edit the tree. Offer to apply the fixes on request, hand mechanical cleanups to `/simplify`, and pass correctness bugs to `/code-review`. Review toward the *simplest* conforming change: a finding that demands more code than the rule requires is itself a smell.
 
