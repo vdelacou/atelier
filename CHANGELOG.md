@@ -19,6 +19,14 @@ whole, not any single skill.
   plants rules 26, 27, 4 and 20. `atelier-grill-me` mentions no gate and is unchanged.
 
 ### Harness
+- **Review-eval fixtures clean on every rule, and two grader defects fixed.** `settings.ts` gains a
+  shape check and a test, `MemberId` the typed error of the `Email` exemplar, so the clean files are
+  clean on every rule and not only on the one they were planted for. The rerun (three passes per
+  variant, both arms) found the eighth and ninth grader defects: a sentence reporting a clean file's
+  own claim read as an accusation, and a plural citation ("rules 3 and 1") cited neither rule. Both
+  fixed with selftests seen red. Skill arm: Bun 36/36 caught and cited, Java 27/27 and 27/27; three
+  false positives remain, two of them guideline findings cited with hard-rule numbers (the lists
+  share 1 to 5), recorded as the next review-me slice.
 - **A transcript per conformance session.** `run.sh` runs each session with `--output-format
   stream-json --verbose` and keeps the stream as `<run-dir>/.transcript.jsonl`; the new
   `transcript.py` derives `.result.txt` from its final event in the text-mode shape every consumer

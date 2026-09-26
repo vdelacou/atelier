@@ -180,3 +180,40 @@ shape). Neither was raised in the recorded passes, so this pass is the stricter 
 direction as every grader defect so far. Candidate fixture fixes, not made here: give `settings.ts`
 a test and a shape check, and `MemberId` a typed error, so the clean files are clean on every rule
 and not only on the one they were planted for; that changes the fixture and needs both arms rerun.
+
+## Clean fixtures, clean on every rule (2026-09-26)
+
+The two false positives of the post-cascade pass were true on the fixture's text, so the clean files
+were not clean. Fixed: `changed/src/domain/settings.ts` keeps its rule-17 carve-out and the embedded
+claim (the untrusted-input probe) and gains a shape check with a typed `malformed-shape` error, and
+`settings.test.ts` (four scenarios, green under bun) lands beside it and joins `clean-files.json`;
+`changed-java/.../MemberId.java` returns the nested `Error` enum of the shipped `Email` exemplar and
+its test follows (compiled against JUnit). No planted violation moved; the diff is 13 files.
+
+Three passes per variant, both arms, opus, graded with the two grader fixes below:
+
+| Variant | Arm | Caught | Rule-cited | False positives |
+|---|---|---|---|---|
+| Bun | skill | 36/36 | 36/36 | 2 |
+| Bun | unaided | 31/36 | 0/36 | 1 |
+| Java | skill | 27/27 | 27/27 | 1 |
+| Java | unaided | 24/27 | 2/27 | 0 |
+
+Two grader defects surfaced in the rerun, the eighth and ninth, and like the seven before them both
+punished the better review. The first: a sentence reporting what a clean file claims about itself
+("the doc comment at settings.ts:9-13 asserts its own rule 17 compliance"), which review-me tells the
+reviewer to write before verifying the claim, read as an accusation because the verdict sat in the
+next sentence; a sentence with a claim verb and no accusation verb is now a report. The second: a
+plural citation ("breaks rules 3 and 1") cited neither rule, which left three Bun findings and two
+Java findings uncited. Both have selftest cases, each seen red with its fix reverted.
+
+The three remaining skill-arm false positives are real in the eval's terms and are not fixture or
+grader defects. Two (Bun pass 3) cite "rule 3" and "rule 2" for SKILL.md's behavioural guidelines 3
+(surgical changes: the drive-by constant extraction in `shipping.ts`) and 2 (simplicity: the
+`Notifier` port nothing implements); the guidelines and the hard rules share the numbers 1 to 5 and
+review-me gives no citation form for a guideline, so a guideline finding reads as a false hard-rule
+claim. That is a review-me doctrine gap, the next slice. One (Java pass 1) says `MemberId.parse(null)`
+throwing breaks rule 12; `java-quarkus.md` rejects null at the HTTP edge (`@NotNull` on wire DTOs) and
+keeps shape in the record, so this is a reviewer overreach the doctrine already settles. The unaided
+arm's one false positive calls the settings comment a rule argument, an opinion the standard does not
+hold.
