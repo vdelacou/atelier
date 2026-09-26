@@ -6,6 +6,21 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Added
+- **`atelier-distill`, a fifth companion: the compaction pass for a repo's agent memory.** The lessons
+  journals are read in full at every session start and are append-only, and the doctrine's only pruning
+  rule was by age (older than six months, never referenced), which never fires on a young, dense journal:
+  this repo's own `LESSONS.md` reached 104 KB, about seven times its ~15 KB cap, with no entry old enough
+  to prune. The skill reads `.claude/LESSONS.md`, the personal journal, `PLAN.md`, `CLAUDE.md` and the
+  agent's own memory folder, gives every entry one verdict with evidence (keep, tighten, merge, graduate
+  into the gate or doc that now enforces it, archive, move, delete a duplicate, promote), reports before
+  writing anything, applies only what the user approves, archives before it removes
+  (`.claude/lessons.archive.md`), backs up what git does not track, and proves every original entry is
+  accounted for. It runs nothing from the repo and needs no network. Trigger set `atelier-distill.json`
+  12/12 from the new `probe-root-journal` fixture; suite routing 14/16 with all five skills registered,
+  no query routed to the wrong skill (the two misses are older rows that invoked none, as in every run
+  of the day, on premises the Bun fixture lacks).
+
 ### Security
 - **`check-docs.sh` no longer runs README text as shell.** It ran the README's `## Verify` block
   through `bash -eu -c`, so anyone able to edit a README could run code with the CI runner's token;
@@ -44,6 +59,12 @@ whole, not any single skill.
   puts the skill in `~/.claude/skills/`, the path the pointer-block step reads.
 
 ### Changed
+- **The lessons doctrine gains the compaction pass.** `references/lessons.md`: the journals stay
+  append-only between passes; the pass is the one sanctioned rewrite (a journal over 100 entries or
+  ~15 KB gets one offer at session start, or the user asks), with its verdict table, the archive format
+  and five guarantees; the age rule is gone, the harvest reads the archive too, and the personal archive
+  joins `.gitignore`. The main skill's Lessons section makes the offer; `workflow.md` and matrix row
+  12.4's note follow. Tier 1 selected no task: no conformance task exercises the journal.
 - `atelier-review-me` cites a behavioural guideline as `guideline N` and a hard rule as `rule N`.
   The two lists both number from 1, so a drive-by edit cited as "rule 3" asserted the `interface`
   ban against a clean file; two of the three skill-arm false positives in the clean-fixture rerun
@@ -62,6 +83,13 @@ whole, not any single skill.
   plants rules 26, 27, 4 and 20. `atelier-grill-me` mentions no gate and is unchanged.
 
 ### Harness
+- **Trigger probes no longer see user-level skills.** On a machine with the suite installed under
+  `~/.claude/skills`, the model invoked the real skill beside each synthetic clone, the detector (which
+  knows only the clones) read "(none)", and correct routes scored as misses: suite routing read 5/15,
+  and one manual probe showed `Skill {"skill": "atelier-grill-me"}`, the right route. `run_eval.py` now
+  runs every probe with `--setting-sources project,local`, and the same set read 13/15. A fixture may
+  carry agent memory under `.claude/` (its `commands/` stays probe-owned); `probe-root-journal` carries a
+  journal for the distill set, whose lessons-journal queries invoked nothing on a fixture without one.
 - **Review-eval fixtures clean on every rule, and two grader defects fixed.** `settings.ts` gains a
   shape check and a test, `MemberId` the typed error of the `Email` exemplar, so the clean files are
   clean on every rule and not only on the one they were planted for. The rerun (three passes per

@@ -19,7 +19,7 @@ tree. What binds work HERE is the authoring and process discipline below.
 ## Structure
 - `skills/atelier/` is the main skill: `SKILL.md` (hard rules + workflow) plus `references/`
   (the doctrine, one file per concern) and `assets/` (copyable gate scripts + Java exemplars).
-- `skills/atelier-{greenfield,review-me,grill-me}/` are the companion skills.
+- `skills/atelier-{greenfield,review-me,grill-me,distill}/` are the companion skills.
 - `scripts/` holds the CI harnesses: three `smoke-test*.sh` (Bun/Next/Java, each proving the
   gates pass AND block their target violation), `trigger-eval/` (does the skill load; suite
   mode measures which skill wins a query), `conformance-eval/` (does produced code follow the
@@ -71,7 +71,7 @@ tree. What binds work HERE is the authoring and process discipline below.
   harnesses and sets are committed.
 - **Main-skill doctrine changes cascade to companions**: when `skills/atelier/SKILL.md` gains
   or changes doctrine (a rule summary, a gate, a workflow step), sweep atelier-greenfield,
-  atelier-review-me, and atelier-grill-me for stale echoes in the same change; the 2026-08-30
+  atelier-review-me, atelier-grill-me, and atelier-distill for stale echoes in the same change; the 2026-08-30
   audit found every companion gap was a missed cascade.
 - **Every new gate proves it can fail**: ship a fixture violation case alongside it, and wire
   it into the matching smoke test so a toolchain major cannot silently disable it.

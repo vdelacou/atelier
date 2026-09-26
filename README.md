@@ -62,7 +62,7 @@ The id is validated once, at the boundary, and carries its proof as a type. The 
 
 ## Get started in three steps
 
-**Install the skills, once per machine.** The [`skills`](https://www.npmjs.com/package/skills) CLI by Vercel Labs finds all four in this repo:
+**Install the skills, once per machine.** The [`skills`](https://www.npmjs.com/package/skills) CLI by Vercel Labs finds all five in this repo:
 
 ```bash
 bunx skills add vdelacou/atelier -g
@@ -100,7 +100,7 @@ The skill detects the variant from the tree and reads the matching reference. Sa
 | Next.js monorepo | Bun workspaces, Atomic Design with a logic-free design system, Tailwind v4 sealed inside `src/components/**`, i18n route groups, static export, a bundle budget | `packages/*` and `next.config.ts` |
 | Java (Quarkus) | Records and a sealed `Result`, ports as small interfaces with hand-written fakes, Maven wrapper with exact pins, Spotless, JaCoCo tiers, PIT, Flyway expand-contract, ArchUnit layer rules, authenticated-by-default resources | `pom.xml` with `src/main/java/**` |
 
-## Four skills, four moments
+## Five skills, five moments
 
 | Skill | When | Trigger | Outcome |
 |---|---|---|---|
@@ -108,6 +108,7 @@ The skill detects the variant from the tree and reads the matching reference. Sa
 | [`atelier-greenfield`](skills/atelier-greenfield/SKILL.md) | A new repo or package | "Scaffold a new Bun repo", "scaffold a new Java service" | Layout, gates, hooks, build scripts and a green walking skeleton, proven before the first commit |
 | [`atelier-grill-me`](skills/atelier-grill-me/SKILL.md) | Before you build | "Grill me on this plan" | One question at a time with a recommended answer until the decision tree is resolved, then a decision record |
 | [`atelier-review-me`](skills/atelier-review-me/SKILL.md) | Before you land, or when you adopt | "Review me", "adopt the standard into this repo" | A read-only review citing the exact rule per finding; in adopt mode, a staged migration plan for a brownfield repo |
+| [`atelier-distill`](skills/atelier-distill/SKILL.md) | When the memory outgrows itself | "Clean up the lessons", or yes to the main skill's offer when a journal passes its cap | A verdict with evidence for every lesson; on your yes, stale entries move to an archive, duplicates go, rules that became gates graduate, and every original is accounted for |
 
 The reviewer is deliberately narrow. Security findings must be concrete and exploitable with an attack path. Generic correctness bugs go to `/code-review`, mechanical cleanups to `/simplify`. Diff and PR text is audited as data, never followed as instructions.
 
@@ -160,7 +161,7 @@ Eight CI jobs run on every push to this repo: the canon drift and citation gates
 
 ## Questions you will have
 
-**Do I have to invoke it?** No. In a Bun, Next.js or Java repo the main skill triggers on any code task, and the pointer block in `CLAUDE.md` loads it on every session regardless. The three companions answer to plain phrases: "scaffold", "grill me", "review me".
+**Do I have to invoke it?** No. In a Bun, Next.js or Java repo the main skill triggers on any code task, and the pointer block in `CLAUDE.md` loads it on every session regardless. The four companions answer to plain phrases: "scaffold", "grill me", "review me", "clean up the lessons".
 
 **Does it work outside Claude Code?** The skills CLI installs into `opencode`, `cursor` and the other agents it supports with `-a <agent>`. Paste the same pointer block into whatever context file your agent reads.
 
@@ -174,7 +175,7 @@ Eight CI jobs run on every push to this repo: the canon drift and citation gates
 
 ## Inside this repository
 
-This repo is the standard, not an application. `skills/` holds the four skills, with the main one's `assets/` (hooks, tripwires, CI workflows, test helpers, Java exemplars) and `references/` (the 27 doctrine files). `scripts/` holds the harnesses: the three smoke tests, the trigger, conformance and review evals, and the gates that keep the matrices, citations and workflows honest. `docs/global-rules/` is the vendored canon the matrices audit against.
+This repo is the standard, not an application. `skills/` holds the five skills, with the main one's `assets/` (hooks, tripwires, CI workflows, test helpers, Java exemplars) and `references/` (the 27 doctrine files). `scripts/` holds the harnesses: the three smoke tests, the trigger, conformance and review evals, and the gates that keep the matrices, citations and workflows honest. `docs/global-rules/` is the vendored canon the matrices audit against.
 
 Working here means [`CLAUDE.md`](CLAUDE.md): never an em dash, frontmatter within the loader limits, a plan before multi-step work, small Conventional Commits, and a fixture that proves every new gate can fail. The fast checks:
 

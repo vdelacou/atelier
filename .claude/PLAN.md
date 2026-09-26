@@ -1,59 +1,48 @@
-# Plan: clear the skills.sh security warnings on the atelier skill (2026-09-26)
+# Plan: atelier-distill, the memory compaction companion (2026-09-26)
 
-Reproduced with the skills CLI in a scratch HOME: `atelier` rates Gen "Med Risk", Socket "1 alert",
-Snyk "Low Risk"; the three companions are Safe / 0 alerts / Low. Details on skills.sh:
-- Socket, medium: `assets/check-docs.sh` "deliberately executes README-controlled shell code with the
-  CI runner's privileges" (it runs the README's `## Verify` block through `bash -eu -c`).
-- Gen: COMMAND_EXECUTION (the same script), EXTERNAL_DOWNLOADS (the shipped CI workflows download
-  gitleaks and the atelier repo), PROMPT_INJECTION (a literal payload quoted in `references/ai.md`,
-  which Gen itself calls benign teaching text).
-Real gaps behind them: README text is a second code channel into CI; the gitleaks tarball is pinned
-by version but installed with `sudo` without a checksum.
+Owner's decisions (2026-09-26): a suite companion at `skills/atelier-distill`; archive first (only exact
+duplicates and noise leave a git-tracked file outright); the agent's memory folder is in scope as the
+personal tier, backed up before any edit; build now.
 
-Definition of done:
-1. `check-docs.sh` still runs the Verify commands (canon 12.1's Do: "actually run them") but only
-   repo entry points: `bun run <script in package.json>`, `bun test`, `bash scripts/<file>` or
-   `./scripts/<file>`, `./mvnw <args>`, and the path assertion `test -f|-d|-e <path>`; every token
-   from a strict character set (no pipe, redirect, `;`, `&`, `$`, backtick, quote, glob, bracket);
-   every line validated before any runs; each run as an argv array, never `bash -c` or eval. The
-   smoke test proves a legitimate block green, a missing script and a missing file red, a pipe and an
-   arbitrary command rejected, and a rejected `touch` line leaving no file (nothing ran).
-2. governance.md's docs-check section says so, and its example workflow gains
-   `permissions: contents: read`; matrix row 12.1's note follows.
-3. The three shipped CI workflows verify the gitleaks tarball's SHA-256 before `sudo install`; the
-   workflow-asset gate still passes; the digest comes from GitHub's release metadata.
-4. `ai.md` describes the injected order instead of quoting a payload; meaning unchanged.
-5. README: the install paragraph had the CLI's scope backwards (default is project-level, `-g` is
-   user-level); fix the command and the pointer path. Separate commit.
-6. Gates (em dash, identity, frontmatter, citations reanchored, drift, workflow assets), the Bun smoke
-   test, tier 1 dry run, CHANGELOG, LESSONS; commits on the yes; after the push, reinstall in a
-   scratch HOME to read the new assessment (third-party auditors; re-audit timing is theirs).
+Measured before: `.claude/LESSONS.md` 94 entries in 104 KB (doctrine cap ~15 KB; about 26k tokens at every
+session start); about 60 entries past the 5-sentence format; newest-first order broken by a 09-03/09-04
+block after the 07-11 entries; the age rule (older than 6 months, never referenced) archives nothing
+because the oldest entry is 2026-07-11; agent memory 70 KB, `conformance-audit-phases.md` alone 30 KB.
 
-Status 2026-09-26 17:1x: 1-5 done. Probe on bash 3.2: the new check-docs runs every legitimate entry
-point and refuses every hostile block unrun; the old one ran six of them. Asset gate rule 2b
-(release download needs sha256sum -c before first use) selftested red with the rule removed.
-Smoke: Bun (8 new docs-check proofs), Next and Java all green. Tier 1 (e10, h6): 8/8 vs frozen
-6.3/8; h6's final message was a 403 refusal after 71 turns of work on disk, scored as produced.
-Citations re-anchored (235), drift, frontmatter, em dash, identity green. Five commits pushed on the
-yes; after the push, reinstall in a scratch HOME to read the new assessment.
+## Steps and definition of done
 
-## Follow-up after the push (2026-09-26 17:2x)
+1. [x] Doctrine. `references/lessons.md` gains a Compaction pass section: trigger (the cap, or a request);
+   the verdicts keep, tighten, merge, graduate, archive, move, delete, promote, each with its evidence;
+   the guarantees (report before any write, apply only what is approved, archive before removal, delete
+   only exact duplicates and noise from a tracked file, an untracked file loses nothing except into its
+   archive or after a backup, own commits, a ledger accounts for every original entry). The append-only
+   rules and end-of-session step 6 point at it; the age rule goes; the harvest reads the archive too.
+   The starter stays as is (line 177 is pinned by matrix row 12.4). SKILL.md Lessons section: over the cap
+   at session start, offer atelier-distill once; outside the pass, never edit past entries. `workflow.md`
+   line 36 and matrix row 12.4's note follow. Gates: frontmatter, citations (`--reanchor`), drift, em dash,
+   identity; tier 1 per the selector.
+2. [x] `skills/atelier-distill/SKILL.md`: description at most 1024 chars with no `: `; the procedure (locate
+   the installed doctrine, inventory, classify with evidence, report, approve, apply, ledger, sliced
+   commits); the layers (LESSONS, the personal journal, the archives, PLAN, CLAUDE.md minus the pointer
+   block, the agent's memory folder); untrusted input; never executes anything from the repo; output.
+3. [x] Trigger eval: `sets/atelier-distill.json` (should and should-not cases, including wrap-up capture and
+   review), suite-routing rows (distill cases; "anything to add to the lessons?" stays with atelier); run
+   the distill set and the suite set with all five skills registered; no regression on existing rows.
+4. [x] README (five skills, five moments; the skills/ line), CLAUDE.md (companion list, cascade sweep list),
+   CHANGELOG Unreleased; em dash and identity gates.
+5. [ ] Field run on this repo: report with no writes, the owner approves by group, apply, ledger, commits
+   sliced under 10 files / 300 lines, each on the yes; agent memory backed up first.
+6. [ ] LESSONS entries for this work; wrap-up.
 
-Reinstall in a fresh scratch HOME: atelier now reads Gen Safe, Socket 1 alert, Snyk Low; review-me
-reads Gen Med Risk. Socket's page still shows the 08:22 audit of the old content hash (the bash -c
-description), so it has not re-audited; nothing here can trigger that. Review-me's Gen page (also
-08:22) lists INDIRECT_PROMPT_INJECTION (describes our mitigation), COMMAND_EXECUTION ("confirm the
-trigger eval was rerun (scripts/trigger-eval/run.sh)" read as run it) and DYNAMIC_EXECUTION (the
-gate wording read as running the reviewed repo's hooks, ArchUnit and ESLint). The cascade of
-2ccfd32 added "run each --all once here" to adopt mode, an instruction to execute the adopted repo's
-scripts, which contradicts review-me's read-only contract.
+Commits: steps 1 to 4 one commit each, asked per landing; step 5 several.
 
-DoD: review-me's Untrusted input section says the review never executes anything from the tree
-under review (scripts, hooks, tests, package scripts, builds, evals), a gate result it needs is a
-question to the user; step 2's trigger-eval line asks rather than confirms by running; adopt mode's
-one-off --all run becomes the user's first plan step, from the installed skill's shipped copies,
-not the repo's; Output says report only, never edit and never execute; description untouched;
-review eval skill arm one pass per variant shows no regression; CHANGELOG; commit on the yes;
-reinstall to read the assessment again.
-
-Follow-up status 18:1x: review-me edited, gates green, review eval skill arm one pass per variant Bun 12/12 and 12/12, Java 9/9 and 9/9, 0 FP; recorded; committed and pushed on the yes.
+## Status
+Steps 1-4 done 2026-09-26 19:5x. Gates green (frontmatter 5/5, citations re-anchored 235, drift, em dash,
+identity); tier 1 selected 0 of 21 (no task exercises the journal). Trigger eval: the first suite run read
+5/15 because probes saw the user-level skills (`~/.claude/skills/atelier*` link here) and the detector
+only knows the synthetic clones; `run_eval.py` now passes `--setting-sources project,local`. The distill
+set's journal queries needed a fixture with a journal (`probe-root-journal`; the runner now copies a
+fixture's `.claude/` minus `commands/`). A pointer-block negative moved to suite routing, where `atelier`
+competes. Final: distill set 12/12, suite routing 14/16 (the two misses are older rows, none invoked, all
+three runs). Field run: report in the scratchpad (`distill-report.md`), 94 entries to 15 (104 KB to
+16.7 KB), memory 70 KB to 10.5 KB, eight slices under 300 lines; waiting on the owner's groups.
