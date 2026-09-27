@@ -4,12 +4,17 @@
 #      bans the character and an agent copies the punctuation it sees).
 #   2. No person, employer, or client named in a staged line (rule 26, the
 #      shipped check-identity.sh run on this repo itself).
-#   3. Every skill's YAML frontmatter parses (the colon-space class of bug that
+#   3. The matrix citations still point at the lines they pin, and the matrix still
+#      matches the canon (both under a second; CI caught a shifted citation only
+#      after the push until 2026-09-27).
+#   4. Every skill's YAML frontmatter parses (the colon-space class of bug that
 #      silently breaks skill loading).
 # The frontmatter check degrades gracefully if Bun is unavailable, mirroring
 # the gitleaks gate; the em-dash check needs only git and awk.
 bash scripts/check-no-em-dash.sh || exit 1
 bash skills/atelier/assets/check-identity.sh || exit 1
+python3 scripts/check-citations.py >/dev/null || exit 1
+python3 scripts/check-matrix-drift.py >/dev/null || exit 1
 if ! command -v bun >/dev/null 2>&1; then
   echo "pre-commit: bun not found, skipping skill-frontmatter validation" >&2
   exit 0

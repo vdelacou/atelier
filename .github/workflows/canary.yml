@@ -23,12 +23,17 @@ on:
     - cron: '0 6 * * 1'   # Mondays 06:00 UTC
   workflow_dispatch:
 
+# read-only token: no job here writes to the repository
+permissions:
+  contents: read
+
 jobs:
   unpinned-typescript:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - name: smoke test with typescript unpinned
         run: SMOKE_TS_SPEC=typescript bash scripts/smoke-test.sh
@@ -37,9 +42,10 @@ jobs:
 
   sonarjs-rule-probe:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       # The probe re-enables the three disabled rules and prints its verdict in
       # the smoke-test output. Read the "PROBE:" line: it says whether they can
@@ -49,9 +55,10 @@ jobs:
 
   oxlint-parity-probe:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       # Oxlint's npm launcher needs Node 20.19+ or 22.12+.
       - uses: actions/setup-node@v7
