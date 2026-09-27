@@ -69,6 +69,12 @@ def check(matrix_text: str, canon_text: str) -> list[str]:
     missing = set(canon_map) - {i for i, _ in rows}
     if missing:
         errors.append(f"matrix missing canon ids: {sorted(missing)}")
+    # the order half of the heading: two swapped rows passed until 2026-09-27
+    canon_order = [i for i, _ in canon]
+    row_order = [i for i, _ in rows if i in canon_map]
+    if row_order != [i for i in canon_order if i in set(row_order)]:
+        first = next(k for k, (a, b) in enumerate(zip(row_order, [i for i in canon_order if i in set(row_order)])) if a != b)
+        errors.append(f"rows out of canonical order from row {first + 1} ({row_order[first]} where the canon has {[i for i in canon_order if i in set(row_order)][first]})")
 
     # 3. canon sha256 pins
     pins = pinned_hashes(matrix_text)
@@ -104,7 +110,16 @@ def selftest() -> None:
     if m2 == good or not check(m2, canon_text):
         print("SELFTEST FAILED: a corrupted sha256 pin was not caught")
         sys.exit(1)
-    print("selftest OK: drift gate rejects a retitled row and a corrupted canon pin")
+    # swap two adjacent rows -> the order half of check 2 must fire
+    lines = good.splitlines(keepends=True)
+    i1 = next(k for k, l in enumerate(lines) if l.startswith("| 1.1 |"))
+    i2 = next(k for k, l in enumerate(lines) if l.startswith("| 1.2 |"))
+    lines[i1], lines[i2] = lines[i2], lines[i1]
+    m3 = "".join(lines)
+    if m3 == good or not check(m3, canon_text):
+        print("SELFTEST FAILED: two swapped rows were not caught")
+        sys.exit(1)
+    print("selftest OK: drift gate rejects a retitled row, two swapped rows and a corrupted canon pin")
 
 
 def main() -> None:
@@ -117,7 +132,7 @@ def main() -> None:
         for e in errors:
             print(f"  {e}")
         sys.exit(1)
-    print("conformance-matrix.md: 120 rows, ids+titles verbatim, canon sha256 pins intact")
+    print("conformance-matrix.md: 120 rows, ids+titles verbatim and in canonical order, canon sha256 pins intact")
 
 
 if __name__ == "__main__":

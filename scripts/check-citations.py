@@ -10,7 +10,9 @@ Usage:
   python3 scripts/check-citations.py             # verify against the lock
   python3 scripts/check-citations.py --reanchor  # an edit shifted cited lines: move every
                                                  # pinned citation to the line that now holds
-                                                 # its snippet (both ends of a range), re-lock
+                                                 # its snippet (both ends of a range) and
+                                                 # re-key those lock entries; never locks
+                                                 # a citation that was not locked before
   python3 scripts/check-citations.py --lock      # the pinned content itself changed on purpose
   python3 scripts/check-citations.py --selftest  # prove the gate can fail
 
@@ -26,7 +28,11 @@ and a section has two ends. Before, only N was pinned, and re-anchoring by hand 
 starts and never ends, so three ranges had inverted (end before start) unseen.
 --reanchor (since 2026-09-09) does that job: a pinned snippet found on exactly one line
 moves the citation there; a snippet that is gone or ambiguous is reported and left for a
-human, and nothing is locked until every move resolved.
+human. Since 2026-09-27 each moved entry is re-keyed in the lock on the same run, a partial
+one included, and nothing else is locked: the old "re-lock once every move resolved" left
+the lock behind on a partial run, a rerun then moved a moved citation again (a matrix row
+landed on the neighbouring row's evidence and was locked green), and the final re-lock
+pinned new citations no one had reviewed.
 """
 from __future__ import annotations
 
@@ -147,7 +153,12 @@ def run_lock() -> int:
 
 def run_reanchor() -> int:
     """Move each pinned citation whose line drifted to the unique line that now holds
-    its snippet, rewrite the citation tokens in every source, then re-lock."""
+    its snippet, rewrite the citation tokens in every source, and re-key exactly those
+    entries in the lock. Two rules since 2026-09-27: the lock moves with the sources on
+    every run, a partial one included, so a second run cannot move a moved citation
+    again (a partial run once left the lock behind and the rerun cascaded 140 -> 127
+    -> 114, locking the wrong line green); and a citation that was never locked stays
+    unlocked, since only --lock, after a human read it, pins new evidence."""
     lock = json.loads(LOCK.read_text())["entries"] if LOCK.exists() else {}
     moves: dict[tuple[str, int], int] = {}
     stuck = 0
@@ -197,13 +208,19 @@ def run_reanchor() -> int:
         new_text = CITE.sub(rebuild, text)
         if new_text != text:
             (ROOT / src).write_text(new_text)
+    # Re-key the moved entries, all removals before any insertion so two citations
+    # that trade places cannot overwrite each other.
+    moved = {(t, old): lock.pop(f"{t}:{old}") for (t, old) in moves}
+    for (t, old), new in moves.items():
+        lock[f"{t}:{new}"] = moved[(t, old)]
+    LOCK.write_text(json.dumps({"entries": dict(sorted(lock.items()))}, indent=2) + "\n")
     for (t, old), new in sorted(moves.items()):
         print(f"  {t}:{old} -> {new}")
     if stuck:
-        print(f"check-citations: moved {len(moves)} citation line(s); {stuck} left for a human, not locking", file=sys.stderr)
+        print(f"check-citations: moved {len(moves)} citation line(s) and their lock entries; {stuck} left for a human (re-anchor by hand, then --lock)", file=sys.stderr)
         return 1
-    print(f"check-citations: moved {len(moves)} citation line(s); re-locking")
-    return run_lock()
+    print(f"check-citations: moved {len(moves)} citation line(s) and their lock entries")
+    return run_verify()
 
 
 def run_selftest() -> int:
@@ -249,6 +266,24 @@ def run_selftest() -> int:
         assert src.read_text() == "| row | doc.md:3; doc.md:4-5 | e |\n", f"citations not rewritten: {src.read_text()!r}"
         assert run_verify() == 0, "the re-anchored tree must verify"
         assert run_reanchor() == 0, "--reanchor on an intact tree is a no-op"
+        # a partial run (one citation stuck) moves the lock with the sources, so a rerun
+        # cannot move a moved citation again: the old re-lock-only-when-clean left the
+        # lock behind, and the rerun cascaded "five" onto the line "three" had moved to
+        target.write_text("one\ntwo\nthree\nfour\nfive\ndup\n")
+        src.write_text("| row | doc.md:3; doc.md:5; doc.md:6 | e |\n")
+        assert run_lock() == 0
+        target.write_text("new1\nnew2\none\ntwo\nthree\nfour\nfive\ndup\ndup\n")
+        assert run_reanchor() == 1, "a stuck (ambiguous) citation makes the run partial"
+        assert run_reanchor() == 1, "the rerun is still partial"
+        assert src.read_text() == "| row | doc.md:5; doc.md:7; doc.md:6 | e |\n", f"a rerun moved a moved citation again: {src.read_text()!r}"
+        # a citation that was never locked stays unlocked: --reanchor pins no new evidence
+        target.write_text("alpha\nbeta\ngamma\ndelta\n")
+        src.write_text("| row | doc.md:2 | e |\n")
+        assert run_lock() == 0
+        src.write_text("| row | doc.md:2; doc.md:4 | e |\n")
+        target.write_text("zero\nalpha\nbeta\ngamma\ndelta\n")
+        assert run_reanchor() == 1, "an unreviewed new citation keeps the tree red after a re-anchor"
+        assert "doc.md:4" not in json.loads(LOCK.read_text())["entries"], "--reanchor locked a citation no one reviewed"
         # an ambiguous snippet (the same line twice) is left for a human and nothing is locked
         target.write_text("alpha\nbeta\ngamma\n")
         src.write_text("| row | doc.md:2 | e |\n")
@@ -264,7 +299,7 @@ def run_selftest() -> int:
         assert run_lock() == 1, "a citation to a blank line must be refused by --lock"
         (root / "lock.json").write_text('{"entries": {"doc.md:2": ""}}')
         assert run_verify() == 1, "a citation to a blank line must fail verify even when the lock holds the empty snippet"
-    print("selftest OK: gate rejects a drifted line (in a .md and in a .java), a drifted range end, an unlocked citation, an out-of-range one, and a blank line; --reanchor moves a shifted citation and range and refuses an ambiguous or vanished snippet")
+    print("selftest OK: gate rejects a drifted line (in a .md and in a .java), a drifted range end, an unlocked citation, an out-of-range one, and a blank line; --reanchor moves a shifted citation and range, refuses an ambiguous or vanished snippet, never moves a moved citation twice, and locks nothing new")
     return 0
 
 

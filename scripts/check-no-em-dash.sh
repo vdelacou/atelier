@@ -22,8 +22,15 @@ DASH=$'\xe2\x80\x94'
 zero_sha=0000000000000000000000000000000000000000
 
 # stdin: a unified diff. stdout: "path: content" for every added line carrying the dash.
+# Header-aware: `+++ b/` names the file only before a file's first hunk, and inside a hunk
+# every `+` line is content, a Markdown line that starts with `+` included (the old
+# /^\+[^+]/ dropped it).
 added_lines_with_dash() {
-  awk -v d="$DASH" '/^\+\+\+ b\//{f=substr($0,7)} /^\+[^+]/ && index($0, d) {print f ": " substr($0, 2)}'
+  awk -v d="$DASH" '
+    /^diff --git / { hdr = 1; next }
+    hdr && /^\+\+\+ / { f = substr($0, 7); next }
+    /^@@/ { hdr = 0; next }
+    !hdr && /^\+/ && index($0, d) { print f ": " substr($0, 2) }'
 }
 
 if [ "${1:-}" = "--selftest" ]; then
@@ -43,7 +50,14 @@ if [ "${1:-}" = "--selftest" ]; then
   if bash "$gate" HEAD~1 HEAD >/dev/null 2>&1; then echo "selftest FAIL: an em dash in the range was accepted" >&2; exit 1; fi
   printf 'no dash any more\n' > b.md && git add b.md && git commit -qm 'chore: fixed'
   bash "$gate" HEAD~1 HEAD >/dev/null || { echo "selftest FAIL: a range that removes the dash was rejected" >&2; exit 1; }
-  echo "selftest OK: gate rejects a staged em dash and one in a commit range, accepts a clean stage and a range that removes one"
+  # A git error is a failure, never a clean pass: `|| true` after the pipe once turned
+  # an unknown head ref into "no em dash" and exit 0.
+  if bash "$gate" HEAD~1 no-such-ref >/dev/null 2>&1; then echo "selftest FAIL: an unknown head ref passed" >&2; exit 1; fi
+  # An added line whose own text starts with `+` (a Markdown bullet) is still read.
+  printf '+ a plus bullet %s with a dash\n' "$DASH" > c.md && git add c.md
+  if staged >/dev/null 2>&1; then echo "selftest FAIL: an em dash on a line starting with + was accepted" >&2; exit 1; fi
+  git reset -q c.md
+  echo "selftest OK: gate rejects a staged em dash, one in a commit range, one on a line starting with +, and an unknown ref; accepts a clean stage and a range that removes one"
   exit 0
 fi
 
@@ -66,14 +80,14 @@ fi
 
 if [ -z "$base" ]; then
   scope="the staged diff"
-  hits=$(git diff --cached -U0 | added_lines_with_dash || true)
+  hits=$(git diff --cached -U0 | added_lines_with_dash)
 else
   if ! git rev-parse --quiet --verify "${base}^{commit}" >/dev/null 2>&1; then
     base=HEAD~1
     git rev-parse --quiet --verify 'HEAD~1^{commit}' >/dev/null 2>&1 || { echo "check-no-em-dash: single-commit history, nothing to compare"; exit 0; }
   fi
   scope="${base}..${head}"
-  hits=$(git diff -U0 "$base" "$head" | added_lines_with_dash || true)
+  hits=$(git diff -U0 "$base" "$head" | added_lines_with_dash)
 fi
 
 if [ -z "$hits" ]; then

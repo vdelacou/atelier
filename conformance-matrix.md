@@ -133,10 +133,10 @@ TypeScript example is unambiguous: the Don't is `{ "dependencies": { "hono": "^4
 is `{ "hono": "4.6.14", "zod": "3.24.1" }`, exact pins (global-rules-dos-and-donts.md:933-938@edb98a7).
 The skill permits and generates exactly the forbidden shape. `assets/check-package-json.sh`
 bans only `latest`, `*`, and bare dist-tags, and its own comment lists what it "Permits: 'x':
-'^1.2.3' / '~1.2.3' / '>=1.0.0'" (check-package-json.sh:101), while `bun add` "pins to ^X.Y.Z
-automatically" (check-package-json.sh:135) and workflow.md:345 requires "a concrete version
+'^1.2.3' / '~1.2.3' / '>=1.0.0'" (check-package-json.sh:104), while `bun add` "pins to ^X.Y.Z
+automatically" (check-package-json.sh:139) and workflow.md:345 requires "a concrete version
 (X.Y.Z) or a real range (^X.Y.Z ...)". The scan clause is covered as doctrine (`bun audit` in
-CI daily and on dependency PRs, security.md:67, workflow.md:618) and the automated-update
+CI daily and on dependency PRs, security.md:67, workflow.md:620) and the automated-update
 clause is covered thinly (Renovate is named, but only in the Java reference, java-quarkus.md:19;
 the Bun side leans on a manual `bun update` cadence and ships no Renovate or dependabot config).
 But the pin clause is contradicted, and CONTRADICTS dominates. The skill's rationale (a
@@ -169,7 +169,7 @@ Enforcement tier is rule rather than doctrine.
 data access behind an interface with a real client and an in-memory fake; the skill prescribes
 exactly that, "a gateway port in src/lib/ with a real client and a canned fake, returning
 Result and mapping the wire DTO into the frontend's own model at that one point"
-(nextjs-monorepo.md:697): COVERED. Canon 17.6's Do has four clauses (semantic elements,
+(nextjs-monorepo.md:711): COVERED. Canon 17.6's Do has four clauses (semantic elements,
 keyboard-workable flows, contrast in tokens, and a gate on automated accessibility checks); the
 skill meets all four, with "Semantic elements first" and "Keyboard everywhere" and "Contrast
 lives in the tokens" (atomic-design.md:227-229) and a real gate, "eslint-plugin-jsx-a11y runs
@@ -192,7 +192,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 1.1 | One committed config for style | COVERED | workflow.md:55; bun-typescript.md:127; check-package-json.sh:42; check-package-json.sh:61; assets/pre-commit gate 5 | gate | One flat eslint.config.js embeds prettier; lint:strict is gate 5; since 2026-09-08 the style rules themselves are lint (`STYLE_BANS`, rules 1, 7, 10, 18; `TRY_BAN` 17; `FS_BAN` 20) |
+| 1.1 | One committed config for style | COVERED | workflow.md:55; bun-typescript.md:129; check-package-json.sh:42; check-package-json.sh:61; assets/pre-commit gate 5 | gate | One flat eslint.config.js embeds prettier; lint:strict is gate 5; since 2026-09-08 the style rules themselves are lint (`STYLE_BANS`, rules 1, 7, 10, 18; `TRY_BAN` 17; `FS_BAN` 20) |
 | 1.2 | Cap complexity and duplication | COVERED | SKILL.md:88; SKILL.md:59; SKILL.md:57 | gate | Size caps and Rule-of-Three are generation-time rules; rule 35 gates cyclomatic complexity at 10 in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`); sonarjs cognitive stays off, one metric |
 | 1.3 | One grammar for the history | COVERED | SKILL.md:59; assets/commit-msg; assets/check-commit-messages.sh | gate | Conventional Commits grammar enforced by the commit-msg hook and re-checked in CI over the pushed range, so a --no-verify bypass is still caught (gate added 2026-08-30 with the canon row). The 72-vs-100 divergence closed the same day: P6 1.3 ACCEPTED 2026-08-30, canon now states 100, the documented default of @commitlint/config-conventional, which the row's own gate snippet prescribes |
 
@@ -211,11 +211,11 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 3.1 | Point dependencies inward | COVERED | architecture.md:96; architecture.md:235; SKILL.md:92; SKILL.md:79; bun-typescript.md:163; bun-typescript.md:240; nextjs-monorepo.md:249; java-quarkus.md:317; assets/java/LayerRulesTest.java:20 | gate | Domain has zero infra dependencies; imports point inward; hard rule 37 (2026-09-08) makes the dependency table lint, one `no-restricted-imports` zone per layer, and a shipped ArchUnit test in the Java variant; the Next config carries the zones since 2026-09-09, the design system's own layers upward and the server sub-variant's layers as in Bun |
+| 3.1 | Point dependencies inward | COVERED | architecture.md:96; architecture.md:235; SKILL.md:92; SKILL.md:79; bun-typescript.md:174; bun-typescript.md:252; nextjs-monorepo.md:259; java-quarkus.md:336; assets/java/LayerRulesTest.java:20 | gate | Domain has zero infra dependencies; imports point inward; hard rule 37 (2026-09-08) makes the dependency table lint, one `no-restricted-imports` zone per layer, and a shipped ArchUnit test in the Java variant; the Next config carries the zones since 2026-09-09, the design system's own layers upward and the server sub-variant's layers as in Bun |
 | 3.2 | Put every external thing behind a port | COVERED | architecture.md:257-258; SKILL.md:49 | gate | Port plus real adapter plus in-memory fake at composition root; mock ban lint-enforced |
 | 3.3 | Seal the presentation behind a design system | COVERED | SKILL.md:57; atomic-design.md:229 | gate | Props-in JSX-out, tokens only, no fetching; design-system eslint block |
 | 3.4 | The backend is a client-agnostic API | COVERED | architecture.md:321 | doctrine | Resource-shaped API every client consumes the same way |
-| 3.5 | Build the frontend against a contract, not a running backend | COVERED | architecture.md:331-342; nextjs-monorepo.md:697 | doctrine | Gateway port with real client and canned fake, one wiring flip (Watchlist 6) |
+| 3.5 | Build the frontend against a contract, not a running backend | COVERED | architecture.md:331-342; nextjs-monorepo.md:711 | doctrine | Gateway port with real client and canned fake, one wiring flip (Watchlist 6) |
 | 3.6 | The internal model is yours, not the API's shape | COVERED | architecture.md:325-332 | doctrine | Wire DTO mapped to own model at one point |
 | 3.7 | The domain model is not the database model | COVERED | architecture.md:323 | doctrine | Repository is the single row-to-domain mapping point |
 | 3.8 | Make the boundary testable | COVERED | testing.md:11; SKILL.md:57 | rule | Domain refactor never breaks tests; UI half lint-gated |
@@ -229,11 +229,11 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.2 | Keep unit tests in milliseconds | COVERED | testing.md:410; testing.md:140 | doctrine | In-memory fakes, no real IO in unit tests; literal ms target not stated |
 | 4.3 | Have a testing philosophy | COVERED | testing.md:184-186; SKILL.md:60 | rule | Every fixed bug becomes a permanent reproducing test |
 | 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3); CI mutates the changed files per run, the full sweep is the daily assets/mutation.yml (2026-09-03) |
-| 4.5 | Test behavior, not internals | STRICTER | SKILL.md:49; testing.md:290; java-quarkus.md:207; check-pom.sh:52 | gate | Mock ban is absolute and gated in every variant (ESLint in TypeScript; the enforcer's `bannedDependencies` plus `check-pom.sh` in Java since 2026-09-08), exceeding canon advisory prefer-fakes |
-| 4.6 | Gate every merge | COVERED | assets/ci.yml; assets/ci-java.yml; assets/ci-next.yml; governance.md:119 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on the changed files on a frozen lockfile as the required merge check; the full mutation sweep is scheduled (assets/mutation.yml) |
-| 4.7 | Hold generated code to the same bar | COVERED | workflow.md:531 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
+| 4.5 | Test behavior, not internals | STRICTER | SKILL.md:49; testing.md:290; java-quarkus.md:224; check-pom.sh:62 | gate | Mock ban is absolute and gated in every variant (ESLint in TypeScript; the enforcer's `bannedDependencies` plus `check-pom.sh` in Java since 2026-09-08), exceeding canon advisory prefer-fakes |
+| 4.6 | Gate every merge | COVERED | assets/ci.yml; assets/ci-java.yml; assets/ci-next.yml; governance.md:106 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on the changed files on a frozen lockfile as the required merge check; the full mutation sweep is scheduled (assets/mutation.yml) |
+| 4.7 | Hold generated code to the same bar | COVERED | workflow.md:533 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-82; behavioural-examples.md:42 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
-| 4.9 | Run the tests in random order | COVERED | SKILL.md:78; testing.md:675; bun-typescript.md:35; assets/ci.yml:56; assets/stryker.conf.json:8; java-quarkus.md:465 | gate | Added 2026-09-06 with hard rule 36: `bun test --randomize` is the test script, the CI step and Stryker's runner; JUnit random method and class order in Java; the seed prints on red and replays |
+| 4.9 | Run the tests in random order | COVERED | SKILL.md:78; testing.md:675; bun-typescript.md:35; assets/ci.yml:56; assets/stryker.conf.json:8; java-quarkus.md:484 | gate | Added 2026-09-06 with hard rule 36: `bun test --randomize` is the test script, the CI step and Stryker's runner; JUnit random method and class order in Java; the seed prints on red and replays |
 
 ### Pillar 5: Secure by default
 
@@ -241,7 +241,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 5.1 | Keep secrets out of the codebase | COVERED | security.md:198; assets/pre-commit gate 3 | gate | Secret manager, rotation, central control; gitleaks gate backs the ban |
 | 5.2 | Do not build authentication or crypto yourself | COVERED | security.md:35-46 | rule | OIDC plus vetted crypto, SSO and MFA on consoles (rule 33) |
-| 5.3 | Control your dependencies | COVERED | assets/check-package-json.sh:98; docs/global-rules/proposed-revisions.md | gate | P6 revision ACCEPTED 2026-07-20: canon 5.3 now allows a constrained range plus a committed lockfile, which check-package-json.sh enforces (Watchlist 4) |
+| 5.3 | Control your dependencies | COVERED | assets/check-package-json.sh:100; docs/global-rules/proposed-revisions.md | gate | P6 revision ACCEPTED 2026-07-20: canon 5.3 now allows a constrained range plus a committed lockfile, which check-package-json.sh enforces (Watchlist 4) |
 | 5.4 | Secure the supply chain | COVERED | delivery.md:71-73 | doctrine | Immutable digest-addressed artifacts, SBOM, cosign signatures |
 | 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:94 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
 | 5.6 | Expose only what has to be public | COVERED | security.md:232 | doctrine | Datastores, queues, admin panels on a private network only |
@@ -282,7 +282,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 8.2 | Automated pipeline, progressive delivery, one-step rollback | COVERED | delivery.md:7-12 | doctrine | Pipeline-only deploy, canary, one-re-run rollback |
 | 8.3 | Infrastructure as code | COVERED | delivery.md:22 | doctrine | Every resource in version-controlled IaC, rebuilt with one command |
 | 8.4 | Vertical slices | COVERED | architecture.md:37-46; workflow.md:259 | doctrine | Feature-cohesive slices, deploy independently or dark behind a flag; archetype src/ is layer-first |
-| 8.5 | Change contracts additively / expand-contract | COVERED | reliability.md:113-115; assets/check-data-lifecycle.sh:31 | tripwire | Expand-migrate-contract; check-data-lifecycle.sh blocks DROP COLUMN/TABLE, RENAME, TRUNCATE, ALTER COLUMN TYPE outside a *contract* migration, a default gate via check-disciplines.sh since 2026-09-10 |
+| 8.5 | Change contracts additively / expand-contract | COVERED | reliability.md:113-115; assets/check-data-lifecycle.sh:36 | tripwire | Expand-migrate-contract; check-data-lifecycle.sh blocks DROP COLUMN/TABLE, RENAME, TRUNCATE, ALTER COLUMN TYPE outside a *contract* migration, a default gate via check-disciplines.sh since 2026-09-10 |
 | 8.6 | Separate and ephemeral environments | COVERED | delivery.md:30 | doctrine | Throwaway per-branch environments keyed to the PR, destroyed on close |
 
 ### Pillar 9: Run as little as possible yourself
@@ -327,21 +327,21 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 12.1 | Document the essentials and treat doc drift as a defect | COVERED | governance.md; scripts/smoke-test.sh | doctrine | Resolved Phase 2: docs-check CI doctrine (extract README commands and run them); smoke-test.sh is the exemplar. Since 2026-09-26 only repo entry points run, as argument lists, and a pipe, quote, variable or any other command refuses the block unrun (the skills.sh audits flagged README text as a CI code channel) |
-| 12.2 | Generate API docs from the contract | COVERED | governance.md:74 | doctrine | API docs derived from the validating schema, example per endpoint, published |
-| 12.3 | Record decisions where they cannot drift | COVERED | governance.md:51-67 | doctrine | ADR committed with the code, options rejected and reversal recorded |
+| 12.2 | Generate API docs from the contract | COVERED | governance.md:61 | doctrine | API docs derived from the validating schema, example per endpoint, published |
+| 12.3 | Record decisions where they cannot drift | COVERED | governance.md:38-54 | doctrine | ADR committed with the code, options rejected and reversal recorded |
 | 12.4 | Build institutional memory | COVERED | workflow.md:5-7; lessons.md:206 | doctrine | Durable PLAN.md plus append-only LESSONS.md outlive the people; since 2026-09-26 an approved compaction pass (atelier-distill) keeps the journal under its cap and archives what it retires, so the history stays in the tree |
-| 12.5 | Give real-time access and commit to measurable thresholds | COVERED | governance.md:93; observability.md:18 | doctrine | Stakeholder live access; targets as metric, number, window |
-| 12.6 | Run one visible, honest backlog | COVERED | governance.md:97-98 | doctrine | One visible tracker as source of truth, bugs first-class, no shadow list |
+| 12.5 | Give real-time access and commit to measurable thresholds | COVERED | governance.md:80; observability.md:18 | doctrine | Stakeholder live access; targets as metric, number, window |
+| 12.6 | Run one visible, honest backlog | COVERED | governance.md:84-85 | doctrine | One visible tracker as source of truth, bugs first-class, no shadow list |
 | 12.7 | One working language | COVERED | governance.md:5 | doctrine | One working language for docs, comments, commit messages, identifiers, chosen once and kept everywhere. P6 ACCEPTED 2026-07-20 (Option A, new sub-concept; count 115 to 116) |
 
 ### Pillar 13: Clear ownership
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 13.1 | Make ownership explicit | COVERED | governance.md:107-113 | doctrine | CODEOWNERS maps every path; RACI note, one Accountable |
-| 13.2 | Separate duties | COVERED | governance.md:117-119 | doctrine | Requester never sole approver; no self-merge |
-| 13.3 | Keep an audit trail | COVERED | governance.md:127-134 | doctrine | Approvals and emergency access leave a durable audit-log insert |
-| 13.4 | Make finding problems safe and let the accountable verify | COVERED | governance.md:140-141 | doctrine | Reward detection; the accountable owner verifies via a re-runnable check |
+| 13.1 | Make ownership explicit | COVERED | governance.md:94-100 | doctrine | CODEOWNERS maps every path; RACI note, one Accountable |
+| 13.2 | Separate duties | COVERED | governance.md:104-106 | doctrine | Requester never sole approver; no self-merge |
+| 13.3 | Keep an audit trail | COVERED | governance.md:114-121 | doctrine | Approvals and emergency access leave a durable audit-log insert |
+| 13.4 | Make finding problems safe and let the accountable verify | COVERED | governance.md:127-128 | doctrine | Reward detection; the accountable owner verifies via a re-runnable check |
 | 13.5 | The agent proposes, the human disposes | COVERED | SKILL.md:60; SKILL.md:61; SKILL.md:62; assets/check-identity.sh:3 | rule | Atelier hard rules 24-26 verbatim: confirmation-gated tests, no unconfirmed landings, identity in metadata only. P6 ACCEPTED 2026-08-30 (origin: the reverse-matrix audit; the skill had the rules before the canon had the row). Rule 26 gated since 2026-09-09: `check-identity.sh` in every shipped hook and CI workflow |
 
 ### Pillar 14: Pave the road
@@ -350,7 +350,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 14.1 | Provide golden paths as real artifacts | COVERED | atelier-greenfield/SKILL.md:8; skills/atelier/assets | rule | Greenfield scaffold starts green; assets ship real hooks, scripts, configs not docs |
 | 14.2 | Make it self-service | COVERED | delivery.md:105 | doctrine | Provision env or pipeline via a declarative request the team owns, not a ticket |
-| 14.3 | Treat the platform as a product | COVERED | delivery.md:105; governance.md:145 | doctrine | Platform is a product: owned, versioned, documented, with a feedback loop |
+| 14.3 | Treat the platform as a product | COVERED | delivery.md:105; governance.md:132 | doctrine | Platform is a product: owned, versioned, documented, with a feedback loop |
 
 ### Pillar 15: Enforce and verify
 
@@ -358,13 +358,13 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 15.1 | Make the standard executable | COVERED | assets/pre-commit; assets/ci.yml; assets/ci-java.yml; assets/ci-next.yml | gate | Resolved Phase 2: hook restructured to 5 fast gates, full suite/coverage/mutation/strict-lint relocated to CI as the required merge gate (Watchlist 1) |
 | 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:162; assets/check-coverage.ts:148 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
-| 15.3 | No silent opt-out | COVERED | workflow.md:62-83; SKILL.md:51; bun-typescript.md:193; bun-typescript.md:212; assets/java/pmd-ruleset.xml:56; check-no-suppressions.sh:43; java-quarkus.md:237 | gate | Project-level severity change with a reason; inline suppressions banned, and since 2026-09-08 gated in every variant: both TypeScript configs (`noInlineConfig` makes directives inert and reported, `ban-ts-comment` every `@ts-` form, `no-warning-comments` the other tools' markers) and Java (`check-no-suppressions.sh` in hook and CI, the `NoSuppressWarnings` PMD rule, an inert `NOPMD` marker) |
+| 15.3 | No silent opt-out | COVERED | workflow.md:62-83; SKILL.md:51; bun-typescript.md:205; bun-typescript.md:224; assets/java/pmd-ruleset.xml:56; check-no-suppressions.sh:43; java-quarkus.md:256 | gate | Project-level severity change with a reason; inline suppressions banned, and since 2026-09-08 gated in every variant: both TypeScript configs (`noInlineConfig` makes directives inert and reported, `ban-ts-comment` every `@ts-` form, `no-warning-comments` the other tools' markers) and Java (`check-no-suppressions.sh` in hook and CI, the `NoSuppressWarnings` PMD rule, an inert `NOPMD` marker) |
 | 15.4 | Test the bypass, not the happy path | COVERED | testing.md:630-638; testing.md:531-538 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
-| 15.5 | Compliance is not proof | COVERED | workflow.md:530; governance.md:141 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
-| 15.6 | Audit the gaps between systems | COVERED | workflow.md:522; testing.md:646 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
-| 15.7 | Fix the class, not the instance | COVERED | workflow.md:523-585 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
-| 15.8 | Make proof re-checkable | COVERED | governance.md:93-141; workflow.md:530 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
-| 15.9 | Spend human judgment where it counts | COVERED | workflow.md:579; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
+| 15.5 | Compliance is not proof | COVERED | workflow.md:532; governance.md:128 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
+| 15.6 | Audit the gaps between systems | COVERED | workflow.md:524; testing.md:646 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
+| 15.7 | Fix the class, not the instance | COVERED | workflow.md:525-587 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
+| 15.8 | Make proof re-checkable | COVERED | governance.md:80-128; workflow.md:532 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
+| 15.9 | Spend human judgment where it counts | COVERED | workflow.md:581; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
 | 15.10 | Prove the gate can fail | COVERED | SKILL.md:133; scripts/smoke-test.sh | gate | Doctrine after the variant gate table, every gate lands with a violation fixture it must reject; the repo smoke tests are the reference implementation |
 
 ### Pillar 16: Measure whether you are improving
@@ -385,8 +385,8 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 17.2 | Earn trust rather than extract a sale | COVERED | product.md:25-28 | doctrine | Honest over conversion, symmetric cancel, no dark patterns |
 | 17.3 | Design for real behavior, not the demo | COVERED | product.md:33-39 | doctrine | Ground flows in observed behavior per market, re-ranked on evidence |
 | 17.4 | Let technology serve the person, not replace them | COVERED | product.md:48 | doctrine | Automation removes friction; the human path stays visible |
-| 17.5 | Speak the user's language | COVERED | product.md:52; nextjs-monorepo.md:776 | rule | Every string in a meaning-keyed catalog; localization is a data change |
-| 17.6 | Accessible by default | COVERED | atomic-design.md:227-232; nextjs-monorepo.md:413 | gate | Semantic, keyboard, token contrast; jsx-a11y error-level gate; axe optional (Watchlist 6) |
+| 17.5 | Speak the user's language | COVERED | product.md:52; nextjs-monorepo.md:790 | rule | Every string in a meaning-keyed catalog; localization is a data change |
+| 17.6 | Accessible by default | COVERED | atomic-design.md:227-232; nextjs-monorepo.md:426 | gate | Semantic, keyboard, token contrast; jsx-a11y error-level gate; axe optional (Watchlist 6) |
 | 17.7 | Mobile first, and a light interface | COVERED | product.md:86; assets/check-bundle-size.sh; atomic-design.md:199 | gate | Resolved Phase 2: smallest-screen-first, one-primary-action, progressive-disclosure; the bundle budget is a shipped gate. P6 ACCEPTED 2026-08-30, canon 17.7 gained the budget clause the pillar prose already asked for (Watchlist 6) |
 
 ### Pillar 18: Validate before you build

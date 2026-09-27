@@ -56,14 +56,31 @@ lint_workflow() {
     fi
   done < <(grep -oE 'scripts/[A-Za-z0-9._-]+\.(sh|ts|py|js)' "$wf" | sort -u)
 
-  # 3. the variant's bootstrap reference must tell consumers to copy each of them
-  local ref=""
+  # 3. every variant that ships the workflow must tell consumers to copy each of them.
+  #    An unmapped workflow and a missing reference are failures: until 2026-09-27 both
+  #    skipped this check silently, and audit.yml (shipped by Bun and Next alike) was
+  #    checked against the Bun reference only.
+  local bun_ref="${BOOTSTRAP_REF_BUN:-skills/atelier/references/bun-typescript.md}"
+  local java_ref="${BOOTSTRAP_REF_JAVA:-skills/atelier/references/java-quarkus.md}"
+  local next_ref="${BOOTSTRAP_REF_NEXT:-skills/atelier/references/nextjs-monorepo.md}"
+  local refs=()
   case "$(basename "$wf")" in
-    ci.yml|audit.yml|mutation.yml) ref="${BOOTSTRAP_REF_BUN:-skills/atelier/references/bun-typescript.md}" ;;
-    ci-java.yml|audit-java.yml|mutation-java.yml) ref="${BOOTSTRAP_REF_JAVA:-skills/atelier/references/java-quarkus.md}" ;;
-    ci-next.yml) ref="${BOOTSTRAP_REF_NEXT:-skills/atelier/references/nextjs-monorepo.md}" ;;
+    ci.yml|mutation.yml) refs=("$bun_ref") ;;
+    audit.yml) refs=("$bun_ref" "$next_ref") ;;
+    ci-java.yml|audit-java.yml|mutation-java.yml) refs=("$java_ref") ;;
+    ci-next.yml) refs=("$next_ref") ;;
+    *)
+      echo "FAIL $wf: no bootstrap reference is mapped for this workflow (add it to check 3's case list)" >&2
+      fails=1
+      ;;
   esac
-  if [ -n "$ref" ] && [ -f "$ref" ]; then
+  local ref
+  for ref in ${refs[@]+"${refs[@]}"}; do
+    if [ ! -f "$ref" ]; then
+      echo "FAIL $wf: its bootstrap reference $ref does not exist" >&2
+      fails=1
+      continue
+    fi
     while IFS= read -r sref; do
       local sbase="${sref#scripts/}"
       if ! grep -q "assets/$sbase" "$ref"; then
@@ -71,7 +88,7 @@ lint_workflow() {
         fails=1
       fi
     done < <(grep -oE 'scripts/[A-Za-z0-9._-]+\.(sh|ts|py|js)' "$wf" | sort -u)
-  fi
+  done
 
   # 2. a non-preinstalled binary needs an install step BEFORE its first bare use
   for bin in "${NON_PREINSTALLED[@]}"; do
@@ -102,48 +119,52 @@ selftest() {
   trap "rm -rf '$tmp'" EXIT
   mkdir -p "$tmp/assets"
   touch "$tmp/assets/present.sh"
+  # One reference that copies every script the fixtures call, so a case is red for
+  # its own reason and never for a missing copy line; each case asserts the reason.
+  printf 'copy assets/present.sh and assets/missing.sh into scripts/\n' > "$tmp/ref.md"
+  red() { # $1 what, $2 the FAIL text the gate must print, $3 the workflow; env from the caller
+    local out rc=0
+    out=$(lint_workflow "$3" "$tmp/assets" 2>&1) || rc=$?
+    if [ "$rc" -eq 0 ]; then echo "selftest FAIL: $1 was accepted" >&2; exit 1; fi
+    case "$out" in
+      *"$2"*) ;;
+      *) echo "selftest FAIL: $1 was rejected, but not for its own reason:" >&2; echo "$out" >&2; exit 1 ;;
+    esac
+  }
+  fixture() { mkdir -p "$tmp/$1"; printf '%b' "$2" > "$tmp/$1/ci.yml"; echo "$tmp/$1/ci.yml"; }
+  export BOOTSTRAP_REF_BUN="$tmp/ref.md"
+
   # violation 0: a workflow that is not YAML (the 2026-09-08 ci-next.yml draft)
-  printf 'steps:\n  - name: gate (rules 5 and 19: no latest)\n    run: bash scripts/present.sh\n' > "$tmp/v0.yml"
-  printf 'copy assets/present.sh into scripts/\n' > "$tmp/ref0.md"
-  parse_yaml "$tmp/v0.yml" 2>/dev/null && { echo "selftest FAIL: the parser accepted a colon-space step name" >&2; exit 1; }
-  rc=0; parse_yaml "$tmp/v0.yml" 2>/dev/null || rc=$?
+  wf=$(fixture v0 'steps:\n  - name: gate (rules 5 and 19: no latest)\n    run: bash scripts/present.sh\n')
+  rc=0; parse_yaml "$wf" 2>/dev/null || rc=$?
   [ "$rc" -eq 2 ] && { echo "selftest FAIL: no YAML parser on this machine (python3 with PyYAML, or ruby); the parse check cannot be proven here" >&2; exit 1; }
-  if BOOTSTRAP_REF_BUN="$tmp/ref0.md" lint_workflow "$tmp/v0.yml" "$tmp/assets" 2>/dev/null; then
-    echo "selftest FAIL: malformed-YAML violation was accepted" >&2; exit 1
-  fi
-
-  # violation 1: missing shipped script
-  printf 'steps:\n  - run: bash scripts/missing.sh\n' > "$tmp/v1.yml"
-  if lint_workflow "$tmp/v1.yml" "$tmp/assets" 2>/dev/null; then
-    echo "selftest FAIL: missing-script violation was accepted" >&2; exit 1
-  fi
-  # violation 3: workflow needs a script its bootstrap reference never copies
-  printf 'steps:\n  - run: bash scripts/present.sh\n' > "$tmp/ci.yml"
-  printf 'a bootstrap doc that copies nothing\n' > "$tmp/ref.md"
-  if BOOTSTRAP_REF_BUN="$tmp/ref.md" lint_workflow "$tmp/ci.yml" "$tmp/assets" 2>/dev/null; then
-    echo "selftest FAIL: uncopied-script violation was accepted" >&2; exit 1
-  fi
-  printf 'copy assets/present.sh into scripts/\n' > "$tmp/ref.md"
-  if ! BOOTSTRAP_REF_BUN="$tmp/ref.md" lint_workflow "$tmp/ci.yml" "$tmp/assets"; then
-    echo "selftest FAIL: copied-script fixture was rejected" >&2; exit 1
-  fi
-
-  # violation 2: bare binary, no install
-  printf 'steps:\n  - run: gitleaks detect --redact\n' > "$tmp/v2.yml"
-  if lint_workflow "$tmp/v2.yml" "$tmp/assets" 2>/dev/null; then
-    echo "selftest FAIL: bare-binary violation was accepted" >&2; exit 1
-  fi
+  red "a malformed workflow" "does not parse as YAML" "$wf"
+  # violation 1: a missing shipped script
+  red "a missing shipped script" "does not exist" "$(fixture v1 'steps:\n  - run: bash scripts/missing.sh\n')"
+  # violation 2: a bare binary with no install step
+  red "a bare binary" "with no earlier install step" "$(fixture v2 'steps:\n  - run: gitleaks git --redact\n')"
   # violation 4: a release download installed with no checksum (the pre-2026-09-26 shape)
-  printf 'steps:\n  - run: |\n      curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/vX/g.tar.gz | tar -xz gitleaks\n  - run: gitleaks detect --redact\n  - run: bash scripts/present.sh\n' > "$tmp/v4.yml"
-  if lint_workflow "$tmp/v4.yml" "$tmp/assets" 2>/dev/null; then
-    echo "selftest FAIL: unverified-download violation was accepted" >&2; exit 1
-  fi
-  # compliant fixture must pass
-  printf 'steps:\n  - run: |\n      curl -sSfL -o g.tar.gz https://github.com/gitleaks/gitleaks/releases/download/vX/g.tar.gz\n      echo "0000  g.tar.gz" | sha256sum -c -\n      tar -xzf g.tar.gz gitleaks\n  - run: gitleaks detect --redact\n  - run: bash scripts/present.sh\n' > "$tmp/ok.yml"
-  if ! lint_workflow "$tmp/ok.yml" "$tmp/assets"; then
+  red "an unverified download" "no sha256sum -c before its first use" \
+    "$(fixture v4 'steps:\n  - run: |\n      curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/vX/g.tar.gz | tar -xz gitleaks\n  - run: gitleaks git --redact\n  - run: bash scripts/present.sh\n')"
+  # violation 3: a script the bootstrap reference never copies
+  printf 'a bootstrap doc that copies nothing\n' > "$tmp/bare-ref.md"
+  BOOTSTRAP_REF_BUN="$tmp/bare-ref.md" red "an uncopied script" "never copies assets/present.sh" "$(fixture v3 'steps:\n  - run: bash scripts/present.sh\n')"
+  # violation 3b: the bootstrap reference is missing (skipped silently until 2026-09-27)
+  BOOTSTRAP_REF_BUN="$tmp/no-such-ref.md" red "a missing bootstrap reference" "does not exist" "$tmp/v3/ci.yml"
+  # violation 3c: a workflow no variant is mapped to (skipped silently until 2026-09-27)
+  cp "$tmp/v3/ci.yml" "$tmp/deploy.yml"
+  red "an unmapped workflow" "no bootstrap reference is mapped" "$tmp/deploy.yml"
+  # violation 3d: audit.yml ships with Bun and Next, so the Next reference must copy it too
+  mkdir -p "$tmp/v3d" && cp "$tmp/v3/ci.yml" "$tmp/v3d/audit.yml"
+  out=$(BOOTSTRAP_REF_NEXT="$tmp/bare-ref.md" lint_workflow "$tmp/v3d/audit.yml" "$tmp/assets" 2>&1) && { echo "selftest FAIL: audit.yml passed with a Next reference that never copies its script" >&2; exit 1; }
+  case "$out" in *"bare-ref.md never copies assets/present.sh"*) ;; *) echo "selftest FAIL: audit.yml was rejected, but not on the Next reference:" >&2; echo "$out" >&2; exit 1 ;; esac
+
+  # the compliant fixture passes: a verified download, an installed binary, a copied script
+  wf=$(fixture ok 'steps:\n  - run: |\n      curl -sSfL -o g.tar.gz https://github.com/gitleaks/gitleaks/releases/download/vX/g.tar.gz\n      echo "0000  g.tar.gz" | sha256sum -c -\n      tar -xzf g.tar.gz gitleaks\n  - run: gitleaks git --redact\n  - run: bash scripts/present.sh\n')
+  if ! lint_workflow "$wf" "$tmp/assets"; then
     echo "selftest FAIL: compliant fixture was rejected" >&2; exit 1
   fi
-  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, an unverified release download, and an uncopied bootstrap script"
+  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, an unverified release download, an uncopied bootstrap script, a missing bootstrap reference, an unmapped workflow and a variant that ships audit.yml without its script, each for its own reason; a compliant workflow passes"
 }
 
 if [ "${1:-}" = "--selftest" ]; then
@@ -152,7 +173,8 @@ if [ "${1:-}" = "--selftest" ]; then
 fi
 
 status=0
-for wf in "$ASSETS_DIR"/ci*.yml "$ASSETS_DIR"/audit*.yml "$ASSETS_DIR"/mutation*.yml; do
+# every shipped workflow, not a name pattern: a new one is mapped or it fails check 3
+for wf in "$ASSETS_DIR"/*.yml; do
   lint_workflow "$wf" "$ASSETS_DIR" || status=1
 done
 if [ "$status" -eq 0 ]; then
