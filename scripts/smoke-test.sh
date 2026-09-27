@@ -890,11 +890,34 @@ rm -rf .claude
 echo "== fast pre-commit hook end-to-end (the 7 fast gates: size, package.json, gitleaks, identity, disciplines, lint:staged, typecheck) =="
 git add package.json src/domain/result.ts src/domain/greeting.ts src/domain/greeting.test.ts
 expect_ok "fast pre-commit hook end-to-end" bash .githooks/pre-commit
+# Gate 3 ignores an inline gitleaks:allow (--ignore-gitleaks-allow since 2026-09-27; before,
+# the comment silenced the finding). The token is assembled at run time so this file holds
+# no secret-shaped literal. CI's smoke job installs no gitleaks and the hook degrades by
+# design, so the case runs where gitleaks is on PATH.
+if command -v gitleaks >/dev/null 2>&1; then
+  printf 'deploy_token = "%s%s" # gitleaks:allow\n' 'gh''p_' "$(printf '%s' 'k8Hq2Lw9Zt4Xv1Nc7Bm3Rp6Ys0Df5Gj8Ua2Qe' | cut -c1-36)" > notes.txt
+  git add notes.txt
+  expect_ok "the hook's secret scan ignores an inline gitleaks:allow (rule 15)" \
+    bash -c 'bash .githooks/pre-commit > hook.out 2>&1; st=$?; grep -q "leaks found" hook.out && [ "$st" -ne 0 ]'
+  git rm -q --cached notes.txt && rm -f notes.txt hook.out
+else
+  echo "  skip: gitleaks not on PATH, the hook's secret-scan case needs it"
+fi
+# Gate 6 fails on a warning too: prettier/prettier is a warning, and until 2026-09-27
+# lint-staged.sh ran eslint without --max-warnings=0, so a formatting slip passed the hook.
+cat > src/domain/spacey.ts <<'EOF'
+export const spacey = (n: number): number =>   n + 1;
+EOF
+git add src/domain/spacey.ts
+expect_ok "the staged lint fails on a warning (prettier/prettier; rule 15, zero warnings)" \
+  bash -c 'bash scripts/lint-staged.sh > lint.out 2>&1; st=$?; grep -q "prettier/prettier" lint.out && [ "$st" -ne 0 ]'
+git rm -q --cached src/domain/spacey.ts && rm -f src/domain/spacey.ts lint.out
 
 echo "== CI-only gates run directly (the full suite, coverage, and mutation are CI's job, not the hook's) =="
 expect_ok "mutation gate (Stryker on the staged domain files)" bun run mutate:staged
 expect_ok "ci.yml asset is present" test -f .github/workflows/ci.yml
 expect_ok "ci.yml wires the package.json gate" grep -q "check-package-json.sh" .github/workflows/ci.yml
+expect_ok "ci.yml runs the README Verify block (canon 12.1; nothing ran it until 2026-09-27)" grep -q "bash scripts/check-docs.sh" .github/workflows/ci.yml
 expect_ok "ci.yml runs the full suite in random order, coverage, and mutation" bash -c 'grep -q "bun test --randomize" .github/workflows/ci.yml && grep -q "bun run coverage" .github/workflows/ci.yml && grep -q "mutate" .github/workflows/ci.yml'
 # The cadence (2026-09-03): the merge gate mutates the changed files only, on
 # every event; the full sweep is a scheduled workflow, never a commit gate.

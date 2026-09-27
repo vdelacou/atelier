@@ -10,7 +10,7 @@
 #   1. commit size   : <=10 files AND <=300 lines (insertions + deletions)
 #   2. pom sanity    : no version ranges, no -SNAPSHOT deps, no mock library
 #   3. suppressions  : no @SuppressWarnings / NOPMD / NOSONAR in staged lines (rule 15)
-#   4. secret scan   : gitleaks protect --staged (degrades gracefully)
+#   4. secret scan   : gitleaks git --staged, inline allow comments ignored (degrades gracefully)
 #   5. identity      : no person, employer, or client named in file contents (rule 26)
 #   6. disciplines   : personal data channels, IO deadlines, data lifecycle (rules 27, 29, 30)
 #   7. format        : ./mvnw spotless:check
@@ -46,9 +46,9 @@ bash scripts/check-pom.sh
 
 echo "[3/7] no inline suppression (rule 15)"
 bash scripts/check-no-suppressions.sh
-echo "[4/7] gitleaks protect --staged"
+echo "[4/7] gitleaks git --staged (inline gitleaks:allow ignored)"
 if command -v gitleaks >/dev/null 2>&1; then
-  gitleaks protect --staged --redact --verbose --no-banner
+  gitleaks git --staged --pre-commit --ignore-gitleaks-allow --redact --verbose --no-banner
 else
   echo "  warning: 'gitleaks' not on PATH, skipping secret scan." >&2
   echo "  install: brew install gitleaks (or https://github.com/gitleaks/gitleaks/releases)" >&2

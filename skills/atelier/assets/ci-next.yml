@@ -33,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # full history for gitleaks detect and the commit gates
+          fetch-depth: 0 # full history for the gitleaks history scan and the commit gates
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile # lockfile drift fails here (rule 5.3)
       - name: commit messages (Conventional Commits through commitlint, the hook's grammar, rule 23 / canon 1.3)
@@ -58,7 +58,7 @@ jobs:
           echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum -c -
           tar -xzf gitleaks.tar.gz gitleaks && sudo install gitleaks /usr/local/bin/ && rm gitleaks gitleaks.tar.gz
       - name: secret scan (full history)
-        run: gitleaks detect --redact --no-banner
+        run: gitleaks git --ignore-gitleaks-allow --redact --no-banner
       - name: identity in file contents (rule 26, the whole tree)
         run: bash scripts/check-identity.sh --all
       - name: discipline tripwires (rules 27, 29, 30, the whole tree)
@@ -71,6 +71,8 @@ jobs:
         run: bun run --filter '*' typecheck
       - name: build (static export)
         run: bun run --filter '*' build
+      - name: README Verify block runs (canon 12.1, references/governance.md)
+        run: bash scripts/check-docs.sh
       - name: bundle budget per exported package (canon 17.7)
         run: |
           for out in packages/*/out; do

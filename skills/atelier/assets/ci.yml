@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # full history for gitleaks detect and mutate:changed
+          fetch-depth: 0 # full history for the gitleaks history scan and mutate:changed
       - name: commit messages (Conventional Commits, rule 23 / canon 1.3)
         run: bash scripts/check-commit-messages.sh
       - name: commit size per commit in the range (gate 1 / canon 8.1)
@@ -43,7 +43,7 @@ jobs:
           echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum -c -
           tar -xzf gitleaks.tar.gz gitleaks && sudo install gitleaks /usr/local/bin/ && rm gitleaks gitleaks.tar.gz
       - name: secret scan (full history)
-        run: gitleaks detect --redact --no-banner
+        run: gitleaks git --ignore-gitleaks-allow --redact --no-banner
       - name: identity in file contents (rule 26, the whole tree)
         run: bash scripts/check-identity.sh --all
       - name: discipline tripwires (rules 27, 29, 30, the whole tree)
@@ -58,6 +58,8 @@ jobs:
         run: bun run scripts/regenerate-coverage-preload.ts --check
       - name: coverage (per-tier thresholds)
         run: bun run coverage
+      - name: README Verify block runs (canon 12.1, references/governance.md)
+        run: bash scripts/check-docs.sh
       - name: mutation (the changed files only, on every event; the full sweep is mutation.yml, daily)
         run: bun run mutate:changed
 

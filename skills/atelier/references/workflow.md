@@ -280,7 +280,7 @@ File contents are the opposite. No tracked file ever names a person, an employer
 
 **The gate.** `assets/check-identity.sh` is a tripwire in the shape of the discipline guards below, and a core gate: every shipped hook runs it on the staged added lines and every shipped CI workflow on the whole tracked tree (`--all`). It looks for the committer's multi-word git name in both orders and the email, under `--all` for every author and committer in the history, and for every entry of `IDENTITY_DENYLIST` (employer and client names; an environment variable, never a tracked file, since a tracked denylist would itself name what the rule forbids). A one-word git name is a handle and is skipped, as is a GitHub noreply address; CODEOWNERS and `.mailmap` are exempt; a lone first name stays a review duty. The fix for a hit is a neutral handle, never a suppression.
 
-Secrets are the other real pre-publish concern: run `gitleaks detect` (the history-wide mode, not the pre-commit `protect --staged`) before the first push to a public host. Secrets in history are always findings; metadata identities never are.
+Secrets are the other real pre-publish concern: run `gitleaks git` (the history-wide mode, not the pre-commit `git --staged`) before the first push to a public host. Secrets in history are always findings; metadata identities never are.
 
 **Scrubbing pushed history is a rewrite, gated and user-initiated.** A one-time, destructive operation; never run it unprompted (rule 25). Use `git filter-repo` (install: `brew install git-filter-repo`): `--replace-text` removes a mention from file contents across history, and `--mailmap` remaps commit metadata when the user wants that changed too:
 
@@ -309,7 +309,7 @@ This is the **Bun-script variant's** mechanism. The Next.js monorepo uses `simpl
 |:--:|:---|:---|:--:|
 | 1 | `scripts/check-commit-size.sh` | <=10 files AND <=300 lines | <1s |
 | 2 | `scripts/check-package-json.sh` | no `"latest"` / `"*"` / bare dist-tag (rule 19); no foreign lockfile, no `scripts` entry calling `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite` directly (rule 5) | <1s |
-| 3 | `gitleaks protect --staged` | secret scan on the staged diff | ~50ms |
+| 3 | `gitleaks git --staged --pre-commit` | secret scan on the staged diff, inline allow comments ignored | ~50ms |
 | 4 | `scripts/check-identity.sh` | no person, employer or client named in the staged lines (rule 26) | <1s |
 | 5 | `scripts/check-disciplines.sh` | the core discipline tripwires on the staged lines: personal data channels, IO deadlines, data lifecycle (rules 27, 29, 30; Discipline tripwires below) | <1s |
 | 6 | `bun run lint:staged` | ESLint on the staged TS files only | ~1-2s |
@@ -317,7 +317,7 @@ This is the **Bun-script variant's** mechanism. The Next.js monorepo uses `simpl
 
 Every gate here is O(staged files) or O(1). Typecheck is the one that grows with the whole codebase; if it exceeds the hook budget on your repo, move it to CI too. Never add the test suite, coverage, or mutation to the hook.
 
-**CI (`assets/ci.yml`, the authoritative merge gate):** `check-commit-messages.sh` and `check-commit-range.sh` straight after checkout (both need only git history), then install on a frozen lockfile, `check-package-json.sh`, `gitleaks detect` (full history; the workflow installs its own pinned, checksum-verified gitleaks), `check-identity.sh --all` and `check-disciplines.sh --all` (the whole tree), `lint:strict` (type-aware, zero warnings, ~25s), `typecheck`, `bun test --randomize` (the whole suite, rule 36), `regenerate-coverage-preload.ts --check`, `bun run coverage` (per-tier), `bun run mutate:changed` on every event (the changed files only, 1-3 min per file; on a push the range is `github.event.before..HEAD`, which the workflow exports). The full sweep is never a commit gate: `assets/mutation.yml` runs `bun run mutate` once a day on a schedule. Make it a required status check in branch protection (canon 13.2) so a bypassed hook is still caught. The CVE scan is deliberately NOT in this job; it ships as its own workflow, `assets/audit.yml` (see Dependency CVE scanning (CI) below).
+**CI (`assets/ci.yml`, the authoritative merge gate):** `check-commit-messages.sh` and `check-commit-range.sh` straight after checkout (both need only git history), then install on a frozen lockfile, `check-package-json.sh`, `gitleaks git` (full history, inline allows ignored; the workflow installs its own pinned, checksum-verified gitleaks), `check-identity.sh --all` and `check-disciplines.sh --all` (the whole tree), `lint:strict` (type-aware, zero warnings, ~25s), `typecheck`, `bun test --randomize` (the whole suite, rule 36), `regenerate-coverage-preload.ts --check`, `bun run coverage` (per-tier), `check-docs.sh` (the README's Verify block, `references/governance.md`), `bun run mutate:changed` on every event (the changed files only, 1-3 min per file; on a push the range is `github.event.before..HEAD`, which the workflow exports). The full sweep is never a commit gate: `assets/mutation.yml` runs `bun run mutate` once a day on a schedule. Make it a required status check in branch protection (canon 13.2) so a bypassed hook is still caught. The CVE scan is deliberately NOT in this job; it ships as its own workflow, `assets/audit.yml` (see Dependency CVE scanning (CI) below).
 
 ### Install once per clone
 
@@ -360,12 +360,14 @@ The gate reads the version strings inside the four dependency blocks only (`depe
 
 ### Secret scanning with gitleaks (gate 3)
 
-The hook runs `gitleaks protect --staged --redact --verbose --no-banner`. Two distinct gitleaks modes, pick the right one:
+The hook runs `gitleaks git --staged --pre-commit --ignore-gitleaks-allow --redact --verbose --no-banner`. Two distinct gitleaks modes, pick the right one:
 
-- **`gitleaks protect --staged`**: scans the staged-but-not-committed diff. Fast (~50 ms). Blocks re-introduction of secrets *before* they enter history. Use in pre-commit hooks.
-- **`gitleaks detect`**: scans the entire git history (every commit, every file ever). Slow. Use for periodic audits or CI checks. **Does not** belong in a pre-commit hook.
+- **`gitleaks git --staged --pre-commit`**: scans the staged-but-not-committed diff. Fast (~50 ms). Blocks re-introduction of secrets *before* they enter history. Use in pre-commit hooks.
+- **`gitleaks git`**: scans the entire git history (every commit, every file ever). Slow. Use for periodic audits or CI checks. **Does not** belong in a pre-commit hook.
 
-Run `gitleaks detect` once before the first push to GitHub to catch anything that snuck in pre-hook.
+`protect` and `detect` are the pre-8.19 names of the same two modes, hidden and deprecated since. Every call carries `--ignore-gitleaks-allow`: without it an inline `// gitleaks:allow` comment on the line silences the finding, an inline suppression by another name (rule 15), and the ESLint configs reject the comment itself (`no-warning-comments`). A real false positive goes in a committed `.gitleaksignore` by fingerprint, with a reason in the commit.
+
+Run `gitleaks git` once before the first push to GitHub to catch anything that snuck in pre-hook.
 
 ### Mutation testing with Stryker (a CI gate)
 
@@ -454,7 +456,7 @@ Restore the skip after the audit. Schedule it on a calendar; the longer between 
 
 ### Discipline tripwires (rules 26-30)
 
-Five shipped guards move the mechanical slices of the production disciplines into the machine tier. Each checks the **staged diff** (like `gitleaks protect --staged`), so it blocks a violation entering history without flooding a brownfield tree; each takes `--all` for a tree-wide adopt-mode audit; exceptions ride on path conventions, never inline suppressions (rule 15).
+Five shipped guards move the mechanical slices of the production disciplines into the machine tier. Each checks the **staged diff** (like the staged secret scan), so it blocks a violation entering history without flooding a brownfield tree; each takes `--all` for a tree-wide adopt-mode audit; exceptions ride on path conventions, never inline suppressions (rule 15).
 
 | Guard | Rule | Blocks |
 |:---|:--:|:---|
@@ -613,7 +615,7 @@ After the change, restart the TS server in VS Code (Cmd/Ctrl + Shift + P → "Ty
 - **Zero warnings, zero inline ignores.** Refactor or change severity at the project level; never suppress per-line.
 - **Coverage gates per-tier:** 100% on `domain` + `use-cases`, 80% on `composition` + `infra` + `presenter`, skip `test-helpers` and `main.ts` only. `build-deps.ts` is now in scope (testable via optional config DI).
 - **SonarLint parity at lint time** via `eslint-plugin-sonarjs` + type-aware `@typescript-eslint` rules.
-- **Pre-commit hook runs the fast gates** (commit size, package.json, gitleaks protect, lint:staged, typecheck); **CI (`assets/ci.yml`) runs the full set** and is the required merge check: commit messages over the pushed range, strict lint, typecheck, the whole test suite, coverage, and mutation on the changed files, on a frozen lockfile; the full mutation sweep (`assets/mutation.yml`) and the CVE scan (`assets/audit.yml`) are their own scheduled workflows.
+- **Pre-commit hook runs the fast gates** (commit size, package.json, the staged secret scan, identity, the discipline tripwires, lint:staged, typecheck); **CI (`assets/ci.yml`) runs the full set** and is the required merge check: commit messages over the pushed range, strict lint, typecheck, the whole test suite, coverage, and mutation on the changed files, on a frozen lockfile; the full mutation sweep (`assets/mutation.yml`) and the CVE scan (`assets/audit.yml`) are their own scheduled workflows.
 - **Commit identity** (rule 26): contributor identity in commit metadata is normal and never a finding; file contents never name a person, an employer, or a client. Scrubbing a mention from pushed history takes a gated `git filter-repo` rewrite plus a force-push, and the host may keep the old commits cached.
 - **Dependency CVE scanning lives in CI, not the gate** (`bun audit --audit-level=high`): a daily scheduled watchdog for new CVEs in untouched deps, plus a PR run scoped to `package.json` / `bun.lock` for deliberately-introduced ones.
 - **Mutation testing on staged files** (Stryker, ≥90% break threshold) makes "tests don't actually pin behaviour" findable in CI.

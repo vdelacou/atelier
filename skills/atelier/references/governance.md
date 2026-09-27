@@ -6,24 +6,11 @@ Two ground rules first: the project has **one working language** (docs, comments
 
 ## README stays runnable (docs-check in CI, canon 12.1)
 
-Drift-as-a-defect is a review duty until a gate makes it mechanical. Keep a README that actually installs and runs the project (exact, runnable commands, not prose), and **fail CI when it goes stale**: the shipped `assets/check-docs.sh` runs the fenced ```bash block under the README's `## Verify` heading, so a documented command that no longer works fails the pull request. It runs only lines that name one of the repo's own entry points (`bun run <script>`, `bun test`, `bash scripts/<file>`, `./scripts/<file>`, `./mvnw ...`, `test -f|-d|-e <path>`), each as an argument list and never through a shell, and it refuses the whole block before anything runs when a line carries a pipe, a redirect, a quote, a variable or any other command. The README documents what the repo can do; it never becomes a second place to write code CI executes, because whoever can edit the README could otherwise run code with the runner's token (the skills.sh Socket and Gen audits flagged the earlier `bash -c` version for exactly that). A health curl or a longer smoke goes in a script under `scripts/` or in `package.json`, and the Verify line calls it. Keep the block fast, not the full install, and give the job read-only permissions.
+Drift-as-a-defect is a review duty until a gate makes it mechanical. Keep a README that actually installs and runs the project (exact, runnable commands, not prose), and **fail CI when it goes stale**: the shipped `assets/check-docs.sh` runs the fenced ```bash block under the README's `## Verify` heading, so a documented command that no longer works fails the pull request. It runs only lines that name one of the repo's own entry points (`bun run <script>`, `bun test`, `bash scripts/<file>`, `./scripts/<file>`, `./mvnw` with lifecycle phases, `spotless:check` or `pmd:check`, `test -f|-d|-e <path>`), each as an argument list and never through a shell, and it refuses the whole block before anything runs when a line carries a pipe, a redirect, a quote, a variable or any other command. The README documents what the repo can do; it never becomes a second place to write code CI executes, because whoever can edit the README could otherwise run code with the runner's token (the skills.sh Socket and Gen audits flagged the earlier `bash -c` version for exactly that). A health curl or a longer smoke goes in a script under `scripts/` or in `package.json`, and the Verify line calls it. Keep the block fast, not the full install.
 
-```yaml
-# .github/workflows/docs-check.yml
-name: docs-check
-on: [pull_request]
-permissions:
-  contents: read
-jobs:
-  readme-runs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bash scripts/check-docs.sh # runs the README's ## Verify entry points
-```
+Every variant's shipped CI workflow (`assets/ci.yml`, `ci-next.yml`, `ci-java.yml`) runs `bash scripts/check-docs.sh` as a step after the install, so the lines run against real dependencies under the workflow's read-only permissions, and each bootstrap checklist copies the script. A README without a `## Verify` block passes with a note; add the block to make the gate bite.
 
-The atelier repo's own `scripts/smoke-test.sh` is the reference implementation: it follows this README's install steps verbatim into a scratch repo and fails if any of them break, which is exactly a docs-check for a project whose product is its instructions.
+The atelier repo's own `scripts/smoke-test.sh` is the reference implementation of the idea: it replays the Bootstrap checklist of `references/bun-typescript.md` into a scratch repo and fails if any step breaks, which is exactly a docs-check for a project whose product is its instructions.
 
 ## A vendored standard is a dependency (canon 5.3, canon 12.1)
 

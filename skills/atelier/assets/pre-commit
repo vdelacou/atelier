@@ -12,7 +12,7 @@
 #
 #   1. commit size   - <=10 files AND <=300 lines (insertions + deletions)
 #   2. package.json  - no "latest" / "*" / bare dist-tag version strings
-#   3. secret scan   - gitleaks protect --staged (degrades gracefully)
+#   3. secret scan   - gitleaks git --staged, inline allow comments ignored (degrades gracefully)
 #   4. identity      - no person, employer, or client named in file contents (rule 26)
 #   5. disciplines   - personal data channels, IO deadlines, data lifecycle (rules 27, 29, 30)
 #   6. staged lint   - eslint on the staged TS files only (fast, not type-aware)
@@ -46,9 +46,9 @@ bash scripts/check-commit-size.sh
 echo "[2/7] package.json (no latest / *)"
 bash scripts/check-package-json.sh
 
-echo "[3/7] gitleaks protect --staged"
+echo "[3/7] gitleaks git --staged (inline gitleaks:allow ignored)"
 if command -v gitleaks >/dev/null 2>&1; then
-  gitleaks protect --staged --redact --verbose --no-banner
+  gitleaks git --staged --pre-commit --ignore-gitleaks-allow --redact --verbose --no-banner
 else
   echo "  warning: 'gitleaks' not on PATH - skipping secret scan." >&2
   echo "  install: brew install gitleaks (or https://github.com/gitleaks/gitleaks/releases)" >&2
