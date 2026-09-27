@@ -665,7 +665,7 @@ ones on its README and tests) and read 0/5, but not as produced. The runner lost
 outlives SIGTERM for a moment, so the watchdog had exited and been reaped before the runner killed it,
 and under `set -e` the failed kill ended the function before the copy-back (fixed in bac3a61 for the
 conformance and distill runners, proven with a stub session; no earlier run was capped since the
-2026-09-27 `exec` change, so no earlier reading moves). The session was rerun alone and ran to the cap
+2026-09-28 `exec` change in dca4d2f, so no earlier reading moves). The session was rerun alone and ran to the cap
 again; the fixed runner graded it as produced: 5/5, each check read in the code (the provider behind a port, the dated `claude-haiku-4-5-20251001` pin, the
 reply parsed into a `Result`, an eval workflow on the pin and prompt paths with `--min-score 0.9`, a
 spend cap reserved per owner before the call). h6's skill arm took 17 minutes in the 2.5.0 pass and ran

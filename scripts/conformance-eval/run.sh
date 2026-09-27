@@ -112,8 +112,8 @@ run_one() { # $1 = task id, $2 = arm
   # background with a sleeping watchdog; whichever finishes first kills the other.
   # A capped run keeps whatever it produced and is graded like any other, so a
   # wandering session costs one slot for TIMEOUT_MIN minutes, never the batch.
-  # `exec` makes the subshell BE the session: the watchdog kills $! and, before
-  # 2026-09-27, $! was a subshell whose claude child outlived the kill and kept
+  # `exec` makes the subshell BE the session: the watchdog kills $! and, until
+  # 2026-09-28, $! was a subshell whose claude child outlived the kill and kept
   # spending and writing into the transcript after it was graded.
   ( cd "$sdir" && exec env -u CLAUDECODE claude -p "$prompt" \
       --permission-mode acceptEdits \
