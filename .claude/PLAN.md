@@ -18,7 +18,7 @@ through Bash (see the worktree-landing-flow memory).
 4. [x] Phase 4, release notes and docs (section 4). DoD: README and CHANGELOG numbers trace to files.
 5. [x] Phase 5, evals: one tier 2 (both arms) after phases 2-4; it covers every doctrine change, and tier 1 already selected 17 of 21 tasks after phase 1 alone. DoD: scorecards read
    answer-first, numbers into baseline.md and the CHANGELOG.
-6. [ ] Phase 6, release 2.6.0: tag v2.5.0 on 6320b92, then the 2.6.0 CHANGELOG with a Security entry,
+6. [x] Phase 6, release 2.6.0: tag v2.5.0 on 6320b92, then the 2.6.0 CHANGELOG with a Security entry,
    tag v2.6.0. Each tag on its own yes. Nice-to-haves (section 5) stay backlog unless the owner says.
 
 ## Status
@@ -42,7 +42,8 @@ three passes per variant (skill 36/36 and 27/27 caught and cited, 0 FP; unaided 
 rerun graded as produced after the capped-tree runner fix (bac3a61), h5's 7.3 miss variance (two extra
 samples 3/3); fixture re-frozen at five passes (181/305). Phase 4 done: CHANGELOG 2.6.0 and the README
 release line (e199e41).
-Next: push phase 6, then the tags, each on its own yes: v2.5.0 on 6320b92, v2.6.0 on e199e41.
+Phase 6 done 2026-09-28: CI green on c05b18b, then on the owner's yes the annotated tags v2.5.0 (6320b92)
+and v2.6.0 (e199e41), pushed. The plan is closed; the follow-ups below are backlog.
 Follow-ups (not in 2.6.0): check-no-em-dash.sh falls back to HEAD~1 on an unresolvable explicit base
 and reports a pass on that narrower range; h6's skill arm ran to the 40-minute cap twice (17 min in
 2.5.0), a watch item for CONFORMANCE_TIMEOUT_MIN.
