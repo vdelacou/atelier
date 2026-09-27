@@ -9,7 +9,7 @@ This reference describes two shapes that share the same toolchain: the **static 
 ```
 <repo>/
 ├── package.json              # root workspace + commit hooks only
-├── commitlint.config.cjs
+├── commitlint.config.mjs
 ├── bun.lock
 ├── .gitignore
 ├── .vscode/
@@ -74,7 +74,7 @@ This reference describes two shapes that share the same toolchain: the **static 
 
 Activate hooks after install: `bun run prepare`.
 
-**This variant's hook mechanism is `simple-git-hooks`** (gate 2 first, `scripts/check-package-json.sh` copied from the skill's `assets/`: no `"latest"`, no foreign lockfile, no `scripts` entry calling `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite`, rules 5 and 19; then test + lint per package, commitlint on the message). The `.githooks/pre-commit` fast-gate hook from `references/workflow.md` belongs to the Bun-script variant, never install both: `core.hooksPath` and `simple-git-hooks` overwrite each other. The commit-size, package.json, and gitleaks gates are portable here if wanted; the coverage and mutation gates are not (see SKILL.md, "What applies where").
+**This variant's hook mechanism is `simple-git-hooks`** (gate 2 first, `scripts/check-package-json.sh` copied from the skill's `assets/`: no `"latest"`, no foreign lockfile, no `scripts` entry calling `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite`, rules 5 and 19; then the identity gate and the discipline wrapper, rules 26, 27, 29, 30; then test + lint per package, commitlint on the message). The `.githooks/pre-commit` fast-gate hook from `references/workflow.md` belongs to the Bun-script variant, never install both: `core.hooksPath` and `simple-git-hooks` overwrite each other. The commit-size and gitleaks gates are portable here if wanted; the coverage and mutation gates are not (see SKILL.md, "What applies where").
 
 ## Package `package.json`
 
@@ -83,6 +83,7 @@ Activate hooks after install: `bun run prepare`.
   "name": "<package-name>",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "bun next dev",
     "build": "rimraf out && bun next build",
@@ -173,7 +174,7 @@ Full strictness: `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`. `mo
 
 `"allowImportingTsExtensions": true` is standard here, not a vendoring exception: this variant and the Bun-script variant both import with explicit `.ts`/`.tsx` extensions, so the same import style works across every package in the monorepo (and the server-app example below uses it). Turbopack resolves the extensionful specifier at build time; without the flag, `tsc --noEmit` errors `TS5097`.
 
-`"jsx"` is Next-managed: Next runs its own JSX transform and rewrites this key on the first `dev`/`build` regardless of what you set (observed on 16.1.1: `preserve` becomes `react-jsx`, "next.js uses the React automatic runtime"). The build succeeds either way, so treat the value as owned by Next and do not fight the managed diff. (The Bun-script variant sets `react-jsx` explicitly because plain `tsc`, not Next, compiles it there.)
+`"jsx"` is Next-managed: Next runs its own JSX transform and rewrites this key on the first `dev`/`build` regardless of what you set (observed on 16.1.1: `preserve` becomes `react-jsx`, "next.js uses the React automatic runtime"). The build succeeds either way, so treat the value as owned by Next and do not fight the managed diff.
 
 ## `eslint.config.mjs`
 
@@ -499,7 +500,7 @@ export default eslintConfig;
 
 Note: `no-console: 'error'` is the enforcement (hard rule 4); `next.config.ts` → `compiler.removeConsole` is defence-in-depth, not a substitute: a stripped `console.*` is a violation that silently vanished, which is why the lint rule exists. Log through the Winston module (below).
 
-**Tailwind plugin (v4 API).** `eslint-plugin-tailwindcss` v4 exposes a single flat-config **object** at `tailwind.configs.recommended`: drop it in as one array element, do **not** spread `...tailwind.configs['flat/recommended']` (that key is a v3 artefact, is `undefined` in v4, and spreading `undefined` throws at config load). It reads its CSS entrypoint from the mandatory `settings.tailwindcss.cssConfigPath`, which accepts a **relative** path, so the old `config:` key and the `fileURLToPath`/`dirname` absolute-path dance are both gone. The `^4.0.2` pin floats to the current 4.0.x stable: a caret anchored on a `-beta` tag (the previous `^4.0.0-beta.0`) still resolves to in-range **stable** releases, so it was already installing 4.0.x stable, which is exactly why the v3-era API above had to be corrected.
+**Tailwind plugin (v4 API).** `eslint-plugin-tailwindcss` v4 exposes a single flat-config **object** at `tailwind.configs.recommended`: drop it in as one array element, do **not** spread `...tailwind.configs['flat/recommended']` (that key is a v3 artefact, is `undefined` in v4, and spreading `undefined` throws at config load). It reads its CSS entrypoint from the mandatory `settings.tailwindcss.cssConfigPath`, which accepts a **relative** path, so the old `config:` key and the `fileURLToPath`/`dirname` absolute-path dance are both gone. The `^4.0.2` range floats to the newest 4.x stable (a caret floats minors too): a caret anchored on a `-beta` tag (the previous `^4.0.0-beta.0`) still resolves to in-range **stable** releases, so it was already installing 4.0.x stable, which is exactly why the v3-era API above had to be corrected.
 
 ## `postcss.config.mjs`
 
@@ -634,10 +635,12 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 .cursor/rules/snyk_rules.mdc
 ```
 
-## `commitlint.config.cjs`
+## `commitlint.config.mjs`
+
+ESM like everything else (rule 9); commitlint 20 loads an `.mjs` config as is.
 
 ```js
-module.exports = {
+export default {
   extends: ['@commitlint/config-conventional'],
   rules: {
     'body-max-line-length': [2, 'always', 200],
@@ -652,7 +655,9 @@ required status check. The shipped workflow runs, on push to `main` and on pull 
 lockfile: the commit messages over the pushed range through commitlint (the hook's own grammar, one
 grammar per variant, canon 1.3), the commit-size gate per commit (`scripts/check-commit-range.sh`),
 gate 2 over every manifest (`scripts/check-package-json.sh`, rules 5 and 19), gitleaks over the full
-history, then `bun run --filter '*' test`, `lint`, `typecheck` and `build`, and the bundle budget on
+history, the identity gate and the discipline wrapper over the whole tree (`--all`), then
+`bun run --filter '*' test`, `lint`, `typecheck` and `build`, the README's Verify block
+(`scripts/check-docs.sh`), and the bundle budget on
 each `packages/*/out` (`scripts/check-bundle-size.sh`, `BUDGET_KB` in the workflow's `env`, canon 17.7).
 No coverage or mutation step: this variant has neither gate (SKILL.md, What applies where).
 
@@ -721,7 +726,7 @@ The app builds with `output: 'export'` in `next.config.ts`. This means:
 
 Everything above this point assumes the default shape: a **static content/marketing site** (`output: 'export'`, build-time data, no request-time code). When the app instead holds state or answers requests at runtime, route handlers like `POST /api/dossier`, an in-memory or DB-backed store, anything that reads a `Request`, you are building a **server app**, and the deltas below apply. The two shapes are **mutually exclusive**: `output: 'export'` emits static assets only and physically cannot run a request-time route handler (a build-time `GET` with no `Request` access is emitted as a static file; a `POST`, or any handler that reads the request, is not). An in-memory API needs a real server, so a server app drops static export.
 
-This is the Next.js mirror of the Bun-script **Inbound HTTP (server archetype)**: read `references/architecture.md` § Inbound HTTP and `references/result-type.md` § Inbound HTTP for the shared rules. The route handler is just another **`infra/` inbound adapter**; the domain and use-cases stay free of `next/*`.
+This is the Next.js mirror of the Bun-script **Inbound HTTP (server archetype)**: read `references/architecture.md` § Inbound HTTP and the "Mapping errors to an HTTP status" paragraph of `references/result-type.md` for the shared rules. The route handler is just another **`infra/` inbound adapter**; the domain and use-cases stay free of `next/*`.
 
 ### Deltas to the skeleton
 
@@ -731,12 +736,12 @@ This is the Next.js mirror of the Bun-script **Inbound HTTP (server archetype)**
   "build": "rimraf out && bun next build",   // static
   "start": "bunx serve ./out",               // static
   ```
-  with the server pair, and drop the `rimraf` / `serve` devDeps:
+  with the server pair, and drop the `rimraf` devDependency (the static `start` runs `bunx serve`, which fetches its latest on every run: pin it, `bunx serve@<version>`, if the static preview matters):
   ```jsonc
   "build": "bun next build",
   "start": "bun next start",
   ```
-- **Vendoring Bun-script domain code** (a `Result` type, branded-id constructors, use-cases) is the normal way to share logic: add `"allowImportingTsExtensions": true` to `tsconfig.json` if that code imports with explicit `.ts` extensions (see the tsconfig note above).
+- **Vendoring Bun-script domain code** (a `Result` type, branded-id constructors, use-cases) is the normal way to share logic; the tsconfig above already allows its explicit `.ts` import extensions.
 - **Logger:** server code uses the injected `Logger` **port** + Winston adapter + recording fake from the Bun variant (`references/bun-typescript.md` § Logger), **not** the client singleton. The rule-4 singleton exception is scoped to client components / static code only: a server app has a composition root, so inject the port (this is hard rule 4, not an exception to it).
 - **Client-side data fetching goes through a gateway.** When page shells fetch at runtime (from the app's own route handlers or an external API), components never call `fetch` directly: a gateway port in `src/lib/` with a real client and a canned fake, returning `Result` and mapping the wire DTO into the frontend's own model at that one point (`references/architecture.md` § API shape, the frontend gateway). The static shape needs none of this: build-time loaders play that role.
 
@@ -751,7 +756,7 @@ The route handler **is** the inbound adapter (the Next equivalent of the Bun arc
 import type { NextRequest } from 'next/server';
 import { deps } from '@/src/composition/build-deps';
 import { parseDossierId } from '@/src/domain/dossier-id';   // branded-id smart constructor
-import { getDossier } from '@/src/use-cases/get-dossier';
+import { createGetDossier } from '@/src/use-cases/get-dossier';
 import { toResponse } from '@/src/infra/http/to-response';
 
 export const dynamic = 'force-dynamic';
@@ -765,7 +770,7 @@ export const GET = async (
   // Precise client errors are decided HERE, at the branded checkpoint, where the
   // error is still narrow: a 400 before any IO runs (rule 12).
   if (!parsed.ok) return Response.json({ error: parsed.error.message }, { status: 400 });
-  return toResponse(await getDossier(deps)(parsed.value));
+  return toResponse(await createGetDossier(deps)(parsed.value));
 };
 ```
 
@@ -781,7 +786,8 @@ This is the exact mapper from `references/architecture.md` § Inbound HTTP: read
 
 ```ts
 // src/domain/safe-json-parse.ts, pure, no throw escapes
-import { err, ok, type Result } from './result.ts';
+import type { Result } from './result.ts';
+import { err, ok } from './result.ts';
 
 export const safeJsonParse = (raw: string): Result<unknown, 'invalid-json'> => {
   try {
@@ -858,9 +864,7 @@ export default logger;
 
 Import as default: `import logger from '@/src/lib/utils/logger';`.
 
-This module-level singleton is the **sanctioned rule-4 exception** for this variant (SKILL.md hard rule 4): static export plus the React client boundary leave no composition root through which to inject a `Logger` port into client components, so the variant trades injection for one well-known module. The exception is scoped to exactly that boundary, **client components and build-time/static code only**. It is *not* a licence to log through a singleton from server code: a Next.js **server app** (route handlers, use-cases, infra adapters, see the server-app sub-variant below) has a real composition root, so it uses the injected `Logger` port + Winston adapter + recording fake exactly as the Bun-script variant does. One singleton at the client boundary; the port everywhere server-side. No other module-level service objects either way.
-
-The exception stops at the client boundary. A Next.js server app (route handlers, use-cases, infra adapters) has a composition root, so it injects the `Logger` port exactly like the Bun variant; the singleton is for client components and the static export, nothing else.
+This module-level singleton is the **sanctioned rule-4 exception** for this variant (SKILL.md hard rule 4): static export plus the React client boundary leave no composition root through which to inject a `Logger` port into client components, so the variant trades injection for one well-known module. The exception is scoped to exactly that boundary, **client components and build-time/static code only**. It is *not* a licence to log through a singleton from server code: a Next.js **server app** (route handlers, use-cases, infra adapters; the server-app sub-variant above) has a real composition root, so it uses the injected `Logger` port + Winston adapter + recording fake exactly as the Bun-script variant does. One singleton at the client boundary; the port everywhere server-side. No other module-level service objects either way.
 
 ## Bootstrap checklist (new package in the monorepo)
 

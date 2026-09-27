@@ -21,31 +21,7 @@ Plus two cross-cutting bits at the end:
 
 For adapters that call `fetch` directly (Telegram, RSS fetcher, most HTTP-based adapters): swap `globalThis.fetch` via a helper that records every call and restores the real `fetch` in `afterEach`.
 
-```ts
-// src/test-helpers/fetch-mock.ts
-export type FetchHandler = {
-  readonly match: (url: string, init?: RequestInit) => boolean;
-  readonly respond: (url: string, init?: RequestInit) => Response | Promise<Response>;
-};
-
-export type FetchMock = {
-  readonly calls: ReadonlyArray<{ readonly url: string; readonly init?: RequestInit }>;
-  readonly restore: () => void;
-};
-
-export const installFetchMock = (handlers: ReadonlyArray<FetchHandler>): FetchMock => {
-  const calls: { url: string; init?: RequestInit }[] = [];
-  const original = globalThis.fetch;
-  globalThis.fetch = (async (input, init) => {
-    const url = typeof input === 'string' ? input : input.url;
-    calls.push({ url, init });
-    const handler = handlers.find((h) => h.match(url, init));
-    if (!handler) throw new Error(`fetch-mock: no handler for ${url}`);
-    return handler.respond(url, init);
-  }) as typeof fetch;
-  return { calls, restore: () => { globalThis.fetch = original; } };
-};
-```
+The helper ships as `assets/fetch-mock.ts`: copy it verbatim to `src/test-helpers/fetch-mock.ts` (the Bootstrap checklist does), never retype it. Its shape: `installFetchMock(handlers)` takes an ordered list of `{ match(url, init), respond(url, init) }` handlers (first match wins, so put the more specific matcher first), swaps `globalThis.fetch` for a stub that records every call in `calls`, throws on a request no handler matches, and returns `restore()` for `afterEach`. It derives its input types from the global `fetch` signature and reads the URL of a string, a `URL` or a `Request` alike, which is why a hand-typed copy (`typeof input === 'string' ? input : input.url`) fails typecheck on a `URL`.
 
 Used in a test:
 
@@ -91,7 +67,7 @@ Assertions land on the returned `Result`, not on how `fetch` was called. The `ca
 
 ## 2. External SDK → dependency injection (three sub-patterns)
 
-For adapters that import a third-party SDK, use **dependency injection**, never `mock.module`. `mock.module` is process-global: once set in one test file, the substitution leaks into every subsequent file the runner loads. `bun:test`'s `mock` namespace is banned outright (see `references/workflow.md`).
+For adapters that import a third-party SDK, use **dependency injection**, never `mock.module`. `mock.module` is process-global: once set in one test file, the substitution leaks into every subsequent file the runner loads. `bun:test`'s mocking surface is banned outright (`references/testing.md`, No `mock` from `bun:test`).
 
 Three sub-patterns, in order of preference. Pick the first that applies.
 
@@ -198,7 +174,8 @@ The test imports `createDriveFromApi` and passes an in-memory object that satisf
 
 ```ts
 import { describe, expect, it } from 'bun:test';
-import { createDriveFromApi, type DriveApi } from './drive-google.ts';
+import type { DriveApi } from './drive-google.ts';
+import { createDriveFromApi } from './drive-google.ts';
 
 describe('driveGoogle.copy', () => {
   it('when the SDK returns an id, returns ok with that id', async () => {
@@ -334,7 +311,10 @@ The constructor runs (the wiring line executes and covers), but no network metho
 ```ts
 describe('createGoogleDrive (production wiring smoke)', () => {
   it('returns a Drive port with the expected method shape', () => {
-    const drive = createGoogleDrive({ client: {} as never });
+    // a real client with no credentials: the wiring line runs and no request is sent. Never
+    // `{} as never`, the non-narrowing cast testing.md bans; the one sanctioned cast is the
+    // `as unknown as DriveApi` inside the production factory itself.
+    const drive = createGoogleDrive({ client: new google.auth.OAuth2() });
     expect(typeof drive.copy).toBe('function');
     expect(typeof drive.getName).toBe('function');
   });

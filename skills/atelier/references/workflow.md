@@ -42,7 +42,7 @@ Status: in progress. Started YYYY-MM-DD.
 ## The four-check loop (after every change)
 
 ```bash
-bun test           # must pass
+bun run test       # must pass: the randomized script (rule 36), never bare `bun test`
 bun run lint       # 0 errors AND 0 warnings
 bun run typecheck  # tsc --noEmit, clean
 bun run coverage   # per-directory thresholds pass
@@ -149,7 +149,7 @@ A ready-to-copy `check-coverage.ts` lives in the skill at `assets/check-coverage
 
 **`build-deps.ts` is no longer skipped.** The earlier policy excluded it as "composition root, verified live, no logic worth unit-testing". That was hedging. The composition root becomes fully unit-testable when (a) every "where do I read state from" point (file path, env var, system clock) is parameterisable, and (b) every "what do I write to / log to" sink can be injected as a port. See `references/architecture.md` (Composition root testability) for the optional-config-DI pattern.
 
-Every `src/infra/*.ts`, `src/composition/env.ts`, and `src/presenter/cli.ts` carries a real 80% gate: most end up at 100% once the three infra-test patterns (see `references/testing.md`) are in routine use. The "we'll add infra tests later" road leads to a coverage gate that trivially passes.
+Every `src/infra/*.ts`, `src/composition/env.ts`, and `src/presenter/cli.ts` carries a real 80% gate: most end up at 100% once the three infra-test patterns (see `references/testing-infra.md`) are in routine use. The "we'll add infra tests later" road leads to a coverage gate that trivially passes.
 
 `bun run coverage` exits non-zero if any file falls below its gate and prints the offending paths with current-vs-required numbers. A tier summary at the end highlights the worst funcs/lines per tier, so a single sloppy file is visible without scrolling the per-file table.
 
@@ -184,11 +184,11 @@ bun test --coverage --preload ./scripts/coverage-preload.ts
 
 Do not put `preload = [...]` under `[test]` in `bunfig.toml`. The preload pulls in heavy runtime deps (e.g. `googleapis`, `winston`, `twitter-api-v2`, `@ai-sdk/google`) that would add 1–2 seconds to every plain `bun test`. Loading it only at coverage time keeps the inner-loop fast without losing the gate.
 
-**Maintenance rule:** every new file in `src/infra/`, `src/composition/`, or `src/presenter/` must be added to `coverage-preload.ts` in the same commit: run `bun run scripts/regenerate-coverage-preload.ts` and stage both files together. Enforcement is mechanical, not goodwill: wire `regenerate-coverage-preload.ts --check` as the pre-commit pre-flight (§ Keeping `coverage-preload.ts` in sync, above) so a forgotten regeneration blocks the commit.
+**Maintenance rule:** every new file in `src/infra/`, `src/composition/`, or `src/presenter/` must be added to `coverage-preload.ts` in the same commit: run `bun run scripts/regenerate-coverage-preload.ts` and stage both files together. Enforcement is mechanical, not goodwill: the shipped `ci.yml` runs `regenerate-coverage-preload.ts --check`, so a forgotten regeneration blocks the merge; wiring the same check into the hook as a pre-flight, to catch it at commit time, is optional (§ Keeping `coverage-preload.ts` in sync, above).
 
 ### `bunfig.toml`: minimal, no `coverageThreshold`, no `preload`
 
-The global `coverageThreshold` in `bunfig.toml` must be **absent** when the per-tier script owns enforcement. If set, Bun exits non-zero on the global threshold before the script runs, the script's first line (`if (result.status !== 0) return result.status`) bails, and the per-file violation breakdown never prints. The operator sees `error: script "coverage" exited with code 1` with no useful diagnostic.
+The global `coverageThreshold` in `bunfig.toml` must be **absent** when the per-tier script owns enforcement. If set, Bun exits non-zero on the global threshold before the script runs, the script's first check (a non-zero test status) bails with "`bun test --coverage` exited non-zero; fix test failures first", and the per-file violation breakdown never prints, so a threshold miss reads as a test failure.
 
 `preload` must also be absent under `[test]`, see above.
 
@@ -253,7 +253,7 @@ Integrate to one branch, `main` (the trunk), continuously. Commit straight to it
 
 The rules already in this skill are precisely what makes committing to the trunk safe: trunk-based development is their reason for existing, not a separate concern:
 
-- **Every commit keeps `main` releasable.** The fast pre-commit hook (below) blocks the obvious breakage locally (size, secrets, staged lint, types) in a few seconds, and CI holds the full line (the whole test suite, coverage, mutation, strict lint) as the required merge check, so what reaches the shared trunk is green.
+- **Every commit keeps `main` releasable.** The fast pre-commit hook (below) blocks the obvious breakage locally (size, dependencies, secrets, identity, the discipline tripwires, staged lint, types) in a few seconds, and CI holds the full line (the whole test suite, coverage, mutation, strict lint) as the required merge check, so what reaches the shared trunk is green.
 - **Commits stay small** (gate 1: ≤10 files AND ≤300 lines). Small commits are the unit of continuous integration; they review in minutes, revert cleanly, and bisect precisely. A 300-line ceiling is a trunk-based ceiling.
 - **History stays linear and legible** (Conventional Commits, `commit-msg` hook). A trunk read top-to-bottom is the changelog.
 - **Incomplete work hides behind a flag, not a branch.** When a feature spans several commits, keep each commit green and the half-built path dark behind a feature flag or simply unreferenced, never park weeks of work on a divergent branch. This is the same instinct as YAGNI and "minimal": ship the smallest safe increment.
@@ -511,7 +511,7 @@ rg -n '(db\.query|db\.execute)\(`.*\$\{' -- 'src/**/*.ts'   # enumerate the whol
 - **Compliance is not proof.** A ticked checklist and a passed audit describe paperwork. The standard is a runnable check: "show me how you verify it, and let me run it myself." Evidence is the exit code of a committed script anyone accountable can execute, never a screenshot of a green run (`references/governance.md`, owner-verifiable done).
 - **Generated code meets the same bar (provenance is not proof).** Code from a scaffolder, a generator, or an AI assistant runs through the identical hooks, gates, suite, and review a human's would; the reviewer reads the diff, not the attribution. No `--no-verify` because "the tool wrote it".
 - **Prefer failing loud.** A gate that stays green for the wrong reason lies: that is why untested files enter coverage at 0% (the preload), why the mutation gate exists at all, and why each new gate should be tried against a known violation once before it is trusted (the smoke tests do exactly this for the shipped configs).
-- **A skill description is a triggering contract; edits to it rerun the trigger eval.** Any change to a `SKILL.md` frontmatter description runs its eval set before landing (`bash scripts/trigger-eval/run.sh <set> <skill-dir>`; the `suite-routing.json` set with `TRIGGER_EVAL_SUITE` when wording could shift which suite skill wins a query). A description tuned by feel regresses silently; the eval is one command.
+- **A skill description is a triggering contract; edits to it rerun the trigger eval.** Any change to a `SKILL.md` frontmatter description runs its eval set before landing (in the atelier skill repository itself: `bash scripts/trigger-eval/run.sh <set> <skill-dir>`, with the `suite-routing.json` set and `TRIGGER_EVAL_SUITE` when wording could shift which suite skill wins a query; a repo that ships its own skills keeps an equivalent eval set). A description tuned by feel regresses silently; the eval is one command.
 
 ## README consistency
 
@@ -547,7 +547,7 @@ If the audit finds drift, fix the README in the **same commit** as the code chan
 
 ### Five-check task-done gate
 
-The four inner-loop checks from the top of this file (`bun test`, `bun run lint`, `bun run typecheck`, `bun run coverage`) plus a fifth: `README.md` audited against the surface table above, either updated, or a one-sentence "nothing user-visible changed".
+The four inner-loop checks from the top of this file (`bun run test`, `bun run lint`, `bun run typecheck`, `bun run coverage`) plus a fifth: `README.md` audited against the surface table above, either updated, or a one-sentence "nothing user-visible changed".
 
 ### End-of-session re-audit
 
@@ -590,14 +590,14 @@ After the change, restart the TS server in VS Code (Cmd/Ctrl + Shift + P → "Ty
 
 ## Summary
 
-- **Inner-loop checks, always, in order:** `bun test`, `bun run lint`, `bun run typecheck`, `bun run coverage`.
+- **Inner-loop checks, always, in order:** `bun run test`, `bun run lint`, `bun run typecheck`, `bun run coverage`.
 - **Zero warnings, zero inline ignores.** Refactor or change severity at the project level; never suppress per-line.
 - **Coverage gates per-tier:** 100% on `domain` + `use-cases`, 80% on `composition` + `infra` + `presenter`, skip `test-helpers` and `main.ts` only. `build-deps.ts` is now in scope (testable via optional config DI).
 - **SonarLint parity at lint time** via `eslint-plugin-sonarjs` + type-aware `@typescript-eslint` rules.
 - **Pre-commit hook runs the fast gates** (commit size, package.json, the staged secret scan, identity, the discipline tripwires, lint:staged, typecheck); **CI (`assets/ci.yml`) runs the full set** and is the required merge check: commit messages over the pushed range, strict lint, typecheck, the whole test suite, coverage, and mutation on the changed files, on a frozen lockfile; the full mutation sweep (`assets/mutation.yml`) and the CVE scan (`assets/audit.yml`) are their own scheduled workflows.
 - **Commit identity** (rule 26): contributor identity in commit metadata is normal and never a finding; file contents never name a person, an employer, or a client. Scrubbing a mention from pushed history takes a gated `git filter-repo` rewrite plus a force-push, and the host may keep the old commits cached.
 - **Dependency CVE scanning lives in CI, not the gate** (`bun audit --audit-level=high`): a daily scheduled watchdog for new CVEs in untouched deps, plus a PR run scoped to `package.json` / `bun.lock` for deliberately-introduced ones.
-- **Mutation testing on staged files** (Stryker, ≥90% break threshold) makes "tests don't actually pin behaviour" findable in CI.
+- **Mutation testing on the changed files** (Stryker, ≥90% break threshold, `mutate:changed` in CI on every event, the full sweep daily) makes "tests don't actually pin behaviour" findable.
 - **Verification discipline:** a control is a hypothesis until a test walks the forbidden path; test the bypass, audit the seams, fix the class not the instance, and proof is a runnable check, not a checklist or a screenshot. Generated code meets the identical bar; provenance is not proof.
 - **Commits stay small:** ≤10 files AND ≤300 lines per commit. The hook enforces it.
 - **Periodic audits**: once per release, drop the `test-helpers` skip and run coverage; anything below 100% is dead code or untested defensive code.
@@ -620,7 +620,7 @@ SKILL.md keeps the rule; this is the symptom list to read when reviewing. Any ha
 - A commit exceeding 10 files OR 300 lines (insertions + deletions) without a clear big-bang justification (initial scaffold, mass-rename, generated files). Split into smaller coherent slices. The pre-commit gate enforces this; do not normalise `--no-verify`.
 - A commit message that is not Conventional Commits: no `type:` prefix, an unlisted type (`wip:`, `update:`), a capitalised type, a trailing period, or a >100-char header. The `commit-msg` hook rejects these (hard rule 23); write `type(scope): subject` the first time rather than reaching for `--no-verify`. A repo with the fast-gate `pre-commit` installed but no `commit-msg` hook is half-protected, wire both.
 - A composition root or wiring file declared "untestable" and skipped. The two ergonomic switches make any composition file 100%-testable: parameterise every state-source (path, env var, clock) and inject every output sink (logger, sender). See `references/architecture.md` (Composition root testability).
-- An assignment to `process.env.X = ...` anywhere outside `*.test.ts` (and even there, only inside `beforeAll`/`afterAll` with a saved-and-restored original). `process.env` is shared mutable state: pass values as parameters instead. See the Security section.
+- An assignment to `process.env.X = ...` anywhere outside `*.test.ts` (and even there, only inside `beforeAll`/`afterAll` with a saved-and-restored original). `process.env` is shared mutable state: pass values as parameters instead (`references/security.md`; config is read once, in `src/composition/env.ts`).
 - A rule 21–22 breach anywhere in the UI: a hook call inside `src/components/**`; an import of `src/lib/**`, `src/config/**`, or `next/*` in a design-system component; `'use client'`, translation resolution, `process.env`, or data fetching in one; a downward import (an atom importing a molecule); a Tailwind utility string outside `src/components/**` (tokens in `globals.css` aside); or free-form `className`/`style` in a molecule/organism public API. State is hoisted, links/images arrive as injected `ComponentType` props, and visual variation is a typed variant prop.
 - Personal data in the wrong channel (rule 27): an email, a name, or user-typed text in a log line, a URL, a query string, or a third-party analytics event; a new loggable field added without checking the redaction keys.
 - An isolation breach in the making (rule 28): an owner id read from a URL, header, or body; a query that returns unscoped rows when the owner is missing; an owner-scoped endpoint landing without its cross-tenant 404 test; a sequential integer id in a public URL.

@@ -356,4 +356,4 @@ If `unwrap` ever actually throws in a test, the test name is wrong or the fake s
 4. Update every caller in `src/use-cases/` to pattern-match on `.ok`. Delete any existing `try/catch` around port calls.
 5. Update the fake in `src/test-helpers/` to add an `errors` knob.
 6. Replace any `withRetry(() => port.call())` with `retryOnErr(...)` and an explicit "retry on kind X" predicate.
-7. Run the 4-check loop (`bun test`, `bun run lint`, `bun run typecheck`, `bun run coverage`). See `references/workflow.md`.
+7. Run the 4-check loop (`bun run test`, `bun run lint`, `bun run typecheck`, `bun run coverage`). See `references/workflow.md`.

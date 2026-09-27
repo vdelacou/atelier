@@ -6,15 +6,15 @@ Identifiable by `"module": "src/main.ts"` in `package.json` and the Clean Archit
 
 ## Runtime
 
-- **Runtime**: Bun (`bun init`, Bun v1.2.2 or newer).
+- **Runtime**: Bun (`bun init`, Bun v1.3 or newer: `bun test --randomize` prints its seed and `--seed` replays it from 1.3, which rule 36 relies on).
 - **Package manager**: Bun. `bun.lock` is committed.
 - **Module system**: ESM. `"type": "module"` and `moduleDetection: "force"`.
 - **Entry point**: `src/main.ts` (`"module": "src/main.ts"` in package.json).
 - **Install**: `bun install`.
 - **Run**: `bun run src/main.ts`.
-- **TypeScript**: peer dep `^5.0.0`.
+- **TypeScript**: a devDependency held at `^5` (eslint-plugin-sonarjs crashes under TypeScript 7; the weekly canary re-probes it). A `peerDependencies` entry would not hold it: Bun installs TypeScript 6 over it with only a warning.
 
-Never call `node`, `tsc`, `ts-node`, `vite`, `npm`, `pnpm`, or `yarn`.
+Never call `node`, `ts-node`, `vite`, `npm`, `pnpm`, or `yarn`. TypeScript's compiler runs as the type checker only (`tsc --noEmit`, the `typecheck` script), never to build or run.
 
 **Server archetype.** The default shape is a CLI/batch job that runs and `process.exit`s, but `src/main.ts` may instead call `Bun.serve` to serve HTTP. The inbound server is then an `infra/` adapter (the mirror of an outbound one), `main.ts` stays the single entry with its one top-level catch, and the Dockerfile gains `EXPOSE <port>`. See `references/architecture.md` § Inbound HTTP (server archetype).
 
@@ -40,18 +40,18 @@ Minimal skeleton:
     "mutate:staged": "bash scripts/mutate-staged.sh"
   },
   "devDependencies": {
-    "@eslint/js": "^9.28.0",
-    "@stryker-mutator/core": "^9.6.1",
-    "@types/bun": "^1.2.0",
-    "eslint": "^9.28.0",
-    "eslint-plugin-prettier": "^5.4.1",
-    "eslint-plugin-security": "^3.0.1",
-    "eslint-plugin-sonarjs": "^4.0.3",
-    "eslint-plugin-unicorn": "^59.0.1",
-    "typescript-eslint": "^8.33.1"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
+    "@eslint/js": "^10.0.1",
+    "@stryker-mutator/core": "^10.0.0",
+    "@types/bun": "^1.4.2",
+    "eslint": "^10.11.0",
+    "eslint-plugin-prettier": "^5.5.6",
+    "eslint-plugin-security": "^4.1.0",
+    "eslint-plugin-sonarjs": "^4.2.1",
+    "eslint-plugin-unicorn": "^76.0.0",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.1"
   }
 }
 ```
@@ -359,7 +359,7 @@ export default [
   },
   sonarjsPlugin.configs.recommended,
   {
-    // SonarJS rule overrides: always-on, justified per rule. See LESSONS.md.
+    // SonarJS rule overrides: always-on, each with its reason on its own line.
     rules: {
       'sonarjs/no-unused-vars': 'off',          // duplicates @typescript-eslint/no-unused-vars
       'sonarjs/no-empty-test-file': 'off',      // false positives on `describe` test layout
@@ -395,7 +395,7 @@ export default [
 
 Notes on the config:
 
-- **One config file, two modes.** Both scripts carry `--max-warnings=0`, so warnings fail either run (the zero-warning rule, hard rule 15); the modes differ only in depth. The inner-loop `bun run lint` runs the fast non-type-aware rules (~2 s cached / ~7 s cold); `bun run lint:strict` sets `LINT_STRICT=1` and the conditional block adds `parserOptions.projectService: true` plus the type-aware `@typescript-eslint` rules (~25 s on a full repo). CI runs the strict version (`assets/ci.yml`); the pre-commit hook's gate 4 lints only the staged files, fast and non-type-aware (`scripts/lint-staged.sh`), and gate 5 is the typecheck. There is no separate `eslint.strict.config.js`; keeping one config eliminates drift.
+- **One config file, two modes.** Both scripts carry `--max-warnings=0`, so warnings fail either run (the zero-warning rule, hard rule 15); the modes differ only in depth. The inner-loop `bun run lint` runs the fast non-type-aware rules (~2 s cached / ~7 s cold); `bun run lint:strict` sets `LINT_STRICT=1` and the conditional block adds `parserOptions.projectService: true` plus the type-aware `@typescript-eslint` rules (~25 s on a full repo). CI runs the strict version (`assets/ci.yml`); the pre-commit hook's gate 6 lints only the staged files, fast and non-type-aware (`scripts/lint-staged.sh`, zero warnings too), and gate 7 is the typecheck. There is no separate `eslint.strict.config.js`; keeping one config eliminates drift.
 - **`linterOptions.noInlineConfig`, `ban-ts-comment` and `no-warning-comments`** are hard rule 15 as lint: a directive comment is inert and reported, every `@ts-` comment is an error, and a marker another tool reads (`prettier-ignore`, `stryker disable`, `nosonar`, `sonar-ignore`, `snyk-ignore`, `deepcode ignore`, `biome-ignore`, `oxlint-disable`, the `c8`, `v8` and `istanbul` coverage ignores) is an error wherever it sits in a comment. Because directives are inert, nothing inside a file can switch any of this off.
 - **`sonarjsPlugin.configs.recommended`** catches SonarLint findings at lint time so they no longer escape the IDE. See `references/workflow.md` for the common ones (S4325, S6594, S4123, S6551, S6671). Six rules are turned off, each justified in a comment beside it: `sonarjs/no-unused-vars` (duplicate), `sonarjs/no-empty-test-file` (false-positive on `describe` blocks), `sonarjs/cognitive-complexity` (one metric is enough: the cyclomatic cap of rule 35, `complexity: ['error', 10]` in the base block, plus the size caps cover it), and three that fire only in the type-aware lane and contradict the standard itself, `sonarjs/no-useless-intersection` (reports every branded type, i.e. hard rule 12), `sonarjs/null-dereference` (reports non-nullable and explicitly narrowed values, a class `strict: true` already owns), and `sonarjs/function-return-type` (reports every function that returns through the `ok()`/`err()` helpers, i.e. hard rule 16, since `Result<T, never>` and `Result<never, E>` are two types to it). The last three are dated against sonarjs 4.2.0 (2026-08-29 for the first two, 2026-09-05 for the third) and re-probed weekly by the skill repository's `.github/workflows/canary.yml` (upstream, not an asset a consumer copies), which turns them back on and reports if upstream has fixed them. Holding sonarjs at an older version is not an option: 4.1.0 does not load under ESLint 10 at all.
 - **`unicornPlugin.configs.recommended`** is on since 2026-09-27 (the plugin had been registered with no rule on). What stays off contradicts the standard or prettier, each with its reason beside it: three rules that fight prettier's output, `no-null` (a port returns `T | null` for an absent row), the abbreviation rule under both its names (`prevent-abbreviations` in unicorn 61, `name-replacements` in 76; it flags the standard's own `deps`, `err()` and `XProps`), `prefer-ternary` (it flags every guard clause followed by a return, clean-code.md's GOOD example), `no-array-reduce` (the standard folds with reduce), `consistent-boolean-name` (domain predicates and the `ok` discriminant), `prefer-number-coercion` (`Number('')` is 0 where the coverage gate needs parseFloat's NaN), `prefer-global-number-constants` (unicorn 61 wants `Number.NaN` and 76 `NaN`), and `no-useless-undefined` keeps `ok(undefined)` legal. A scoped block lets the test seams (`src/test-helpers/**`, the tests) swap a global and restore it, as `installFetchMock` does; production code never assigns one. Everything else in the set holds on the references' examples and the shipped assets, which were brought in line the same day (`catch (error)`, no separator in a four-digit number, `for...of` over `forEach`, a callback wrapped rather than passed by reference).
@@ -593,7 +593,7 @@ Why: keeping file IO on `Bun.file` is faster, has zero import ceremony, fits the
 ## Bootstrap checklist (fresh Bun repo)
 
 1. `mkdir <new-repo> && cd <new-repo> && bun init -y`.
-2. Replace `package.json` with the skeleton above (devDependencies include `eslint-plugin-sonarjs`; scripts include `test`, `lint`, `lint:strict`, `lint:staged`, `typecheck`, `coverage`, `mutate`, `mutate:changed`, `mutate:staged`, `start`. Keep `test` as bare `bun test`: `--pass-with-no-tests` turns a suite that has vanished into a green run, the gate-that-cannot-fail canon 15.10 rejects). **No `"latest"` or `"*"` anywhere**; the skeleton's `^X.Y.Z` ranges are samples; bump them in step 7 below.
+2. Replace `package.json` with the skeleton above (devDependencies include `eslint-plugin-sonarjs`; scripts include `test`, `lint`, `lint:strict`, `lint:staged`, `typecheck`, `coverage`, `mutate`, `mutate:changed`, `mutate:staged`, `start`. Keep `test` as the skeleton has it, `bun test --randomize` (rule 36) and nothing more; never add `--pass-with-no-tests`, which turns a suite that has vanished into a green run, the gate-that-cannot-fail canon 15.10 rejects). **No `"latest"` or `"*"` anywhere**; the skeleton's `^X.Y.Z` ranges are samples; bump them in step 7 below.
 3. Create `tsconfig.json` with the block above (includes `"types": ["bun"]`).
 4. Create `eslint.config.js` with the flat config above (includes `sonarjs.configs.recommended` and type-aware `@typescript-eslint` rules behind `LINT_STRICT=1`).
 5. Create `.vscode/settings.json` and `.vscode/extensions.json`.
@@ -623,7 +623,7 @@ Why: keeping file IO on `Bun.file` is faster, has zero import ceremony, fits the
     - `cp <skill-path>/assets/check-package-json.sh scripts/check-package-json.sh`
     - `chmod +x scripts/check-commit-size.sh scripts/check-package-json.sh`
     - `mkdir -p .githooks`
-    - `cp <skill-path>/assets/lint-staged.sh scripts/lint-staged.sh` (hook gate 4 runs it via the `lint:staged` script)
+    - `cp <skill-path>/assets/lint-staged.sh scripts/lint-staged.sh` (hook gate 6 runs it via the `lint:staged` script)
     - `cp <skill-path>/assets/check-commit-messages.sh scripts/check-commit-messages.sh` (CI re-runs the message check over the pushed range, so `--no-verify` cannot slip one past)
     - `cp <skill-path>/assets/check-commit-range.sh scripts/check-commit-range.sh` (the same for commit SIZE: the hook sees one staged diff, CI walks every commit in the range)
     - `cp <skill-path>/assets/check-identity.sh scripts/check-identity.sh` (hook gate 4, rule 26: no person, employer, or client named in file contents; CI runs it over the whole tree with `--all`)
@@ -640,7 +640,7 @@ Why: keeping file IO on `Bun.file` is faster, has zero import ceremony, fits the
     - `git config core.hooksPath .githooks` (picks up both hooks)
     - Optional: `brew install gitleaks` (macOS) or grab a binary from `github.com/gitleaks/gitleaks/releases`. The hook degrades gracefully if missing.
     - See `references/workflow.md` for the gate breakdown (fast hook plus CI set), the commit-message format, and the no-bypass rule.
-15. Verify: `bun run lint`, `bun run typecheck`, `bun run coverage`, and `bun run mutate` all clean on a minimal `src/main.ts`. Run `bash scripts/check-package-json.sh` once to confirm no `"latest"` slipped in, and confirm the `commit-msg` hook rejects a junk message (`echo 'nope' | …` or just try a bad commit).
+15. Verify: `bun run lint`, `bun run typecheck`, `bun run coverage`, and `bun run mutate` all clean on a minimal `src/main.ts`. Run `bash scripts/check-package-json.sh` once to confirm no `"latest"` slipped in, and confirm the `commit-msg` hook rejects a junk message by running it on a message file, the way git does (it reads `$1`, not stdin): `printf 'nope\n' > .msg && bash .githooks/commit-msg .msg` must exit non-zero; delete `.msg` after.
 16. Commit with Conventional Commits (`type(scope): subject`), once the user confirms (rule 25); the `commit-msg` hook enforces the format. From here, follow the Clean Architecture rules for every new feature.
 
 ## Containerization (optional)
@@ -673,7 +673,7 @@ Four things keep it conforming, and they are exactly where a copied-from-a-blog 
 - **Entry is `src/main.ts`**, never `src/index.ts`: the atelier's named entry (rule 5, `"module": "src/main.ts"`).
 - **Copy `bun.lock`, not `bun.lockb`**: Bun's lockfile is text now; the binary `bun.lockb` is legacy.
 - **No `EXPOSE`** for the CLI/batch archetype: it runs and `process.exit`s; there is no port to bind. Add `EXPOSE <port>` only for an actual server whose `src/main.ts` calls `Bun.serve`.
-- **No `bun run lint` or tests inside the build.** Quality is already owned by the five fast pre-commit gates and CI; linting in the image duplicates the gate and couples building with checking. If you want a build-time backstop anyway, run `bun run lint:strict` (the full type-aware gate) rather than bare `bun run lint` (which runs only the fast non-type-aware rules; both already fail on warnings).
+- **No `bun run lint` or tests inside the build.** Quality is already owned by the seven fast pre-commit gates and CI; linting in the image duplicates the gate and couples building with checking. If you want a build-time backstop anyway, run `bun run lint:strict` (the full type-aware gate) rather than bare `bun run lint` (which runs only the fast non-type-aware rules; both already fail on warnings).
 
 Add a `.dockerignore` so the build context stays small and the image never ships local cruft:
 
