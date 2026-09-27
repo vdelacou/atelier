@@ -2,7 +2,7 @@
 #
 # Rule 27 tripwire: personal data never in URLs, query strings, or log lines.
 #
-# Checks the STAGED ADDED LINES (like gitleaks protect --staged), so it blocks
+# Checks the STAGED ADDED LINES (like the staged secret scan), so it blocks
 # a violation entering history without flooding a brownfield tree. `--all`
 # scans the whole tree instead (adopt-mode audit).
 #
@@ -38,7 +38,7 @@ all_lines() {
       | while IFS= read -r f; do awk -v p="$f" '{ print p ": " $0 }' "$f"; done
   else
     git diff --cached -U0 -- 'src/' \
-      | awk '/^\+\+\+ b\//{f=substr($0,7)} /^\+[^+]/{print f": "substr($0,2)}' \
+      | awk '/^diff --git /{h=1; next} h && /^\+\+\+ /{f=substr($0,7); next} /^@@/{h=0; next} !h && /^\+/{print f": "substr($0,2)}' \
       | grep -v -E '^[^:]*(\.test\.(ts|tsx)|test-helpers/|src/test/)' || true
   fi
 }

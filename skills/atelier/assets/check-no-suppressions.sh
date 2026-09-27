@@ -36,7 +36,7 @@ all_lines() {
       | while IFS= read -r f; do awk -v p="$f" '{ printf "%s:%d: %s\n", p, NR, $0 }' "$f"; done
   else
     git diff --cached -U0 -- 'src/*.java' 'src/**/*.java' \
-      | awk '/^\+\+\+ b\//{f=substr($0,7)} /^\+[^+]/{print f": "substr($0,2)}' || true
+      | awk '/^diff --git /{h=1; next} h && /^\+\+\+ /{f=substr($0,7); next} /^@@/{h=0; next} !h && /^\+/{print f": "substr($0,2)}' || true
   fi
 }
 

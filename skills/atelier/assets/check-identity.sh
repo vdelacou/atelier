@@ -2,7 +2,7 @@
 #
 # Rule 26 tripwire: identity lives in commit metadata, never in file contents.
 #
-# Checks the STAGED ADDED LINES (like gitleaks protect --staged), so it blocks
+# Checks the STAGED ADDED LINES (like the staged secret scan), so it blocks
 # a mention entering history without flooding a brownfield tree. `--all` scans
 # every tracked text file instead (CI, and the adopt-mode audit).
 #
@@ -64,7 +64,7 @@ lines() {
       | awk -F: '$1 !~ /(^|\/)(CODEOWNERS|\.mailmap)$/' || true
   else
     git diff --cached -U0 --diff-filter=ACMR \
-      | awk '/^\+\+\+ b\//{f=substr($0,7)} /^\+[^+]/{print f": "substr($0,2)}' \
+      | awk '/^diff --git /{h=1; next} h && /^\+\+\+ /{f=substr($0,7); next} /^@@/{h=0; next} !h && /^\+/{print f": "substr($0,2)}' \
       | awk -F': ' '$1 !~ /(^|\/)(CODEOWNERS|\.mailmap)$/' || true
   fi
 }
