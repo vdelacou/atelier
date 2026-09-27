@@ -89,7 +89,7 @@ export const parseSafeUrl = (value: string): Result<SafeUrl, SafeUrlError> => {
     const url = new URL(value);
     if (url.protocol !== 'https:') return err({ kind: 'protocol', value });
     if (!ALLOWED_HOSTS.has(url.host)) return err({ kind: 'host', value });
-    return ok(url.toString() as SafeUrl);
+    return ok(url.href as SafeUrl);
   } catch {
     return err({ kind: 'malformed', value });
   }

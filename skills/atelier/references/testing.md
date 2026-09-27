@@ -128,7 +128,7 @@ describe('placeOrder', () => {
     );
 
     const [saved] = await orders.findByCustomer(customer);
-    expect(saved.total).toEqual(money(8_000, 'EUR'));
+    expect(saved.total).toEqual(money(8000, 'EUR'));
   });
 });
 ```
@@ -149,7 +149,7 @@ describe('postgresOrderRepo', () => {
 
   it('saves an order and retrieves it by customer', async () => {
     const customer = customerId('c-1');
-    const order = buildOrder({ customer, total: money(8_000, 'EUR') });
+    const order = buildOrder({ customer, total: money(8000, 'EUR') });
     await repo.save(order);
     const [found] = await repo.findByCustomer(customer);
     expect(found).toEqual(order);
@@ -214,7 +214,7 @@ it('when a premium customer buys a 100 EUR item, the order total is 80 EUR', asy
 
   // ASSERT - read state from the fake
   const [saved] = await orders.findByCustomer(customer);
-  expect(saved.total).toEqual(money(8_000, 'EUR'));
+  expect(saved.total).toEqual(money(8000, 'EUR'));
 });
 ```
 
@@ -427,7 +427,7 @@ describe('placeOrder', () => {
     );
 
     const [saved] = await orders.findByCustomer(customer);
-    expect(saved.total).toEqual(money(8_000, 'EUR'));
+    expect(saved.total).toEqual(money(8000, 'EUR'));
     expect(emails.sentEmails).toContain(email('c-1@example.com'));
   });
 });
@@ -440,11 +440,11 @@ If a value object or a domain service has genuinely complex logic of its own (`M
 ```ts
 describe('Money.add', () => {
   it('adds two amounts with the same currency', () => {
-    expect(addMoney(money(1_000, 'EUR'), money(2_000, 'EUR'))).toEqual(money(3_000, 'EUR'));
+    expect(addMoney(money(1000, 'EUR'), money(2000, 'EUR'))).toEqual(money(3000, 'EUR'));
   });
 
   it('refuses to add different currencies', () => {
-    expect(() => addMoney(money(1_000, 'EUR'), money(1_000, 'USD'))).toThrow('CurrencyMismatch');
+    expect(() => addMoney(money(1000, 'EUR'), money(1000, 'USD'))).toThrow('CurrencyMismatch');
   });
 });
 ```
@@ -468,7 +468,7 @@ describe('calculateDiscount', () => {
   it('when premium customer buys 100 EUR, returns 20 EUR', () => {
     const subtotal = money(10_000, 'EUR');
     const result = calculateDiscount(subtotal, 'premium');
-    expect(result.cents).toBe(2_000);
+    expect(result.cents).toBe(2000);
   });
 });
 ```
@@ -581,7 +581,7 @@ describe('postgresOrderRepo', () => {
   });
 
   it('saves an order and finds it by customer', async () => {
-    const order = buildOrder({ customer: customerId('c-1'), total: money(8_000, 'EUR') });
+    const order = buildOrder({ customer: customerId('c-1'), total: money(8000, 'EUR') });
     await repo.save(order);
     const [found] = await repo.findByCustomer(customerId('c-1'));
     expect(found).toEqual(order);

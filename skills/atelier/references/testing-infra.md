@@ -58,7 +58,7 @@ describe('telegramHttp.send', () => {
     mock = installFetchMock([
       {
         match: (url) => url.endsWith('/sendMessage'),
-        respond: () => new Response(JSON.stringify({ ok: true, result: { message_id: 42 } })),
+        respond: () => Response.json({ ok: true, result: { message_id: 42 } }),
       },
     ]);
     const telegram = createTelegramHttp({ botToken: 'test' });
@@ -116,8 +116,8 @@ export const callGemini = (fetchImpl?: typeof globalThis.fetch): GenerateOutput 
         output: Output.object({ schema }),
       });
       return ok(result.output);
-    } catch (e) {
-      return err({ kind: 'generate-failed', message: formatError(e) });
+    } catch (error) {
+      return err({ kind: 'generate-failed', message: formatError(error) });
     }
   };
 };
@@ -137,7 +137,7 @@ import { callGemini } from './gemini-llm.ts';
 describe('callGemini', () => {
   it('when the SDK returns the generated text, returns ok', async () => {
     const fakeFetch = (async () =>
-      new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"summary":"ok"}' }] } }] }))
+      Response.json({ candidates: [{ content: { parts: [{ text: '{"summary":"ok"}' }] } }] })
     ) as unknown as typeof globalThis.fetch;
 
     const gen = callGemini(fakeFetch);
@@ -173,16 +173,16 @@ export const createDriveFromApi = (api: DriveApi): Drive => ({
     try {
       const res = await api.files.copy({ fileId, requestBody: { name } });
       return ok({ id: res.data.id });
-    } catch (e) {
-      return err({ kind: 'copy-failed', message: formatError(e) });
+    } catch (error) {
+      return err({ kind: 'copy-failed', message: formatError(error) });
     }
   },
   getName: async (fileId) => {
     try {
       const res = await api.files.get({ fileId });
       return ok(res.data.name);
-    } catch (e) {
-      return err({ kind: 'not-found', message: formatError(e) });
+    } catch (error) {
+      return err({ kind: 'not-found', message: formatError(error) });
     }
   },
 });
@@ -235,7 +235,7 @@ export type BrowserAuthApi = {
 export const createBrowserAuthFromApi = (api: BrowserAuthApi): BrowserAuth => ({
   acquire: async (scopes) => {
     try { return ok({ token: await api.acquireToken(scopes) }); }
-    catch (e) { return err({ kind: 'acquire-failed', message: formatError(e) }); }
+    catch (error) { return err({ kind: 'acquire-failed', message: formatError(error) }); }
   },
   close: api.close,
 });
@@ -277,8 +277,8 @@ export const createBrowserAuthFromApi = (api: PlaywrightApi, config: BrowserAuth
       await page.waitForURL(/code=/, { timeout: config.navigationTimeoutMs });
       const cookies = await ctx.cookies();
       return ok({ token: extractTokenFromCookies(cookies) });
-    } catch (e) {
-      return err({ kind: 'acquire-failed', message: formatError(e) });
+    } catch (error) {
+      return err({ kind: 'acquire-failed', message: formatError(error) });
     }
   },
   // ...
@@ -308,8 +308,8 @@ export const createTwitterApi = (creds: TwitterCreds): TwitterPort => {
       try {
         const res = await client.v2.tweet(text);
         return ok({ id: res.data.id });
-      } catch (e) {
-        return err({ kind: 'post-failed', message: formatError(e) });
+      } catch (error) {
+        return err({ kind: 'post-failed', message: formatError(error) });
       }
     },
   };
@@ -437,16 +437,16 @@ For adapters that read or write the filesystem (`token-store-fs`, `prompt-loader
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import path from 'node:path';
 import { createPromptLoaderFs } from './prompt-loader-fs.ts';
 
 describe('promptLoaderFs', () => {
   let tmp: string;
-  beforeEach(() => { tmp = mkdtempSync(join(tmpdir(), 'prompt-loader-')); });
+  beforeEach(() => { tmp = mkdtempSync(path.join(tmpdir(), 'prompt-loader-')); });
   afterEach(() => rmSync(tmp, { recursive: true, force: true }));
 
   it('when a prompt file exists, returns ok with its content', async () => {
-    writeFileSync(join(tmp, 'summary.md'), 'hello world');
+    writeFileSync(path.join(tmp, 'summary.md'), 'hello world');
     const loader = createPromptLoaderFs({ root: tmp });
 
     const result = await loader.load('summary');
@@ -472,16 +472,16 @@ To hit the `catch` branch that guards a `Bun.file(path).text()` or `Bun.write(pa
 import { chmodSync } from 'node:fs';
 
 it('when the file is unreadable (chmod 0000), returns err read-failed', async () => {
-  const path = join(tmp, 'locked.md');
-  await Bun.write(path, 'content');
-  chmodSync(path, 0o000);
+  const lockedFile = path.join(tmp, 'locked.md');
+  await Bun.write(lockedFile, 'content');
+  chmodSync(lockedFile, 0o000);
   try {
     const result = await createPromptLoaderFs({ root: tmp }).load('locked');
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.kind).toBe('read-failed');
   } finally {
-    chmodSync(path, 0o600); // so afterEach's rmSync can clean up
+    chmodSync(lockedFile, 0o600); // so afterEach's rmSync can clean up
   }
 });
 

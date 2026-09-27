@@ -137,8 +137,8 @@ export const placeOrder = async (input, deps): Promise<Result<Summary, StepError
   try {
     await deps.orders.save(input);
     return ok({ saved: 1, errored: 0 });
-  } catch (e) {
-    return err({ step: 'placeOrder', cause: 'unknown', message: formatError(e) });
+  } catch (error) {
+    return err({ step: 'placeOrder', cause: 'unknown', message: formatError(error) });
   }
 };
 
@@ -165,16 +165,16 @@ export const createSheetsGoogle = (client: SheetsClient): Sheets => ({
     try {
       const response = await client.spreadsheets.values.get({ range: tab });
       return ok(rowsFromResponse(response));
-    } catch (e) {
-      return err(classifySheetsError(e));
+    } catch (error) {
+      return err(classifySheetsError(error));
     }
   },
   appendOrUpdate: async (tab, row) => {
     try {
       await client.spreadsheets.values.append({ range: tab, resource: { values: [toRow(row)] } });
       return ok(undefined);
-    } catch (e) {
-      return err(classifySheetsError(e));
+    } catch (error) {
+      return err(classifySheetsError(error));
     }
   },
   // ...
@@ -188,7 +188,7 @@ const classifySheetsError = (e: unknown): SheetsError => {
 };
 ```
 
-Every `catch (e)` uses the shared `formatError(err: unknown): string` helper from `src/domain/utilities/format-error.ts`, never `String(e)`, which returns `"[object Object]"` for non-Error throws (SonarJS S6551).
+Every `catch (error)` uses the shared `formatError(err: unknown): string` helper from `src/domain/utilities/format-error.ts`, never `String(error)`, which returns `"[object Object]"` for non-Error throws (SonarJS S6551).
 
 ## Fan-out batch semantics: `ok(summary)` with an `errored` count
 
@@ -272,7 +272,8 @@ export const createSheetsFake = (config?: {
   };
 }): Sheets => {
   const store = new Map<string, SheetRow[]>();
-  for (const [tab, rows] of Object.entries(config?.tabs ?? {})) store.set(tab, [...(rows ?? [])]);
+  const seededTabs = Object.entries(config?.tabs ?? {});
+  for (const [tab, rows] of seededTabs) store.set(tab, [...(rows ?? [])]);
 
   return {
     readRows: async (tab) => {
@@ -320,11 +321,11 @@ SonarJS S4123 fires on `await expect(p).rejects.toThrow(...)` because the matche
 export const captureRejection = async (promise: Promise<unknown>): Promise<Error> => {
   try {
     await promise;
-  } catch (e) {
-    if (e instanceof Error) return e;
-    // formatNonError avoids String(e) (SonarJS S6551), full impl in the asset.
-    // { cause: e } preserves the original value (ESLint preserve-caught-error).
-    throw new Error(`captureRejection: rejected with non-Error value: ${formatNonError(e)}`, { cause: e });
+  } catch (error) {
+    if (error instanceof Error) return error;
+    // formatNonError avoids String(error) (SonarJS S6551), full impl in the asset.
+    // { cause: error } preserves the original value (ESLint preserve-caught-error).
+    throw new Error(`captureRejection: rejected with non-Error value: ${formatNonError(error)}`, { cause: error });
   }
   throw new Error('captureRejection: expected promise to reject, but it resolved');
 };
