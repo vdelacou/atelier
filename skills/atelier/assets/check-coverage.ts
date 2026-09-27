@@ -169,7 +169,7 @@ const main = async (): Promise<number> => {
   }
   const rows = output
     .split('\n')
-    .map(parseRow)
+    .map((line) => parseRow(line))
     .filter((r): r is FileRow => r !== undefined);
   if (rows.length === 0) {
     console.error('\ncoverage: no file rows parsed from the coverage report. Check that `bun test --coverage` is producing a text table.');

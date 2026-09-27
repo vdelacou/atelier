@@ -5,7 +5,7 @@
  * "[object Object]" for plain-object throws and loses the message
  * entirely (SonarJS S6551).
  *
- * Use this in EVERY `catch (e)` block in src/infra/** and in any
+ * Use this in EVERY `catch (error)` block in src/infra/** and in any
  * pure-domain native-API fallback. Safe on any input.
  *
  * See skills/atelier/references/workflow.md (SonarJS table, S6551).

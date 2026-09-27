@@ -39,7 +39,7 @@
  */
 
 import { readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import path from 'node:path';
 
 type Args = {
   readonly check: boolean;
@@ -56,7 +56,7 @@ const EXCLUDE = (relPath: string): boolean => relPath.endsWith('.test.ts') || re
 const parseArgs = (argv: ReadonlyArray<string>): Args => {
   const check = argv.includes('--check');
   const outIdx = argv.indexOf('--out');
-  const candidate = outIdx >= 0 ? argv[outIdx + 1] : undefined;
+  const candidate = outIdx === -1 ? undefined : argv[outIdx + 1];
   const out = candidate ?? 'scripts/coverage-preload.ts';
   return { check, out };
 };
@@ -69,21 +69,27 @@ const walk = (dir: string, repoRoot: string, acc: string[]): void => {
     return; // dir does not exist; harmless
   }
   for (const entry of entries) {
-    const full = join(dir, entry);
+    const full = path.join(dir, entry);
     const st = statSync(full);
     if (st.isDirectory()) {
       walk(full, repoRoot, acc);
     } else if (st.isFile() && entry.endsWith('.ts')) {
-      const rel = relative(repoRoot, full);
+      const rel = path.relative(repoRoot, full);
       if (!EXCLUDE(rel)) acc.push(rel);
     }
   }
 };
 
+// Code-unit order, the order a bare sort() gave, so a preload generated before stays in sync.
+const byCodeUnit = (a: string, b: string): number => {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+};
+
 const collectFiles = (repoRoot: string): ReadonlyArray<string> => {
   const acc: string[] = [];
-  for (const scan of SCAN_DIRS) walk(join(repoRoot, scan), repoRoot, acc);
-  return acc.sort();
+  for (const scan of SCAN_DIRS) walk(path.join(repoRoot, scan), repoRoot, acc);
+  return acc.toSorted(byCodeUnit);
 };
 
 const HEADER = `/*
@@ -103,16 +109,10 @@ const HEADER = `/*
  */`;
 
 const buildContent = (files: ReadonlyArray<string>, repoRoot: string, outPath: string): string => {
-  const grouped = new Map<string, string[]>();
-  for (const f of files) {
-    const top = SCAN_DIRS.find((d) => f.startsWith(`${d}/`)) ?? 'other';
-    const list = grouped.get(top) ?? [];
-    list.push(f);
-    grouped.set(top, list);
-  }
+  const grouped = Map.groupBy(files, (f) => SCAN_DIRS.find((d) => f.startsWith(`${d}/`)) ?? 'other');
 
   // Imports are written relative to the output file's directory.
-  const outDir = join(repoRoot, outPath, '..');
+  const outDir = path.join(repoRoot, outPath, '..');
 
   const lines: string[] = [HEADER];
   for (const dir of SCAN_DIRS) {
@@ -120,7 +120,7 @@ const buildContent = (files: ReadonlyArray<string>, repoRoot: string, outPath: s
     if (!list || list.length === 0) continue;
     lines.push('', `// --- ${dir}/ ---`);
     for (const f of list) {
-      const fromOut = relative(outDir, join(repoRoot, f));
+      const fromOut = path.relative(outDir, path.join(repoRoot, f));
       const importPath = fromOut.startsWith('.') ? fromOut : `./${fromOut}`;
       lines.push(`import '${importPath}';`);
     }
@@ -136,9 +136,8 @@ const main = async (): Promise<number> => {
   const content = buildContent(files, repoRoot, args.out);
 
   if (args.check) {
-    const existing = await Bun.file(args.out)
-      .text()
-      .catch(() => '');
+    const outFile = Bun.file(args.out);
+    const existing = (await outFile.exists()) ? await outFile.text() : '';
     if (existing.trim() === content.trim()) {
       console.log(`coverage-preload: in sync (${files.length} files)`);
       return 0;
