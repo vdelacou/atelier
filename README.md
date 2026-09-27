@@ -140,24 +140,24 @@ Atelier is not a list of preferences. It is the executable form of a written can
 
 The two are audited against each other, in both directions. The forward matrix, [`conformance-matrix.md`](conformance-matrix.md), gives every one of the 120 sub-concepts a row and a verdict with file-and-line evidence: 118 covered, 2 where the skill is stricter than the canon, none missing, none contradicted. The reverse matrix, [`reverse-matrix.md`](reverse-matrix.md), takes each hard rule back to the canon: most sit on a canon row, some exceed it, and the nine that fix a language or toolchain choice are stack bindings the canon leaves to a profile on purpose. When the two collide, the canon wins and the skill amends. When the skill exposes a defect in the canon, the fix is a [proposed revision](docs/global-rules/proposed-revisions.md), and the accepted ones have changed the canon.
 
-CI keeps this honest. A drift gate hashes the vendored canon and refuses a matrix whose count or titles no longer match it. The 233 citations the matrices make are pinned to the content of the line they cite, so an edit that moves a cited line fails the build until the citation is re-anchored.
+CI keeps this honest. A drift gate hashes the vendored canon and refuses a matrix whose count or titles no longer match it. The 235 citations the matrices make are pinned to the content of the line they cite, so an edit that moves a cited line fails the build until the citation is re-anchored.
 
 ## How we know it works
 
-Each eval runs the same tasks with and without the skill on Claude Opus and grades mechanically. The scorecards are checked in. Since 2026-09-26 neither arm runs with this repo's context or the installed skills in view; the review and memory-cleanup rows are measured that way, and the two conformance rows predate it (their unaided arm had the atelier context, so they understate the gap).
+Each eval runs the same tasks with and without the skill on Claude Opus and grades mechanically. The scorecards are checked in. Since 2026-09-26 neither arm runs with this repo's context or the installed skills in view, and every row below is measured that way.
 
 | Measurement | With atelier | Without |
 |---|---|---|
-| Conformance, 37 assertions over 3 passes ([scorecard](scripts/conformance-eval/baseline.md)) | 111/111 | 86/111 |
-| Conformance, the 7-task production-discipline tier | 24/24 | 15/24 |
-| Review, TypeScript, 12 planted violations over 3 passes ([scorecard](scripts/review-eval/baseline.md)) | 36/36 caught | 19/36 caught |
-| Review, TypeScript, findings that cite the rule | 36/36 | 2/36 |
-| Review, Java, 9 planted violations over 3 passes | 27/27 caught | 24/27 caught |
-| Review, claims against the clean files | 4, each true on the fixture's text | 0 |
+| Conformance, 61 assertions over 21 tasks, the 2.5.0 release pass ([scorecard](scripts/conformance-eval/baseline.md)) | 61/61 | 35/61 |
+| Conformance, the 7-task production-discipline tier | 24/24 | 8/24 |
+| Review, TypeScript, 12 planted violations over 3 passes ([scorecard](scripts/review-eval/baseline.md)) | 36/36 caught | 22/36 caught |
+| Review, TypeScript, findings that cite the rule | 36/36 | 1/36 |
+| Review, Java, 9 planted violations over 3 passes | 27/27 caught | 20/27 caught |
+| Review, rule claims against the clean files | 0 | 0 |
 | Memory cleanup, 27 planted journal entries over 3 passes ([scorecard](scripts/distill-eval/baseline.md)) | 33/33 checks | 24/33 checks |
 | Memory cleanup, entries rewritten with no original kept | 0 | 31 |
 
-The gap is widest on the rules that hurt most in production. The unaided agent never once preferred soft delete to a hard `DELETE`, in either eval, and built against a port rather than an implementation in one run of six.
+The gap is widest on the rules that hurt most in production. The unaided agent never once preferred soft delete to a hard `DELETE`, in either eval (0 of 16 checks over four isolated passes), and put a port in front of a dependency in 2 of 16.
 
 Eight CI jobs run on every push to this repo: the canon drift and citation gates, the grader selftests, and three smoke tests that replay the install on the current unpinned toolchain and prove each shipped gate green on a conforming tree and red on its target violation. A new ESLint, TypeScript, Stryker, Next or Maven-plugin major that breaks an asset fails here before it reaches you. A [field test](field-test.md) on a real consumer repo found the defects the evals could not, and each became a fix.
 
@@ -195,4 +195,4 @@ The engineering substance comes from Clean Code and Clean Architecture (Robert C
 
 ## Versioning and license
 
-The suite is versioned as a whole in [CHANGELOG.md](./CHANGELOG.md). The current release is 2.4.0, the gates release: the last prose rules turned into machine checks in every variant, the discipline tripwires on by default. [MIT](./LICENSE).
+The suite is versioned as a whole in [CHANGELOG.md](./CHANGELOG.md). The current release is 2.5.0, the memory release: `atelier-distill` compacts a repo's agent memory with nothing live lost, unicorn's recommended lint set is on, and the evals run blind to this repository. [MIT](./LICENSE).

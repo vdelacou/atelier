@@ -15,7 +15,7 @@ full conformance run. Landings on the owner's yes; the backup deletion gets its 
    notes, the assets and examples fixed, a red fixture per variant in the smoke tests (the rule's own
    tag, a file where only unicorn fires), the companion sweep, citations re-anchored. DoD: both smoke
    tests green with the new fixtures seen red; frontmatter, citations, matrix drift, em-dash gates.
-3. [ ] Review fixture follow-up: `settings.ts` and `MemberId` get a consumer, `Refund.java` a typed
+3. [x] Review fixture follow-up: `settings.ts` and `MemberId` get a consumer, `Refund.java` a typed
    error and no single-use constant, so the clean files are clean on every rule. DoD: grader
    selftest green; a three-pass rerun, both arms, both variants, recorded in the review baseline.md
    and the README row.
@@ -36,3 +36,24 @@ before the check-docs.sh fix (Socket Medium) until the providers re-audit.
 Step 3 running: fixture changed (a use-case, a port and StepError consume settings.ts; Refund.java
 types its error; CancelMembership takes a MemberId); re-measure driver3 launched 15:19 (three passes
 per variant, both arms, REVIEW_TAG=fx-r1..3), log in the scratchpad remeasure/lanes3.log.
+Bun r1 and r2: skill 12/12 caught and cited, no false positive, after the thirteenth grader defect
+(a bold heading ending in `.**` read as one sentence with the next line; fixed, selftest red first;
+yesterday's isolated passes regrade to one skill false positive per variant, not two). Guideline-level
+findings remain true on two other clean files: notifier.ts has no implementation or caller
+(guideline 2), shipping.ts's constant extraction is unrelated (guideline 3); next fixture slice.
+Step 5 tier 2 launched 15:24 (driver4, CONFORMANCE_TAG=t2-2.5.0, both arms, three jobs). Harness bug
+seen: with both arms, run.sh's incremental scorecard prints the other arm too, and an arm still
+running reads 0 (its tree lands at copy-back); fix after the run (filter to the landed arm).
+Done 2026-09-27 17:40. Step 3: three passes per variant, both arms, isolated, on the new fixture: Bun
+skill 36/36 caught and cited, unaided 22/36 and 1/36; Java 27/27 and 27/27, unaided 20/27 and 1/27; no
+rule claim against a clean file on either arm. Grader defects 13 to 16 fixed, each red first (the bold
+heading split, a numbered heading as one finding, node:fs evidence wanting node:fs named, a call
+argument is not a citation); the 2026-09-26 isolated reading regrades to one skill false positive per
+variant and Bun unaided 23/36. Step 5: tier 2 15:24 to 17:18, 42 sessions, none capped or refused: skill
+61/61 (60/61 before the 10.11 correction, the seventeenth defect: a branded parseThreadSummary read as
+no checkpoint), unaided 35/61; production-discipline tier 24/24 against 8/24. Fixture re-frozen from
+four isolated passes, 143/244. run.sh's incremental scorecard prints the landed arm only. Records in
+both baseline.md files, the README rows (all isolated now) and the 2.5.0 block. Landed and pushed on the
+owner's yes (four commits); the v2.5.0 tag waits for a later yes (the owner chose to tag later); next fixture slice (notifier and shipping carry
+guideline findings); the Oxlint canary's first run on Monday.
+

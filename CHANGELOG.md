@@ -6,6 +6,28 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-09-27
+
+The memory release: a fifth companion, `atelier-distill`, compacts a repo's agent memory with nothing
+live lost; eslint-plugin-unicorn's recommended set is on in both TypeScript configs; the skills.sh
+audit findings are fixed; and the evals run blind to this repository and to user-level skills, so the
+unaided numbers they report are the honest ones.
+
+### Upgrading from 2.4.0
+
+- Re-extract `eslint.config.js` (Bun) or `eslint.config.mjs` (Next) and re-copy `check-coverage.ts`,
+  `regenerate-coverage-preload.ts` and `capture-rejection.ts`: unicorn's recommended set is on, less
+  what contradicts the standard or prettier. Expect findings on existing code; `bunx eslint --fix .`
+  settles most of them. unicorn 76 needs ESLint 10.4 or later.
+- Re-copy `check-docs.sh`: it runs only the Verify lines that name a repo entry point. Move any other
+  line (a health curl, a pipeline) into a script it calls.
+- Re-copy the CI workflow (`ci.yml`, `ci-next.yml` or `ci-java.yml`) and, if used, the audit
+  workflow: the gitleaks tarball is checksum-verified before install.
+- Add `.claude/lessons.local.archive.md` to `.gitignore` beside `lessons.local.md`: the compaction
+  pass archives the personal journal there.
+- `atelier-distill` installs with the suite (`bunx skills add vdelacou/atelier -g`, now documented at
+  user level) and needs no copy step.
+
 ### Added
 - **`atelier-distill`, a fifth companion: the compaction pass for a repo's agent memory.** The lessons
   journals are read in full at every session start and are append-only, and the doctrine's only pruning
@@ -71,15 +93,15 @@ whole, not any single skill.
   `consistent-boolean-name` (domain predicates, the `ok` discriminant); `prefer-number-coercion` (the
   coverage gate needs parseFloat's reading of an absent cell); `prefer-global-number-constants` (unicorn
   61 and 76 disagree on `NaN`); and `no-useless-undefined` narrowed so `ok(undefined)` stays legal. The
-  test seams may swap a global and restore it. Probed first on unicorn 61 (the Next pin) and 76 (the
-  Bun smoke test's latest, 315 rules on): the rest of the set holds on every reference example and
-  shipped asset once they were brought in line (`catch (error)` over `catch (e)`, no separator in a
-  four-digit number, `for...of` over `forEach`, a callback wrapped rather than passed by reference,
-  `Response.json`, a default `node:path` import, a dispatch record for the Button variants, and a few
-  single fixes); what still fires is on the BAD and SMELL examples. Both smoke tests prove the set on
-  with `unicorn/throw-new-error` red. Consumers: re-extract `eslint.config.js` (or `.mjs`), re-copy
-  `check-coverage.ts`, `regenerate-coverage-preload.ts` and `capture-rejection.ts`, and expect findings
-  on existing code; `bunx eslint --fix .` settles most of them.
+  test seams may swap a global and restore it. Probed first on unicorn 59 and 61 (the two skeletons'
+  pins) and 76 (the Bun smoke test's latest, 315 rules on): the rest of the set holds on every reference
+  example and shipped asset once they were brought in line (`catch (error)` over `catch (e)`, no
+  separator in a four-digit number, `for...of` over `forEach`, a callback wrapped rather than passed by
+  reference, `Response.json`, a default `node:path` import, a dispatch record for the Button variants,
+  and a few single fixes); what still fires is on the BAD and SMELL examples. Both smoke tests prove the
+  set on with `unicorn/throw-new-error` red. Consumers: re-extract `eslint.config.js` (or `.mjs`),
+  re-copy `check-coverage.ts`, `regenerate-coverage-preload.ts` and `capture-rejection.ts`, and expect
+  findings on existing code; `bunx eslint --fix .` settles most of them.
 - **The lessons doctrine gains the compaction pass.** `references/lessons.md`: the journals stay
   append-only between passes; the pass is the one sanctioned rewrite (a journal over 100 entries or
   ~15 KB gets one offer at session start, or the user asks), with its verdict table, the archive format
@@ -106,6 +128,28 @@ whole, not any single skill.
   plants rules 26, 27, 4 and 20. `atelier-grill-me` mentions no gate and is unchanged.
 
 ### Harness
+- **Tier 2 for 2.5.0, the skill arm's first isolated reading: 61/61 against 35/61 unaided.** The full
+  matrix, both arms, 21 tasks, no session capped or refused; the production-discipline tier reads 24/24
+  against 8/24. One assertion corrected, found by the pass: `h6-ai-full` 10.11 (model output crosses a
+  validation checkpoint) credited a bare `JSON.parse` and missed the standard's own boundary form, a
+  branded `parseThreadSummary` returning `Result`; it now accepts a `parse[A-Z]...(` call, pinned both
+  ways in the grader selftest (the skill arm read 60/61 before). The frozen baseline arm is re-frozen
+  from four isolated passes, 143/244 over 84 runs. `run.sh`'s incremental scorecard printed the other
+  arm too when both ran, and an arm still running read 0; it prints the landed arm only.
+- **The review fixture's clean files are clean on every rule, and four grader defects are fixed.**
+  `settings.ts` gains a consumer through a primary port (`createLoadSettings`, its `SettingsStore`
+  port, the canonical `StepError`, port tests with a hand-written fake), `Refund.java` types its error
+  instead of extracting a single-use String constant, and `CancelMembership` takes a `MemberId`. Three
+  passes per variant, both arms, isolated: Bun 36/36 caught and cited against 22/36 and 1/36 unaided,
+  Java 27/27 and 27/27 against 20/27 and 1/27, and no rule claim against a clean file on either arm.
+  The defects, thirteenth to sixteenth, each with a selftest case seen red first: a bold heading ending
+  in `.**` did not end its sentence (a heading's rule read against the clean file named on the next
+  line); a numbered markdown heading with the path under it and the evidence in the next paragraph
+  read as a miss (a numbered heading now opens one finding up to the next heading; a section heading
+  stays split by paragraph); the node:fs evidence accepted a bare `writeFileSync` quoted in an
+  unrelated finding; and `recentIds(10)` read as citing rule 10. Regraded, the isolated reading of
+  2026-09-26 has one skill false positive per variant, not two, and the unaided Bun reviewer 23/36,
+  not 19/36. Guideline findings stay true on `notifier.ts` and `shipping.ts`: the next fixture slice.
 - **A weekly canary for Oxlint parity; the standard stays on ESLint.** Asked whether Oxlint could
   replace ESLint with the same function and plugins, a side-by-side on 2026-09-27 (oxlint 1.85.0, the
   Bun and Next smoke trees, every smoke fixture through both linters) matched everything but two gaps:
