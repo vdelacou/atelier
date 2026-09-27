@@ -41,7 +41,7 @@ Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, sim
 1. **Does it need to exist?** YAGNI: if nothing requires it, skip it.
 2. **Standard library / language feature?** Use it before hand-rolling.
 3. **Native runtime capability?** Reach for `Bun.file`/`Bun.write` (rule 20), `crypto.subtle`, `fetch`, `URL`, Web APIs before adding a dependency.
-4. **A dependency already in `package.json`?** Use it before `bun add`-ing another (rule 19).
+4. **A dependency already in `package.json`?** Use it before `bun add`-ing another (guideline 2, the lazy ladder; rule 19 governs how the one you add is pinned).
 5. **One clear line?** Then one line.
 6. **Only then** write the minimum that works.
 
@@ -222,7 +222,7 @@ Open/Closed via a dispatch map is *correct* once you genuinely have several disc
 ✓ **After**: one use-case that saves, returning a `Result` at the IO boundary:
 
 ```ts
-export const savePreferences =
+export const createSavePreferences =
   (deps: { prefs: PreferencesRepo }) =>
   (userId: UserId, prefs: Preferences): Promise<Result<void, PreferencesError>> =>
     deps.prefs.save(userId, prefs);
@@ -242,21 +242,21 @@ Add caching when a profile shows a hot path; validation when bad data actually a
 
 ```ts
 const parseSignup = (raw: RawSignup): Result<Signup, ValidationError> => {
-  if (raw.email.trim().length === 0) return err({ type: 'validation', field: 'email' });
-  const address = email(raw.email);
-  if (raw.username.length < 3) return err({ type: 'validation', field: 'username' }); // not requested
-  if (!/^[a-z0-9]+$/iu.test(raw.username)) return err({ type: 'validation', field: 'username' }); // not requested
-  return ok({ address, username: username(raw.username) });
+  const address = parseEmail(raw.email); // the fix: outside data goes through the Result factory
+  if (!address.ok) return err({ kind: 'validation', field: 'email' });
+  if (raw.username.length < 3) return err({ kind: 'validation', field: 'username' }); // not requested
+  if (!/^[a-z0-9]+$/iu.test(raw.username)) return err({ kind: 'validation', field: 'username' }); // not requested
+  return ok({ address: address.value, username: username(raw.username) });
 };
 ```
 
-✓ **After**, only the empty-email guard; the username path is left exactly as it was:
+✓ **After**, only the email fix; the username path is left exactly as it was:
 
 ```ts
 const parseSignup = (raw: RawSignup): Result<Signup, ValidationError> => {
-  if (raw.email.trim().length === 0) return err({ type: 'validation', field: 'email' });
-  const address = email(raw.email);
-  return ok({ address, username: username(raw.username) });
+  const address = parseEmail(raw.email); // was email(raw.email), the asserting factory, which threw on ''
+  if (!address.ok) return err({ kind: 'validation', field: 'email' });
+  return ok({ address: address.value, username: username(raw.username) }); // untouched; the same shape is noted for the user, not fixed here
 };
 ```
 

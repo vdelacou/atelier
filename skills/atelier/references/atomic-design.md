@@ -62,7 +62,7 @@ The test: could this component render in Storybook with nothing but hardcoded pr
 
 ```tsx
 // organisms/faq: an accordion with no state anywhere
-<details className="rounded-md border border-primary-200 p-6">
+<details className="group rounded-md border border-primary-200 p-6">
   <summary className="flex cursor-pointer list-none items-center justify-between">
     <span>{item.question}</span>
     <ChevronDownIcon className="transition-transform group-open:rotate-180" />
@@ -193,7 +193,7 @@ Style rules, all enforced at review:
 - Props type exported next to the component; `type`, never `interface` (hard rule 3).
 - Group related inputs into named prop objects (`authProps`, `languageSwitcherProps`, `items`) instead of long flat lists.
 - Destructure props in the parameter list; defaults in the parameter list.
-- Variant/size dispatch through a typed `Record` map; look up via `switch` so `eslint-plugin-security`'s object-injection rule stays quiet without an inline ignore (hard rule 15).
+- Variant/size dispatch through a `Record` keyed by the variant union, indexed directly: the typed key is the guard, and `eslint-plugin-security`'s object-injection rule is off at project level in both configs because it flags exactly this lookup (hard rule 15 forbids silencing it inline).
 - Semantic elements first: `header`, `nav` with `aria-label`, `section`, `ul`/`li`, not `div` soup.
 - Lists render with `.map` and stable keys (id, slug, question text), never the array index.
 - Tailwind utilities on the design-token scale; **mobile first**, the base classes style the smallest screen and responsive shifts scale up via `md:*` / `lg:*`, never a desktop layout crammed down (canon 17.7, `references/product.md`).

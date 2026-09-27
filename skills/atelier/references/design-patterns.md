@@ -266,9 +266,9 @@ export type Component =
   | { readonly kind: 'product'; readonly price: Money }
   | { readonly kind: 'box'; readonly children: readonly Component[] };
 
-export const componentPrice = (c: Component): Money => {
+export const componentPrice = (c: Component, currency: Currency): Money => {
   if (c.kind === 'product') return c.price;
-  return c.children.reduce((sum, child) => addMoney(sum, componentPrice(child)), money(0, 'EUR'));
+  return c.children.reduce((sum, child) => addMoney(sum, componentPrice(child, currency)), money(0, currency));
 };
 
 // usage
@@ -285,7 +285,7 @@ const bigBox: Component = {
   children: [smallBox, { kind: 'product', price: money(5000, 'EUR') }],
 };
 
-// componentPrice(bigBox) -> 80 EUR
+// componentPrice(bigBox, 'EUR') -> 80 EUR
 ```
 
 ---
@@ -313,8 +313,8 @@ export const blackFriday: PricingStrategy = {
   calculate: (basePrice) => scaleMoney(basePrice, 0.5),
 };
 
-export const cartTotal = (items: readonly Item[], pricing: PricingStrategy): Money => {
-  const base = items.reduce((sum, i) => addMoney(sum, i.price), money(0, 'EUR'));
+export const cartTotal = (items: readonly Item[], pricing: PricingStrategy, currency: Currency): Money => {
+  const base = items.reduce((sum, i) => addMoney(sum, i.price), money(0, currency));
   return pricing.calculate(base);
 };
 ```

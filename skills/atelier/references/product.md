@@ -65,8 +65,9 @@ A user who cannot see, hear, or use a mouse is still a user, and like privacy th
 // BAD: no role, no keyboard path, contrast by vibe
 <div className="btn" onClick={submit} style={{ color: '#9ca3af' }}>Submit</div>
 
-// GOOD: real button; label from the catalog; contrast from the tokens
-<button type="submit" className="btn" aria-busy={saving}>{t('expense.submit')}</button>
+// GOOD: the design-system atom renders a real <button> and owns its styling and contrast
+// tokens (rules 21-22); the page shell passes it the catalog label as a final string
+<Button type="submit" variant="primary" busy={saving}>{t('expense.submit')}</Button>
 ```
 
 ## Mobile first, and a light interface
@@ -76,11 +77,12 @@ Design the **smallest screen first** with **one clear primary action per view**,
 ```tsx
 // DON'T: desktop-first wall of columns, a toolbar of eight equal buttons, no clear next step
 <div className="grid grid-cols-4 gap-8 p-12">{/* eight equal buttons */}</div>
-// DO: one column by default, one primary action, the rest one tap away
-<div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-4">
-  <button className="btn-primary">{t('expense.submit')}</button>
-  <OverflowMenu items={secondaryActions} />
-</div>
+// DO: one primary action, the rest one tap away; the ActionBar organism owns the layout
+// (one column by default, md:grid-cols-4 from the medium breakpoint, inside src/components)
+<ActionBar
+  primary={<Button variant="primary">{t('expense.submit')}</Button>}
+  overflow={<OverflowMenu items={secondaryActions} />}
+/>
 ```
 
 The small screen is the default case, not the exception: breakpoints scale **up** (`md:` / `lg:`) from the base layout, tap targets are finger-sized (~44px), the primary action sits in thumb reach, and the form asks the fewest fields it can (canon 2.6). A light interface is a light payload too, so make weight a number the pipeline enforces: the shipped `assets/check-bundle-size.sh` (or `size-limit` / Lighthouse CI budgets) fails the build when the built JS crosses its gzipped ceiling, measured on the shipped bundle, not a developer laptop, and a bump is a deliberate reviewed change (pillar 12, and canon 15.1 for the gate).
@@ -97,7 +99,7 @@ The most expensive software is the beautifully built kind nobody needed. Every o
 # Go / No-Go: <feature>: decided YYYY-MM-DD
 - [x] >= 10 problem interviews surfaced this pain unprompted   (met: 12)
 - [ ] >= 3 committed paid pilots                               (NOT met: 1)
-Decision: NO-GO. Re-decide by <date>. Owner: <name>.
+Decision: NO-GO. Re-decide by <date>. Owner: <role or team handle> (a person's name in a tracked file is what rule 26 bans).
 ```
 
 - **Keep validating after launch.** Ship behind a flag, instrument adoption (`references/observability.md`, Watch behaviour), and keep or kill on a measured threshold. "Shipped" is an output; "used" is the outcome. A feature below the bar gets disabled, its reason written down, and its code removed: no zombie features half-live in the product. Killing a plausible idea before it becomes code is a win, not a failure.

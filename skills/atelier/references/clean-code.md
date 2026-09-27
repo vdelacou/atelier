@@ -231,15 +231,16 @@ export type Order = {
 };
 
 // GOOD - collection gets its own module
-// src/orders/order-items.ts
+// src/domain/order-items.ts
 export type OrderItems = { readonly items: readonly OrderItem[] };
 export const emptyOrderItems = (): OrderItems => ({ items: [] });
 export const addToOrderItems = (items: OrderItems, item: OrderItem): OrderItems => ({ items: [...items.items, item] });
-export const orderItemsTotal = (items: OrderItems): Money =>
-  items.items.reduce((sum, i) => addMoney(sum, i.price), money(0, 'EUR'));
+// the currency comes in: a hard-coded money(0, 'EUR') seed made every USD total throw
+export const orderItemsTotal = (items: OrderItems, currency: Currency): Money =>
+  items.items.reduce((sum, i) => addMoney(sum, i.price), money(0, currency));
 export const isOrderItemsEmpty = (items: OrderItems): boolean => items.items.length === 0;
 
-// src/orders/order.ts
+// src/domain/order.ts
 export type Order = {
   readonly id: OrderId;
   readonly items: OrderItems;

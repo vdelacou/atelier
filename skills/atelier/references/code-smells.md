@@ -86,6 +86,9 @@ export const processOrder = async (order: Order, deps: ProcessOrderDeps): Promis
   validateOrder(order);
   const total = calculateOrderTotal(order);
   await deps.repo.save(order, total);
+  // the send follows a commit, so in production it is an outbox row the save writes in the same
+  // transaction and a worker delivers, never an inline call (rule 29, references/reliability.md,
+  // Do not fire and forget); the notifier port here only shows where the responsibility split falls
   await deps.notifier.notifyConfirmation(order);
 };
 ```
@@ -122,7 +125,7 @@ export const refund = () => { /* ... */ };
 
 ```ts
 // SMELL - shipping logic lives in Order but uses only Customer data
-// src/orders/order.ts
+// src/domain/order.ts
 export const calculateShipping = (customer: Customer): Money => {
   if (customer.country === 'US') {
     if (customer.state === 'CA') return money(1000, 'USD');
@@ -132,7 +135,7 @@ export const calculateShipping = (customer: Customer): Money => {
 };
 
 // REFACTORED - move to customer module
-// src/customers/customer-shipping.ts
+// src/domain/customer-shipping.ts
 export const customerShippingCost = (customer: Customer): Money => {
   if (customer.country === 'US') {
     if (customer.state === 'CA') return money(1000, 'USD');
@@ -141,7 +144,7 @@ export const customerShippingCost = (customer: Customer): Money => {
   return money(2500, 'USD');
 };
 
-// src/orders/order.ts - now just asks the friend
+// src/domain/order.ts - now just asks the friend
 export const orderShippingCost = (order: Order): Money => customerShippingCost(order.customer);
 ```
 

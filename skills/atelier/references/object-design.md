@@ -161,7 +161,7 @@ export type Order = {
 
 export const addItemToOrder = (order: Order, item: OrderItem): Order => {
   const next = addToOrderItems(order.items, item);
-  return { ...order, items: next, total: orderItemsTotal(next) };
+  return { ...order, items: next, total: orderItemsTotal(next, order.total.currency) };
 };
 ```
 
@@ -262,7 +262,12 @@ const sameCurrency = (a: Money, b: Money): Currency => {
 export const moneyEquals = (a: Money, b: Money): boolean => a.cents === b.cents && a.currency === b.currency;
 export const addMoney = (a: Money, b: Money): Money => money(a.cents + b.cents, sameCurrency(a, b));
 export const subMoney = (a: Money, b: Money): Money => money(a.cents - b.cents, sameCurrency(a, b));
-export const lessThanMoney = (a: Money, b: Money): boolean => a.cents < b.cents && sameCurrency(a, b) === a.currency;
+// the currency check runs first and always: after `a.cents < b.cents &&` it was skipped
+// whenever a was not smaller, so EUR 5 against USD 1 answered false instead of refusing
+export const lessThanMoney = (a: Money, b: Money): boolean => {
+  sameCurrency(a, b);
+  return a.cents < b.cents;
+};
 // scaling rounds once, at the edge of the arithmetic, never inside a running total
 export const scaleMoney = (m: Money, factor: number): Money => money(Math.round(m.cents * factor), m.currency);
 ```
@@ -320,7 +325,7 @@ export const removeItemFromOrder = (order: Order, itemId: ItemId): Order => {
 };
 
 const validateOrderInvariants = (order: Order): void => {
-  if (greaterThanMoney(orderItemsTotal(order.items), MAX_ORDER_VALUE)) {
+  if (greaterThanMoney(orderItemsTotal(order.items, order.total.currency), MAX_ORDER_VALUE)) {
     throw new Error('OrderTotalExceeded');
   }
 };

@@ -14,36 +14,40 @@ Enable the team to:
 
 ## Architectural principles
 
-### 1. Vertical slices (feature-first)
+### 1. Vertical slices (a feature across the layers)
 
-Organise by feature, not by technical layer.
+Organise by feature and by layer at once: the folder is the layer, the file name is the feature.
 
 ```
-BAD - layer-first
+BAD - technical-role buckets, and feature folders that mix layers
 src/
   controllers/
     userController.ts
-    orderController.ts
   services/
     userService.ts
-    orderService.ts
   repositories/
     userRepository.ts
-    orderRepository.ts
-
-GOOD - feature-first
-src/
-  users/
-    user-controller.ts
-    user-service.ts
-    user-repository.ts
-  orders/
-    order-controller.ts
+  orders/                  # a service and its repository side by side, no layer in the path
     order-service.ts
     order-repository.ts
+
+GOOD - the folder is the layer, the file name is the feature
+src/
+  domain/
+    user.ts
+    order.ts
+  use-cases/
+    register-user.ts
+    place-order.ts
+    ports/
+      user-repo.ts
+      order-repo.ts
+  infra/
+    postgres-user-repo.ts
+    postgres-order-repo.ts
 ```
 
-**Why.** Changes to the "users" feature stay in `users/`. High cohesion within features, low coupling between them.
+**Why.** A change to the orders feature touches the files that carry its name across the layers, found by name, and each folder says what its files may depend on. The rule-37 zones are a lint on `src/<layer>/**`, so a file under `src/orders/` is one the dependency rule never sees. A large repo groups by feature *inside* a layer (`src/use-cases/orders/place-order.ts`), never the other way round (see Clean Architecture layout below).
 
 ### 2. Horizontal boundaries (layers)
 
@@ -75,8 +79,8 @@ Infrastructure -> Application -> Domain
 - Use function-type contracts to invert dependencies.
 
 ```ts
-// Domain defines the contract (inner)
-export type RepoError = { type: 'io'; message: string };
+// The use-case layer defines the port it needs (src/use-cases/ports/, inner)
+export type RepoError = { kind: 'io'; message: string };
 
 export type UserRepo = {
   save: (user: User) => Promise<Result<void, RepoError>>;
@@ -93,7 +97,7 @@ export const createPostgresUserRepo = (db: Database): UserRepo => ({
   },
 });
 
-// Domain use-case depends on the contract, never on the postgres implementation
+// The use-case depends on the port, never on the postgres implementation
 export const createGetUser = (repo: UserRepo) => async (id: UserId): Promise<Result<User | null, RepoError>> => repo.findById(id);
 ```
 
@@ -126,11 +130,12 @@ Options in our style:
 - Decorator functions (from `references/design-patterns.md`).
 
 ```ts
-// Higher-order function wraps a handler with logging.
-// The logger is a parameter, not a module-level singleton (hard rule 4).
+// Higher-order function wraps a handler with logging: a factory of handlers, so it takes
+// the create prefix rule 18 exempts. The logger is a parameter, not a module-level
+// singleton (hard rule 4).
 export type Handler<Req, Res> = (request: Req) => Promise<Res>;
 
-export const withLogging = <Req extends { path: string }, Res extends { status: number }>(
+export const createLoggedHandler = <Req extends { path: string }, Res extends { status: number }>(
   handler: Handler<Req, Res>,
   logger: Logger
 ): Handler<Req, Res> =>
@@ -367,7 +372,7 @@ export const buildPipelineDeps = async (
   env: Env,
   config: BuildDepsConfig = {}
 ): Promise<PipelineDeps> => {
-  const logger = config.logger ?? createWinstonLogger();
+  const logger = config.logger ?? createWinstonLogger(env.logLevel);
   const tokenStore = createTokenStoreFs({ path: config.tokenStorePath ?? '.tokens.json' });
   // ... rest unchanged
 };
@@ -375,7 +380,7 @@ export const buildPipelineDeps = async (
 
 Production callers (just `src/main.ts`) call `buildPipelineDeps(env)` with no second argument; behaviour is identical. Tests pass `{ tokenStorePath: tmpDir + '/tokens.json', logger: createLoggerFake() }`. With the token store empty and `staleAfterMs` set so refresh paths short-circuit, end-to-end execution is offline and the wiring covers itself.
 
-Also export the otherwise-private helpers (`overlayToken`, `buildEnrichmentPlugin`, etc.) so individual branches can be tested in isolation rather than only through the composed `buildPipelineDeps` call.
+Also export the otherwise-private helpers (the small pure functions the composition root uses to shape config) so individual branches can be tested in isolation rather than only through the composed `buildPipelineDeps` call.
 
 The earlier policy that left `build-deps.ts` in the coverage skip list as "verified live, not via units" was hedging. With the two switches above, the file goes from "skipped" to 100%. The same logic applies to any composition or wiring file that feels untestable: parameterise the inputs, inject the outputs, and the test seam appears.
 
@@ -416,10 +421,9 @@ From there, flesh out each feature fully with TDD.
 
 ## Testing architecture
 
-Test by layer, most tests at the bottom of the pyramid:
-- **Domain** | unit tests through the primary port (most tests here).
-- **Application** | integration tests with faked infrastructure.
-- **Infrastructure** | integration tests with real dependencies.
+Test by layer, most tests at the bottom of the pyramid (`references/testing.md` is the full treatment):
+- **Use-cases and domain** | unit tests: the use-case is the SUT through its primary port, the domain runs real inside it, the secondary ports are hand-written fakes (most tests here; a value object with rich logic gets its own).
+- **Infrastructure** | integration tests with real dependencies: each adapter against the real database, API or queue, proving it keeps the port's contract.
 - **E2E** | critical paths only.
 - **Performance** | load-test gates on routes with a latency budget (`references/reliability.md`).
 

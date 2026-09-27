@@ -122,7 +122,7 @@ KISS and YAGNI answer *how simple*; the lazy ladder turns them into a procedure 
 1. **Does it need to exist?** YAGNI at the top of the ladder. If no current requirement forces it, the rung is "don't build it." A deleted requirement beats an elegant implementation.
 2. **Standard library or language feature?** `Array`/`Map`/`Set`, `structuredClone`, `Intl`, `Object.groupBy`, optional chaining, etc. Reach for the language before hand-rolling.
 3. **Native runtime capability?** In a Bun repo the runtime replaces whole categories of dependency: `Bun.file`/`Bun.write` for file IO (hard rule 20), `crypto.subtle` and `crypto.randomUUID()` for crypto, the global `fetch`, `URL`/`URLSearchParams`, `Bun.password` for hashing. Prefer the platform before `bun add`.
-4. **A dependency already in `package.json`?** If something installed already does the job, use it: do not add a second library for the same capability (and never `bun add` a near-duplicate; hard rule 19).
+4. **A dependency already in `package.json`?** If something installed already does the job, use it: do not add a second library for the same capability (and never `bun add` a near-duplicate; guideline 2. Hard rule 19 governs how a dependency you do add is pinned).
 5. **One clear line?** If the whole thing collapses to one readable expression, that is the implementation.
 6. **Only then** write the minimum that works: the absolute smallest correct version, no speculative abstractions (what "no speculative seams" does and does not mean: see *Defer the build, not the seam* below).
 
@@ -238,6 +238,9 @@ export const processOrder = async (order: Order, deps: ProcessOrderDeps): Promis
   deps.validator.validate(order);
   const total = deps.calculator.calculateTotal(order);
   const saved = await deps.repo.save(order, total);
+  // the send follows a commit, so in production it is an outbox row the save writes in the same
+  // transaction and a worker delivers, never an inline call (rule 29, references/reliability.md,
+  // Do not fire and forget); the notifier port here only shows where the responsibility split falls
   await deps.notifier.notifyConfirmation(saved);
   return { kind: 'success', order: saved };
 };
