@@ -31,7 +31,7 @@ jobs:
       # The gzipped ceiling per exported package, in KB (canon 17.7); a bump is a reviewed change.
       BUDGET_KB: 250
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # full history for the gitleaks history scan and the commit gates
       - uses: oven-sh/setup-bun@v2

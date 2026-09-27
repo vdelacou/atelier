@@ -25,7 +25,7 @@ jobs:
       # empty range and pass vacuously. Empty on a pull request (the base ref wins).
       GITHUB_EVENT_BEFORE: ${{ github.event.before }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # full history for the gitleaks history scan and mutate:changed
       - name: commit messages (Conventional Commits, rule 23 / canon 1.3)

@@ -487,30 +487,9 @@ Gate 2 pins every dependency to a concrete version for supply-chain safety, but 
 **It is a CI job, not a hook gate.** CVE feeds change daily, independent of your diff. Blocking a 10-file commit because a new advisory dropped overnight in an *untouched* dependency fails in the wrong place. So the scan runs in CI on two triggers, each doing a different job:
 
 - **A scheduled daily run** is the real watchdog: it is the only thing that catches a newly-disclosed CVE in a dependency *nobody touched*. A red scheduled run is the signal; wire it to an issue or chat alert if you want (out of scope here).
-- **A pull-request run scoped to `package.json` / `bun.lock`** blocks vulnerabilities a PR *deliberately introduces*, while never red-flagging PRs that don't change dependencies.
+- **A pull-request run scoped to the manifests and `bun.lock`** blocks vulnerabilities a PR *deliberately introduces*, while never red-flagging PRs that don't change dependencies.
 
-`.github/workflows/audit.yml` (ships ready to copy as `assets/audit.yml`):
-
-```yaml
-name: audit
-on:
-  schedule:
-    - cron: '0 6 * * *'        # daily watchdog: new CVEs in untouched deps
-  pull_request:
-    paths:                      # PR run fires only when deps actually change
-      - package.json
-      - bun.lock
-jobs:
-  audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile   # also fails on lockfile drift, a supply-chain check in itself
-      - run: bun audit --audit-level=high
-      # An advisory with no upstream fix is allow-listed here, project-level, with a reason:
-      # - run: bun audit --audit-level=high --ignore GHSA-xxxx-xxxx-xxxx  # no patched release as of YYYY-MM-DD; tracking <link>
-```
+`.github/workflows/audit.yml` ships as `assets/audit.yml` (the Bootstrap checklist copies it; one copy, read it there): a daily schedule plus pull requests that touch any `package.json`, `bun.lock` or a vendored copy of the standard; `bun install --frozen-lockfile` (which also fails on lockfile drift, a supply-chain check in itself), `bun audit --audit-level=high`, then `check-skill-pin.sh` (`references/governance.md`); read-only permissions. An advisory with no upstream fix is allow-listed in that file, project-level, with a reason: `bun audit --audit-level=high --ignore GHSA-xxxx-xxxx-xxxx` beside a comment naming the date and the tracking link.
 
 `--audit-level=high` fails the job only on high/critical advisories; moderate and low are reported but do not block: run `bun audit` locally to see the full list. The scan covers **all** dependencies, not `--prod` only: dev and build tooling are part of the supply-chain attack surface CI exists to watch.
 
