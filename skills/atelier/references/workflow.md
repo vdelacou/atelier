@@ -407,33 +407,9 @@ Run `gitleaks detect` once before the first push to GitHub to catch anything tha
 
 The atelier policy: **every file under `src/domain/**` or `src/use-cases/**` must score ≥90% mutation score** before it merges. CI is the enforcing home (`mutate:changed` on every pull request and push, the changed files only; the full `mutate` sweep runs once a day from `assets/mutation.yml`, never on a commit); `bun run mutate:staged` is the optional local pre-check. The threshold is the `break` value in `stryker.conf.json`.
 
-```jsonc
-{
-  "packageManager": "npm",
-  "testRunner": "command",
-  "commandRunner": { "command": "bun test" },
-  "mutate": [
-    "src/domain/**/*.ts",
-    "src/use-cases/**/*.ts",
-    "!**/*.test.ts",
-    "!**/ports/**"
-  ],
-  "thresholds": { "high": 95, "low": 90, "break": 90 },
-  "incremental": true,
-  "incrementalFile": "reports/stryker-incremental.json",
-  "concurrency": 4,
-  "timeoutMS": 30000,
-  "tempDirName": ".stryker-tmp",
-  "cleanTempDir": true,
-  "ignorePatterns": [
-    ".claude/", ".agents/", ".githooks/", ".vscode/", ".git/",
-    "docs/", "prompts/", "scripts/", "reports/", ".stryker-tmp/",
-    "node_modules/", "*.md", "*.toml", "*.lock", "*.json"
-  ]
-}
-```
+The config ships as `assets/stryker.conf.json`, copied verbatim by the Bootstrap checklist (`references/bun-typescript.md`); it is the one copy, read it there. The choices that matter: the command runner runs `bun test --randomize` (rule 36), `mutate` is `src/domain/**` and `src/use-cases/**` less tests and `ports/`, `thresholds.break` is 90, and `ignorePatterns` keeps non-source directories out of the sandbox with its file globs anchored to the root (`/*.json`, not `*.json`: gitignore semantics make a bare glob match at every depth, which drops a test's JSON fixture and fails the dry run).
 
-There is no first-party `@stryker-mutator` Bun runner today (community plugins exist, but we don't depend on them), so we use the command runner: Stryker shells out to `bun test` once per mutant (~7 s on a typical codebase). `incremental: true` caches per-mutant results so unchanged code is not re-tested. `packageManager: "npm"` is needed because Stryker probes for a JS-ecosystem package manager and does not yet recognise Bun's lockfile. `ignorePatterns` skips non-source dirs from the sandbox copy, `.claude/` in particular often contains a symlink Stryker cannot copy (ENOTSUP).
+There is no first-party `@stryker-mutator` Bun runner today (community plugins exist, but we don't depend on them), so we use the command runner: Stryker shells out to `bun test --randomize` once per mutant (~7 s on a typical codebase). `incremental: true` caches per-mutant results so unchanged code is not re-tested. `packageManager: "npm"` is needed because Stryker probes for a JS-ecosystem package manager and does not yet recognise Bun's lockfile. `ignorePatterns` skips non-source dirs from the sandbox copy, `.claude/` in particular often contains a symlink Stryker cannot copy (ENOTSUP).
 
 **Three commands, three scopes:**
 

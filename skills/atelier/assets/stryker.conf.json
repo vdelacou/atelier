@@ -29,7 +29,7 @@
   },
   "tempDirName": ".stryker-tmp",
   "cleanTempDir": true,
-  "_ignorePatterns_comment": "Skip non-source dirs from the sandbox copy. .claude/ may contain a symlink Stryker cannot copy (ENOTSUP); the rest are pure noise.",
+  "_ignorePatterns_comment": "Skip non-source dirs from the sandbox copy. .claude/ may contain a symlink Stryker cannot copy (ENOTSUP); the rest are pure noise. The file globs are anchored with a leading slash: gitignore semantics make a bare *.json match at every depth, which dropped a test's src/**/fixtures/*.json from the sandbox and failed the dry run.",
   "ignorePatterns": [
     ".claude/",
     ".agents/",
@@ -43,9 +43,9 @@
     ".stryker-tmp/",
     "node_modules/",
     "coverage/",
-    "*.md",
-    "*.toml",
-    "*.lock",
-    "*.json"
+    "/*.md",
+    "/*.toml",
+    "/*.lock",
+    "/*.json"
   ]
 }

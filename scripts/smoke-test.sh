@@ -821,21 +821,30 @@ rm -f oversized*.txt
 cat > src/domain/eligibility.ts <<'EOF'
 export const isEligible = (age: number): boolean => age >= 18;
 EOF
+# The test reads its ages from a JSON fixture under src/: Stryker's ignore globs
+# are gitignore-style, and the unanchored "*.json" shipped until 2026-09-27
+# dropped every JSON file at any depth from the sandbox, so this dry run failed
+# ("Cannot find module './fixtures/ages.json'"). The globs are root-anchored now.
+mkdir -p src/domain/fixtures
+cat > src/domain/fixtures/ages.json <<'EOF'
+{ "boundary": 18, "below": 17 }
+EOF
 cat > src/domain/eligibility.test.ts <<'EOF'
 import { expect, test } from 'bun:test';
+import ages from './fixtures/ages.json';
 import { isEligible } from './eligibility.ts';
 
 test('someone at the age boundary is eligible', () => {
-  expect(isEligible(18)).toBe(true);
+  expect(isEligible(ages.boundary)).toBe(true);
 });
 
 test('someone below the boundary is not', () => {
-  expect(isEligible(17)).toBe(false);
+  expect(isEligible(ages.below)).toBe(false);
 });
 EOF
 # Also proves `--force` is a real flag on the installed (unpinned) Stryker: an
 # unknown option would fail the run, so a major that drops it is caught here.
-expect_ok "mutate:changed scores an untracked new domain file" \
+expect_ok "mutate:changed scores an untracked new domain file whose test reads a JSON fixture" \
   bash -c 'BASE=HEAD bash scripts/mutate-changed.sh > mutate-changed.out 2>&1'
 expect_ok "mutate:changed prints the resolved base and pulls the untracked file into scope" \
   bash -c 'grep -q "mutate:changed: base HEAD" mutate-changed.out && grep -q "testing 1 file(s)" mutate-changed.out'
@@ -845,7 +854,7 @@ expect_ok "mutate:changed prints the resolved base and pulls the untracked file 
 # github.event.before the shipped ci.yml exports (zero SHA falls back to
 # HEAD~1), the same way as the commit gates; this fixture has no origin at
 # all, so the case is red on any script that ignores the push variables.
-git add src/domain/eligibility.ts src/domain/eligibility.test.ts
+git add src/domain/eligibility.ts src/domain/eligibility.test.ts src/domain/fixtures/ages.json
 git commit -q --no-verify -m 'feat: eligibility'
 cat > src/domain/eligibility.ts <<'EOF'
 export const isEligible = (age: number): boolean => age >= 18;
