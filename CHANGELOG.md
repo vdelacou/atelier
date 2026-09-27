@@ -6,6 +6,11 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Changed
+- The Java `Email.java` exemplar imports `java.util.regex.Pattern` instead of writing it out twice,
+  matching the form `references/java-quarkus.md` shows. The Java smoke test compiles, tests and gates
+  it green. Consumers: nothing to do; a copy made before still compiles.
+
 ### Harness
 - **The review fixture's clean files carry no guideline finding either, and four more grader defects
   are fixed.** The Bun `notifier.ts` and the Java `Notifier.java` (ports nothing implements or calls,

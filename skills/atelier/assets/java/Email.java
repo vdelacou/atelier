@@ -8,8 +8,10 @@
 // every other domain primitive.
 package com.example.app.domain;
 
+import java.util.regex.Pattern;
+
 public record Email(String value) {
-  private static final java.util.regex.Pattern SHAPE = java.util.regex.Pattern.compile("^[^@\\s]+@[^@\\s]+$");
+  private static final Pattern SHAPE = Pattern.compile("^[^@\\s]+@[^@\\s]+$");
 
   public Email {
     if (!SHAPE.matcher(value).matches()) {
