@@ -6,7 +6,7 @@
 #
 #   set      : a JSON file in scripts/trigger-eval/sets/ (or a path)
 #   skill-dir: e.g. skills/atelier
-#   fixture  : probe-root | probe-root-java | probe-root-empty (default probe-root)
+#   fixture  : probe-root | probe-root-java | probe-root-empty | probe-root-journal (default probe-root)
 #   runs     : runs per query (default 3; use 5 for a tighter read)
 #
 # Results land in skills/atelier-workspace/trigger-eval-<date>/ (gitignored).
@@ -64,10 +64,15 @@ python3 - "$OUT_DIR/$BASE.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 res = d["results"]
-ok = sum(1 for r in res if (r["trigger_rate"] >= 0.5) == r["should_trigger"])
+ok = sum(1 for r in res if r["pass"])
 print(f"{sys.argv[1]}: {ok}/{len(res)} pass")
 for r in res:
     if not r["pass"]:
         want = r.get("expected_skill") or ("T" if r["should_trigger"] else "F")
-        print(f"  FAIL want={want} rate={r['trigger_rate']:.1f} invoked={r.get('invoked', {})} | {r['query'][:80]}")
+        print(f"  FAIL want={want} rate={r['trigger_rate']:.1f} invoked={r.get('invoked', {})} dead={r.get('dead', 0)} | {r['query'][:80]}")
+dead = d["summary"].get("dead_runs", 0)
+if dead:
+    # a probe that never finished (timeout, crash, expired login) is no reading at all
+    print(f"  INVALID: {dead} probe(s) ended with no result event; they are excluded from every rate, rerun before trusting this")
+    sys.exit(1)
 PY

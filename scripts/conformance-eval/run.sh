@@ -21,8 +21,11 @@
 #   CONFORMANCE_MAX_TURNS    turn cap per session, passed to claude -p (default 120; 60 until
 #                      2026-09-19, when four skill-arm sessions of the 2.4.0 tier-2 pass hit it
 #                      and a 120-turn rerun finished them; a 120-turn session needs the 40 min)
+#   CONFORMANCE_TAG    suffix for the runs dir, so passes of one day land side by side
+#   CONFORMANCE_SKILL_PATH  the skill copied into each with_skill run (default skills/atelier;
+#                      an ablation points it at a modified copy)
 #
-# Results land in skills/atelier-workspace/conformance-<date>/runs/ (gitignored). Each run dir
+# Results land in skills/atelier-workspace/conformance-<date>/runs-<model>[-<tag>]/ (gitignored). Each run dir
 # keeps the session's stream-json transcript (.transcript.jsonl) and the derived .result.txt.
 # Grade afterwards, against the frozen baseline arm:
 #   python3 scripts/conformance-eval/grade.py <runs-dir> --frozen-baseline
@@ -109,7 +112,10 @@ run_one() { # $1 = task id, $2 = arm
   # background with a sleeping watchdog; whichever finishes first kills the other.
   # A capped run keeps whatever it produced and is graded like any other, so a
   # wandering session costs one slot for TIMEOUT_MIN minutes, never the batch.
-  ( cd "$sdir" && env -u CLAUDECODE claude -p "$prompt" \
+  # `exec` makes the subshell BE the session: the watchdog kills $! and, before
+  # 2026-09-27, $! was a subshell whose claude child outlived the kill and kept
+  # spending and writing into the transcript after it was graded.
+  ( cd "$sdir" && exec env -u CLAUDECODE claude -p "$prompt" \
       --permission-mode acceptEdits \
       "${ISOLATE[@]}" \
       ${MAX_TURNS:+--max-turns "$MAX_TURNS"} \

@@ -15,6 +15,8 @@
 # Usage: see run.sh next to this file.
 
 
+from __future__ import annotations  # `X | None` hints under the Python 3.9 macOS ships
+
 import argparse
 import json
 import os
@@ -157,20 +159,24 @@ def run_single_query(
 
         try:
             while time.time() - start_time < timeout:
-                if process.poll() is not None:
+                # patched: on exit or EOF the tail of the stream is still parsed below
+                # (the stock loop broke first, dropping a final result or tool call).
+                exited = process.poll() is not None
+                if exited:
                     remaining = process.stdout.read()
                     if remaining:
                         buffer += remaining.decode("utf-8", errors="replace")
-                    break
-
-                ready, _, _ = select.select([process.stdout], [], [], 1.0)
-                if not ready:
-                    continue
-
-                chunk = os.read(process.stdout.fileno(), 8192)
-                if not chunk:
-                    break
-                buffer += chunk.decode("utf-8", errors="replace")
+                    buffer += "\n"
+                else:
+                    ready, _, _ = select.select([process.stdout], [], [], 1.0)
+                    if not ready:
+                        continue
+                    chunk = os.read(process.stdout.fileno(), 8192)
+                    if not chunk:
+                        exited = True
+                        buffer += "\n"
+                    else:
+                        buffer += chunk.decode("utf-8", errors="replace")
 
                 while "\n" in buffer:
                     line, buffer = buffer.split("\n", 1)
@@ -232,15 +238,25 @@ def run_single_query(
 
                     elif event.get("type") == "result":
                         return invoked
+                if exited:
+                    break
         finally:
             # Clean up process on any exit path (return, exception, timeout)
             if process.poll() is None:
                 process.kill()
                 process.wait()
 
-        return invoked
+        # patched: no result event and no skill call means the probe never finished
+        # (a timeout, a crash, an expired login). The stock runner returned None here,
+        # which scored as "not triggered" and passed every negative case of a dead run.
+        return DEAD
     finally:
         shutil.rmtree(isolated_root, ignore_errors=True)
+
+
+# A probe that ended with no result event: excluded from every rate and counted, so a
+# dead session can never read as a clean "did not trigger".
+DEAD = "(no result)"
 
 
 def run_eval(
@@ -289,18 +305,22 @@ def run_eval(
                 query_invocations[query].append(future.result())
             except Exception as e:
                 print(f"Warning: query failed: {e}", file=sys.stderr)
-                query_invocations[query].append(None)
+                query_invocations[query].append(DEAD)
 
-    for query, invocations in query_invocations.items():
+    dead_runs = 0
+    for query, all_invocations in query_invocations.items():
         item = query_items[query]
         should_trigger = item["should_trigger"]
         expected = item.get("expected_skill")
+        invocations = [inv for inv in all_invocations if inv != DEAD]
+        dead = len(all_invocations) - len(invocations)
+        dead_runs += dead
         if expected:
             hits = sum(1 for inv in invocations if inv == expected)
         else:
             hits = sum(1 for inv in invocations if inv is not None)
-        trigger_rate = hits / len(invocations)
-        did_pass = (trigger_rate >= trigger_threshold) == should_trigger
+        trigger_rate = hits / len(invocations) if invocations else 0.0
+        did_pass = bool(invocations) and (trigger_rate >= trigger_threshold) == should_trigger
         distribution: dict[str, int] = {}
         for inv in invocations:
             key = inv or "(none)"
@@ -311,6 +331,7 @@ def run_eval(
             "trigger_rate": trigger_rate,
             "triggers": hits,
             "runs": len(invocations),
+            "dead": dead,
             "invoked": distribution,
             "pass": did_pass,
         }
@@ -328,6 +349,7 @@ def run_eval(
             "total": total,
             "passed": passed,
             "failed": total - passed,
+            "dead_runs": dead_runs,
         },
     }
 

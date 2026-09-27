@@ -83,7 +83,7 @@ run_one() { # $1 = arm
     && rm -rf .git )
 
   local changed_files
-  changed_files=$(cd "$CHANGED" && find . -type f | sed 's|^\./||' | sort | paste -sd', ' -)
+  changed_files=$(cd "$CHANGED" && find . -type f | sed 's|^\./||' | sort | paste -sd, - | sed 's/,/, /g')
 
   local prompt
   if [ "$arm" = "with_skill" ]; then
@@ -95,7 +95,7 @@ run_one() { # $1 = arm
   fi
 
   local status=0
-  ( cd "$sdir" && env -u CLAUDECODE claude -p "$prompt" \
+  ( cd "$sdir" && exec env -u CLAUDECODE claude -p "$prompt" \
       "${ISOLATE[@]}" \
       ${REVIEW_MODEL:+--model "$REVIEW_MODEL"} \
       < /dev/null > "$dir/.review.txt" 2> "$dir/.run.log" ) || status=$?

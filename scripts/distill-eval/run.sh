@@ -77,8 +77,9 @@ run_one() { # $1 = arm, $2 = pass
   else
     prompt="$REQUEST $HEADLESS"
   fi
-  # Wall-clock cap, portable (macOS ships no `timeout`), in the conformance runner's shape.
-  ( cd "$sdir" && env -u CLAUDECODE claude -p "$prompt" \
+  # Wall-clock cap, portable (macOS ships no `timeout`), in the conformance runner's shape;
+  # `exec` so the watchdog's kill reaches claude itself, not only its subshell.
+  ( cd "$sdir" && exec env -u CLAUDECODE claude -p "$prompt" \
       --permission-mode acceptEdits \
       "${ISOLATE[@]}" \
       --allowedTools "Bash(git show:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(wc:*),Bash(ls:*)" \
