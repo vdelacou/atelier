@@ -138,8 +138,8 @@ def grade_review(review: str, violations: list[dict], clean_files: list[str]) ->
 # is the carve-out rule 17 names"), and counting that as an accusation punishes
 # the correct answer. Negated forms ("not conformant", "isn't clean") are
 # accusations again, so they win over the clearing word.
-_CLEARING = r"(?i)\b(conformant|compliant|clean|cleared|fine|correct|accurate|done right|improvement|conforms|exempt(?:ion|ed)?|sanctioned|carve-?out|allowed|permitted|no (?:rule )?(?:impact|violation|issue|finding)s?|holds)\b"
-_NEGATED = r"(?i)\b(not|isn't|is not|aren't|are not|never|fails? to|violat\w+|breaks?|needs?|requires?)\b[^.]{0,40}?\b(conformant|compliant|clean|cleared|fine|correct|accurate|done right|improvement|conforms|exempt(?:ion|ed)?|sanctioned|allowed|permitted|holds)\b"
+_CLEARING = r"(?i)\b(conformant|compliant|clean|cleared|fine|correct|accurate|done right|improvement|conforms|follows|step toward|exempt(?:ion|ed)?|sanctioned|carve-?out|allowed|permitted|no (?:rule )?(?:impact|violation|issue|finding)s?|holds)\b"
+_NEGATED = r"(?i)\b(not|isn't|is not|aren't|are not|doesn't|never|fails? to|violat\w+|breaks?|needs?|requires?)\b[^.]{0,40}?\b(conformant|compliant|clean|cleared|fine|correct|accurate|done right|improvement|conforms|follows?|step toward|exempt(?:ion|ed)?|sanctioned|allowed|permitted|holds)\b"
 
 
 # A sentence that REPORTS what a clean file claims about itself is not an accusation. The
@@ -390,6 +390,17 @@ orders-db.ts line 30 looks fine to me.
         assert got["false_positives"] == [], (praise, got)
     got = grade_review("`Refund.java` needs improvement under rule 16: its error is a String.", [], java_clean)
     assert got["false_positives"] == ["src/main/java/com/example/app/domain/Refund.java"], got
+    # "follows" and "a step toward" clear too (the twenty-third defect, verbatim from a skill-arm
+    # Java review, 2026-09-28); negated, or as advice ("should follow"), they accuse again.
+    for praise in ("`MemberId.java` follows the rule 12 exemplar precisely: record, compact constructor as the guard.",
+                   "`Refund.java`'s move from a `String` error to an enum is a step toward rule 16."):
+        got = grade_review(praise, [], java_clean)
+        assert got["false_positives"] == [], (praise, got)
+    for accusation in ("`MemberId.java` doesn't follow the rule 12 exemplar: its constructor throws.",
+                       "`Refund.java` should follow rule 16: its error is a String.",
+                       "`Refund.java`'s change is not a step toward rule 16."):
+        got = grade_review(accusation, [], java_clean)
+        assert len(got["false_positives"]) == 1, (accusation, got)
     # The twenty-second defect: a sentence that reports what a clean file's own comment argues
     # quoted the rule it names ("the comment justifies the try/catch against \"rule 17\"") and
     # read as a rule claim against the file. Seen twice in the unaided arm on 2026-09-28.
@@ -404,7 +415,7 @@ orders-db.ts line 30 looks fine to me.
     assert session_failed("Failed to authenticate. API Error: 403 Request not allowed") is not None, "a dead session must not be scored"
     assert session_failed("API Error: Can't reach the API server") is not None, "a transport error must not be scored"
     assert session_failed("## Findings\n1. rule 13: a mock in award-points.test.ts") is None, "a real review is scored"
-    print("selftest OK: skips a dead session, catches evidence, requires the rule token for citation, flags clean-file claims, ignores exonerations and reported claims, reads plural and hyphenated citations, splits bold headings, reads a numbered heading as one finding, wants node:fs named, ignores call arguments, names a file whole, reads exemption, accurate and praise as clearing, scores an empty review 0")
+    print("selftest OK: skips a dead session, catches evidence, requires the rule token for citation, flags clean-file claims, ignores exonerations and reported claims, reads plural and hyphenated citations, splits bold headings, reads a numbered heading as one finding, wants node:fs named, ignores call arguments, names a file whole, reads exemption, accurate, follows and praise as clearing, scores an empty review 0")
 
 
 def main() -> None:
