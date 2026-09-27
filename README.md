@@ -70,12 +70,13 @@ bunx skills add vdelacou/atelier -g
 
 `npx` works the same. `-g` installs for your user, into `~/.claude/skills/`, the path the next step reads; without it the CLI installs into the current project, under `./.claude/skills/`, and the next step's path changes to match. `-a <agent>` targets `opencode`, `cursor` and the other agents the CLI supports. The CLI prints third-party security assessments as it installs; `skills.sh/vdelacou/atelier` links each audit's details.
 
-**Point the repo at the standard, once per repo.** Skill triggering depends on your prompt matching a description. A pointer block at the top of `CLAUDE.md` is loaded on every session whatever you type, so it is the primary mechanism and triggering is the fallback:
+**Point the repo at the standard, once per repo.** Skill triggering depends on your prompt matching a description. A pointer block at the top of `CLAUDE.md` is loaded on every session whatever you type, so it is the primary mechanism and triggering is the fallback. The command puts the block at the top and keeps an existing `CLAUDE.md` below it:
 
 ```bash
 SKILL=~/.claude/skills/atelier
-printf '# CLAUDE.md\n\n' > CLAUDE.md
-cat "$SKILL/assets/claude-md-pointer.md" >> CLAUDE.md
+{ printf '# CLAUDE.md\n\n'; cat "$SKILL/assets/claude-md-pointer.md"
+  if [ -f CLAUDE.md ]; then printf '\n'; sed '1{/^# CLAUDE\.md$/d;}' CLAUDE.md; fi
+} > CLAUDE.md.new && mv CLAUDE.md.new CLAUDE.md
 ```
 
 Copy the block rather than retyping it. When the wording changes upstream, a re-copy propagates it.
