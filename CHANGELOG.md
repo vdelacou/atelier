@@ -88,6 +88,20 @@ whole, not any single skill.
   plants rules 26, 27, 4 and 20. `atelier-grill-me` mentions no gate and is unchanged.
 
 ### Harness
+- **A weekly canary for Oxlint parity; the standard stays on ESLint.** Asked whether Oxlint could
+  replace ESLint with the same function and plugins, a side-by-side on 2026-09-27 (oxlint 1.85.0, the
+  Bun and Next smoke trees, every smoke fixture through both linters) matched everything but two gaps:
+  Oxlint has no `noInlineConfig`, so a `/* eslint-disable */` or `/* oxlint-disable */` silently
+  switches every ban off in its file (rule 15), and its JS plugins get no type information, so 57 of the
+  231 rules in sonarjs's recommended set go silent (`no-alphabetical-sort` red under ESLint strict,
+  green under Oxlint). The speed gain was small (Bun fast lane 16s to 9s, strict 23s to 14s, Next
+  unchanged at 15s) because the selector bans, sonarjs, security, prettier and tailwind still run as
+  JavaScript plugins. `scripts/oxlint-parity-probe.sh`, a third `canary.yml` job, reads both gaps
+  weekly against the newest Oxlint, with controls (the violation is reported without the directive,
+  JS plugins load, types flow) and a stand-in that is closed today, so an open reading can only mean
+  the gap; every verdict branch was seen through a stubbed Oxlint. Its header keeps what matched and
+  the migration traps (`@oxlint/migrate` drops per-block `ignores`, `noInlineConfig` and
+  `no-restricted-syntax`).
 - **The eval arms no longer carry atelier context by construction.** The conformance, review and
   distill runners started each `claude -p` session inside this repo, so both arms loaded the repo's
   `CLAUDE.md` and project memory by directory walk-up, and every skill under `~/.claude/skills` was

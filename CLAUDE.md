@@ -63,8 +63,9 @@ tree. What binds work HERE is the authoring and process discipline below.
   identity gates, the three smoke tests, two grader-selftest jobs (conformance with the selector
   and the judge; review with distill), matrix drift with the citation,
   workflow-asset and staleness selftests); `canary.yml` weekly-probes
-  the two deliberate toolchain concessions (whether the typescript pin can lift, and whether the
-  three disabled sonarjs rules can go back on).
+  three deliberate toolchain concessions (whether the typescript pin can lift, whether the three
+  disabled sonarjs rules can go back on, and whether Oxlint can replace ESLint with every function
+  kept, `scripts/oxlint-parity-probe.sh`).
 
 ## Process
 - **Plan-first**: before multi-step work, write the plan and a per-step definition of done to
