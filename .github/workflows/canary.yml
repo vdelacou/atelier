@@ -4,7 +4,8 @@ name: toolchain-canary
 # anything; check the Actions page (or the badge) when curious.
 #
 # 1. The Bun smoke test pins typescript@^5 because eslint-plugin-sonarjs crashes
-#    under TypeScript 7 (see .claude/LESSONS.md, 2026-07-12). unpinned-typescript
+#    under TypeScript 7 (see .claude/LESSONS.md, 2026-07-12; the upstream report is
+#    docs/upstream/sonarjs-ts7.md). unpinned-typescript
 #    runs the same smoke test UNPINNED, so the week sonarjs ships TS 7 support
 #    the job turns green and the pin can be lifted.
 # 2. The canonical eslint config turns off three sonarjs rules that flag

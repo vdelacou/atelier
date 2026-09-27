@@ -39,8 +39,9 @@ unaided numbers they report are the honest ones.
   settles most of them. unicorn 76 needs ESLint 10.4 or later.
 - Re-copy `check-docs.sh`: it runs only the Verify lines that name a repo entry point. Move any other
   line (a health curl, a pipeline) into a script it calls.
-- Re-copy the CI workflow (`ci.yml`, `ci-next.yml` or `ci-java.yml`) and, if used, the audit
-  workflow: the gitleaks tarball is checksum-verified before install.
+- Re-copy the CI workflow (`ci.yml`, `ci-next.yml` or `ci-java.yml`): the gitleaks tarball is
+  checksum-verified before install. Re-copy the audit workflow too, if used: it declares read-only
+  `permissions`.
 - Add `.claude/lessons.local.archive.md` to `.gitignore` beside `lessons.local.md`: the compaction
   pass archives the personal journal there.
 - `atelier-distill` installs with the suite (`bunx skills add vdelacou/atelier -g`, now documented at
@@ -61,8 +62,9 @@ unaided numbers they report are the honest ones.
   no query routed to the wrong skill (the two misses are older rows that invoked none, as in every run
   of the day, on premises the Bun fixture lacks). First pass on this repo: `LESSONS.md` from 94
   entries and 104 KB to 15 entries and 16.7 KB, the 93 originals in `.claude/lessons.archive.md`, and
-  the agent memory folder from 70 KB to 10.5 KB. The planted-problem eval (Harness) reads recall 33/33
-  with the skill against 26/33 unaided, with no live lesson lost on either arm.
+  the agent memory folder from 70 KB to 10.5 KB. The planted-problem eval (Harness), on isolated
+  sessions, reads recall 33/33 with the skill against 24/33 unaided and no live lesson lost on either
+  arm; the unaided arm rewrote 31 entries with no original kept, the skill arm none.
 
 ### Security
 - **`check-docs.sh` no longer runs README text as shell.** It ran the README's `## Verify` block
@@ -205,7 +207,8 @@ unaided numbers they report are the honest ones.
   fail and runs in CI beside the review grader. Reading, claude-opus-5, three passes per arm: hard
   checks 3/3 on both arms; recall 33/33 with the skill against 26/33 unaided (graduations 6/6 against
   2/6, the over-long entry tightened with its original archived 3/3 against 0/3); journal 8.2 KB against
-  9.3 KB from 10.4 KB. On the way: a headless session may not write under `.claude/`, so both arms write
+  9.3 KB from 10.4 KB. These sessions ran inside this repository; the isolated re-measure above
+  supersedes the unaided reading (24/33, hard checks 0/3). On the way: a headless session may not write under `.claude/`, so both arms write
   the layer into `./out/`; the grader's eleventh defect read format as content and failed the unaided
   arm, the first to run that way; and the first readings found two skill gaps, both fixed (every
   rewritten original is archived first; a graduate must cover the rule). `baseline.md` has the record.

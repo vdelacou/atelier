@@ -7,15 +7,18 @@
 !.vscode/extensions.json
 !.vscode/settings.json
 
-# claude-code local state
+# claude-code local state (the personal journal and its archive, as the 2.5.0
+# upgrade notes ask of every consumer; worktrees a session creates)
 .claude/settings.local.json
 .claude/lessons.local.md
+.claude/lessons.local.archive.md
+.claude/worktrees/
 
 # packaged skill artefacts
 dist/
 *.skill
 
-# skill-creator eval workspaces (results, logs, html reports)
+# eval workspaces: every harness under scripts/ writes its runs here (results, logs, reports)
 skills/*-workspace/
 
 # node (kept for user scratch repos in this workspace)

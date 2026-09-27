@@ -18,7 +18,7 @@ None of that is a model failing. It is the absence of a standard the agent can b
 
 **Enforcement.** The rules that can be lint are lint: the style bans, the layer dependency table, the no-inline-ignore rule, complexity at most 10. The rest are hooks, tripwires and CI: a fast pre-commit that caps commit size, blocks unpinned dependencies and secrets, lints the staged files and typechecks; a `commit-msg` hook for Conventional Commits; tripwires for personal data in logs and URLs, network calls without a deadline, routes without a cross-tenant test, hard deletes; CI that runs the full suite, per-tier coverage and mutation on the changed files as the merge gate. All of it ships as copyable assets.
 
-**Proof.** Two evals measure the skill against an unaided agent on the same tasks. Three smoke tests replay the install on the current unpinned toolchain and prove every gate both passes and blocks its target violation. A conformance matrix pins the doctrine to a written 120-point canon with file-and-line citations that CI keeps honest ([the canon](#built-on-a-written-canon)). The numbers are [below](#how-we-know-it-works).
+**Proof.** Three evals measure the skill against an unaided agent on the same tasks: the code it writes, the reviews it gives, and the memory it cleans up. Three smoke tests replay the install on the current unpinned toolchain and prove every gate both passes and blocks its target violation. A conformance matrix pins the doctrine to a written 120-point canon with file-and-line citations that CI keeps honest ([the canon](#built-on-a-written-canon)). The numbers are [below](#how-we-know-it-works).
 
 ## See the difference
 
@@ -180,11 +180,13 @@ Eight CI jobs run on every push to this repo: the canon drift and citation gates
 
 This repo is the standard, not an application. `skills/` holds the five skills, with the main one's `assets/` (hooks, tripwires, CI workflows, test helpers, Java exemplars) and `references/` (the 27 doctrine files). `scripts/` holds the harnesses: the three smoke tests, the trigger, conformance, review and distill evals, and the gates that keep the matrices, citations and workflows honest. `docs/global-rules/` is the vendored canon the matrices audit against.
 
-Working here means [`CLAUDE.md`](CLAUDE.md): never an em dash, frontmatter within the loader limits, a plan before multi-step work, small Conventional Commits, and a fixture that proves every new gate can fail. The fast checks:
+Working here means [`CLAUDE.md`](CLAUDE.md): never an em dash, frontmatter within the loader limits, a plan before multi-step work, small Conventional Commits, and a fixture that proves every new gate can fail. Once per clone, turn the repo's own hooks on; then the fast checks:
 
 ```bash
+git config core.hooksPath .githooks
 bun run scripts/validate-frontmatter.ts
 python3 scripts/check-citations.py
+python3 scripts/check-matrix-drift.py
 bash scripts/check-workflow-assets.sh
 ```
 

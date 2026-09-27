@@ -19,7 +19,7 @@ The profile encoded by the atelier Agent Skill, which is also the executable for
 | 15.2 Prefer failing loud to passing quietly | an untested file counts at 0 and drags the number down; the floors are the coverage tiers | the 4.4 row's floors (100 core, 80 glue) with the preload counting every file (`check-coverage.ts`, `regenerate-coverage-preload.ts`; JaCoCo counts all classes natively) |
 | 16.4 Watch the trend, not the snapshot | alert on a sustained change over a window, never on a snapshot | a 7-day window, change-failure rate above 0.15 held 24 hours |
 | 16.5 Treat cost as a first-class metric | spend per service, an alert on unexplained growth | growth above 50 percent week over week on a 7-day window, held 24 hours |
-| 17.7 Mobile first, and a light interface | smallest screen first, finger-sized targets, a weight budget the pipeline enforces | 44 px tap targets; `check-bundle-size.sh` with 180 kB gzipped JavaScript and 400 kB total as the budgets |
+| 17.7 Mobile first, and a light interface | smallest screen first, finger-sized targets, a weight budget the pipeline enforces | 44 px tap targets; `check-bundle-size.sh` with a 180 kB gzipped JavaScript budget per exported package (`BUDGET_KB`) |
 
 Rows A and B of the 2026-09-03 revision moved these here; the sub-concepts keep the obligation and tag each example number as a profile value.
 

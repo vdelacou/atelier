@@ -13,15 +13,17 @@ tree. What binds work HERE is the authoring and process discipline below.
   it breaks the single-line YAML parse. Rephrase (a comma, a dash with spaces, parentheses).
   The frontmatter validator catches it: `bun run scripts/validate-frontmatter.ts`.
 - **Skill descriptions max 1024 chars** (the loader limit; the validator enforces it). The
-  main `atelier` description runs near the ceiling, so trimming is needed to add anything.
+  `atelier-distill` and `atelier` descriptions run near the ceiling, so trimming is needed to add
+  anything to either.
 - Terse, direct prose; lead with the outcome; match the surrounding file's idiom.
 
 ## Structure
 - `skills/atelier/` is the main skill: `SKILL.md` (hard rules + workflow) plus `references/`
   (the doctrine, one file per concern) and `assets/` (copyable gate scripts + Java exemplars).
 - `skills/atelier-{greenfield,review-me,grill-me,distill}/` are the companion skills.
-- `scripts/` holds the CI harnesses: three `smoke-test*.sh` (Bun/Next/Java, each proving the
-  gates pass AND block their target violation), `trigger-eval/` (does the skill load; suite
+- `scripts/` holds the harnesses: three `smoke-test*.sh` (Bun/Next/Java, CI jobs, each proving the
+  gates pass AND block their target violation), and four evals that run locally, never in CI (only
+  their graders' selftests do): `trigger-eval/` (does the skill load; suite
   mode measures which skill wins a query), `conformance-eval/` (does produced code follow the
   rules, with-skill vs baseline), `review-eval/` (does atelier-review-me catch planted
   violations in a diff, recall + rule-citation + false-positives vs a skill-less reviewer),
@@ -29,18 +31,29 @@ tree. What binds work HERE is the authoring and process discipline below.
   nothing else, on a journal with every verdict planted, vs an unaided pass).
 
 ## Verify commands
-- `bun run scripts/validate-frontmatter.ts` (fast; the CI frontmatter gate).
+- Once per clone: `git config core.hooksPath .githooks`, or the repo's own pre-commit and commit-msg
+  hooks never run (the smoke tests set it only inside their fixtures).
+- `bun run scripts/validate-frontmatter.ts` (fast; the CI frontmatter gate; `--selftest`).
 - `python3 scripts/check-citations.py` (fast; file-line evidence vs citations-lock.json; after an
   edit shifts cited lines, `--reanchor` moves every pinned citation, both ends of a range, to the line
-  that now holds its snippet and re-locks, refusing an ambiguous or vanished one; `--lock` alone only
-  when the pinned content itself changed on purpose) and `bash scripts/check-workflow-assets.sh`
-  (shipped CI workflows parse and are self-sufficient); both take `--selftest`.
+  that now holds its snippet and re-keys those lock entries, refusing an ambiguous or vanished one and
+  never locking a citation that was not locked before; `--lock` after a human read the new or changed
+  evidence) and `bash scripts/check-workflow-assets.sh` (shipped CI workflows parse and are
+  self-sufficient); both take `--selftest`. `python3 scripts/check-matrix-drift.py` (fast; the matrix
+  rows, their order and the canon sha256 pins; `--selftest`). The pre-commit hook runs the citation
+  and drift checks.
 - `bash scripts/smoke-test.sh` / `smoke-test-next.sh` / `smoke-test-java.sh` (the CI e2e gates;
   Java needs JDK 21+ and mvn; each takes minutes on first run for dependency downloads).
 - `bash scripts/trigger-eval/run.sh <set> <skill-dir> [fixture] [runs]` after any SKILL.md
   description edit (a description is a triggering contract).
 - `python3 scripts/review-eval/grade.py --selftest` (fast; the CI review-grader gate). The full
-  eval: `bash scripts/review-eval/run.sh`, then grade the printed runs dir.
+  eval: `bash scripts/review-eval/run.sh`, then `python3 scripts/review-eval/grade.py <runs-dir>`;
+  the Java variant is `REVIEW_VARIANT=java bash scripts/review-eval/run.sh`, graded with
+  `--variant java`.
+- Every eval session starts outside the repo (`--setting-sources project,local` and a scratch
+  working dir): run from inside it, a session reads this CLAUDE.md, the project memory and the
+  installed skills, which moved the unaided conformance arm from 36 to 46 of 61. A new runner
+  follows the same shape.
 - `python3 scripts/distill-eval/grade.py --selftest` (fast; CI, in the review-grader job). The
   full eval: `DISTILL_MODEL=claude-opus-5 bash scripts/distill-eval/run.sh`, then
   `python3 scripts/distill-eval/grade.py <runs-dir>`.
@@ -73,7 +86,7 @@ tree. What binds work HERE is the authoring and process discipline below.
   contract, distinct from the append-only `.claude/LESSONS.md`.
 - **Commit slicing**: small, coherent commits (the standard's own gate 1 spirit: <=10 files /
   <=300 lines), Conventional Commits, references before the SKILL.md that cites them.
-- **Never commit or push without explicit confirmation** (rules 25). Commit and push are
+- **Never commit or push without explicit confirmation** (rule 25). Commit and push are
   separate decisions; ask per landing. Eval results stay gitignored (`skills/*-workspace/`);
   harnesses and sets are committed.
 - **Main-skill doctrine changes cascade to companions**: when `skills/atelier/SKILL.md` gains

@@ -2,8 +2,9 @@
 # Trigger-eval runner for the atelier skill suite.
 #
 # Provenance: adapted from the skill-creator plugin's scripts/run_eval.py with
-# three fixes found 2026-07-11 (see .claude/LESSONS.md, "stock trigger-eval
-# runner false-zeros with fable"):
+# three fixes found 2026-07-11 (the entry "stock trigger-eval runner false-zeros
+# with fable", now in .claude/lessons.archive.md; the upstream report is
+# docs/upstream/skill-creator-harness.md):
 #   1. Detection watches the WHOLE stream until the result event instead of
 #      concluding on the first tool call (Fable explores before consulting).
 #   2. Each probe runs in an ISOLATED temp project root (fixture copied in,
