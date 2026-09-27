@@ -92,7 +92,10 @@ run_one() { # $1 = arm, $2 = pass
   local watchdog=$!
   local status=0
   wait "$session" 2>/dev/null || status=$?
-  kill "$watchdog" 2>/dev/null; wait "$watchdog" 2>/dev/null || true
+  # `|| true` on the kill too: a capped claude outlives SIGTERM for a moment, the watchdog has
+  # exited and been reaped by then, and under set -e the failed kill ended this function before
+  # the copy-back, so a capped run read 0 instead of "graded as produced" (2026-09-28).
+  kill "$watchdog" 2>/dev/null || true; wait "$watchdog" 2>/dev/null || true
   cp -R "$sdir/." "$dir/" && rm -rf "${sdir:?}"  # the tree the grader reads, .git included
   if [ -f "$dir/.capped" ]; then
     echo "capped: $arm-$n after ${TIMEOUT_MIN} min (graded as produced)"
