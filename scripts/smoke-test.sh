@@ -403,6 +403,34 @@ import { mock } from 'bun:test';
 
 export const fake = mock(() => 1);
 EOF
+# The *Unsafe boundary (references/testing.md, Branded types) rides inside every zone
+# since 2026-09-27; the reference used to teach a separate no-restricted-imports block,
+# which silenced the mock ban and the zone for every file it matched. Production code is
+# red; a test and a fake importing the same helper stay green.
+ban_red "a domain file importing an *Unsafe helper is rejected (the zones carry UNSAFE_BAN)" src/domain/uses-unsafe.ts "Unsafe helpers skip validation" <<'EOF'
+import { greetingUnsafe } from './greeting-unsafe.ts';
+
+export const shortcut = greetingUnsafe('hi');
+EOF
+cat > src/domain/greeting-unsafe.test.ts <<'EOF'
+import { expect, test } from 'bun:test';
+import { greetingUnsafe } from './greeting-unsafe.ts';
+
+test('the escape hatch casts without validating', () => {
+  expect(greetingUnsafe('hi')).toBe('hi');
+});
+EOF
+mkdir -p src/test-helpers
+cat > src/test-helpers/greeting-fake.ts <<'EOF'
+import { greetingUnsafe } from '../domain/greeting-unsafe.ts';
+
+export const fakeGreeting = greetingUnsafe('hello');
+EOF
+cat > src/domain/greeting-unsafe.ts <<'EOF'
+export const greetingUnsafe = (raw: string): string => raw;
+EOF
+expect_ok "a test and a fake importing an *Unsafe helper stay green" bun run lint
+rm src/domain/greeting-unsafe.test.ts src/domain/greeting-unsafe.ts src/test-helpers/greeting-fake.ts
 # Rule 15 was prose until 2026-09-08: five of these seven forms passed the canonical config,
 # and a file-level disable switched off every other ban. The directive forms are red through
 # noInlineConfig (the comment is inert and reported), the @ts- forms through ban-ts-comment,

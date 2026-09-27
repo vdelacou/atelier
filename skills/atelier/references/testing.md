@@ -549,24 +549,7 @@ it('round-trips through the factory', () => {
 
 **Naming convention.** `<factoryName>Unsafe`: `accessTokenUnsafe`, `envVarUnsafe`, `userIdUnsafe`, `safeUrlUnsafe`. The `Unsafe` suffix tells the next reader (and the next grep) exactly what they're looking at: a brand cast without validation, for tests only.
 
-**Boundary.** Production code must not import any `*Unsafe` helper. A simple lint rule (or a periodic grep) keeps it honest:
-
-```js
-// eslint.config.js: scope with files + ignores (flat config's reliable idiom;
-// negated extglobs like `!(*.test).ts` in `files` are not dependable). This block
-// binds to production sources and excludes tests, so *Unsafe imports stay test-only.
-{
-  files: ['src/**/*.ts'],
-  ignores: ['**/*.test.ts', 'src/test-helpers/**'],
-  rules: {
-    'no-restricted-imports': ['error', {
-      patterns: [{ group: ['**'], importNamePattern: 'Unsafe$', message: '*Unsafe helpers are test-only' }],
-    }],
-  },
-}
-```
-
-(The pattern IS lint-enforceable: ESLint ≥ 8.55 supports `importNamePattern` (a regex over imported names) inside `patterns`, so no custom rule is needed.)
+**Boundary.** Production code must not import any `*Unsafe` helper, and the shipped ESLint configs enforce it: `UNSAFE_BAN` (`{ group: ['**'], importNamePattern: 'Unsafe$' }`, ESLint 8.55 and later) rides inside every layer zone except `test-helpers`, whose fakes may build values with the helpers, and the zones already skip `*.test.ts`. It lives inside the zones, never in a block of its own: flat config replaces a rule's options, so a separate `no-restricted-imports` block for `src/**` would wipe the mock ban (rule 13) and the zone (rule 37) for every file it matches, or, placed before them, be wiped itself. The Bun smoke test plants a domain file importing `accessTokenUnsafe` and sees it red.
 
 ### Secondary-port integration tests
 

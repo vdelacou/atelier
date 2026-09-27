@@ -145,10 +145,21 @@ const FS_BAN = {
   message: 'File IO goes through Bun.file and Bun.write; node:fs only in tests, src/test-helpers/** and the one commented directory helper in src/infra/** (hard rule 20, references/bun-typescript.md, File IO).',
 };
 
+// A `<factory>Unsafe` helper casts a brand without validating (references/testing.md,
+// Branded types and `expect(...).toBe(raw)`); only tests and the fakes may import one.
+// It rides inside the zones because flat config replaces a rule's options: a separate
+// no-restricted-imports block would wipe the mock ban and the zone for its files.
+const UNSAFE_BAN = {
+  group: ['**'],
+  importNamePattern: 'Unsafe$',
+  message: '*Unsafe helpers skip validation and are test-only: production code builds the value through its factory (references/testing.md, Branded types).',
+};
+
 // The dependency rule as lint (hard rule 37; references/architecture.md, the dependency
 // table). Dependencies point inward, so each layer names the layers it may never import,
 // and a layer left out of a list is one it is allowed to reach. Production files only: a
-// test reaches for the fakes in src/test-helpers/ by design.
+// test reaches for the fakes in src/test-helpers/ by design, and the fakes may build
+// their values with the *Unsafe helpers, so that zone alone leaves UNSAFE_BAN out.
 const layerZone = (layer, forbidden, files = [`src/${layer}/**/*.ts`]) => ({
   files,
   ignores: ['**/*.test.ts'],
@@ -162,6 +173,7 @@ const layerZone = (layer, forbidden, files = [`src/${layer}/**/*.ts`]) => ({
             group: forbidden.flatMap((name) => [`**/${name}`, `**/${name}/**`]),
             message: `src/${layer} must not import ${forbidden.join(', ')}: dependencies point inward (hard rule 37, references/architecture.md, the dependency table).`,
           },
+          ...(layer === 'test-helpers' ? [] : [UNSAFE_BAN]),
         ],
       },
     ],

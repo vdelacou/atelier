@@ -238,6 +238,14 @@ const FS_AT_THE_EDGES = {
   message: 'File IO stays at the edges: node:fs only in src/infra/**, tests and src/test-helpers/**; the domain and the use-cases read through a port (hard rule 20, references/bun-typescript.md, File IO).',
 };
 const UPWARD = 'imports point upward inside the design system (hard rule 37, references/atomic-design.md, Imports point strictly upward)';
+// A `<factory>Unsafe` helper casts a brand without validating (references/testing.md,
+// Branded types and `expect(...).toBe(raw)`); only tests and the fakes may import one. It
+// rides inside the zones: a separate no-restricted-imports block would replace them.
+const UNSAFE_BAN = {
+  group: ['**'],
+  importNamePattern: 'Unsafe$',
+  message: '*Unsafe helpers skip validation and are test-only: production code builds the value through its factory (references/testing.md, Branded types).',
+};
 const layerZone = (layer, forbidden, extraPatterns = [], why = INWARD) => ({
   files: [`src/${layer}/**/*.ts`, `src/${layer}/**/*.tsx`],
   ignores: ['**/*.test.ts', '**/*.test.tsx'],
@@ -252,6 +260,7 @@ const layerZone = (layer, forbidden, extraPatterns = [], why = INWARD) => ({
             group: forbidden.flatMap((name) => [`**/${name}`, `**/${name}/**`]),
             message: `src/${layer} must not import ${forbidden.join(', ')}: ${why}.`,
           },
+          ...(layer === 'test-helpers' ? [] : [UNSAFE_BAN]),
         ],
       },
     ],
