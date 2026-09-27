@@ -15,8 +15,8 @@ through Bash (see the worktree-landing-flow memory).
 3. [x] Phase 3, doctrine drift, contradictions, wrong examples, broken pointers, matrix citations
    (section 3). DoD: each item fixed or recorded as a decision; citations re-anchored and intact;
    frontmatter and em-dash gates green.
-4. [ ] Phase 4, release notes and docs (section 4). DoD: README and CHANGELOG numbers trace to files.
-5. [ ] Phase 5, evals: one tier 2 (both arms) after phases 2-4; it covers every doctrine change, and tier 1 already selected 17 of 21 tasks after phase 1 alone. DoD: scorecards read
+4. [x] Phase 4, release notes and docs (section 4). DoD: README and CHANGELOG numbers trace to files.
+5. [x] Phase 5, evals: one tier 2 (both arms) after phases 2-4; it covers every doctrine change, and tier 1 already selected 17 of 21 tasks after phase 1 alone. DoD: scorecards read
    answer-first, numbers into baseline.md and the CHANGELOG.
 6. [ ] Phase 6, release 2.6.0: tag v2.5.0 on 6320b92, then the 2.6.0 CHANGELOG with a Security entry,
    tag v2.6.0. Each tag on its own yes. Nice-to-haves (section 5) stay backlog unless the owner says.
@@ -36,7 +36,16 @@ tree (Bun 140, Java 74, Next 44); the Bun run exited 1 only on a cleanup race (a
 the three smoke scripts. LESSONS.md:77 re-probed: sonarjs 4.1.0 does crash under ESLint 10 even with a
 top-level typescript ^5, because it installs its own nested TypeScript 7.0.2; the claim holds, for that
 reason (a journal candidate, not a doctrine change).
-Next: phase 4 numbers (README citation count 240, CHANGELOG 2.6.0), phase 5 tier 2 both arms.
+Phases 1-3 pushed through f9a1d61 (CI green). Phase 5 done 2026-09-28, pushed at b051b69: review eval
+three passes per variant (skill 36/36 and 27/27 caught and cited, 0 FP; unaided 21/36, 0/36, 22/27,
+3/27), grader defects 22 and 23 fixed; tier 2 skill 60/61 and 23/24, unaided 38/61 and 9/24, h6 from a
+rerun graded as produced after the capped-tree runner fix (bac3a61), h5's 7.3 miss variance (two extra
+samples 3/3); fixture re-frozen at five passes (181/305). Phase 4 done: CHANGELOG 2.6.0 and the README
+release line (e199e41).
+Next: push phase 6, then the tags, each on its own yes: v2.5.0 on 6320b92, v2.6.0 on e199e41.
+Follow-ups (not in 2.6.0): check-no-em-dash.sh falls back to HEAD~1 on an unresolvable explicit base
+and reports a pass on that narrower range; h6's skill arm ran to the 40-minute cap twice (17 min in
+2.5.0), a watch item for CONFORMANCE_TIMEOUT_MIN.
 
 ## Phase 3 checklist (doctrine drift; file:line as found by the audit, lines shift as edits land)
 
