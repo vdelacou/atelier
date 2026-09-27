@@ -21,7 +21,10 @@ export const formatError = (err: unknown): string => {
   // equivalent mutant that would cap this file below the 90% mutation gate).
   if (typeof err === 'number') return String(err);
   try {
-    return JSON.stringify(err);
+    // JSON.stringify returns undefined, not a string, for undefined, a function and a
+    // symbol (a `throw undefined` or `Promise.reject()` logged "error: undefined" by luck
+    // until 2026-09-27); String covers those three.
+    return JSON.stringify(err) ?? String(err);
   } catch {
     return '[unstringifiable error]';
   }

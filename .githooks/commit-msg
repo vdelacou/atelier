@@ -16,8 +16,11 @@
 #
 # This is the dependency-free validator for the Bun-script variant, matching
 # the hand-rolled style of the other gate scripts. The Next.js monorepo
-# variant enforces the identical grammar through @commitlint/config-conventional
-# wired as a simple-git-hooks `commit-msg` step: see references/nextjs-monorepo.md.
+# variant enforces the same header grammar (the type set, the scope, the subject and
+# its length) through @commitlint/config-conventional wired as a simple-git-hooks
+# `commit-msg` step: see references/nextjs-monorepo.md. commitlint also rejects a
+# sentence-, start-, pascal- or upper-case subject and checks body line length,
+# which this hook leaves to review.
 #
 # Installed via `core.hooksPath .githooks` alongside the pre-commit hook:
 #
