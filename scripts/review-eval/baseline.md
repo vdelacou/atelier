@@ -272,3 +272,45 @@ One more grader defect, the twelfth across the evals: the skill arm cited the Bu
 "breaks rule 4 (no `console.*`)", the rule's own wording, and the evidence pattern accepted only
 `console.log|error|warn`, so a caught and cited finding read as a miss (35/36 before the fix). The
 pattern accepts `console.*` now, and a selftest case reads the shipped manifest, red before the fix.
+
+## Clean files clean on every rule (2026-09-27)
+
+The fixture follow-up the isolated reading named. `settings.ts` gains a consumer through a primary
+port: `createLoadSettings` (`src/use-cases/load-settings.ts`) reads a `SettingsStore` port and maps its
+failures and the parse errors to the canonical `StepError`, and its port tests drive it with a
+hand-written fake, so the direct `settings.test.ts` supplements port tests as rule 14's exception asks.
+`Refund.java` types its error (`Refund.Error`) instead of extracting a single-use String constant, and
+`CancelMembership` takes a `MemberId`. The four new Bun files join `clean-files.json`. Three passes per
+variant, both arms, opus, isolated:
+
+| Variant | Arm | Caught | Rule-cited | False positives |
+|---|---|---|---|---|
+| Bun | skill | 36/36 | 36/36 | 0 |
+| Bun | unaided | 22/36 | 1/36 | 0 |
+| Java | skill | 27/27 | 27/27 | 0 |
+| Java | unaided | 20/27 | 1/27 | 0 |
+
+Every skill pass clears the settings slice ("the settings slice is the model"), `MemberId` and the
+`Refund.Error` change. What stays true on the fixture is guideline-level, which the false-positive lens
+does not count: `notifier.ts` and `Notifier.java` have no implementation or caller (guideline 2), and
+`shipping.ts`'s constant extraction is unrelated to the change (guideline 3). They are the next fixture
+slice.
+
+Four grader defects, the thirteenth to the sixteenth, each fixed with a selftest case seen red first:
+
+- A bold finding heading ending in `.**` did not end its sentence, so a heading citing rule 16 against
+  `award-points.ts` and the next line naming the clean `step-error.ts` as the conforming example read
+  as one accusation.
+- A numbered markdown heading (`## 1. ...`) with the path under it and the evidence in the next
+  paragraph read as a miss: a numbered heading now opens one finding that runs to the next heading,
+  while a section heading (`## Findings`) stays split by paragraph so it cannot pool findings.
+- The `v-nodefs` evidence accepted a bare `writeFileSync`, so a finding about `Result<void, never>`
+  that quoted the call counted as the node:fs catch; it now wants node:fs or the Bun file API named.
+- `(10)` in `recentIds(10)` read as a rule-10 citation; a parenthesised number counts only standing
+  alone.
+
+Regraded under the fixed grader, the isolated reading above becomes: Bun skill arm one false positive,
+not two (the second was `settings.test.ts`, named as `settings.ts`'s only caller in the sentence after
+the heading), Bun unaided 23/36 caught, not 19/36 (five catches the numbered headings had hidden, one
+node:fs credit that was not a catch), Java skill arm one false positive, not two (the Refund claim was
+a guideline 3 finding joined to the next sentence's rule 24), Java unaided unchanged at 24/27 and 4/27.

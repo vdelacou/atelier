@@ -6,7 +6,8 @@ Each run directory holds `.review.txt`, the reviewing agent's full output.
 `clean-files.json` lists changed files that carry NO violation, for the
 false-positive lens.
 
-Scoring, per violation, at paragraph granularity (blank-line separated):
+Scoring, per violation, at finding granularity (a blank-line paragraph, or a numbered
+markdown heading and everything up to the next heading):
   caught      the review has a paragraph naming the file's basename AND matching
               the violation's evidence regex (arm-neutral: no rule number needed,
               so a skill-less reviewer can score).
@@ -38,6 +39,20 @@ def paragraphs(review: str) -> list[str]:
     return [p.strip() for p in re.split(r"\n\s*\n", review) if p.strip()]
 
 
+def findings(review: str) -> list[str]:
+    """The units a catch is judged in: paragraphs, except that a numbered markdown heading
+    ("## 1. ...", "### 12) ...") opens a finding that runs to the next heading, since a reviewer
+    may put the path under the heading and the evidence in the next paragraph. A section heading
+    ("## Findings") stays paragraph-split, or one heading would pool every finding under it."""
+    units: list[str] = []
+    for chunk in re.split(r"(?m)^(?=#{1,6}\s)", review):
+        if re.match(r"#{1,6}\s+\**\d+[.)]", chunk):
+            units.append(chunk.strip())
+        else:
+            units.extend(paragraphs(chunk))
+    return [u for u in units if u]
+
+
 def rule_pattern(rule: int | str | list) -> re.Pattern[str]:
     # A list means alternates: any one of them is a correct citation (a canon id
     # or the doctrine phrase it names, say). Cited when ANY alternate matches.
@@ -60,33 +75,35 @@ def rule_pattern(rule: int | str | list) -> re.Pattern[str]:
     # number inside a path or a line reference like crm-sync.ts:27. And the plural
     # list, "breaks rules 3 and 1", "rules 20, 16": until 2026-09-26 only the singular
     # counted, and a review citing two rules in one sentence read as citing neither
-    # (the ninth grader defect; three of twelve Bun findings in one pass).
+    # (the ninth grader defect; three of twelve Bun findings in one pass). "(27)" counts only
+    # standing alone, never as a call's argument, `recentIds(10)` (the sixteenth).
     return re.compile(
-        rf"(?i)rule\s*{rule}\b|\brules\s+(?:\d{{1,2}}\s*(?:,|and|&|or)\s*)*{rule}\b|\({rule}\)|^\s*{rule}[.)]\s",
+        rf"(?i)rule\s*{rule}\b|\brules\s+(?:\d{{1,2}}\s*(?:,|and|&|or)\s*)*{rule}\b|(?<![\w.])\({rule}\)|^\s*{rule}[.)]\s",
         re.MULTILINE,
     )
 
 
 def grade_review(review: str, violations: list[dict], clean_files: list[str]) -> dict:
     paras = paragraphs(review)
+    units = findings(review)
     caught: list[str] = []
     rule_cited: list[str] = []
     for v in violations:
         base = basename(v["file"])
         evidence = re.compile(v["evidence"])
         rule = rule_pattern(v["rule"])
-        hit = next((p for p in paras if base in p and evidence.search(p)), None)
+        hit = next((u for u in units if base in u and evidence.search(u)), None)
         if hit is None:
             continue
         caught.append(v["id"])
-        if any(base in p and evidence.search(p) and rule.search(p) for p in paras):
+        if any(base in u and evidence.search(u) and rule.search(u) for u in units):
             rule_cited.append(v["id"])
     # FP granularity is the SENTENCE, not the paragraph: a finding's paragraph
     # may name a clean file only to exonerate it ("nothing in shipping.ts
     # changed", "shipping.ts is exempt") while citing a rule against another
     # file. Accusation means the clean basename and a rule claim share a
-    # sentence.
-    sentences = [s for p in paras for s in re.split(r"(?<=[.!?])\s+", p)]
+    # sentence. A sentence also ends at a period closed by markdown (`.**`, `.)`).
+    sentences = [s for p in paras for s in re.split(r"(?<=[.!?])[*_`)\]]*\s+", p)]
     false_positives = [
         f
         for f in clean_files
@@ -278,7 +295,57 @@ orders-db.ts line 30 looks fine to me.
     ):
         got = grade_review(accusation, [], ["src/domain/settings.ts"])
         assert got["false_positives"] == ["src/domain/settings.ts"], (accusation, got)
-    print("selftest OK: catches evidence, requires the rule token for citation, flags clean-file claims, ignores exonerations and reported claims, reads plural and hyphenated citations, scores an empty review 0")
+    # A bold finding heading ends its sentence at `.**`, not only at a bare period (the
+    # thirteenth defect, 2026-09-27, verbatim from a skill-arm review: the heading's rule 16
+    # and the next line's clean step-error.ts, named as the conforming example, read as one
+    # sentence). The same heading naming the clean file itself is still an accusation.
+    heading = grade_review(
+        "**15. `src/use-cases/award-points.ts:6, 8`, rule 16 (every use-case returns "
+        "`Promise<Result<Summary, StepError>>`).**\nThe use-case invents `AwardError` while "
+        "`src/use-cases/ports/step-error.ts`, added in this same diff and matching the canonical "
+        "shape exactly, sits unused by it.",
+        [], ["src/use-cases/ports/step-error.ts"])
+    assert heading["false_positives"] == [], heading
+    heading = grade_review(
+        "**4. `src/use-cases/ports/step-error.ts:2`, rule 16 (the cause must be a literal union).**"
+        "\nIts `cause` is a plain string.",
+        [], ["src/use-cases/ports/step-error.ts"])
+    assert heading["false_positives"] == ["src/use-cases/ports/step-error.ts"], heading
+    # A numbered markdown heading opens a finding that runs to the next heading: the reviewer
+    # may put the path under the heading and the evidence in the next paragraph (the fourteenth
+    # defect, 2026-09-27, verbatim shape from a skill-arm Java review that read as a miss).
+    weakened = next(x for x in json.loads((HERE / "violations-java.json").read_text()) if x["id"] == "jv-weakened")
+    got = grade_review(
+        "## 1. RefundTest changes a money expectation to a value the code does not produce (rule 24)\n"
+        "`src/test/java/com/example/app/domain/RefundTest.java:11`\n\n"
+        "An existing test was edited. The assertion moved from `Refund(8000)` to `Refund(7000)`.\n\n"
+        "## 2. CancelMembership prints to stdout (rule 4)\n", [weakened], [])
+    assert got["caught"] == ["jv-weakened"] and got["rule_cited"] == ["jv-weakened"], got
+    # A section heading does not pool its findings: under "## Findings" each paragraph stands alone.
+    got = grade_review(
+        "## Findings\n\n`src/test/java/com/example/app/domain/RefundTest.java:11` looks fine to me.\n\n"
+        "Elsewhere an existing test was edited from 8000 to 7000.\n", [weakened], [])
+    assert got["caught"] == [], got
+    # The node:fs finding is about the API, not the call's failure mode: quoting writeFileSync
+    # while arguing about Result<void, never> is not a catch (the fifteenth defect, 2026-09-27,
+    # verbatim from an unaided review); naming node:fs or the Bun file API is.
+    nodefs = next(x for x in json.loads((HERE / "violations.json").read_text()) if x["id"] == "v-nodefs")
+    got = grade_review("### 3. `src/infra/export-report.ts:5-7`: `Result<void, never>` is a lie; `writeFileSync` "
+                       "throws on ENOENT/EACCES/ENOSPC and the exception escapes.", [nodefs], [])
+    assert got["caught"] == [], got
+    for phrasing in ("`src/infra/export-report.ts:1` imports node:fs; write through Bun.write.",
+                     "`export-report.ts` should use Bun's file API instead of writeFileSync."):
+        got = grade_review(phrasing, [nodefs], [])
+        assert got["caught"] == ["v-nodefs"], (phrasing, got)
+    # A call argument is not a rule citation: `recentIds(10)` does not cite rule 10 (the
+    # sixteenth defect, 2026-09-27); "(10)" standing alone still does.
+    bespoke = [{"id": "jv-exception", "file": "src/main/java/com/example/app/usecases/RefundDeclinedException.java",
+                "rule": 10, "evidence": r"(?i)exception"}]
+    got = grade_review("`RefundDeclinedException.java` is a bespoke exception; `when(orders.recentIds(10))` is dead setup.", bespoke, [])
+    assert got["caught"] == ["jv-exception"] and got["rule_cited"] == [], got
+    got = grade_review("`RefundDeclinedException.java` is a bespoke business exception (10).", bespoke, [])
+    assert got["rule_cited"] == ["jv-exception"], got
+    print("selftest OK: catches evidence, requires the rule token for citation, flags clean-file claims, ignores exonerations and reported claims, reads plural and hyphenated citations, splits bold headings, reads a numbered heading as one finding, wants node:fs named, ignores call arguments, scores an empty review 0")
 
 
 def main() -> None:

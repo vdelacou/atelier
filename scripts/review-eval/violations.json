@@ -45,7 +45,7 @@
     "id": "v-nodefs",
     "file": "src/infra/export-report.ts",
     "rule": 20,
-    "evidence": "(?i)node:fs|writeFileSync|Bun\\.write",
+    "evidence": "(?i)node:fs|Bun\\.write|Bun\\.file|\\bfs\\b.{0,30}(module|import|api)|file api",
     "desc": "node:fs in production code instead of Bun.write"
   },
   {
