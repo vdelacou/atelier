@@ -9,7 +9,8 @@
 # proves:
 #
 #   - every gate passes on a conforming tree: the fast pre-commit-java hook
-#     (size, pom sanity, gitleaks, spotless) as a real hooked commit, plus the
+#     (size, pom sanity, suppressions, gitleaks, identity, disciplines, spotless)
+#     as a real hooked commit, plus the
 #     CI gates (verify with the JaCoCo tiers, PIT) run directly, and commit-msg
 #   - every gate FAILS on the violation it exists to block: a version range,
 #     a -SNAPSHOT dependency, a mock library in the pom (hook and enforcer),
@@ -41,7 +42,10 @@ FX="$(mktemp -d "${TMPDIR:-/tmp}/atelier-smoke-java.XXXXXX")"
 LOG="$FX/.step.log"
 FAILURES=0
 
-cleanup() { rm -rf "$FX"; }
+# Cleanup never decides the verdict: the checks do. A background `git gc --auto`
+# (disabled below) or any late writer made rm report "Directory not empty", and
+# with no explicit exit the trap's status became the script's (a green run exited 1).
+cleanup() { rm -rf "$FX" 2>/dev/null || true; }
 trap cleanup EXIT
 
 pass() { echo "  ok:   $1"; }
@@ -76,6 +80,7 @@ mkdir -p "$FX"/src/main/java/com/example/app/{domain,usecases/ports}
 mkdir -p "$FX"/src/test/java/com/example/app/{domain,usecases}
 cd "$FX"
 git init -q
+git config gc.auto 0   # no detached gc racing the cleanup
 git config user.name "atelier-smoke"
 git config user.email "atelier-smoke@users.noreply.github.com"
 
@@ -989,3 +994,4 @@ if [ "$FAILURES" -gt 0 ]; then
   exit 1
 fi
 echo "smoke-test-java: all checks passed"
+exit 0

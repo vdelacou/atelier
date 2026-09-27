@@ -32,7 +32,10 @@ FX="$(mktemp -d "${TMPDIR:-/tmp}/atelier-next-smoke.XXXXXX")"
 LOG="$FX/.step.log"
 FAILURES=0
 
-cleanup() { rm -rf "$FX"; }
+# Cleanup never decides the verdict: the checks do. A background `git gc --auto`
+# (disabled below) or any late writer made rm report "Directory not empty", and
+# with no explicit exit the trap's status became the script's.
+cleanup() { rm -rf "$FX" 2>/dev/null || true; }
 trap cleanup EXIT
 
 pass() { echo "  ok:   $1"; }
@@ -124,7 +127,7 @@ extract_fence "$DOC" '## Root `package.json`' | grep -q 'check-package-json.sh &
   || fail "the root package.json fence does not run the package.json, identity and discipline gates first in pre-commit (doc drift)"
 # Rule 26 (2026-09-09): the identity guard is the second hook step in this variant; the
 # fixture is not a git repo, so a throwaway one proves the staged mode here.
-git init -q && git config user.name 'Ada Lovelace' && git config user.email 'ada@example.invalid'
+git init -q && git config user.name 'Ada Lovelace' && git config user.email 'ada@example.invalid' && git config gc.auto 0
 printf 'Decided by Ada Lovelace\n' > decision.md && git add decision.md
 expect_err "identity guard blocks the committer's name in a tracked file (rule 26)" bash scripts/check-identity.sh
 git reset -q && rm decision.md
@@ -560,3 +563,4 @@ if [ "$FAILURES" -gt 0 ]; then
   exit 1
 fi
 echo "next-smoke-test: all checks passed"
+exit 0

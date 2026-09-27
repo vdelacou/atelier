@@ -33,7 +33,10 @@ FX="$(mktemp -d "${TMPDIR:-/tmp}/atelier-smoke.XXXXXX")"
 LOG="$FX/.step.log"
 FAILURES=0
 
-cleanup() { rm -rf "$FX"; }
+# Cleanup never decides the verdict: the checks do. A background `git gc --auto`
+# (disabled below) or any late writer made rm report "Directory not empty", and
+# with no explicit exit the trap's status became the script's (a green run exited 1).
+cleanup() { rm -rf "$FX" 2>/dev/null || true; }
 trap cleanup EXIT
 
 pass() { echo "  ok:   $1"; }
@@ -63,6 +66,7 @@ echo "== scaffold fixture ($FX) =="
 mkdir -p "$FX"/{scripts,.githooks,src/domain/utilities,src/test-helpers,src/infra}
 cd "$FX"
 git init -q
+git config gc.auto 0   # no detached gc racing the cleanup
 
 # --- the bootstrap checklist asset copy, verbatim ---
 cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-package-json.sh" \
@@ -1052,3 +1056,4 @@ if [ "$FAILURES" -gt 0 ]; then
   exit 1
 fi
 echo "smoke-test: all checks passed"
+exit 0
