@@ -198,4 +198,4 @@ The engineering substance comes from Clean Code and Clean Architecture (Robert C
 
 ## Versioning and license
 
-The suite is versioned as a whole in [CHANGELOG.md](./CHANGELOG.md). The current release is 2.5.0, the memory release: `atelier-distill` compacts a repo's agent memory with nothing live lost, unicorn's recommended lint set is on, and the evals run blind to this repository. [MIT](./LICENSE).
+The suite is versioned as a whole in [CHANGELOG.md](./CHANGELOG.md). The current release is 2.6.0, the audit release: a whole-tree audit closed eleven blockers, among them two critical Next.js advisories in the skeleton and a Quarkus auth default that protected nothing, and the gates that passed their own violation now fail on it. [MIT](./LICENSE).

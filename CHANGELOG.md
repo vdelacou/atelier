@@ -6,23 +6,127 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-09-28
+
+The audit release. A six-part audit of the whole tree before release found eleven blockers and about
+110 should-fix items: gates that passed the violation they exist to block, copy steps that left a hook
+calling a script it never received, and examples that taught what the rules forbid. The blockers and
+the should-fix items are closed; the audit's nice-to-haves (about 65, mostly polish) stay on the
+backlog. Each gate change was proven red on the old code before it landed and is wired into its smoke
+test or selftest.
+
+### Upgrading from 2.5.0
+
+- **Next.js:** bump `next` and `eslint-config-next` to `16.3.6` and `next-mdx-remote` to `^6.0.0`
+  (Security). Add `"type": "module"` to each package's `package.json`, and replace
+  `commitlint.config.cjs` with `commitlint.config.mjs` (`export default { ... }`, same content).
+- **Re-extract the ESLint config** (`eslint.config.js` or `.mjs`). Expect new findings: a test using
+  `spyOn`, `jest` or `vi` from `bun:test` or any `.toHaveBeenCalled*` assertion (rule 13), an adapter
+  importing a use-case (rule 37), a production file importing a `*Unsafe` helper, a
+  `// gitleaks:allow` comment (rule 15), and `process.exit(1)` in `src/main.ts`, which unicorn's
+  `no-process-exit` rejects: set `process.exitCode = 1` instead. Next: `React.useState()` and `use()`
+  in the design system (rule 21).
+- **Bun `package.json`:** the skeleton pins the current majors (ESLint 10.11, `@eslint/js` 10,
+  unicorn 76, security 4.1, sonarjs 4.2.1, Stryker 10), declares `globals` and `prettier`, and moves
+  `typescript` from `peerDependencies` (which never held it: Bun installed 6.x) to `devDependencies`
+  at `^5.9.3`. Bun 1.3 or later.
+- **Re-copy every shipped asset the bootstrap checklist of your variant copies.** The hooks and the
+  workflows (`actions/checkout@v7`, `actions/setup-java@v6`, `gitleaks git` with
+  `--ignore-gitleaks-allow`, the README Verify step, the printed JUnit seed) and nearly every gate
+  script changed. `check-docs.sh` is now copied by every variant and run by each variant's CI workflow
+  (2.5.0 described it in `references/governance.md` only): the README needs a `## Verify` block.
+  `check-skill-pin.sh`, which the audit workflow always ran, is now copied unconditionally in Bun and
+  at all in Next (Java already copied it). The Java copy block is copied whole: identity and the
+  discipline wrapper are core gates the Java hook always ran.
+- **Java pom:** compile with `-Xlint:all,-classfile`; the enforcer adds `banDynamicVersions` and the
+  `quarkus-junit-mockito` and `org.jmock` bans; surefire sets `failIfNoTests`; Spotless adds
+  `forbidWildcardImports`; PIT excludes the `api` and `architecture` tests; `dependency-check-maven`
+  is pinned in `pluginManagement` with `failBuildOnCVSS` 7, and the audit workflow needs an
+  `NVD_API_KEY` repository secret (a free key from NVD). A Quarkus service applies The Quarkus delta
+  (the BOM import, no `requireUpperBoundDeps`, no JUnit pin), and replaces
+  `quarkus.http.auth.permission.default.policy=authenticated` with
+  `quarkus.security.jaxrs.default-roles-allowed=**` (Security). A multi-module repo runs
+  `pit-changed.sh` per module: it now refuses module sources rather than passing them.
+- Nothing to do for the `CLAUDE.md` pointer: the command no longer overwrites an existing file, and a
+  pointer written before stays valid.
+
+### Security
+- **Next.js 16.1.1 carried two critical advisories** (GHSA-2xp9-vwfh-vxw4, unauthenticated RCE in the
+  image optimizer; GHSA-p293-qw3h-jr36) and thirteen high ones; the skeleton pinned it exactly, so
+  `bun update` never moved it. `16.3.6` has none. `next-mdx-remote` `^5` could not reach the fix for
+  GHSA-g4xw-jxrg-5f6m (high, code execution); `^6.0.0` does.
+- **Quarkus "authenticated by default" protected nothing.** A permission set with a policy and no
+  `paths` is never registered; under the old line an anonymous `@QuarkusTest` call got 200. The
+  doctrine's `default-roles-allowed=**` (or the path-based form) returns 401 and keeps
+  `/q/health` reachable, both probed.
+- **An inline `gitleaks:allow` silenced the secret scan.** Every call carries
+  `--ignore-gitleaks-allow`, and the ESLint configs reject the comment.
+- **The redaction example logged API keys:** the key set said `apiKey` and the lookup lowercased.
+- **The RLS example enforced nothing** (no `ENABLE ROW LEVEL SECURITY`), and **the Java CVE scan could
+  never fail** (dependency-check's default `failBuildOnCVSS` is 11, and the goal ran unpinned).
+
+### Fixed
+- Gates that passed their violation, each now red in its smoke test: the mock ban (`spyOn`, `jest`,
+  `vi`, call-recording assertions), the infra zone (a use-case import), the `*Unsafe` ban (it sat in a
+  separate block that silenced the mock ban and the zone), the package.json gate (`""`, `"x"`, an
+  `npm:` alias without a version), the staged lint (warnings passed), the deadline guard (it read the
+  working tree, not the index), the data-lifecycle guard (lowercase SQL), the isolation guard's CI mode
+  (it ignored its own globs), the skill-pin check (no `shasum`, or an empty upstream, read as current),
+  `check-docs.sh` (`./mvnw` with any argument could run an executable), the staged scanners (a line
+  starting with `+`), `check-pom.sh` (a range or SNAPSHOT in a version property), `pit-changed.sh`
+  (nested classes were never mutated), JaCoCo (no test at all passed the tiers), `LayerRulesTest`
+  (MicroProfile, SmallRye and Vert.x in the domain), Stryker (a test's JSON fixture was dropped from
+  the sandbox), and `formatError` (it returned `undefined` for `undefined`).
+- Copy steps that broke the shipped hook or CI: `workflow.md`'s second copy block, the Java checklist
+  that made core gates optional, and the conditional `check-skill-pin.sh` copy. The canonical pom
+  failed its first `validate` and its first `@ConfigProperty` compile on a real Quarkus service; the
+  Java smoke test now builds the documented Quarkus delta on the real BOM.
+- JUnit logged its random-order seed below INFO, so a red order could not be replayed; `ci-java.yml`
+  prints the seed it passes. The `CLAUDE.md` pointer command overwrote an existing `CLAUDE.md`.
+
 ### Changed
-- The Java `Email.java` exemplar imports `java.util.regex.Pattern` instead of writing it out twice,
-  matching the form `references/java-quarkus.md` shows. The Java smoke test compiles, tests and gates
-  it green. Consumers: nothing to do; a copy made before still compiles.
+- Doctrine says what the gates do: the hard rules are 1-37, the hook has seven gates, the inner loop
+  runs the randomized `bun run test`, a Java repo is Maven, Result-to-HTTP maps in `infra/`, a
+  journal entry never overrides a hard rule, and the companions' mappings, checklists and red proofs
+  follow (greenfield lands its scaffold in slices; review-me reviews Next route handlers as adapters
+  and has a Java adopt path).
+- Examples follow the rules they teach: layer-first paths (a feature folder escapes the rule-37
+  lint), `create*` factories (rule 18), type imports on their own line (rule 7), styling inside the
+  design system, the outbox beside every post-commit send, a restore drill and a cost alert that can
+  fire, a dated model pin, correct Money arithmetic, and role handles instead of names (rule 26).
+- The canon profile's 17.7 row names the budget `check-bundle-size.sh` enforces (180 kB gzipped
+  JavaScript, not "400 kB total"), and the skill now carries the profile's load-test, platform and
+  delivery-health numbers.
+- The Java `Email.java` exemplar imports `java.util.regex.Pattern` instead of writing it out twice.
 
 ### Harness
-- **The review fixture's clean files carry no guideline finding either, and four more grader defects
-  are fixed.** The Bun `notifier.ts` and the Java `Notifier.java` (ports nothing implements or calls,
-  guideline 2) leave the fixture, and so does the `shipping.ts` constant extraction (unrelated to the
-  change, guideline 3), which leaves the planted `shipping.test.ts` edit standing alone. Three passes
-  per variant, both arms: Bun 36/36 caught and cited against 21/36 and 2/36 unaided, Java 27/27 and
-  27/27 against 23/27 and 4/27, no rule claim against a clean file. The defects, eighteenth to
-  twenty-first, all in the false-positive lens and each with a selftest case seen red first: a
-  basename matched inside a longer name (`settings.ts` in `load-settings.ts`), and "exemption",
-  "accurate" and plain praise ("a rule 16 improvement", "done right") did not clear a file. No earlier
-  reading moves. `MemberId.java` then imports `java.util.regex.Pattern` rather than writing it out
-  twice, the one minor note left: Java 27/27 caught and cited against 24/27 and 4/27, no note left.
+- Repo gates that passed what they check: the em-dash gate (a git error and a `+` line passed),
+  `check-workflow-assets.sh` (an unmapped workflow or a missing reference skipped silently),
+  `check-matrix-drift.py` (no order check), `validate-frontmatter.ts` (no selftest; "valid (0/0)" from
+  another directory), and `check-citations.py --reanchor`, which re-locked unreviewed citations and,
+  after a partial run, moved a moved citation again (it happened in this release and was caught). The
+  matrix rows the lock held green on the wrong line cite their evidence again (240 citations).
+- The evals: a capped session now stops (the watchdog killed a subshell and `claude` outlived it), a
+  dead trigger probe and a dead review or distill session are no reading, the judge reads only the
+  answer, the tier-1 selector sees untracked files and reports assets, a cross-model frozen comparison
+  warns, and the harness runs on the Python 3.9 macOS ships. The repo's CI declares read-only
+  permissions and job timeouts, and its pre-commit runs the citation and drift checks.
+- The review fixture's clean files carry no guideline finding either, and four more grader defects
+  (eighteenth to twenty-first) are fixed, each with a selftest case seen red first; `MemberId.java`
+  imports `Pattern`.
+- **The release pass of the review eval** (three passes per variant, both arms): the skill arm holds
+  36/36 and 27/27 caught and cited with no rule claim against a clean file; unaided, 21/36 and 0/36 in
+  Bun, 22/27 and 3/27 in Java. Two more grader defects (twenty-second and twenty-third, a sentence
+  reporting a quoted rule and praise in "follows" or "a step toward") each have a selftest case seen
+  red first; the first moves one earlier reading, a Bun unaided false positive of 2026-09-26, to 0.
+- **The release pass of the conformance eval** (tier 2, both arms): the skill arm 60/61 and 23/24 on
+  the production-discipline tier, the unaided arm 38/61 and 9/24. The one skill-arm miss, h5's
+  database-side second layer, was written in two extra samples of the task (both 3/3), so it reads as
+  variance, not a regression. A capped session's tree is now
+  copied back and graded as produced: `claude` outlives SIGTERM for a moment, the watchdog was already
+  reaped, and under `set -e` the failed kill of it ended the runner before the copy-back, so the
+  conformance and distill runners graded a capped run 0. The frozen baseline sums this pass's unaided
+  arm in: 181/305 over five passes, an expected 36.2/61.
 
 ## [2.5.0] - 2026-09-27
 
