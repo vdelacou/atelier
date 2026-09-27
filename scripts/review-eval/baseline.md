@@ -314,3 +314,31 @@ not two (the second was `settings.test.ts`, named as `settings.ts`'s only caller
 the heading), Bun unaided 23/36 caught, not 19/36 (five catches the numbered headings had hidden, one
 node:fs credit that was not a catch), Java skill arm one false positive, not two (the Refund claim was
 a guideline 3 finding joined to the next sentence's rule 24), Java unaided unchanged at 24/27 and 4/27.
+
+## No speculative port, no unrelated edit (2026-09-27, evening)
+
+The guideline findings the previous section left true on the fixture: `notifier.ts` and `Notifier.java`
+(a port nothing implements or calls, guideline 2) leave the changed overlay, and so does `shipping.ts`,
+whose constant extraction was unrelated to the change (guideline 3); the runner overlays `changed/` on
+`base/`, so `shipping.ts` is now unchanged and the planted `shipping.test.ts` edit stands alone. The
+clean set is the settings slice, six files in Bun and `MemberId.java` and `Refund.java` in Java. Three
+passes per variant, both arms, opus, isolated:
+
+| Variant | Arm | Caught | Rule-cited | False positives |
+|---|---|---|---|---|
+| Bun | skill | 36/36 | 36/36 | 0 |
+| Bun | unaided | 21/36 | 2/36 | 0 |
+| Java | skill | 27/27 | 27/27 | 0 |
+| Java | unaided | 23/27 | 4/27 | 0 |
+
+No guideline finding lands on a clean file now; the one left in the Bun reviews is the unused
+`csv-stringify` in the planted `package.json`. One minor note stays true on `MemberId.java`, which
+writes `java.util.regex.Pattern` out twice where the `Email` exemplar imports it: style, handed to
+Spotless by the reviewer, no rule claimed.
+
+Four more grader defects, the eighteenth to the twenty-first, each with a selftest case seen red first,
+all in the false-positive lens and all found in skill-arm sentences that clear a file: a basename
+matched inside a longer name (`settings.ts` in `load-settings.ts`); "exemption" did not clear like
+"exempt"; "accurate" did not clear like "correct"; and praise in the reviewer's own words ("a rule 16
+improvement", "the rule 12 shape done right") read as accusation, while "needs improvement" and
+"requires" stay accusations. No earlier reading moves under them.

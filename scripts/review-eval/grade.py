@@ -83,6 +83,12 @@ def rule_pattern(rule: int | str | list) -> re.Pattern[str]:
     )
 
 
+def names(base: str, text: str) -> bool:
+    """The text names this file: its basename, and not as the tail of a longer name
+    (settings.ts inside load-settings.ts)."""
+    return re.search(rf"(?<![\w.-]){re.escape(base)}", text) is not None
+
+
 def grade_review(review: str, violations: list[dict], clean_files: list[str]) -> dict:
     paras = paragraphs(review)
     units = findings(review)
@@ -92,11 +98,11 @@ def grade_review(review: str, violations: list[dict], clean_files: list[str]) ->
         base = basename(v["file"])
         evidence = re.compile(v["evidence"])
         rule = rule_pattern(v["rule"])
-        hit = next((u for u in units if base in u and evidence.search(u)), None)
+        hit = next((u for u in units if names(base, u) and evidence.search(u)), None)
         if hit is None:
             continue
         caught.append(v["id"])
-        if any(base in u and evidence.search(u) and rule.search(u) for u in units):
+        if any(names(base, u) and evidence.search(u) and rule.search(u) for u in units):
             rule_cited.append(v["id"])
     # FP granularity is the SENTENCE, not the paragraph: a finding's paragraph
     # may name a clean file only to exonerate it ("nothing in shipping.ts
@@ -108,7 +114,7 @@ def grade_review(review: str, violations: list[dict], clean_files: list[str]) ->
         f
         for f in clean_files
         if any(
-            basename(f) in s
+            names(basename(f), s)
             and re.search(r"(?i)rule\s*\d+\b|\(\d{1,2}\)", s)
             and not _exonerates(s)
             for s in sentences
@@ -122,8 +128,8 @@ def grade_review(review: str, violations: list[dict], clean_files: list[str]) ->
 # is the carve-out rule 17 names"), and counting that as an accusation punishes
 # the correct answer. Negated forms ("not conformant", "isn't clean") are
 # accusations again, so they win over the clearing word.
-_CLEARING = r"(?i)\b(conformant|compliant|clean|cleared|fine|correct|conforms|exempt|sanctioned|carve-?out|allowed|permitted|no (?:rule )?(?:impact|violation|issue|finding)s?|holds)\b"
-_NEGATED = r"(?i)\b(not|isn't|is not|aren't|are not|never|fails? to|violat\w+|breaks?)\b[^.]{0,40}?\b(conformant|compliant|clean|cleared|fine|correct|conforms|exempt|sanctioned|allowed|permitted|holds)\b"
+_CLEARING = r"(?i)\b(conformant|compliant|clean|cleared|fine|correct|accurate|done right|improvement|conforms|exempt(?:ion|ed)?|sanctioned|carve-?out|allowed|permitted|no (?:rule )?(?:impact|violation|issue|finding)s?|holds)\b"
+_NEGATED = r"(?i)\b(not|isn't|is not|aren't|are not|never|fails? to|violat\w+|breaks?|needs?|requires?)\b[^.]{0,40}?\b(conformant|compliant|clean|cleared|fine|correct|accurate|done right|improvement|conforms|exempt(?:ion|ed)?|sanctioned|allowed|permitted|holds)\b"
 
 
 # A sentence that REPORTS what a clean file claims about itself is not an accusation. The
@@ -345,7 +351,34 @@ orders-db.ts line 30 looks fine to me.
     assert got["caught"] == ["jv-exception"] and got["rule_cited"] == [], got
     got = grade_review("`RefundDeclinedException.java` is a bespoke business exception (10).", bespoke, [])
     assert got["rule_cited"] == ["jv-exception"], got
-    print("selftest OK: catches evidence, requires the rule token for citation, flags clean-file claims, ignores exonerations and reported claims, reads plural and hyphenated citations, splits bold headings, reads a numbered heading as one finding, wants node:fs named, ignores call arguments, scores an empty review 0")
+    # A clean file's basename inside a longer name is not that file (settings.ts in
+    # load-settings.ts, the eighteenth defect), and "exemption" clears like "exempt" (the
+    # nineteenth); verbatim from a skill-arm review, 2026-09-27. The file named whole still counts.
+    sentence = ("`createLoadSettings` in `src/use-cases/load-settings.ts:9-11` is rule 18's `create[A-Z]` "
+                "DI-factory exemption, not a banned curried chain.")
+    got = grade_review(sentence, [], ["src/domain/settings.ts", "src/use-cases/load-settings.ts"])
+    assert got["false_positives"] == [], got
+    got = grade_review("`src/domain/settings.ts:13` breaks rule 17: the catch belongs in infra.", [],
+                       ["src/domain/settings.ts", "src/use-cases/load-settings.ts"])
+    assert got["false_positives"] == ["src/domain/settings.ts"], got
+    # "accurate" clears like "correct" (the twentieth defect, verbatim from a skill-arm review,
+    # 2026-09-27); "not accurate" is an accusation again.
+    got = grade_review("The rule 17 citation in `settings.ts:10-14` is an accurate comment about the code it sits above.",
+                       [], ["src/domain/settings.ts"])
+    assert got["false_positives"] == [], got
+    got = grade_review("The rule 17 citation in `settings.ts:10-14` is not accurate: that catch belongs in infra.",
+                       [], ["src/domain/settings.ts"])
+    assert got["false_positives"] == ["src/domain/settings.ts"], got
+    # Praise in the reviewer's own words clears too (the twenty-first defect, verbatim from a
+    # skill-arm Java review, 2026-09-27); "needs improvement" is an accusation.
+    java_clean = ["src/main/java/com/example/app/domain/Refund.java", "src/main/java/com/example/app/domain/MemberId.java"]
+    for praise in ("`Refund.java`'s move from `Result<Refund, String>` to a typed `Refund.Error` is a rule 16 improvement.",
+                   "`MemberId.java` is the rule 12 shape done right: compact-constructor guard, `parse` returning `Result`."):
+        got = grade_review(praise, [], java_clean)
+        assert got["false_positives"] == [], (praise, got)
+    got = grade_review("`Refund.java` needs improvement under rule 16: its error is a String.", [], java_clean)
+    assert got["false_positives"] == ["src/main/java/com/example/app/domain/Refund.java"], got
+    print("selftest OK: catches evidence, requires the rule token for citation, flags clean-file claims, ignores exonerations and reported claims, reads plural and hyphenated citations, splits bold headings, reads a numbered heading as one finding, wants node:fs named, ignores call arguments, names a file whole, reads exemption, accurate and praise as clearing, scores an empty review 0")
 
 
 def main() -> None:
