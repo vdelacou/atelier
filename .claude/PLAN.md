@@ -44,9 +44,9 @@ samples 3/3); fixture re-frozen at five passes (181/305). Phase 4 done: CHANGELO
 release line (e199e41).
 Phase 6 done 2026-09-28: CI green on c05b18b, then on the owner's yes the annotated tags v2.5.0 (6320b92)
 and v2.6.0 (e199e41), pushed. The plan is closed; the follow-ups below are backlog.
-Follow-ups (not in 2.6.0): check-no-em-dash.sh falls back to HEAD~1 on an unresolvable explicit base
-and reports a pass on that narrower range; h6's skill arm ran to the 40-minute cap twice (17 min in
-2.5.0), a watch item for CONFORMANCE_TIMEOUT_MIN.
+Follow-ups (not in 2.6.0): h6's skill arm ran to the 40-minute cap twice (17 min in 2.5.0), a watch
+item for CONFORMANCE_TIMEOUT_MIN. Closed after the release: check-no-em-dash.sh's HEAD~1 fallback on an
+unresolvable explicit or pull-request base now exits 2 (2dc9dca).
 
 ## Phase 3 checklist (doctrine drift; file:line as found by the audit, lines shift as edits land)
 
