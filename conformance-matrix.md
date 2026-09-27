@@ -60,7 +60,7 @@ Precedence, highest wins: CONTRADICTS > OUT-OF-SCOPE > GAP > COVERED > STRICTER.
 Enforcement column, strongest tier present: **gate** (a pre-commit or CI check that blocks:
 tests, coverage, mutation, lint, a check-*.sh), **tripwire** (a staged-diff discipline guard,
 the repo's own term for the check-*.sh production-discipline scripts), **rule** (a SKILL.md
-hard rule 1-34 the agent applies at generation time with no machine check), **doctrine** (a
+hard rule 1-37 the agent applies at generation time with no machine check), **doctrine** (a
 reference-file prescription), or **none**.
 
 Evidence is repo-root-relative: a `path:line` or `path:line-range`, a `gate N` address into
@@ -91,8 +91,8 @@ matching the canon's fast-gate list. And 15.3 as its own sub-concept (no line-by
 suppressions) is not dragged into the contradiction, because the skill covers it separately
 with a no-inline-ignore discipline; only 15.1 carries the CONTRADICTS. Resolved in Phase 2 by amending
 the skill (the canon is right here: the skill's own mutation gate is multi-minute, and a slow
-hook trains bypass). The hook now runs only the five fast gates (commit size, package.json,
-gitleaks protect, staged lint, typecheck), and a shipped CI workflow (assets/ci.yml) runs the
+hook trains bypass). The hook now runs only the seven fast gates (commit size, package.json,
+the staged secret scan, identity, the discipline tripwires, staged lint, typecheck), and a shipped CI workflow (assets/ci.yml) runs the
 full suite, coverage, and mutation as the required merge check. This row is now COVERED, and
 4.6 with it.
 
@@ -104,7 +104,7 @@ skill meets all three. POST-body-not-query-string: "Personal data and any free t
 typed travel in a POST body ... Searching by someone's name is a POST, not a GET"
 (privacy.md:44). Redact-at-the-logger: a Winston `redactFormat` whose key set is
 `['password', 'token', 'authorization', 'apiKey', 'secret', 'email', 'phone']` with the note
-"secrets plus natural identifiers (rule 27)" (security.md:206), applied "once, at the logger
+"secrets plus natural identifiers (rule 27)" (security.md:216), applied "once, at the logger
 adapter, not at every call site" (privacy.md:47). Opaque-versus-natural: "Opaque internal
 identifiers are loggable ... Natural identifiers are not: email, phone, name, token, national
 id" (privacy.md:46). It goes beyond doctrine to a staged-diff tripwire,
@@ -158,10 +158,10 @@ between source and sink" (security.md:11), with server-side authorization carrie
 `isolation.md` and reinforced at security.md:33-37. Canon 5.8's Do is treat everything an AI model
 reads as untrusted and authorize every action it requests server-side. The skill's `ai.md`
 matches clause for clause: content is "fenced as data" so "when the email says 'delete
-everything', the correct output is that the email says so" (ai.md:90), and "Every tool call or
+everything', the correct output is that the email says so" (ai.md:93), and "Every tool call or
 action the model requests is validated at the boundary ... and authorized server-side against
 the rights of the human or tenant it runs for" from an allow-list at least privilege
-(ai.md:91). Both COVERED; 5.8 is additionally a SKILL.md hard rule (rule 32), so its
+(ai.md:94). Both COVERED; 5.8 is additionally a SKILL.md hard rule (rule 32), so its
 Enforcement tier is rule rather than doctrine.
 
 **6. Frontend: the contract gateway and accessibility hold, mobile-first is missing (3.5 and
@@ -169,7 +169,7 @@ Enforcement tier is rule rather than doctrine.
 data access behind an interface with a real client and an in-memory fake; the skill prescribes
 exactly that, "a gateway port in src/lib/ with a real client and a canned fake, returning
 Result and mapping the wire DTO into the frontend's own model at that one point"
-(nextjs-monorepo.md:711): COVERED. Canon 17.6's Do has four clauses (semantic elements,
+(nextjs-monorepo.md:716): COVERED. Canon 17.6's Do has four clauses (semantic elements,
 keyboard-workable flows, contrast in tokens, and a gate on automated accessibility checks); the
 skill meets all four, with "Semantic elements first" and "Keyboard everywhere" and "Contrast
 lives in the tokens" (atomic-design.md:227-229) and a real gate, "eslint-plugin-jsx-a11y runs
@@ -192,8 +192,8 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 1.1 | One committed config for style | COVERED | workflow.md:55; bun-typescript.md:129; check-package-json.sh:42; check-package-json.sh:61; assets/pre-commit gate 5 | gate | One flat eslint.config.js embeds prettier; lint:strict is gate 5; since 2026-09-08 the style rules themselves are lint (`STYLE_BANS`, rules 1, 7, 10, 18; `TRY_BAN` 17; `FS_BAN` 20) |
-| 1.2 | Cap complexity and duplication | COVERED | SKILL.md:88; SKILL.md:59; SKILL.md:57 | gate | Size caps and Rule-of-Three are generation-time rules; rule 35 gates cyclomatic complexity at 10 in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`); sonarjs cognitive stays off, one metric |
+| 1.1 | One committed config for style | COVERED | workflow.md:55; bun-typescript.md:129; check-package-json.sh:42; check-package-json.sh:61; assets/pre-commit gate 6 | gate | One flat eslint.config.js embeds prettier; the staged lint is hook gate 6 and lint:strict runs in CI; since 2026-09-08 the style rules themselves are lint (`STYLE_BANS`, rules 1, 7, 10, 18; `TRY_BAN` 17; `FS_BAN` 20) |
+| 1.2 | Cap complexity and duplication | COVERED | SKILL.md:88; SKILL.md:77; SKILL.md:91 | gate | Size caps and Rule-of-Three are generation-time rules; rule 35 gates cyclomatic complexity at 10 in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`); sonarjs cognitive stays off, one metric |
 | 1.3 | One grammar for the history | COVERED | SKILL.md:59; assets/commit-msg; assets/check-commit-messages.sh | gate | Conventional Commits grammar enforced by the commit-msg hook and re-checked in CI over the pushed range, so a --no-verify bypass is still caught (gate added 2026-08-30 with the canon row). The 72-vs-100 divergence closed the same day: P6 1.3 ACCEPTED 2026-08-30, canon now states 100, the documented default of @commitlint/config-conventional, which the row's own gate snippet prescribes |
 
 ### Pillar 2: Simplicity by default
@@ -202,7 +202,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 2.1 | Do the least that works | COVERED | complexity.md:123; behavioural-examples.md:42 | rule | Lazy ladder orders stdlib and platform before a dependency |
 | 2.2 | Delete before you add | COVERED | behavioural-examples.md:48; complexity.md:129 | rule | Delete-before-add stated as an explicit reflex |
-| 2.3 | Earn abstractions with the Rule of Three | COVERED | SKILL.md:57; complexity.md:158 | rule | Duplication 1 leave, 2 note, 3 extract |
+| 2.3 | Earn abstractions with the Rule of Three | COVERED | SKILL.md:83; complexity.md:158 | rule | Duplication 1 leave, 2 note, 3 extract |
 | 2.4 | Defer the build, not the seam | COVERED | complexity.md:135 | rule | Port and smallest adapter today; heavy implementation waits |
 | 2.5 | Simplicity is not negligence | COVERED | complexity.md:144-146; behavioural-examples.md:50 | rule | Validation, Result errors, security never trimmed |
 | 2.6 | Every field must earn its place | COVERED | privacy.md:7; clean-code.md:109 | rule | Name the feature that reads a field now, else omit (YAGNI plus minimize) |
@@ -211,15 +211,15 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 3.1 | Point dependencies inward | COVERED | architecture.md:96; architecture.md:235; SKILL.md:92; SKILL.md:79; bun-typescript.md:174; bun-typescript.md:252; nextjs-monorepo.md:259; java-quarkus.md:336; assets/java/LayerRulesTest.java:20 | gate | Domain has zero infra dependencies; imports point inward; hard rule 37 (2026-09-08) makes the dependency table lint, one `no-restricted-imports` zone per layer, and a shipped ArchUnit test in the Java variant; the Next config carries the zones since 2026-09-09, the design system's own layers upward and the server sub-variant's layers as in Bun |
-| 3.2 | Put every external thing behind a port | COVERED | architecture.md:257-258; SKILL.md:49 | gate | Port plus real adapter plus in-memory fake at composition root; mock ban lint-enforced |
+| 3.1 | Point dependencies inward | COVERED | architecture.md:100; architecture.md:240; SKILL.md:92; SKILL.md:79; bun-typescript.md:174; bun-typescript.md:252; nextjs-monorepo.md:260; java-quarkus.md:336; assets/java/LayerRulesTest.java:20 | gate | Domain has zero infra dependencies; imports point inward; hard rule 37 (2026-09-08) makes the dependency table lint, one `no-restricted-imports` zone per layer, and a shipped ArchUnit test in the Java variant; the Next config carries the zones since 2026-09-09, the design system's own layers upward and the server sub-variant's layers as in Bun |
+| 3.2 | Put every external thing behind a port | COVERED | architecture.md:262-263; SKILL.md:49 | gate | Port plus real adapter plus in-memory fake at composition root; mock ban lint-enforced |
 | 3.3 | Seal the presentation behind a design system | COVERED | SKILL.md:57; atomic-design.md:229 | gate | Props-in JSX-out, tokens only, no fetching; design-system eslint block |
-| 3.4 | The backend is a client-agnostic API | COVERED | architecture.md:321 | doctrine | Resource-shaped API every client consumes the same way |
-| 3.5 | Build the frontend against a contract, not a running backend | COVERED | architecture.md:331-342; nextjs-monorepo.md:711 | doctrine | Gateway port with real client and canned fake, one wiring flip (Watchlist 6) |
-| 3.6 | The internal model is yours, not the API's shape | COVERED | architecture.md:325-332 | doctrine | Wire DTO mapped to own model at one point |
-| 3.7 | The domain model is not the database model | COVERED | architecture.md:323 | doctrine | Repository is the single row-to-domain mapping point |
+| 3.4 | The backend is a client-agnostic API | COVERED | architecture.md:326 | doctrine | Resource-shaped API every client consumes the same way |
+| 3.5 | Build the frontend against a contract, not a running backend | COVERED | architecture.md:336-347; nextjs-monorepo.md:746 | doctrine | Gateway port with real client and canned fake, one wiring flip (Watchlist 6) |
+| 3.6 | The internal model is yours, not the API's shape | COVERED | architecture.md:330-337 | doctrine | Wire DTO mapped to own model at one point |
+| 3.7 | The domain model is not the database model | COVERED | architecture.md:328 | doctrine | Repository is the single row-to-domain mapping point |
 | 3.8 | Make the boundary testable | COVERED | testing.md:11; SKILL.md:57 | rule | Domain refactor never breaks tests; UI half lint-gated |
-| 3.9 | The AI model is a dependency | COVERED | ai.md:7-21; behavioural-examples.md:42 | rule | Model behind port with canned fake, pinned dated snapshot (Watchlist 6; eval/spend map to 4.8/5.9) |
+| 3.9 | The AI model is a dependency | COVERED | ai.md:7-21; SKILL.md:71 | rule | Model behind port with canned fake, pinned dated snapshot (Watchlist 6; eval/spend map to 4.8/5.9) |
 
 ### Pillar 4: Proof over hope
 
@@ -227,27 +227,27 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 4.1 | Test in layers | COVERED | testing.md:107-121 | doctrine | Unit, integration, e2e, performance layers each named |
 | 4.2 | Keep unit tests in milliseconds | COVERED | testing.md:410; testing.md:140 | doctrine | In-memory fakes, no real IO in unit tests; literal ms target not stated |
-| 4.3 | Have a testing philosophy | COVERED | testing.md:184-186; SKILL.md:60 | rule | Every fixed bug becomes a permanent reproducing test |
+| 4.3 | Have a testing philosophy | COVERED | testing.md:184-186; SKILL.md:83 | rule | Every fixed bug becomes a permanent reproducing test |
 | 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3); CI mutates the changed files per run, the full sweep is the daily assets/mutation.yml (2026-09-03) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:49; testing.md:290; java-quarkus.md:224; check-pom.sh:62 | gate | Mock ban is absolute and gated in every variant (ESLint in TypeScript; the enforcer's `bannedDependencies` plus `check-pom.sh` in Java since 2026-09-08), exceeding canon advisory prefer-fakes |
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; assets/ci-java.yml; assets/ci-next.yml; governance.md:106 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on the changed files on a frozen lockfile as the required merge check; the full mutation sweep is scheduled (assets/mutation.yml) |
 | 4.7 | Hold generated code to the same bar | COVERED | workflow.md:512 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
-| 4.8 | Gate non-determinism behind evals | COVERED | ai.md:39-82; behavioural-examples.md:42 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
+| 4.8 | Gate non-determinism behind evals | COVERED | ai.md:40-85; SKILL.md:71 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
 | 4.9 | Run the tests in random order | COVERED | SKILL.md:78; testing.md:675; bun-typescript.md:35; assets/ci.yml:56; assets/stryker.conf.json:8; java-quarkus.md:484 | gate | Added 2026-09-06 with hard rule 36: `bun test --randomize` is the test script, the CI step and Stryker's runner; JUnit random method and class order in Java; the seed prints on red and replays |
 
 ### Pillar 5: Secure by default
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 5.1 | Keep secrets out of the codebase | COVERED | security.md:198; assets/pre-commit gate 3 | gate | Secret manager, rotation, central control; gitleaks gate backs the ban |
+| 5.1 | Keep secrets out of the codebase | COVERED | security.md:206; assets/pre-commit gate 3 | gate | Secret manager, rotation, central control; gitleaks gate backs the ban |
 | 5.2 | Do not build authentication or crypto yourself | COVERED | security.md:35-46 | rule | OIDC plus vetted crypto, SSO and MFA on consoles (rule 33) |
 | 5.3 | Control your dependencies | COVERED | assets/check-package-json.sh:100; docs/global-rules/proposed-revisions.md | gate | P6 revision ACCEPTED 2026-07-20: canon 5.3 now allows a constrained range plus a committed lockfile, which check-package-json.sh enforces (Watchlist 4) |
 | 5.4 | Secure the supply chain | COVERED | delivery.md:71-73 | doctrine | Immutable digest-addressed artifacts, SBOM, cosign signatures |
 | 5.5 | Validate at the boundary, authorize on the server | COVERED | security.md:13; SKILL.md:94 | rule | Branded checkpoint before sink; server-side authZ is the only one that matters (Watchlist 5) |
-| 5.6 | Expose only what has to be public | COVERED | security.md:232 | doctrine | Datastores, queues, admin panels on a private network only |
-| 5.7 | One security baseline everywhere | COVERED | security.md:225-232 | rule | Auth, TLS, rate limits, allow/deny default on every route (rule 33) |
-| 5.8 | Untrusted content is not instructions | COVERED | ai.md:91; behavioural-examples.md:42 | rule | Model input untrusted, every action authorized server-side (rule 32) (Watchlist 5) |
-| 5.9 | Cap what a caller can spend | COVERED | behavioural-examples.md:42; ai.md:105 | rule | Per-caller spend budget before the call, refuse over bill (rule 32) |
+| 5.6 | Expose only what has to be public | COVERED | security.md:242 | doctrine | Datastores, queues, admin panels on a private network only |
+| 5.7 | One security baseline everywhere | COVERED | security.md:235-242 | rule | Auth, TLS, rate limits, allow/deny default on every route (rule 33) |
+| 5.8 | Untrusted content is not instructions | COVERED | ai.md:94; SKILL.md:71 | rule | Model input untrusted, every action authorized server-side (rule 32) (Watchlist 5) |
+| 5.9 | Cap what a caller can spend | COVERED | SKILL.md:71; ai.md:108 | rule | Per-caller spend budget before the call, refuse over bill (rule 32) |
 | 5.10 | One inspectable edge, no reachable origin | COVERED | security.md; delivery.md | doctrine | Resolved Phase 2: single filtering edge plus origin-lock doctrine, with the x-edge-secret origin check as defense in depth |
 
 ### Pillar 6: Private by default
@@ -256,7 +256,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 6.1 | Know the law that follows the user | COVERED | privacy.md:13 | doctrine | Design to the strictest regime you serve; policyFor code example |
 | 6.2 | Minimize and justify collection | COVERED | privacy.md:7-38 | doctrine | Collect only stated-purpose fields; explicit consent for sensitive and minors |
-| 6.3 | Keep personal data out of logs and URLs | COVERED | privacy.md:44-47; security.md:206 | tripwire | POST body, logger redactFormat, opaque vs natural ids; check-pii-channels.sh (Watchlist 2), a default gate via check-disciplines.sh in every hook and CI workflow since 2026-09-10 |
+| 6.3 | Keep personal data out of logs and URLs | COVERED | privacy.md:44-47; security.md:216 | tripwire | POST body, logger redactFormat, opaque vs natural ids; check-pii-channels.sh (Watchlist 2), a default gate via check-disciplines.sh in every hook and CI workflow since 2026-09-10 |
 | 6.4 | Build for user rights from day one | COVERED | privacy.md:65-74 | doctrine | Five rights as first-class ops; erasure hard-deletes personal fields |
 | 6.5 | Map and classify your data | COVERED | privacy.md:78-85 | doctrine | Generated data map with class, purpose, crossesBorder per field |
 | 6.6 | Never copy production data into test or dev | COVERED | privacy.md:99 | rule | Deterministic synthetic fixtures, zero real subjects (rule 34) |
@@ -268,10 +268,10 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 7.1 | Derive the tenant/owner from one trusted source | COVERED | isolation.md:9; SKILL.md:67 | rule | Owner from a verified token claim, never caller-controlled |
 | 7.2 | Defend in depth | COVERED | isolation.md:28; SKILL.md:67 | rule | App filter plus row-level security in the same transaction |
-| 7.3 | Fail closed | COVERED | isolation.md:48; SKILL.md:67 | rule | Missing owner context returns nothing, never everything or a 500 |
-| 7.4 | Shrink the blast radius | COVERED | isolation.md:65-72 | doctrine | Narrowest runtime role; NOBYPASSRLS scoped grants |
-| 7.5 | Prove isolation per endpoint | STRICTER | isolation.md:82-94; SKILL.md:67 | tripwire | Cross-tenant 404 test per endpoint plus a forged-trust-header edge test; check-isolation-tests.sh gates it, opt-in where tenants exist (the one tripwire not in check-disciplines.sh) |
-| 7.6 | Make identifiers unguessable, and never the authorization | COVERED | isolation.md:106-108 | doctrine | UUIDv7, keys internal, id is defense-in-depth never authorization |
+| 7.3 | Fail closed | COVERED | isolation.md:52; SKILL.md:67 | rule | Missing owner context returns nothing, never everything or a 500 |
+| 7.4 | Shrink the blast radius | COVERED | isolation.md:69-76 | doctrine | Narrowest runtime role; NOBYPASSRLS scoped grants |
+| 7.5 | Prove isolation per endpoint | STRICTER | isolation.md:86-98; SKILL.md:67 | tripwire | Cross-tenant 404 test per endpoint plus a forged-trust-header edge test; check-isolation-tests.sh gates it, opt-in where tenants exist (the one tripwire not in check-disciplines.sh) |
+| 7.6 | Make identifiers unguessable, and never the authorization | COVERED | isolation.md:110-112 | doctrine | UUIDv7, keys internal, id is defense-in-depth never authorization |
 | 7.7 | No service-token backdoor for bulk reads | COVERED | isolation.md; SKILL.md:67 | doctrine | Resolved Phase 2: no service-key bulk route, analytical volume served from the data platform (ties 10.14) |
 
 ### Pillar 8: Delivery should be boring
@@ -281,7 +281,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 8.1 | Trunk-based development with small commits | COVERED | workflow.md:252-324; assets/check-commit-size.sh:19 | gate | Trunk, sub-day branches, small commits; size gate 1 plus commit-msg |
 | 8.2 | Automated pipeline, progressive delivery, one-step rollback | COVERED | delivery.md:7-12 | doctrine | Pipeline-only deploy, canary, one-re-run rollback |
 | 8.3 | Infrastructure as code | COVERED | delivery.md:22 | doctrine | Every resource in version-controlled IaC, rebuilt with one command |
-| 8.4 | Vertical slices | COVERED | architecture.md:37-46; workflow.md:259 | doctrine | Feature-cohesive slices, deploy independently or dark behind a flag; archetype src/ is layer-first |
+| 8.4 | Vertical slices | COVERED | architecture.md:34-50; workflow.md:259 | doctrine | Feature-cohesive slices, deploy independently or dark behind a flag; archetype src/ is layer-first |
 | 8.5 | Change contracts additively / expand-contract | COVERED | reliability.md:113-115; assets/check-data-lifecycle.sh:36 | tripwire | Expand-migrate-contract; check-data-lifecycle.sh blocks DROP COLUMN/TABLE, RENAME, TRUNCATE, ALTER COLUMN TYPE outside a *contract* migration, a default gate via check-disciplines.sh since 2026-09-10 |
 | 8.6 | Separate and ephemeral environments | COVERED | delivery.md:30 | doctrine | Throwaway per-branch environments keyed to the PR, destroyed on close |
 
@@ -309,7 +309,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 10.8 | Meet performance targets under load | COVERED | reliability.md:127 | doctrine | p95/p99 route budgets, k6 load-test gate fails the build |
 | 10.9 | Treat data as sacred | COVERED | reliability.md:97-109; assets/check-data-lifecycle.sh | tripwire | Soft-delete default, versioned migrations; deliberate storage choice via the ADR discipline; check-data-lifecycle.sh a default gate via check-disciplines.sh since 2026-09-10 |
 | 10.10 | Learn from every failure | COVERED | delivery.md:91-98 | doctrine | Blameless postmortem ending in owned, dated backlog tickets |
-| 10.11 | Parse, don't validate | COVERED | reliability.md:131-134; security.md:183 | rule | Parse at the boundary into branded types; money cents, instants UTC (rule 12) |
+| 10.11 | Parse, don't validate | COVERED | reliability.md:131-134; security.md:191 | rule | Parse at the boundary into branded types; money cents, instants UTC (rule 12) |
 | 10.12 | No lost updates | COVERED | reliability.md:83; SKILL.md:70 | rule | Version on read, required on write, stale write is a 409 (rule 31) |
 | 10.13 | Every network call has a deadline | COVERED | reliability.md:9-11; assets/check-io-deadlines.sh | tripwire | Deadline on every outbound call, bounded jittered retries; check-io-deadlines.sh (rule 29), a default gate via check-disciplines.sh since 2026-09-10 |
 | 10.14 | Separate the analytical store from the operational one | COVERED | reliability.md | doctrine | Resolved Phase 2: OLTP/OLAP separation doctrine, ETL/CDC copy, the pipeline as the one sanctioned bulk reader (ties 7.7) |
@@ -341,7 +341,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 13.1 | Make ownership explicit | COVERED | governance.md:94-100 | doctrine | CODEOWNERS maps every path; RACI note, one Accountable |
 | 13.2 | Separate duties | COVERED | governance.md:104-106 | doctrine | Requester never sole approver; no self-merge |
 | 13.3 | Keep an audit trail | COVERED | governance.md:114-121 | doctrine | Approvals and emergency access leave a durable audit-log insert |
-| 13.4 | Make finding problems safe and let the accountable verify | COVERED | governance.md:127-128 | doctrine | Reward detection; the accountable owner verifies via a re-runnable check |
+| 13.4 | Make finding problems safe and let the accountable verify | COVERED | governance.md:128-129 | doctrine | Reward detection; the accountable owner verifies via a re-runnable check |
 | 13.5 | The agent proposes, the human disposes | COVERED | SKILL.md:60; SKILL.md:61; SKILL.md:62; assets/check-identity.sh:3 | rule | Atelier hard rules 24-26 verbatim: confirmation-gated tests, no unconfirmed landings, identity in metadata only. P6 ACCEPTED 2026-08-30 (origin: the reverse-matrix audit; the skill had the rules before the canon had the row). Rule 26 gated since 2026-09-09: `check-identity.sh` in every shipped hook and CI workflow |
 
 ### Pillar 14: Pave the road
@@ -350,7 +350,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 14.1 | Provide golden paths as real artifacts | COVERED | atelier-greenfield/SKILL.md:8; skills/atelier/assets | rule | Greenfield scaffold starts green; assets ship real hooks, scripts, configs not docs |
 | 14.2 | Make it self-service | COVERED | delivery.md:105 | doctrine | Provision env or pipeline via a declarative request the team owns, not a ticket |
-| 14.3 | Treat the platform as a product | COVERED | delivery.md:105; governance.md:132 | doctrine | Platform is a product: owned, versioned, documented, with a feedback loop |
+| 14.3 | Treat the platform as a product | COVERED | delivery.md:105; governance.md:133 | doctrine | Platform is a product: owned, versioned, documented, with a feedback loop |
 
 ### Pillar 15: Enforce and verify
 
@@ -360,10 +360,10 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:162; assets/check-coverage.ts:148 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
 | 15.3 | No silent opt-out | COVERED | workflow.md:62-83; SKILL.md:51; bun-typescript.md:205; bun-typescript.md:224; assets/java/pmd-ruleset.xml:56; check-no-suppressions.sh:43; java-quarkus.md:256 | gate | Project-level severity change with a reason; inline suppressions banned, and since 2026-09-08 gated in every variant: both TypeScript configs (`noInlineConfig` makes directives inert and reported, `ban-ts-comment` every `@ts-` form, `no-warning-comments` the other tools' markers) and Java (`check-no-suppressions.sh` in hook and CI, the `NoSuppressWarnings` PMD rule, an inert `NOPMD` marker) |
 | 15.4 | Test the bypass, not the happy path | COVERED | testing.md:630-638; testing.md:531-538 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
-| 15.5 | Compliance is not proof | COVERED | workflow.md:511; governance.md:128 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
+| 15.5 | Compliance is not proof | COVERED | workflow.md:511; governance.md:129 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
 | 15.6 | Audit the gaps between systems | COVERED | workflow.md:503; testing.md:646 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
-| 15.7 | Fix the class, not the instance | COVERED | workflow.md:504-566 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
-| 15.8 | Make proof re-checkable | COVERED | governance.md:80-128; workflow.md:511 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
+| 15.7 | Fix the class, not the instance | COVERED | workflow.md:504-508 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
+| 15.8 | Make proof re-checkable | COVERED | governance.md:80-129; workflow.md:511 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
 | 15.9 | Spend human judgment where it counts | COVERED | workflow.md:560; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
 | 15.10 | Prove the gate can fail | COVERED | SKILL.md:133; scripts/smoke-test.sh | gate | Doctrine after the variant gate table, every gate lands with a violation fixture it must reject; the repo smoke tests are the reference implementation |
 
@@ -385,18 +385,18 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 17.2 | Earn trust rather than extract a sale | COVERED | product.md:25-28 | doctrine | Honest over conversion, symmetric cancel, no dark patterns |
 | 17.3 | Design for real behavior, not the demo | COVERED | product.md:33-39 | doctrine | Ground flows in observed behavior per market, re-ranked on evidence |
 | 17.4 | Let technology serve the person, not replace them | COVERED | product.md:48 | doctrine | Automation removes friction; the human path stays visible |
-| 17.5 | Speak the user's language | COVERED | product.md:52; nextjs-monorepo.md:790 | rule | Every string in a meaning-keyed catalog; localization is a data change |
-| 17.6 | Accessible by default | COVERED | atomic-design.md:227-232; nextjs-monorepo.md:426 | gate | Semantic, keyboard, token contrast; jsx-a11y error-level gate; axe optional (Watchlist 6) |
-| 17.7 | Mobile first, and a light interface | COVERED | product.md:86; assets/check-bundle-size.sh; atomic-design.md:199 | gate | Resolved Phase 2: smallest-screen-first, one-primary-action, progressive-disclosure; the bundle budget is a shipped gate. P6 ACCEPTED 2026-08-30, canon 17.7 gained the budget clause the pillar prose already asked for (Watchlist 6) |
+| 17.5 | Speak the user's language | COVERED | product.md:52; nextjs-monorepo.md:824 | rule | Every string in a meaning-keyed catalog; localization is a data change |
+| 17.6 | Accessible by default | COVERED | atomic-design.md:227-232; nextjs-monorepo.md:427 | gate | Semantic, keyboard, token contrast; jsx-a11y error-level gate; axe optional (Watchlist 6) |
+| 17.7 | Mobile first, and a light interface | COVERED | product.md:88; assets/check-bundle-size.sh; atomic-design.md:199 | gate | Resolved Phase 2: smallest-screen-first, one-primary-action, progressive-disclosure; the bundle budget is a shipped gate. P6 ACCEPTED 2026-08-30, canon 17.7 gained the budget clause the pillar prose already asked for (Watchlist 6) |
 
 ### Pillar 18: Validate before you build
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 18.1 | Talk to real users before you write code | COVERED | product.md:92; atelier-grill-me/SKILL.md:18 | doctrine | Short problem interviews before committing an engineer; grill-me operationalizes |
-| 18.2 | Test demand with the cheapest thing | COVERED | product.md:93 | doctrine | Landing page, mockup, or concierge MVP as the cheapest demand test |
-| 18.3 | Set a dated, honest go/no-go | COVERED | product.md:94-100 | doctrine | Dated go/no-go with criteria written before the evidence |
-| 18.4 | Keep validating after launch | COVERED | product.md:103; observability.md:75 | doctrine | Ship behind a flag, instrument adoption, keep or kill on a threshold |
+| 18.1 | Talk to real users before you write code | COVERED | product.md:94; atelier-grill-me/SKILL.md:18 | doctrine | Short problem interviews before committing an engineer; grill-me operationalizes |
+| 18.2 | Test demand with the cheapest thing | COVERED | product.md:95 | doctrine | Landing page, mockup, or concierge MVP as the cheapest demand test |
+| 18.3 | Set a dated, honest go/no-go | COVERED | product.md:96-102 | doctrine | Dated go/no-go with criteria written before the evidence |
+| 18.4 | Keep validating after launch | COVERED | product.md:105; observability.md:75 | doctrine | Ship behind a flag, instrument adoption, keep or kill on a threshold |
 
 ## Work list (Phase 2 input)
 
