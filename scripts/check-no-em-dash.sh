@@ -15,7 +15,9 @@
 #
 # With no arguments under GitHub Actions the range is the PR's base branch, or
 # on a push GITHUB_EVENT_BEFORE..HEAD (the workflow exports github.event.before),
-# else HEAD~1..HEAD; the same resolution as the shipped commit gates.
+# else HEAD~1..HEAD; the same resolution as the shipped commit gates. Only the push
+# path falls back to HEAD~1: a base given as an argument, or a pull request's base
+# that did not fetch, fails with exit 2 when it does not resolve.
 set -euo pipefail
 
 DASH=$'\xe2\x80\x94'
@@ -53,11 +55,21 @@ if [ "${1:-}" = "--selftest" ]; then
   # A git error is a failure, never a clean pass: `|| true` after the pipe once turned
   # an unknown head ref into "no em dash" and exit 0.
   if bash "$gate" HEAD~1 no-such-ref >/dev/null 2>&1; then echo "selftest FAIL: an unknown head ref passed" >&2; exit 1; fi
+  # A base that does not resolve fails too: it once fell back to HEAD~1 and passed on a narrower
+  # range than the one asked for (2026-09-28). HEAD~1..HEAD is clean here, so only the refusal
+  # makes these two red: an explicit base, and a pull request's base whose fetch failed.
+  if bash "$gate" no-such-base HEAD >/dev/null 2>&1; then echo "selftest FAIL: an unknown base ref passed" >&2; exit 1; fi
+  if env -u GITHUB_EVENT_NAME -u GITHUB_EVENT_BEFORE GITHUB_BASE_REF=no-such-branch bash "$gate" >/dev/null 2>&1; then
+    echo "selftest FAIL: an unresolvable pull request base passed" >&2; exit 1
+  fi
+  # A push whose before-sha is unusable (a new branch) keeps its HEAD~1 fallback.
+  env -u GITHUB_BASE_REF GITHUB_EVENT_NAME=push GITHUB_EVENT_BEFORE="$zero_sha" bash "$gate" >/dev/null \
+    || { echo "selftest FAIL: a push with no usable before-sha lost its HEAD~1 fallback" >&2; exit 1; }
   # An added line whose own text starts with `+` (a Markdown bullet) is still read.
   printf '+ a plus bullet %s with a dash\n' "$DASH" > c.md && git add c.md
   if staged >/dev/null 2>&1; then echo "selftest FAIL: an em dash on a line starting with + was accepted" >&2; exit 1; fi
   git reset -q c.md
-  echo "selftest OK: gate rejects a staged em dash, one in a commit range, one on a line starting with +, and an unknown ref; accepts a clean stage and a range that removes one"
+  echo "selftest OK: gate rejects a staged em dash, one in a commit range, one on a line starting with +, and an unknown ref; refuses an unknown base (explicit or a pull request's), keeps the push fallback, and accepts a clean stage and a range that removes one"
   exit 0
 fi
 
@@ -71,7 +83,9 @@ elif [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
   if [ -n "$before" ] && [ "$before" != "$zero_sha" ] && git rev-parse --quiet --verify "${before}^{commit}" >/dev/null 2>&1; then
     base="$before"
   else
+    # A new branch or a force-push leaves no usable before-sha: judge the pushed tip alone.
     base=HEAD~1
+    git rev-parse --quiet --verify 'HEAD~1^{commit}' >/dev/null 2>&1 || { echo "check-no-em-dash: single-commit history, nothing to compare"; exit 0; }
   fi
   head=HEAD
 else
@@ -82,9 +96,11 @@ if [ -z "$base" ]; then
   scope="the staged diff"
   hits=$(git diff --cached -U0 | added_lines_with_dash)
 else
+  # An explicit or pull-request base that does not resolve is refused, never swapped for
+  # HEAD~1: a pass on a narrower range than the one asked for is a silent pass.
   if ! git rev-parse --quiet --verify "${base}^{commit}" >/dev/null 2>&1; then
-    base=HEAD~1
-    git rev-parse --quiet --verify 'HEAD~1^{commit}' >/dev/null 2>&1 || { echo "check-no-em-dash: single-commit history, nothing to compare"; exit 0; }
+    echo "check-no-em-dash: base '${base}' does not resolve to a commit; the range was not read (pass <base> [<head>], not <base>..<head>)" >&2
+    exit 2
   fi
   scope="${base}..${head}"
   hits=$(git diff -U0 "$base" "$head" | added_lines_with_dash)
