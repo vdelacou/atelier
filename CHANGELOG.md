@@ -62,6 +62,24 @@ whole, not any single skill.
   puts the skill in `~/.claude/skills/`, the path the pointer-block step reads.
 
 ### Changed
+- **eslint-plugin-unicorn's recommended set is on in both TypeScript configs.** Both had registered the
+  plugin with no rule on, only two turned off. `unicornPlugin.configs.recommended` now applies, less what
+  contradicts the standard or prettier, each rule off with its reason beside it: three that fight
+  prettier's output; `no-null` (a port returns `T | null`); the abbreviation rule under both its names
+  (it flags the standard's own `deps`, `err()` and `XProps`); `prefer-ternary` (it flags every guard
+  clause, clean-code.md's GOOD example); `no-array-reduce` (the standard folds with reduce);
+  `consistent-boolean-name` (domain predicates, the `ok` discriminant); `prefer-number-coercion` (the
+  coverage gate needs parseFloat's reading of an absent cell); `prefer-global-number-constants` (unicorn
+  61 and 76 disagree on `NaN`); and `no-useless-undefined` narrowed so `ok(undefined)` stays legal. The
+  test seams may swap a global and restore it. Probed first on unicorn 61 (the Next pin) and 76 (the
+  Bun smoke test's latest, 315 rules on): the rest of the set holds on every reference example and
+  shipped asset once they were brought in line (`catch (error)` over `catch (e)`, no separator in a
+  four-digit number, `for...of` over `forEach`, a callback wrapped rather than passed by reference,
+  `Response.json`, a default `node:path` import, a dispatch record for the Button variants, and a few
+  single fixes); what still fires is on the BAD and SMELL examples. Both smoke tests prove the set on
+  with `unicorn/throw-new-error` red. Consumers: re-extract `eslint.config.js` (or `.mjs`), re-copy
+  `check-coverage.ts`, `regenerate-coverage-preload.ts` and `capture-rejection.ts`, and expect findings
+  on existing code; `bunx eslint --fix .` settles most of them.
 - **The lessons doctrine gains the compaction pass.** `references/lessons.md`: the journals stay
   append-only between passes; the pass is the one sanctioned rewrite (a journal over 100 entries or
   ~15 KB gets one offer at session start, or the user asks), with its verdict table, the archive format

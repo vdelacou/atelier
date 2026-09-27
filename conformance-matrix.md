@@ -169,12 +169,12 @@ Enforcement tier is rule rather than doctrine.
 data access behind an interface with a real client and an in-memory fake; the skill prescribes
 exactly that, "a gateway port in src/lib/ with a real client and a canned fake, returning
 Result and mapping the wire DTO into the frontend's own model at that one point"
-(nextjs-monorepo.md:644): COVERED. Canon 17.6's Do has four clauses (semantic elements,
+(nextjs-monorepo.md:681): COVERED. Canon 17.6's Do has four clauses (semantic elements,
 keyboard-workable flows, contrast in tokens, and a gate on automated accessibility checks); the
 skill meets all four, with "Semantic elements first" and "Keyboard everywhere" and "Contrast
-lives in the tokens" (atomic-design.md:234-236) and a real gate, "eslint-plugin-jsx-a11y runs
+lives in the tokens" (atomic-design.md:227-229) and a real gate, "eslint-plugin-jsx-a11y runs
 error-level ... it fails the build" with the Next smoke test proving the rules fire
-(atomic-design.md:239): COVERED, and gate-enforced, with a runtime axe scan noted as the
+(atomic-design.md:232): COVERED, and gate-enforced, with a runtime axe scan noted as the
 optional deeper pass. Canon 17.7 is the gap. Its Do is "Design the smallest screen first with
 one clear primary action per view, and let each screen carry only the controls that view
 needs", and none of those three clauses appears anywhere in the skill: greps across the whole
@@ -213,9 +213,9 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 |---|---|---|---|---|---|
 | 3.1 | Point dependencies inward | COVERED | architecture.md:96; architecture.md:235; SKILL.md:92; SKILL.md:79; bun-typescript.md:152; bun-typescript.md:228; nextjs-monorepo.md:241; java-quarkus.md:259; assets/java/LayerRulesTest.java:20 | gate | Domain has zero infra dependencies; imports point inward; hard rule 37 (2026-09-08) makes the dependency table lint, one `no-restricted-imports` zone per layer, and a shipped ArchUnit test in the Java variant; the Next config carries the zones since 2026-09-09, the design system's own layers upward and the server sub-variant's layers as in Bun |
 | 3.2 | Put every external thing behind a port | COVERED | architecture.md:257-258; SKILL.md:49 | gate | Port plus real adapter plus in-memory fake at composition root; mock ban lint-enforced |
-| 3.3 | Seal the presentation behind a design system | COVERED | SKILL.md:57; atomic-design.md:236 | gate | Props-in JSX-out, tokens only, no fetching; design-system eslint block |
+| 3.3 | Seal the presentation behind a design system | COVERED | SKILL.md:57; atomic-design.md:229 | gate | Props-in JSX-out, tokens only, no fetching; design-system eslint block |
 | 3.4 | The backend is a client-agnostic API | COVERED | architecture.md:321 | doctrine | Resource-shaped API every client consumes the same way |
-| 3.5 | Build the frontend against a contract, not a running backend | COVERED | architecture.md:331-342; nextjs-monorepo.md:644 | doctrine | Gateway port with real client and canned fake, one wiring flip (Watchlist 6) |
+| 3.5 | Build the frontend against a contract, not a running backend | COVERED | architecture.md:331-342; nextjs-monorepo.md:681 | doctrine | Gateway port with real client and canned fake, one wiring flip (Watchlist 6) |
 | 3.6 | The internal model is yours, not the API's shape | COVERED | architecture.md:325-332 | doctrine | Wire DTO mapped to own model at one point |
 | 3.7 | The domain model is not the database model | COVERED | architecture.md:323 | doctrine | Repository is the single row-to-domain mapping point |
 | 3.8 | Make the boundary testable | COVERED | testing.md:11; SKILL.md:57 | rule | Domain refactor never breaks tests; UI half lint-gated |
@@ -282,7 +282,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 8.2 | Automated pipeline, progressive delivery, one-step rollback | COVERED | delivery.md:7-12 | doctrine | Pipeline-only deploy, canary, one-re-run rollback |
 | 8.3 | Infrastructure as code | COVERED | delivery.md:22 | doctrine | Every resource in version-controlled IaC, rebuilt with one command |
 | 8.4 | Vertical slices | COVERED | architecture.md:37-46; workflow.md:259 | doctrine | Feature-cohesive slices, deploy independently or dark behind a flag; archetype src/ is layer-first |
-| 8.5 | Change contracts additively / expand-contract | COVERED | reliability.md:112-114; assets/check-data-lifecycle.sh:31 | tripwire | Expand-migrate-contract; check-data-lifecycle.sh blocks DROP COLUMN/TABLE, RENAME, TRUNCATE, ALTER COLUMN TYPE outside a *contract* migration, a default gate via check-disciplines.sh since 2026-09-10 |
+| 8.5 | Change contracts additively / expand-contract | COVERED | reliability.md:113-115; assets/check-data-lifecycle.sh:31 | tripwire | Expand-migrate-contract; check-data-lifecycle.sh blocks DROP COLUMN/TABLE, RENAME, TRUNCATE, ALTER COLUMN TYPE outside a *contract* migration, a default gate via check-disciplines.sh since 2026-09-10 |
 | 8.6 | Separate and ephemeral environments | COVERED | delivery.md:30 | doctrine | Throwaway per-branch environments keyed to the PR, destroyed on close |
 
 ### Pillar 9: Run as little as possible yourself
@@ -302,15 +302,15 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 10.1 | Set explicit reliability targets | COVERED | observability.md:7-15 | doctrine | SLO-as-code: availability, latency, error-rate targets with windows |
 | 10.2 | Errors as values, not exceptions | COVERED | result-type.md:3; SKILL.md:52-53 | rule | Every IO port and use-case returns Result; exceptions for bugs (rule 16); the 2026-08-30 catch-placement strengthening was already rule 17, catch quarantined to infra adapters |
 | 10.3 | Keep read paths explicit | COVERED | reliability.md:30 | doctrine | Explicit, tunable hot-path reads (hand SQL or a visible-SQL query builder); the ORM owns writes. P6 ACCEPTED 2026-07-20, widened to match the canon's own 10.4 builder DO |
-| 10.4 | Keep reads fast as the table grows | COVERED | reliability.md:49-50 | doctrine | Keyset cursor with composite index, never OFFSET; stream large sets |
-| 10.5 | Do not fire and forget | COVERED | reliability.md:66-68 | doctrine | Transactional outbox, retrying worker, idempotent on a dedupe key |
+| 10.4 | Keep reads fast as the table grows | COVERED | reliability.md:50-51 | doctrine | Keyset cursor with composite index, never OFFSET; stream large sets |
+| 10.5 | Do not fire and forget | COVERED | reliability.md:67-69 | doctrine | Transactional outbox, retrying worker, idempotent on a dedupe key |
 | 10.6 | Keep backups you have actually restored | COVERED | delivery.md:79 | doctrine | Quarterly restore drill into a scratch DB, timed |
-| 10.7 | Scale with demand | COVERED | reliability.md:120-121 | doctrine | Stateless replicas, explicit-TTL cache with invalidation; autoscale implied |
-| 10.8 | Meet performance targets under load | COVERED | reliability.md:126 | doctrine | p95/p99 route budgets, k6 load-test gate fails the build |
-| 10.9 | Treat data as sacred | COVERED | reliability.md:96-108; assets/check-data-lifecycle.sh | tripwire | Soft-delete default, versioned migrations; deliberate storage choice via the ADR discipline; check-data-lifecycle.sh a default gate via check-disciplines.sh since 2026-09-10 |
+| 10.7 | Scale with demand | COVERED | reliability.md:121-122 | doctrine | Stateless replicas, explicit-TTL cache with invalidation; autoscale implied |
+| 10.8 | Meet performance targets under load | COVERED | reliability.md:127 | doctrine | p95/p99 route budgets, k6 load-test gate fails the build |
+| 10.9 | Treat data as sacred | COVERED | reliability.md:97-109; assets/check-data-lifecycle.sh | tripwire | Soft-delete default, versioned migrations; deliberate storage choice via the ADR discipline; check-data-lifecycle.sh a default gate via check-disciplines.sh since 2026-09-10 |
 | 10.10 | Learn from every failure | COVERED | delivery.md:91-98 | doctrine | Blameless postmortem ending in owned, dated backlog tickets |
-| 10.11 | Parse, don't validate | COVERED | reliability.md:130-133; security.md:183 | rule | Parse at the boundary into branded types; money cents, instants UTC (rule 12) |
-| 10.12 | No lost updates | COVERED | reliability.md:82; SKILL.md:70 | rule | Version on read, required on write, stale write is a 409 (rule 31) |
+| 10.11 | Parse, don't validate | COVERED | reliability.md:131-134; security.md:183 | rule | Parse at the boundary into branded types; money cents, instants UTC (rule 12) |
+| 10.12 | No lost updates | COVERED | reliability.md:83; SKILL.md:70 | rule | Version on read, required on write, stale write is a 409 (rule 31) |
 | 10.13 | Every network call has a deadline | COVERED | reliability.md:9-11; assets/check-io-deadlines.sh | tripwire | Deadline on every outbound call, bounded jittered retries; check-io-deadlines.sh (rule 29), a default gate via check-disciplines.sh since 2026-09-10 |
 | 10.14 | Separate the analytical store from the operational one | COVERED | reliability.md | doctrine | Resolved Phase 2: OLTP/OLAP separation doctrine, ETL/CDC copy, the pipeline as the one sanctioned bulk reader (ties 7.7) |
 
@@ -385,9 +385,9 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 17.2 | Earn trust rather than extract a sale | COVERED | product.md:25-28 | doctrine | Honest over conversion, symmetric cancel, no dark patterns |
 | 17.3 | Design for real behavior, not the demo | COVERED | product.md:33-39 | doctrine | Ground flows in observed behavior per market, re-ranked on evidence |
 | 17.4 | Let technology serve the person, not replace them | COVERED | product.md:48 | doctrine | Automation removes friction; the human path stays visible |
-| 17.5 | Speak the user's language | COVERED | product.md:52; nextjs-monorepo.md:723 | rule | Every string in a meaning-keyed catalog; localization is a data change |
-| 17.6 | Accessible by default | COVERED | atomic-design.md:234-239; nextjs-monorepo.md:367 | gate | Semantic, keyboard, token contrast; jsx-a11y error-level gate; axe optional (Watchlist 6) |
-| 17.7 | Mobile first, and a light interface | COVERED | product.md:86; assets/check-bundle-size.sh; atomic-design.md:206 | gate | Resolved Phase 2: smallest-screen-first, one-primary-action, progressive-disclosure; the bundle budget is a shipped gate. P6 ACCEPTED 2026-08-30, canon 17.7 gained the budget clause the pillar prose already asked for (Watchlist 6) |
+| 17.5 | Speak the user's language | COVERED | product.md:52; nextjs-monorepo.md:760 | rule | Every string in a meaning-keyed catalog; localization is a data change |
+| 17.6 | Accessible by default | COVERED | atomic-design.md:227-232; nextjs-monorepo.md:404 | gate | Semantic, keyboard, token contrast; jsx-a11y error-level gate; axe optional (Watchlist 6) |
+| 17.7 | Mobile first, and a light interface | COVERED | product.md:86; assets/check-bundle-size.sh; atomic-design.md:199 | gate | Resolved Phase 2: smallest-screen-first, one-primary-action, progressive-disclosure; the bundle budget is a shipped gate. P6 ACCEPTED 2026-08-30, canon 17.7 gained the budget clause the pillar prose already asked for (Watchlist 6) |
 
 ### Pillar 18: Validate before you build
 

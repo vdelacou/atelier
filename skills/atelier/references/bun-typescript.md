@@ -274,11 +274,47 @@ export default [
       ],
     },
   },
+  unicornPlugin.configs.recommended,
   {
-    plugins: { unicorn: unicornPlugin },
+    // unicorn's recommended set, less what contradicts the standard or prettier: each rule off for
+    // its reason, never inline (hard rule 15). Probed 2026-09-27 against unicorn 61 and 76; a rule
+    // renamed between them is named twice, since 'off' on a rule the installed version lacks is a no-op.
     rules: {
+      // Formatting is prettier's; these three fight its output (eslint-config-prettier's list).
       'unicorn/empty-brace-spaces': 'off',
+      'unicorn/no-nested-ternary': 'off',
+      'unicorn/number-literal-case': 'off',
+      // A port returns `T | null` for an absent row (references/architecture.md).
       'unicorn/no-null': 'off',
+      // The standard's own names fail it: the DI factory's `deps`, the Result pair's `err()`, React's
+      // `XProps`. Do not abbreviate (references/clean-code.md) stays with review.
+      'unicorn/prevent-abbreviations': 'off',
+      'unicorn/name-replacements': 'off',
+      // Flags every guard clause followed by a return, clean-code.md's own GOOD example: the
+      // standard says no `else`, guard clauses instead.
+      'unicorn/prefer-ternary': 'off',
+      // The standard folds with reduce (first-class collections, references/clean-code.md); a for-of
+      // accumulator would trade the fold for a mutable `let`.
+      'unicorn/no-array-reduce': 'off',
+      // Domain predicates read as the domain says them (`moneyEquals`, references/object-design.md)
+      // and the Result discriminant is `ok` (hard rule 16).
+      'unicorn/consistent-boolean-name': 'off',
+      // Number('') is 0 where parseFloat reads NaN, and a gate parsing a tool's text table (the
+      // coverage gate) needs the parseFloat reading.
+      'unicorn/prefer-number-coercion': 'off',
+      // unicorn 61 wants `Number.NaN` and 76 wants `NaN`; `Number.NaN` satisfies both.
+      'unicorn/prefer-global-number-constants': 'off',
+      // `ok(undefined)` is how a `Result<void, E>` succeeds (hard rule 16).
+      'unicorn/no-useless-undefined': ['error', { checkArguments: false }],
+    },
+  },
+  {
+    // The test seams swap a global and restore it (installFetchMock, references/testing-infra.md);
+    // production code never assigns one.
+    files: ['src/test-helpers/**/*.ts', '**/*.test.ts'],
+    rules: {
+      'unicorn/no-global-object-property-assignment': 'off',
+      'unicorn/no-unnecessary-global-this': 'off',
     },
   },
   {
@@ -334,6 +370,7 @@ Notes on the config:
 - **One config file, two modes.** Both scripts carry `--max-warnings=0`, so warnings fail either run (the zero-warning rule, hard rule 15); the modes differ only in depth. The inner-loop `bun run lint` runs the fast non-type-aware rules (~2 s cached / ~7 s cold); `bun run lint:strict` sets `LINT_STRICT=1` and the conditional block adds `parserOptions.projectService: true` plus the type-aware `@typescript-eslint` rules (~25 s on a full repo). CI runs the strict version (`assets/ci.yml`); the pre-commit hook's gate 4 lints only the staged files, fast and non-type-aware (`scripts/lint-staged.sh`), and gate 5 is the typecheck. There is no separate `eslint.strict.config.js`; keeping one config eliminates drift.
 - **`linterOptions.noInlineConfig`, `ban-ts-comment` and `no-warning-comments`** are hard rule 15 as lint: a directive comment is inert and reported, every `@ts-` comment is an error, and a marker another tool reads (`prettier-ignore`, `stryker disable`, `nosonar`, `sonar-ignore`, `snyk-ignore`, `deepcode ignore`, `biome-ignore`, `oxlint-disable`, the `c8`, `v8` and `istanbul` coverage ignores) is an error wherever it sits in a comment. Because directives are inert, nothing inside a file can switch any of this off.
 - **`sonarjsPlugin.configs.recommended`** catches SonarLint findings at lint time so they no longer escape the IDE. See `references/workflow.md` for the common ones (S4325, S6594, S4123, S6551, S6671). Six rules are turned off, each justified in a comment beside it: `sonarjs/no-unused-vars` (duplicate), `sonarjs/no-empty-test-file` (false-positive on `describe` blocks), `sonarjs/cognitive-complexity` (one metric is enough: the cyclomatic cap of rule 35, `complexity: ['error', 10]` in the base block, plus the size caps cover it), and three that fire only in the type-aware lane and contradict the standard itself, `sonarjs/no-useless-intersection` (reports every branded type, i.e. hard rule 12), `sonarjs/null-dereference` (reports non-nullable and explicitly narrowed values, a class `strict: true` already owns), and `sonarjs/function-return-type` (reports every function that returns through the `ok()`/`err()` helpers, i.e. hard rule 16, since `Result<T, never>` and `Result<never, E>` are two types to it). The last three are dated against sonarjs 4.2.0 (2026-08-29 for the first two, 2026-09-05 for the third) and re-probed weekly by the skill repository's `.github/workflows/canary.yml` (upstream, not an asset a consumer copies), which turns them back on and reports if upstream has fixed them. Holding sonarjs at an older version is not an option: 4.1.0 does not load under ESLint 10 at all.
+- **`unicornPlugin.configs.recommended`** is on since 2026-09-27 (the plugin had been registered with no rule on). What stays off contradicts the standard or prettier, each with its reason beside it: three rules that fight prettier's output, `no-null` (a port returns `T | null` for an absent row), the abbreviation rule under both its names (`prevent-abbreviations` in unicorn 61, `name-replacements` in 76; it flags the standard's own `deps`, `err()` and `XProps`), `prefer-ternary` (it flags every guard clause followed by a return, clean-code.md's GOOD example), `no-array-reduce` (the standard folds with reduce), `consistent-boolean-name` (domain predicates and the `ok` discriminant), `prefer-number-coercion` (`Number('')` is 0 where the coverage gate needs parseFloat's NaN), `prefer-global-number-constants` (unicorn 61 wants `Number.NaN` and 76 `NaN`), and `no-useless-undefined` keeps `ok(undefined)` legal. A scoped block lets the test seams (`src/test-helpers/**`, the tests) swap a global and restore it, as `installFetchMock` does; production code never assigns one. Everything else in the set holds on the references' examples and the shipped assets, which were brought in line the same day (`catch (error)`, no separator in a four-digit number, `for...of` over `forEach`, a callback wrapped rather than passed by reference).
 - **`no-console` is `error`** under `src/**`. Always use the logger port (see below), never `console.*`. The one carve-out is `scripts/**`: the gate scripts shipped in `assets/` are terminal tools whose output *is* their interface; the config turns the rule off there at the project level rather than sprinkling inline ignores (rule 15).
 - **`security/detect-object-injection`, `detect-unsafe-regex`, and `detect-non-literal-fs-filename`** are disabled at the project level because they only false-positive on this codebase's idioms (branded-type `Record<K, V>` lookups, bounded regexes, `chmodSync(mkdtempSync(...))` in tests). Comments in the config explain why each is off. Never inline-ignore them per-line.
 - **`no-restricted-imports`** blocks `mock` from `bun:test` (the entire namespace), see hard rule 13, and carries the layer zones of hard rule 37: one block per layer under `src/`, each listing the layers it may never import, the mock ban repeated in each because ESLint replaces a matching rule's options rather than merging them.
@@ -508,7 +545,7 @@ Rule 4 in full: no `console.*` anywhere in application code, enforced by ESLint'
 
 No `try/catch` anywhere outside `src/infra/**`, pure-domain fallbacks for native-synchronous throwers (`JSON.parse`, `URL` constructor), and exactly one top-level handler in `src/main.ts`. Every IO port returns `Promise<Result<T, PortError>>`. Use-cases pattern-match on `.ok` and aggregate port errors into `StepError`. See `references/result-type.md` for the full treatment, the discriminated-union error design, the fan-out batch semantics, and the `retryOnErr` + `captureRejection` helpers.
 
-The shared `formatError(err: unknown): string` helper lives in `src/domain/utilities/format-error.ts`. Use it in every `catch (e)` block in `src/infra/**`, never `String(e)`, which returns `"[object Object]"` for non-Error throws (SonarJS S6551).
+The shared `formatError(err: unknown): string` helper lives in `src/domain/utilities/format-error.ts`. Use it in every `catch (error)` block in `src/infra/**`, never `String(error)`, which returns `"[object Object]"` for non-Error throws (SonarJS S6551).
 
 `process.exit(1)` is allowed only in `src/main.ts` after the top-level catch. Never inside a use-case, adapter, or domain module.
 

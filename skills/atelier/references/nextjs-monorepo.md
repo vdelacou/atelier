@@ -324,11 +324,48 @@ const eslintConfig = defineConfig([
     ignores: ['**/*.test.ts'],
     rules: { 'no-restricted-syntax': ['error', ...STYLE_BANS, TRY_BAN] },
   },
+  unicornPlugin.configs.recommended,
   {
-    plugins: { unicorn: unicornPlugin },
+    // The Bun variant's unicorn block: the recommended set, less what contradicts the standard or
+    // prettier, each rule off for its reason, never inline (hard rule 15). Probed 2026-09-27 against
+    // unicorn 61 and 76; a rule renamed between them is named twice, since 'off' on a rule the
+    // installed version lacks is a no-op.
     rules: {
+      // Formatting is prettier's; these three fight its output (eslint-config-prettier's list).
       'unicorn/empty-brace-spaces': 'off',
+      'unicorn/no-nested-ternary': 'off',
+      'unicorn/number-literal-case': 'off',
+      // A port returns `T | null` for an absent row (references/architecture.md).
       'unicorn/no-null': 'off',
+      // The standard's own names fail it: the DI factory's `deps`, the Result pair's `err()`, React's
+      // `XProps`. Do not abbreviate (references/clean-code.md) stays with review.
+      'unicorn/prevent-abbreviations': 'off',
+      'unicorn/name-replacements': 'off',
+      // Flags every guard clause followed by a return, clean-code.md's own GOOD example: the
+      // standard says no `else`, guard clauses instead.
+      'unicorn/prefer-ternary': 'off',
+      // The standard folds with reduce (first-class collections, references/clean-code.md); a for-of
+      // accumulator would trade the fold for a mutable `let`.
+      'unicorn/no-array-reduce': 'off',
+      // Domain predicates read as the domain says them (`moneyEquals`, references/object-design.md)
+      // and the Result discriminant is `ok` (hard rule 16).
+      'unicorn/consistent-boolean-name': 'off',
+      // Number('') is 0 where parseFloat reads NaN, and a gate parsing a tool's text table (the
+      // coverage gate) needs the parseFloat reading.
+      'unicorn/prefer-number-coercion': 'off',
+      // unicorn 61 wants `Number.NaN` and 76 wants `NaN`; `Number.NaN` satisfies both.
+      'unicorn/prefer-global-number-constants': 'off',
+      // `ok(undefined)` is how a `Result<void, E>` succeeds (hard rule 16).
+      'unicorn/no-useless-undefined': ['error', { checkArguments: false }],
+    },
+  },
+  {
+    // The test seams swap a global and restore it (installFetchMock, references/testing-infra.md);
+    // production code never assigns one.
+    files: ['src/test-helpers/**/*.ts', 'src/test-helpers/**/*.tsx', '**/*.test.ts', '**/*.test.tsx'],
+    rules: {
+      'unicorn/no-global-object-property-assignment': 'off',
+      'unicorn/no-unnecessary-global-this': 'off',
     },
   },
   {
@@ -768,23 +805,17 @@ import winston from 'winston';
 const { combine, timestamp, json, colorize, errors, printf } = winston.format;
 
 const devFormat = printf(({ level, message, timestamp: ts, stack, ...meta }) => {
-  const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+  const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
   return `${ts} [${level}]: ${stack ?? message}${metaStr}`;
 });
 
+const outputFormat = (): winston.Logform.Format => (process.env.NODE_ENV === 'production' ? json() : combine(colorize(), devFormat));
+
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL ?? (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
-  format: combine(
-    errors({ stack: true }),
-    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    process.env.NODE_ENV === 'production' ? json() : combine(colorize(), devFormat)
-  ),
+  format: combine(errors({ stack: true }), timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), outputFormat()),
   defaultMeta: { service: '<service-name>' },
-  transports: [
-    new winston.transports.Console({
-      format: process.env.NODE_ENV === 'production' ? json() : combine(colorize(), devFormat),
-    }),
-  ],
+  transports: [new winston.transports.Console({ format: outputFormat() })],
   exitOnError: false,
 });
 

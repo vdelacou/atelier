@@ -393,6 +393,13 @@ ban_red "prettier-ignore is rejected (rule 15)" src/lib/unformatted.ts "'prettie
 // prettier-ignore
 export const table = [1,2,3,   4];
 EOF
+# unicorn's recommended set is on since 2026-09-27, as in the Bun config; throw-new-error is
+# unicorn's alone and stable across its majors, so its tag is the proof.
+ban_red "unicorn's recommended set is on (throw-new-error)" src/lib/bare-throw.ts "unicorn/throw-new-error" <<'EOF'
+export const fail = (reason: string): never => {
+  throw Error(reason);
+};
+EOF
 
 # Rule 37 in this variant (2026-09-09): the design system's own layers point upward (an
 # atom never imports a molecule, a molecule never an organism, atomic-design.md) and the

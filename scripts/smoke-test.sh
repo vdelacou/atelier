@@ -188,38 +188,40 @@ export const createFetchGreeting = (baseUrl: string): FetchGreeting => async (vi
     const response = await fetch(`${baseUrl}/greet`, {
       method: 'POST',
       body: JSON.stringify({ visitor }),
-      signal: AbortSignal.timeout(2_000),
+      signal: AbortSignal.timeout(2000),
     });
     if (!response.ok) return { ok: false, error: `http ${response.status}` };
     return { ok: true, text: await response.text() };
-  } catch (e) {
-    return { ok: false, error: formatError(e) };
+  } catch (error) {
+    return { ok: false, error: formatError(error) };
   }
 };
 EOF
 
 cat > src/infra/fetch-greeting.test.ts <<'EOF'
-import { afterEach, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { installFetchMock } from '../test-helpers/fetch-mock.ts';
 import { createFetchGreeting } from './fetch-greeting.ts';
 
-let mock: ReturnType<typeof installFetchMock> | undefined;
-afterEach(() => mock?.restore());
+describe('createFetchGreeting', () => {
+  let mock: ReturnType<typeof installFetchMock> | undefined;
+  afterEach(() => mock?.restore());
 
-test('when the greeting service responds, the adapter returns its text', async () => {
-  mock = installFetchMock([{ match: (url) => url.includes('/greet'), respond: () => new Response('Hello, Ada!') }]);
-  expect(await createFetchGreeting('https://svc.test')('Ada')).toEqual({ ok: true, text: 'Hello, Ada!' });
-  expect(mock.calls).toHaveLength(1);
-});
+  test('when the greeting service responds, the adapter returns its text', async () => {
+    mock = installFetchMock([{ match: (url) => url.includes('/greet'), respond: () => new Response('Hello, Ada!') }]);
+    expect(await createFetchGreeting('https://svc.test')('Ada')).toEqual({ ok: true, text: 'Hello, Ada!' });
+    expect(mock.calls).toHaveLength(1);
+  });
 
-test('when the service answers 500, the adapter reports the status', async () => {
-  mock = installFetchMock([{ match: () => true, respond: () => new Response('', { status: 500 }) }]);
-  expect(await createFetchGreeting('https://svc.test')('Ada')).toEqual({ ok: false, error: 'http 500' });
-});
+  test('when the service answers 500, the adapter reports the status', async () => {
+    mock = installFetchMock([{ match: () => true, respond: () => new Response('', { status: 500 }) }]);
+    expect(await createFetchGreeting('https://svc.test')('Ada')).toEqual({ ok: false, error: 'http 500' });
+  });
 
-test('when the connection dies, the adapter translates the throw', async () => {
-  mock = installFetchMock([{ match: () => true, respond: () => { throw new Error('ECONNREFUSED'); } }]);
-  expect(await createFetchGreeting('https://svc.test')('Ada')).toEqual({ ok: false, error: 'ECONNREFUSED' });
+  test('when the connection dies, the adapter translates the throw', async () => {
+    mock = installFetchMock([{ match: () => true, respond: () => { throw new Error('ECONNREFUSED'); } }]);
+    expect(await createFetchGreeting('https://svc.test')('Ada')).toEqual({ ok: false, error: 'ECONNREFUSED' });
+  });
 });
 EOF
 
@@ -447,6 +449,13 @@ ban_red "a coverage ignore comment is rejected (rule 15)" src/domain/uncovered.t
 export const rare = (n: number): number => {
   /* c8 ignore next */
   return n < 0 ? -n : n;
+};
+EOF
+# unicorn's recommended set is on since 2026-09-27 (the plugin had been registered with no rule
+# on). throw-new-error is unicorn's alone and stable across its majors, so its tag is the proof.
+ban_red "unicorn's recommended set is on (throw-new-error)" src/domain/bare-throw.ts "unicorn/throw-new-error" <<'EOF'
+export const fail = (reason: string): never => {
+  throw Error(reason);
 };
 EOF
 rmdir src/use-cases
