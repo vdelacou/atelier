@@ -150,9 +150,9 @@ Each eval runs the same tasks with and without the skill on Claude Opus and grad
 |---|---|---|
 | Conformance, 61 assertions over 21 tasks, the 2.5.0 release pass ([scorecard](scripts/conformance-eval/baseline.md)) | 61/61 | 35/61 |
 | Conformance, the 7-task production-discipline tier | 24/24 | 8/24 |
-| Review, TypeScript, 12 planted violations over 3 passes ([scorecard](scripts/review-eval/baseline.md)) | 36/36 caught | 22/36 caught |
-| Review, TypeScript, findings that cite the rule | 36/36 | 1/36 |
-| Review, Java, 9 planted violations over 3 passes | 27/27 caught | 20/27 caught |
+| Review, TypeScript, 12 planted violations over 3 passes ([scorecard](scripts/review-eval/baseline.md)) | 36/36 caught | 21/36 caught |
+| Review, TypeScript, findings that cite the rule | 36/36 | 2/36 |
+| Review, Java, 9 planted violations over 3 passes | 27/27 caught | 23/27 caught |
 | Review, rule claims against the clean files | 0 | 0 |
 | Memory cleanup, 27 planted journal entries over 3 passes ([scorecard](scripts/distill-eval/baseline.md)) | 33/33 checks | 24/33 checks |
 | Memory cleanup, entries rewritten with no original kept | 0 | 31 |

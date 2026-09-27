@@ -6,6 +6,19 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Harness
+- **The review fixture's clean files carry no guideline finding either, and four more grader defects
+  are fixed.** The Bun `notifier.ts` and the Java `Notifier.java` (ports nothing implements or calls,
+  guideline 2) leave the fixture, and so does the `shipping.ts` constant extraction (unrelated to the
+  change, guideline 3), which leaves the planted `shipping.test.ts` edit standing alone. Three passes
+  per variant, both arms: Bun 36/36 caught and cited against 21/36 and 2/36 unaided, Java 27/27 and
+  27/27 against 23/27 and 4/27, no rule claim against a clean file. The defects, eighteenth to
+  twenty-first, all in the false-positive lens and each with a selftest case seen red first: a
+  basename matched inside a longer name (`settings.ts` in `load-settings.ts`), and "exemption",
+  "accurate" and plain praise ("a rule 16 improvement", "done right") did not clear a file. No earlier
+  reading moves. A minor style note stays true on `MemberId.java` (`java.util.regex.Pattern` written
+  out twice), no rule claimed.
+
 ## [2.5.0] - 2026-09-27
 
 The memory release: a fifth companion, `atelier-distill`, compacts a repo's agent memory with nothing
