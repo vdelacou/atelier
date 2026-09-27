@@ -7,7 +7,7 @@ description: Run the atelier compaction pass on a repo's agent memory, the lesso
 
 Keep a repo's agent memory worth reading. Every session reads the lessons journals in full before its first action, so an unpruned journal is a cost paid on every session, and a superseded or already-enforced entry is noise the next reader has to discount. The journals are append-only between passes; this skill runs the compaction pass the main standard defines: every entry gets one verdict with its evidence, the user approves, the pass archives before it removes, and every original entry is accounted for afterwards.
 
-Like atelier-grill-me and atelier-greenfield, it is a focused, on-demand counterpart to the always-on atelier standard: atelier-distill owns the moment the memory outgrows itself.
+It is one of four focused, on-demand companions to the always-on atelier standard: atelier-grill-me owns the pre-decision moment, atelier-greenfield repo birth, atelier-review-me the pre-land moment, atelier-distill the moment the memory outgrows itself.
 
 Interaction and agent discipline: as the main atelier skill's Interaction section (terse, answer first, no em dashes, one question round led by your recommendation, next steps at wrap-up), including its gate: never commit or push without the user's yes (rule 25).
 

@@ -196,7 +196,7 @@ A journal is read in full at every session start, so its size is paid on every s
 
 ## File starters
 
-Create these files only when the first real lesson is captured. Do not create them pre-emptively.
+Create these files only when the first real lesson is captured. Do not create them pre-emptively. The one exception is a repo born from atelier-greenfield, which seeds the team journal with its header so the journal exists from the first commit.
 
 ### `.claude/LESSONS.md` starter
 
@@ -405,7 +405,7 @@ If the user explicitly says "always capture X kind of thing", treat that as a st
 
 The lessons files capture what is specific to THIS codebase, THIS team, THIS deployment. They do not re-state universal engineering principles from atelier's other references.
 
-When a lesson directly contradicts a general atelier rule, the lesson wins for this repo only. State the contradiction once in the entry, so future Claude understands why the local rule overrides the global one.
+When a lesson directly contradicts a general atelier default (a tunable threshold, a preferred tool, a reference's advice), the lesson wins for this repo only; it never overrides hard rules 1-37 or the two confirmation gates, and a lesson that would is surfaced to the user instead of applied. State the contradiction once in the entry, so future Claude understands why the local rule overrides the global one.
 
 ## Harvesting lessons as an audit source
 
