@@ -226,7 +226,7 @@ Never interpolate secrets into log messages (`logger.info('token ' + token)`). U
 
 Protection is the default on every route and every environment, never a per-route memory exercise:
 
-- **Authenticated by default.** The deny-by-default policy applies app-wide (baseline middleware in a Bun server, `quarkus.http.auth.permission.default.policy=authenticated` in Java); public endpoints (health probes, a landing page) are the explicit, allow-listed exception with a one-line reason.
+- **Authenticated by default.** The deny-by-default policy applies app-wide (baseline middleware in a Bun server, `quarkus.security.jaxrs.default-roles-allowed=**` in Java, which `references/java-quarkus.md` details); public endpoints (health probes, a landing page) are the explicit, allow-listed exception with a one-line reason.
 - **Encrypted transport everywhere**, certificates issued and renewed by the platform (`references/delivery.md`, Automatic TLS).
 - **Abuse controls as baseline**: rate limits and allow/deny lists applied globally, inherited by every route. On metered AI endpoints a rate limit is not enough; add the per-caller spend gate (`references/ai.md`).
 - **Only the app is public.** Databases, caches, queues, internal services, and admin panels live on a private network, reachable only from your own services; a datastore answering connections from the whole internet is a breach waiting for a scanner. The IaC layer owns this (`references/delivery.md`).

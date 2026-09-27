@@ -438,7 +438,7 @@ Logging: JBoss/SLF4J injected via constructor, JSON output in production, and re
 
 ## Inbound resources (`api/`)
 
-- **Authenticated by default**: `quarkus.http.auth.permission.default.policy=authenticated` in `application.properties`; permit-all is the explicit, justified exception (health probes). Identity comes from OIDC (rule 33: never hand-rolled auth); rate limits and TLS are baseline, not per-route memory (`references/security.md`, One baseline).
+- **Authenticated by default**: `quarkus.security.jaxrs.default-roles-allowed=**` in `application.properties` (`**` is any authenticated identity), so a REST endpoint without a security annotation refuses an anonymous caller; `@PermitAll` is the explicit, justified exception, and the health probes under `/q/health` are not REST resources, so they stay reachable. A permission set named `default` with only a `policy` does nothing: Quarkus registers a path permission only with `paths`, so the path-based form is `quarkus.http.auth.permission.authenticated.paths=/*` with `.policy=authenticated`, plus a `permit` set for `/q/health/*` (the longest path wins). Identity comes from OIDC (rule 33: never hand-rolled auth); rate limits and TLS are baseline, not per-route memory (`references/security.md`, One baseline).
 - Resource-shaped endpoints, not screen-shaped (`references/architecture.md`, The backend is a client-agnostic API).
 - The resource maps `Result` to HTTP: `Ok` to 200/201, domain-expected failures to their status, use-case `StepError` to 500 with a generic body (internals stay in the log with the trace id).
 - **OpenAPI from the code**: MicroProfile OpenAPI annotations (`@Operation`, `@APIResponse`, example objects) so the published spec cannot drift (`references/governance.md`).
