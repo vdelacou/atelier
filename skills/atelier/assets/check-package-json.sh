@@ -98,7 +98,7 @@ fi
 # a version-shaped value elsewhere (publishConfig.tag: "next", an engines
 # field, a script) is not a finding (a false positive found 2026-09-02).
 # Catches:  "any-pkg": "latest",   "x": "*",   "plugin": "beta",   "a": "npm:b@latest"
-# Permits:  "x": "^1.2.3" / "~1.2.3" / ">=1.0.0" / "^4.0.0-beta.0",  "next": "16.1.1"
+# Permits:  "x": "^1.2.3" / "~1.2.3" / ">=1.0.0" / "^4.0.0-beta.0",  "next": "16.3.6"
 violations=$(echo "$manifests" | tr '\n' '\0' | xargs -0 awk '
   BEGIN { V = ":[[:space:]]*\"(\\*|latest|beta|alpha|next|canary|rc|npm:[^\"]*@(latest|\\*))\"" }
   FNR == 1 { inblock = 0 }

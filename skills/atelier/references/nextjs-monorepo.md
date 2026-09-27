@@ -92,8 +92,8 @@ Activate hooks after install: `bun run prepare`.
     "lint": "eslint --max-warnings=0"
   },
   "dependencies": {
-    "next": "16.1.1",
-    "next-mdx-remote": "^5.0.0",
+    "next": "16.3.6",
+    "next-mdx-remote": "^6.0.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "winston": "^3.19.0"
@@ -108,7 +108,7 @@ Activate hooks after install: `bun run prepare`.
     "@types/react-dom": "^19.2.3",
     "baseline-browser-mapping": "^2.9.11",
     "eslint": "^9.39.2",
-    "eslint-config-next": "16.1.1",
+    "eslint-config-next": "16.3.6",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.37.5",

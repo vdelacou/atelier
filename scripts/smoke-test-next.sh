@@ -84,7 +84,7 @@ cat > package.json <<'EOF'
     "typecheck": "tsc --noEmit",
     "lint": "eslint --max-warnings=0"
   },
-  "dependencies": { "next": "16.1.1", "react": "19.2.3", "react-dom": "19.2.3" },
+  "dependencies": { "next": "16.3.6", "react": "19.2.3", "react-dom": "19.2.3" },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@tailwindcss/postcss": "^4.1.18",
@@ -93,7 +93,7 @@ cat > package.json <<'EOF'
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.2",
-    "eslint-config-next": "16.1.1",
+    "eslint-config-next": "16.3.6",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.37.5",
