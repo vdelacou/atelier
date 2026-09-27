@@ -53,7 +53,14 @@ final class LayerRulesTest {
           .resideInAPackage("..domain..")
           .should()
           .dependOnClassesThat()
-          .resideInAnyPackage("jakarta..", "io.quarkus..", "org.hibernate..", "org.jboss..");
+          .resideInAnyPackage(
+              "jakarta..",
+              "io.quarkus..",
+              "org.hibernate..",
+              "org.jboss..",
+              "org.eclipse.microprofile..",
+              "io.smallrye..",
+              "io.vertx..");
 
   @ArchTest
   static final ArchRule useCasesKnowNoFrameworkBeyondTheCdiScope =
@@ -63,7 +70,13 @@ final class LayerRulesTest {
           .should()
           .dependOnClassesThat()
           .resideInAnyPackage(
-              "jakarta.ws.rs..", "jakarta.persistence..", "io.quarkus..", "org.hibernate..");
+              "jakarta.ws.rs..",
+              "jakarta.persistence..",
+              "io.quarkus..",
+              "org.hibernate..",
+              "org.eclipse.microprofile..",
+              "io.smallrye..",
+              "io.vertx..");
 
   @ArchTest
   static final ArchRule fileIoStaysAtTheEdges =

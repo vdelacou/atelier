@@ -23,7 +23,7 @@ const call = (): Promise<Response> =>
 const res = await retryOnErr(() => toResult(call()), (e) => e.kind === 'io' || e.kind === 'rate-limited', { maxAttempts: 3, baseDelayMs: 200, jitter: true });
 ```
 
-Java: `HttpClient.newBuilder().connectTimeout(...)` plus a per-request `.timeout(...)`, `Idempotency-Key` header, `@Retry(maxRetries = 3, jitter = 200)` on the adapter (`references/java-quarkus.md`).
+Java: `HttpClient.newBuilder().connectTimeout(...)` plus a per-request `.timeout(...)`, `Idempotency-Key` header, `@Retry(maxRetries = 3, jitter = 200)` on the throwing client call one bean inside the adapter, never on the method that returns `Err`, where it never fires (`references/java-quarkus.md`).
 
 ## Reads are explicit; writes go through the mapper
 

@@ -58,17 +58,30 @@ files=$( {
   git diff --cached --name-only --diff-filter=ACMR
   git ls-files --others --exclude-standard
 } | sort -u \
-  | grep -E '^src/main/java/.*/(domain|usecases)/.*\.java$' \
+  | grep -E '(^|/)src/main/java/.*/(domain|usecases)/.*\.java$' \
   | grep -vE '/ports/' \
   || true)
+
+# A module's sources (svc/src/main/java/...) need PIT run in that module; the root
+# run would target classes it cannot see. Refuse loudly instead of the vacuous
+# "nothing changed" this script printed for every multi-module repo until 2026-09-27.
+nested=$(echo "$files" | grep -vE '^src/main/java/' | grep -v '^$' || true)
+if [ -n "$nested" ]; then
+  echo "pit-changed: changed classes live in a module, not the root build:" >&2
+  echo "$nested" | sed 's/^/    /' >&2
+  echo "  scope PIT per module (references/java-quarkus.md): run this script from each module's directory with its own ./mvnw -pl, or split the CI step per module" >&2
+  exit 1
+fi
 
 if [ -z "$files" ]; then
   echo "pit-changed: no classes in mutation scope changed since ${BASE}"
   exit 0
 fi
 
-# Path to fully qualified class name: src/main/java/com/x/domain/Money.java -> com.x.domain.Money
-classes=$(echo "$files" | sed -e 's|^src/main/java/||' -e 's|\.java$||' -e 's|/|.|g' | paste -sd, -)
+# Path to fully qualified class name: src/main/java/com/x/domain/Money.java -> com.x.domain.Money,
+# plus its nested classes (com.x.domain.Money$*): logic in a nested class was never
+# mutated until 2026-09-27, so a weak test scored 100 on the outer class alone.
+classes=$(echo "$files" | sed -e 's|^src/main/java/||' -e 's|\.java$||' -e 's|/|.|g' | sed 's|.*|&,&$*|' | paste -sd, -)
 count=$(echo "$files" | wc -l | tr -d ' ')
 echo "pit-changed: targeting ${count} class(es): ${classes}"
 

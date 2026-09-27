@@ -356,6 +356,10 @@ expect_ok "pit-changed.sh exits 0 with a message when nothing in scope changed" 
   bash -c 'BASE=HEAD bash scripts/pit-changed.sh | grep -q "no classes in mutation scope changed"'
 expect_ok "ci-java.yml mutates the changed classes only, never the full sweep" \
   bash -c 'grep -q "pit-changed.sh" "$1" && ! grep -q "pitest-maven:mutationCoverage" "$1"' _ "$SKILL/assets/ci-java.yml"
+# JUnit logs its random-order seed below INFO, so no run printed one until the workflow
+# picked, printed and passed it (2026-09-27); the seeds above prove the flag replays.
+expect_ok "ci-java.yml prints the JUnit seed and passes it to verify (rule 36)" \
+  bash -c 'grep -q "junit random-order seed" "$1" && grep -q "verify -Djunit.jupiter.execution.order.random.seed=" "$1"' _ "$SKILL/assets/ci-java.yml"
 expect_ok "mutation-java.yml is the scheduled full sweep" \
   bash -c 'grep -q "schedule:" "$1" && grep -q "pitest-maven:mutationCoverage" "$1" && ! grep -q "pull_request" "$1"' _ "$SKILL/assets/mutation-java.yml"
 
@@ -363,9 +367,18 @@ echo
 echo "== each gate blocks its target violation =="
 
 # 1. check-pom.sh blocks a version range.
-sed -i.bak 's|<junit.version>5.11.0</junit.version>|<junit.version>5.11.0</junit.version><!--x-->|' pom.xml && rm pom.xml.bak
 sed -i.bak 's|<version>${junit.version}</version>|<version>[5.0,)</version>|' pom.xml && rm pom.xml.bak
 expect_err "check-pom.sh blocks a version range" bash scripts/check-pom.sh
+git checkout -q pom.xml
+
+# 1b. The canonical pom keeps every pin in a property, and a range there passed both
+# gates until 2026-09-27 (junit resolved to 6.1.3). check-pom.sh reads version
+# properties now, and the enforcer's banDynamicVersions rejects it on its own message.
+sed -i.bak 's|<junit.version>5.14.4</junit.version>|<junit.version>[5.14,)</junit.version>|' pom.xml && rm pom.xml.bak
+expect_err "check-pom.sh blocks a range held in a version property" bash scripts/check-pom.sh
+if ./mvnw -q validate >"$LOG" 2>&1; then cat "$LOG"; fail "enforcer banDynamicVersions rejects a property range (expected non-zero exit)"
+elif grep -q "banned dynamic version" "$LOG"; then pass "enforcer banDynamicVersions rejects a range held in a version property"
+else cat "$LOG"; fail "enforcer: validate failed, but not on banDynamicVersions"; fi
 git checkout -q pom.xml
 
 # 2. check-pom.sh blocks a -SNAPSHOT dependency.
@@ -387,6 +400,29 @@ if ./mvnw -q validate >"$LOG" 2>&1; then cat "$LOG"; fail "enforcer bannedDepend
 elif grep -q "(rule 13)" "$LOG"; then pass "enforcer bannedDependencies rejects mockito-core (rule 13)"
 else cat "$LOG"; fail "enforcer: validate failed, but not on the rule 13 ban"; fi
 git checkout -q pom.xml
+# Quarkus renamed its Mockito extension quarkus-junit-mockito (3.37 and later ship
+# both names), and JMock is a mock library too; the fast gate knew neither until
+# 2026-09-27.
+for coord in 'io.quarkus:quarkus-junit-mockito' 'org.jmock:jmock-junit5'; do
+  g="${coord%%:*}" a="${coord##*:}"
+  python3 - "$g" "$a" <<'PYEOF2'
+import pathlib, sys
+g, a = sys.argv[1], sys.argv[2]
+p = pathlib.Path('pom.xml')
+p.write_text(p.read_text().replace('\n  <dependencies>\n', f'\n  <dependencies>\n    <dependency>\n      <groupId>{g}</groupId>\n      <artifactId>{a}</artifactId>\n      <version>1.0.0</version>\n      <scope>test</scope>\n    </dependency>\n', 1))
+PYEOF2
+  expect_err "check-pom.sh blocks $a (rule 13)" bash scripts/check-pom.sh
+  git checkout -q pom.xml
+done
+
+# 2c. No test run is a red build: with no tests JaCoCo skips its check and the tiers
+# passed vacuously until 2026-09-27 (a new module, a deleted test tree).
+mv src/test "$FX/test.off"
+rm -rf target/test-classes   # the compiled tests would still run from here
+if ./mvnw -q verify >"$LOG" 2>&1; then cat "$LOG"; fail "verify fails when no test runs (expected non-zero exit)"
+elif grep -q "No tests to run" "$LOG"; then pass "verify fails when no test runs (failIfNoTests; JaCoCo would skip)"
+else cat "$LOG"; fail "verify failed with no tests, but not on failIfNoTests"; fi
+mv "$FX/test.off" src/test
 
 # 3. The size gate blocks an oversized staged change.
 seq 1 301 | sed 's/^/line /' > oversized.txt
@@ -573,6 +609,15 @@ printf 'package com.example.app.domain;\n\npublic class Ugly{public static int x
   > src/main/java/com/example/app/domain/Ugly.java
 expect_err "spotless:check blocks a misformatted file" ./mvnw -q spotless:check
 rm src/main/java/com/example/app/domain/Ugly.java
+
+# 5b. "No wildcard imports" is a check since 2026-09-27 (Spotless forbidWildcardImports);
+# google-java-format alone keeps a wildcard, so this file is otherwise well formatted.
+printf 'package com.example.app.domain;\n\nimport java.util.*;\n\npublic final class Wild {\n  private Wild() {}\n\n  public static List<String> none() {\n    return new ArrayList<>();\n  }\n}\n' \
+  > src/main/java/com/example/app/domain/Wild.java
+if ./mvnw -q spotless:check >"$LOG" 2>&1; then cat "$LOG"; fail "spotless:check blocks a wildcard import (expected non-zero exit)"
+elif grep -q "WildcardImports" "$LOG"; then pass "spotless:check blocks a wildcard import (forbidWildcardImports)"
+else cat "$LOG"; fail "spotless:check failed, but not on forbidWildcardImports"; fi
+rm src/main/java/com/example/app/domain/Wild.java
 
 # 6. -Werror blocks a compiler warning (rawtypes).
 cat > src/main/java/com/example/app/domain/Raw.java <<'EOF'
@@ -764,6 +809,56 @@ expect_err "pit-changed.sh catches the surviving mutants in an untracked new cla
   bash -c 'BASE=HEAD bash scripts/pit-changed.sh'
 rm src/main/java/com/example/app/domain/Unasserted.java src/test/java/com/example/app/domain/UnassertedTest.java
 
+# Logic in a nested class is in scope: pit-changed.sh targeted the outer class alone
+# until 2026-09-27, so this weak test scored 100 (1 mutant) where Pricing$* scores 33.
+cat > src/main/java/com/example/app/domain/Pricing.java <<'EOF'
+package com.example.app.domain;
+
+public final class Pricing {
+  private Pricing() {}
+
+  public static int total(int cents) {
+    return Rules.discount(cents);
+  }
+
+  static final class Rules {
+    private Rules() {}
+
+    static int discount(int cents) {
+      if (cents > 1000) {
+        return cents - 100;
+      }
+      return cents;
+    }
+  }
+}
+EOF
+cat > src/test/java/com/example/app/domain/PricingTest.java <<'EOF'
+package com.example.app.domain;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
+
+class PricingTest {
+  @Test
+  void totalsArePositive() {
+    assertTrue(Pricing.total(2000) > 0);
+  }
+}
+EOF
+expect_ok "pit-changed.sh mutates a changed class's nested classes too (red on the threshold)" \
+  bash -c 'BASE=HEAD bash scripts/pit-changed.sh > pit-nested.out 2>&1; st=$?; grep -q "Pricing\$\*" pit-nested.out && grep -q "below threshold" pit-nested.out && [ "$st" -ne 0 ]'
+rm -f src/main/java/com/example/app/domain/Pricing.java src/test/java/com/example/app/domain/PricingTest.java pit-nested.out
+
+# A module's sources need PIT in that module: the root run passed them as "nothing
+# changed" until 2026-09-27; it now refuses loudly.
+mkdir -p svc/src/main/java/com/example/app/domain
+printf 'package com.example.app.domain;\n\npublic final class Tax {\n  private Tax() {}\n}\n' > svc/src/main/java/com/example/app/domain/Tax.java
+expect_ok "pit-changed.sh refuses a module's changed classes instead of passing them" \
+  bash -c 'BASE=HEAD bash scripts/pit-changed.sh > pit-module.out 2>&1; st=$?; grep -q "live in a module" pit-module.out && [ "$st" -ne 0 ]'
+rm -rf svc pit-module.out
+
 echo "== the Quarkus delta (java-quarkus.md, The Quarkus delta) =="
 # The fixture above is framework-free. A real service imports the Quarkus BOM,
 # and two gates of the canonical pom broke on it until 2026-09-27: the BOM's
@@ -856,6 +951,24 @@ expect_ok "a @ConfigProperty bean fails -Werror under a plain -Xlint:all (the pr
 rm pom.plain-xlint.xml
 expect_ok "the Quarkus delta resolves, compiles under -Werror, and passes LayerRulesTest and the tests" \
   mvn -B -q test
+# On the real classpath the domain ban covers MicroProfile, SmallRye and Vert.x too: a
+# domain type returning Mutiny's Uni passed LayerRulesTest until 2026-09-27.
+cat > src/main/java/com/example/app/domain/Later.java <<'EOF'
+package com.example.app.domain;
+
+import io.smallrye.mutiny.Uni;
+
+public final class Later {
+  private Later() {}
+
+  public static Uni<String> value() {
+    return Uni.createFrom().item("x");
+  }
+}
+EOF
+expect_ok "LayerRulesTest rejects a domain class returning Mutiny's Uni (rule 37)" \
+  bash -c 'mvn -B -q test -Dtest=LayerRulesTest > arch.log 2>&1; st=$?; grep -q "domainKnowsNoFramework" arch.log && [ "$st" -ne 0 ]'
+rm src/main/java/com/example/app/domain/Later.java arch.log
 
 echo "== the CVE watchdog is armed (audit-java.yml; the plugin's own default never fails) =="
 # dependency-check's failBuildOnCVSS defaults to 11 ("the build will never

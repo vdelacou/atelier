@@ -15,7 +15,7 @@ Pick this variant when the repo has a `pom.xml` (or `build.gradle`) and Java sou
 
 - **Exact versions only.** Never a version range (`[1.0,)`) and never a `-SNAPSHOT` dependency in `main`. Maven resolves ranges to whatever is newest that day, which is the `"latest"` footgun with different syntax.
 - All versions live in `<properties>` or the parent pom / BOM; children declare nothing loose. One formatter version, one runtime BOM, inherited everywhere (the one-committed-config rule).
-- **maven-enforcer-plugin** makes it executable: `requireJavaVersion` (a bare `21` means "at least 21"; avoid the `[21,)` range form, which `check-pom.sh` would flag as a version range), `requireReleaseDeps` (no `-SNAPSHOT` dependencies), `requireUpperBoundDeps` (framework-free only: under a platform BOM the BOM converges versions, The Quarkus delta below), and `bannedDependencies` for the mock libraries (rule 13: `org.mockito`, `org.easymock`, `org.powermock`, `org.jmockit`, `quarkus-junit5-mockito`, `quarkus-panache-mock`; enforcer 3.x walks the whole tree, so a transitive Mockito is caught too).
+- **maven-enforcer-plugin** makes it executable: `requireJavaVersion` (a bare `21` means "at least 21"; avoid the `[21,)` range form, which `check-pom.sh` would flag as a version range), `requireReleaseDeps` (no `-SNAPSHOT` dependencies), `requireUpperBoundDeps` (framework-free only: under a platform BOM the BOM converges versions, The Quarkus delta below), `banDynamicVersions` (no range, `LATEST` or `RELEASE`, including one held in a version property), and `bannedDependencies` for the mock libraries (rule 13: `org.mockito`, `org.easymock`, `org.powermock`, `org.jmockit`, `org.jmock`, `quarkus-junit5-mockito` and its current name `quarkus-junit-mockito`, `quarkus-panache-mock`; enforcer 3.x walks the whole tree, so a transitive Mockito is caught too).
 - Renovate (or equivalent) keeps pins current so a pinned version never rots into a known-vulnerable one; **OWASP dependency-check** (or the platform's scanner) runs in CI and fails on high CVSS, the `bun audit` analogue: daily schedule plus a PR run scoped to `pom.xml`. The canonical pom pins the plugin in `<pluginManagement>` with `failBuildOnCVSS` 7: its default, 11, never fails the build. It reads the NVD API key from `NVD_API_KEY`, which the workflow passes from a repository secret (request a free key from NVD; without one the database download is throttled to hours).
 - **google-java-format on JDK 16+** needs the `jdk.compiler` exports: commit a one-line `.mvn/jvm.config` (shown under the canonical pom below). Harmless where unneeded.
 
@@ -106,6 +106,11 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${surefire.plugin.version}</version>
+        <configuration>
+          <!-- no test run is a red build, never a green one: with no tests JaCoCo skips its
+               check ("missing execution data file") and the coverage tiers pass vacuously -->
+          <failIfNoTests>true</failIfNoTests>
+        </configuration>
       </plugin>
       <!-- rule 8: one committed formatter, machine-owned -->
       <plugin>
@@ -117,6 +122,8 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
             <googleJavaFormat>
               <version>${google-java-format.version}</version>
             </googleJavaFormat>
+            <!-- "no wildcard imports" as a check, not a habit: google-java-format keeps them -->
+            <forbidWildcardImports />
           </java>
         </configuration>
       </plugin>
@@ -178,6 +185,14 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
           <targetTests>
             <param>com.example.app.*</param>
           </targetTests>
+          <!-- PIT's coverage pass runs every target test once, so exclude the ones that
+               kill no domain or use-case mutant and cost the most: the resource tests
+               (@QuarkusTest boots the application) and the ArchUnit test (reads bytecode,
+               executes nothing) -->
+          <excludedTestClasses>
+            <param>com.example.app.api.*</param>
+            <param>com.example.app.architecture.*</param>
+          </excludedTestClasses>
           <mutationThreshold>90</mutationThreshold>
           <timestampedReports>false</timestampedReports>
           <!-- Free parallelism: mutation results are thread-independent. Tune to cores.
@@ -203,6 +218,8 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
                   <message>No -SNAPSHOT dependencies (rule 19)</message>
                 </requireReleaseDeps>
                 <requireUpperBoundDeps />
+                <!-- a range, LATEST or RELEASE held in a version property is dynamic too; check-pom.sh is its fast echo -->
+                <banDynamicVersions />
                 <!-- rule 13: hand-written fakes implement the ports; no mock library, direct or transitive -->
                 <bannedDependencies>
                   <message>No mock library in the pom, hand-written fakes implement the ports (rule 13)</message>
@@ -211,7 +228,9 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
                     <exclude>org.easymock:*</exclude>
                     <exclude>org.powermock:*</exclude>
                     <exclude>org.jmockit:*</exclude>
+                    <exclude>org.jmock:*</exclude>
                     <exclude>io.quarkus:quarkus-junit5-mockito</exclude>
+                    <exclude>io.quarkus:quarkus-junit-mockito</exclude>
                     <exclude>io.quarkus:quarkus-panache-mock</exclude>
                   </excludes>
                 </bannedDependencies>
@@ -314,7 +333,7 @@ src/test/resources/
 └── junit-platform.properties   # random method and class order (rule 36)
 ```
 
-Dependency rule unchanged: `domain` imports nothing from the framework; `usecases` sees domain + its own ports; `infra` and `api` implement/consume them; only `composition` (and the CDI container) sees everything. The check is a test (hard rule 37): `assets/java/LayerRulesTest.java`, copied into `src/test/java/<pkg>/architecture/`, runs ArchUnit's layered architecture over the five packages plus two framework bans (domain sees no `jakarta`, `io.quarkus`, `org.hibernate` or `org.jboss` class; use-cases see none of `jakarta.ws.rs`, `jakarta.persistence`, `io.quarkus`, `org.hibernate`, so `@ApplicationScoped` on a use-case stays tolerated; prefer producing beans from `composition` when practical), test classes excluded, empty layers allowed for a walking skeleton. It runs in every `mvn test`, so `verify` and CI carry it. `grep -rn "import jakarta.ws.rs\|import io.quarkus" src/main/java/com/example/app/domain src/main/java/com/example/app/usecases` stays the adopt-mode audit for a tree that has no test yet.
+Dependency rule unchanged: `domain` imports nothing from the framework; `usecases` sees domain + its own ports; `infra` and `api` implement/consume them; only `composition` (and the CDI container) sees everything. The check is a test (hard rule 37): `assets/java/LayerRulesTest.java`, copied into `src/test/java/<pkg>/architecture/`, runs ArchUnit's layered architecture over the five packages plus two framework bans (domain sees no `jakarta`, `io.quarkus`, `org.hibernate`, `org.jboss`, `org.eclipse.microprofile`, `io.smallrye` or `io.vertx` class; use-cases see none of `jakarta.ws.rs`, `jakarta.persistence`, `io.quarkus`, `org.hibernate`, `org.eclipse.microprofile`, `io.smallrye`, `io.vertx`, so `@ApplicationScoped` on a use-case stays tolerated; prefer producing beans from `composition` when practical), test classes excluded, empty layers allowed for a walking skeleton. It runs in every `mvn test`, so `verify` and CI carry it. `grep -rn "import jakarta.ws.rs\|import io.quarkus" src/main/java/com/example/app/domain src/main/java/com/example/app/usecases` stays the adopt-mode audit for a tree that has no test yet.
 
 ## The hard rules, translated
 
@@ -326,7 +345,7 @@ Dependency rule unchanged: `domain` imports nothing from the framework; `usecase
 | 4 no `console.*` | No `System.out`/`System.err`/`printStackTrace`. Inject a `Logger` (JBoss/SLF4J) through the constructor; redaction configured once (below). Gated: PMD `SystemPrintln` and the shipped `NoPrintStackTrace` XPath rule in `verify` |
 | 5 Bun only | `./mvnw` only; the Quarkus CLI is sugar over it |
 | 6 explicit return types | Native. Avoid `var` on any public or port surface; locals may use it when the right side names the type |
-| 7-9 imports/style/ESM | Spotless owns style; no wildcard imports |
+| 7-9 imports/style/ESM | Spotless owns style; no wildcard imports (`forbidWildcardImports` in the canonical pom, so `spotless:check` rejects one) |
 | 10 no custom error classes | Business failures are `Err` values, never bespoke exception types. Exceptions are for bugs and framework edges; never use checked exceptions on domain surfaces |
 | 11 TDD | Unchanged (JUnit 5) |
 | 12 branded types | Value **records with validating compact constructors** plus a `parse(...)` factory returning `Result` (below) |
@@ -342,8 +361,8 @@ Dependency rule unchanged: `domain` imports nothing from the framework; `usecase
 | 23-26 commits, tests, identity | Unchanged: same hooks, same confirmation gates |
 | 27-34 production disciplines | Unchanged; Java expressions in their references and below |
 | 35 cyclomatic complexity at most 10 | PMD `CyclomaticComplexity` with `methodReportLevel` 11 (PMD flags at or above the level) through `maven-pmd-plugin` bound to `verify`; the ruleset is `assets/java/pmd-ruleset.xml`, copied to the repo root. Never raise the level: split the method or dispatch on a map |
-| 36 tests run in random order | `src/test/resources/junit-platform.properties` sets `MethodOrderer$Random` and `ClassOrderer$Random`, so every `mvn test` shuffles methods and classes; JUnit logs the seed and `-Djunit.jupiter.execution.order.random.seed=<n>` replays a red order. No `@Order`, no `@TestMethodOrder(OrderAnnotation.class)`, no static state read across tests (Testing, Random order; the Java smoke test proves an order-dependent chain red) |
-| 37 dependencies point inward | The shipped `LayerRulesTest` (ArchUnit, `archunit-junit5` in the canonical pom, test scope): a layered architecture over `domain`, `usecases`, `infra`, `api`, `composition` plus the two framework bans (domain sees no `jakarta`, `io.quarkus`, `org.hibernate`, `org.jboss` class; use-cases none of `jakarta.ws.rs`, `jakarta.persistence`, `io.quarkus`, `org.hibernate`), test classes excluded, empty layers allowed; red on the first import against the table in every `mvn test`, so `verify` and CI carry it |
+| 36 tests run in random order | `src/test/resources/junit-platform.properties` sets `MethodOrderer$Random` and `ClassOrderer$Random`, so every `mvn test` shuffles methods and classes; JUnit logs its seed below INFO, so `ci-java.yml` picks a seed, prints it, and passes it as `-Djunit.jupiter.execution.order.random.seed=<n>`, the same flag that replays a red order locally. No `@Order`, no `@TestMethodOrder(OrderAnnotation.class)`, no static state read across tests (Testing, Random order; the Java smoke test proves an order-dependent chain red) |
+| 37 dependencies point inward | The shipped `LayerRulesTest` (ArchUnit, `archunit-junit5` in the canonical pom, test scope): a layered architecture over `domain`, `usecases`, `infra`, `api`, `composition` plus the two framework bans (domain sees no `jakarta`, `io.quarkus`, `org.hibernate`, `org.jboss`, `org.eclipse.microprofile`, `io.smallrye`, `io.vertx` class; use-cases none of `jakarta.ws.rs`, `jakarta.persistence`, `io.quarkus`, `org.hibernate`, `org.eclipse.microprofile`, `io.smallrye`, `io.vertx`), test classes excluded, empty layers allowed; red on the first import against the table in every `mvn test`, so `verify` and CI carry it |
 
 ## `Result` in Java (rule 16)
 
@@ -442,7 +461,7 @@ Logging: JBoss/SLF4J injected via constructor, JSON output in production, and re
 - Resource-shaped endpoints, not screen-shaped (`references/architecture.md`, The backend is a client-agnostic API).
 - The resource maps `Result` to HTTP: `Ok` to 200/201, domain-expected failures to their status, use-case `StepError` to 500 with a generic body (internals stay in the log with the trace id).
 - **OpenAPI from the code**: MicroProfile OpenAPI annotations (`@Operation`, `@APIResponse`, example objects) so the published spec cannot drift (`references/governance.md`).
-- Every network client the app opens has connect and per-request timeouts, bounded jittered retries (`@Retry(maxRetries = 3, jitter = 200)` on the adapter), and an `Idempotency-Key` where the operation is not naturally safe to repeat (rule 29).
+- Every network client the app opens has connect and per-request timeouts, bounded jittered retries (`@Retry(maxRetries = 3, jitter = 200, retryOn = IOException.class)` on the method that throws: a separate CDI bean wrapping the raw client call, which the adapter calls and translates to `Err` (rule 17). MicroProfile Fault Tolerance retries only on a thrown exception and only through the bean's proxy, so `@Retry` on the adapter method that returns `Err` never fires, the trap `references/result-type.md` names for a throw-based retry around a port that returns `Result`), and an `Idempotency-Key` where the operation is not naturally safe to repeat (rule 29).
 - Personal data never in a `@QueryParam` or a log line (rule 27): user-typed search terms arrive in a `@Valid` POST body.
 
 ## Observability
@@ -456,7 +475,7 @@ Quarkus ships OpenTelemetry: enable it, add `@WithSpan` on application services 
 - **Test names are business scenarios**: `premiumCustomerGets20PercentOff`, `crossTenantReadIsNotFound`, `regressionEmptyCartTotalsToZero`.
 - **Coverage tiers with JaCoCo**: 100% line on `domain` + `usecases`, 80% on `infra` + `api` + `composition`, enforced by per-package `<rule>` limits in the JaCoCo check goal so the build fails loudly, untested classes included in the denominator (the coverage-preload principle is native here: JaCoCo counts all classes in the module).
 - **Mutation testing with PIT**: `mutationThreshold=90` on `domain` + `usecases` packages. CI runs it on the changed classes only (`scripts/pit-changed.sh`, every pull request and push, `-Dpitest.targetClasses=` narrowing the pom's default scope); the full sweep is the daily `assets/mutation-java.yml`, never a commit gate. Incremental history is NOT free in current PIT: 1.25.7 errors `History has been enabled but no history plugin has been installed/activated` for BOTH `withHistory` and explicit `historyInputFile`/`historyOutputFile` (verified via `smoke-test-java`), and the only history plugin is Arcmutate's commercial `+arcmutate_history`. So the free speed levers are the narrow target scope (`targetClasses`/`targetTests`), parallel `threads` (set in the pom, mutation results are thread-independent), and the narrow scope itself keeps the CI run cheap (the hook never runs PIT; the gate is CI-only by design); in a multi-module repo, scope PIT per module. If incremental speed becomes a hard requirement at scale, Arcmutate is the only supplier, which makes it a licence decision, not a library swap. Same policy as Stryker: no per-file exclusions because tests feel awkward; tighten the test or refactor.
-- **PIT on Quarkus**: no Quarkus-specific mutation tool exists; PIT plus `pitest-junit5-plugin` is the whole story, and the plugin (1.2.3+, needs Quarkus 3.22.x+) is the only Quarkus-aware piece. It auto-disables Quarkus's JaCoCo extension, the classic thing that broke PIT there. The scoping above is also what keeps this healthy: because `domain`/`usecases` are covered by plain JUnit 5 (not `@QuarkusTest`), PIT never runs over a container-boot test, so Quarkus's build-time augmentation never triggers the `tests did not pass without mutation` failure and no Quarkus container stands up per mutant. If you widen PIT onto `@QuarkusTest` classes, expect both that failure (patch with `avoidCallsTo` on `io.quarkus.*` plus test excludes on older plugin versions) and the per-mutant container cost; the atelier design avoids both by construction. Pin the Quarkus BOM at or above 3.22.x.
+- **PIT on Quarkus**: no Quarkus-specific mutation tool exists; PIT plus `pitest-junit5-plugin` is the whole story, and the plugin (1.2.3+, needs Quarkus 3.22.x+) is the only Quarkus-aware piece. It auto-disables Quarkus's JaCoCo extension, the classic thing that broke PIT there. The scoping above is also what keeps this healthy: because `domain`/`usecases` are covered by plain JUnit 5 (not `@QuarkusTest`) and the canonical pom's `excludedTestClasses` keeps the `api` resource tests and the ArchUnit test out of PIT's coverage pass (which otherwise runs every target test once), PIT never runs over a container-boot test, so Quarkus's build-time augmentation never triggers the `tests did not pass without mutation` failure and no Quarkus container stands up per mutant. If you widen PIT onto `@QuarkusTest` classes, expect both that failure (patch with `avoidCallsTo` on `io.quarkus.*` plus test excludes on older plugin versions) and the per-mutant container cost; the atelier design avoids both by construction. Pin the Quarkus BOM at or above 3.22.x.
 - **Evals for any LLM hole** gate the merge like PIT does (`references/ai.md`).
 
 **Random order (rule 36).** `src/test/resources/junit-platform.properties`:
@@ -466,19 +485,19 @@ junit.jupiter.testmethod.order.default=org.junit.jupiter.api.MethodOrderer$Rando
 junit.jupiter.testclass.order.default=org.junit.jupiter.api.ClassOrderer$Random
 ```
 
-Every `mvn test` then shuffles methods and classes; JUnit logs the seed, and `-Djunit.jupiter.execution.order.random.seed=<n>` replays a failing order. No `@Order`, no `@TestMethodOrder(OrderAnnotation.class)`, no static state read across tests: each test builds its own fixture.
+Every `mvn test` then shuffles methods and classes. JUnit logs its seed at a level no default run shows, so the shipped `ci-java.yml` picks the seed, prints it, and passes it with `-Djunit.jupiter.execution.order.random.seed=<n>`; the same flag on a local `./mvnw verify` replays a failing order. No `@Order`, no `@TestMethodOrder(OrderAnnotation.class)`, no static state read across tests: each test builds its own fixture.
 
 ## Gates and hooks
 
 Same git hooks as the Bun variant, shell only, wired with `git config core.hooksPath .githooks`, plus the CI workflow. Every artifact below ships in the skill's `assets/`; copy them with the block after the list, never hand-write:
 
 - `assets/commit-msg`: the shipped Conventional Commits validator, unchanged (rule 23; it is dependency-free shell).
-- `assets/pre-commit-java`: the fast gates only, seven of them: commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>`, the project's own dev version may be a SNAPSHOT; no mock library declared, rule 13) → no inline suppression (`scripts/check-no-suppressions.sh`, rule 15: `@SuppressWarnings`, `NOPMD`, `NOSONAR` and the rest as text) → `gitleaks protect --staged` → identity (`scripts/check-identity.sh`, rule 26) → the discipline tripwires (`scripts/check-disciplines.sh`, rules 27, 29, 30) → `./mvnw -q spotless:check`. A multi-minute hook trains `--no-verify` (canon 15.1, and 15.3), so `./mvnw verify` and PIT do not live here.
+- `assets/pre-commit-java`: the fast gates only, seven of them: commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>` or in a version property, a single-module project's own dev version may be a SNAPSHOT (in a multi-module repo a child's `<parent>` would be that SNAPSHOT, so keep release versions there); no mock library declared, rule 13) → no inline suppression (`scripts/check-no-suppressions.sh`, rule 15: `@SuppressWarnings`, `NOPMD`, `NOSONAR` and the rest as text) → `gitleaks git --staged` → identity (`scripts/check-identity.sh`, rule 26) → the discipline tripwires (`scripts/check-disciplines.sh`, rules 27, 29, 30) → `./mvnw -q spotless:check`. A multi-minute hook trains `--no-verify` (canon 15.1, and 15.3), so `./mvnw verify` and PIT do not live here.
 - `assets/check-disciplines.sh` and the three guards it runs (`check-pii-channels.sh`, `check-io-deadlines.sh`, `check-data-lifecycle.sh`; rules 27, 29, 30): core gates, hook gate 6 on the staged lines and `--all` in CI, all Java-aware (`@QueryParam`, `HttpClient` timeouts, hard deletes and destructive DDL). The isolation guard (`check-isolation-tests.sh`, rule 28) is opt-in where tenants or owners exist, since it demands a 404 test of every new `api/` route (`references/workflow.md`, Discipline tripwires).
 - `assets/audit-java.yml`: the two watchdogs that are not gate material, the OWASP CVE scan and `check-skill-pin.sh` (a vendored standard is a dependency, `references/governance.md`; the workflow's `SKILL_PIN_UPSTREAM` env names the repository the whole vendored tree is compared against), on a daily schedule plus the pull requests that touch a pom or the vendored skill.
-- `assets/pit-changed.sh`: the mutation step of CI, PIT on the classes that changed in the event's range (the pull request's base, or `github.event.before..HEAD` on a push, which the workflow exports; an unknown base fails loudly, no change in scope exits 0), plus uncommitted and untracked sources locally.
+- `assets/pit-changed.sh`: the mutation step of CI, PIT on the classes that changed in the event's range and their nested classes (a module's sources are refused loudly: run PIT per module) (the pull request's base, or `github.event.before..HEAD` on a push, which the workflow exports; an unknown base fails loudly, no change in scope exits 0), plus uncommitted and untracked sources locally.
 - `assets/mutation-java.yml`: the daily full PIT sweep over `domain` and `usecases` (`workflow_dispatch` on demand), the only run that measures the whole tree; a red run is a task, not a blocked merge.
-- `assets/ci-java.yml`: the authoritative gate set, run on every push and pull request as the required merge check. Its first step re-runs the commit-msg validator over the pushed range (`scripts/check-commit-messages.sh`, so `--no-verify` cannot slip a message past the local hook), then the pom gate, a full-history `gitleaks detect` (CI installs its own pinned copy), plus `./mvnw verify` (compile with `-Werror`, unit + integration tests, JaCoCo tier check, the PMD complexity cap of rule 35), and PIT mutation (≥90 on `domain`/`usecases`). The commit-size range check runs here too; the CVE scan does not.
+- `assets/ci-java.yml`: the authoritative gate set, run on every push and pull request as the required merge check. Its first step re-runs the commit-msg validator over the pushed range (`scripts/check-commit-messages.sh`, so `--no-verify` cannot slip a message past the local hook), then the pom gate, a full-history `gitleaks git` (CI installs its own pinned copy; every call ignores inline allow comments), plus `./mvnw verify` (compile with `-Werror`, unit + integration tests, JaCoCo tier check, the PMD complexity cap of rule 35), and PIT mutation (≥90 on `domain`/`usecases`). The commit-size range check runs here too; the CVE scan does not.
 - `assets/java/LayerRulesTest.java`: the rule 37 test (ArchUnit); copied into `src/test/java/<pkg>/architecture/` with its package and `@AnalyzeClasses` root renamed to yours; needs `archunit-junit5` in the pom, which the canonical pom carries. Since 2026-09-19 it carries rule 20 too: `domain` and `usecases` depend on nothing in `java.nio.file` and on none of the `java.io` File classes; five rules in all.
 - `assets/check-no-suppressions.sh`: the rule 15 tripwire for Java, staged lines in the hook and `--all` in CI; the forms it rejects are listed in its header.
 - `assets/check-identity.sh`: the rule 26 tripwire, hook gate 5 on the staged lines and `--all` in CI: a multi-word git name in both orders and the email, every author and committer in the history under `--all`, `IDENTITY_DENYLIST` for employers and clients; one-word names and noreply addresses are handles, CODEOWNERS and `.mailmap` exempt.
@@ -497,6 +516,7 @@ cp <skill>/assets/check-disciplines.sh    scripts/check-disciplines.sh
 cp <skill>/assets/check-commit-messages.sh scripts/check-commit-messages.sh
 cp <skill>/assets/check-commit-range.sh    scripts/check-commit-range.sh
 cp <skill>/assets/pit-changed.sh         scripts/pit-changed.sh
+cp <skill>/assets/check-docs.sh          scripts/check-docs.sh
 cp <skill>/assets/ci-java.yml            .github/workflows/ci.yml
 cp <skill>/assets/mutation-java.yml      .github/workflows/mutation-java.yml
 cp <skill>/assets/audit-java.yml         .github/workflows/audit-java.yml
@@ -513,7 +533,7 @@ chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh
 git config core.hooksPath .githooks
 ```
 
-CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the full history with `gitleaks detect`, then runs `spotless:check`, `./mvnw verify`, and PIT on the changed classes (`scripts/pit-changed.sh`); the full PIT sweep runs daily from `assets/mutation-java.yml`. The CVE scan and the vendored-standard check moved out to the scheduled `assets/audit-java.yml`, since both change independently of your diff, and where the repo deploys, the compose portability gate and deployment events (`references/delivery.md`).
+CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the full history with `gitleaks git`, then runs `spotless:check`, `./mvnw verify`, and PIT on the changed classes (`scripts/pit-changed.sh`); the full PIT sweep runs daily from `assets/mutation-java.yml`. The CVE scan and the vendored-standard check moved out to the scheduled `assets/audit-java.yml`, since both change independently of your diff, and where the repo deploys, the compose portability gate and deployment events (`references/delivery.md`).
 
 ## Bootstrap checklist (fresh Java repo)
 
