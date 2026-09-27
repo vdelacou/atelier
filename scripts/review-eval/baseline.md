@@ -352,3 +352,32 @@ improvement", "the rule 12 shape done right") read as accusation, while "needs i
 had held it to the `Email.java` exemplar, which in fact writes it out twice too). Java, three passes,
 both arms: skill 27/27 caught and cited, no false positive, and no pass left a note on `MemberId.java`;
 unaided 24/27 and 4/27. The README row reads this pass.
+
+## The 2.6.0 release pass (2026-09-28)
+
+After the pre-release audit's fixes, review-me's adopt-mode Java branch and its file-to-rule map among
+them. Three passes per variant, both arms, opus, isolated, graded with the two defects below fixed:
+
+| Variant | Arm | Caught | Rule-cited | False positives |
+|---|---|---|---|---|
+| Bun | skill | 36/36 | 36/36 | 0 |
+| Bun | unaided | 21/36 | 0/36 | 0 |
+| Java | skill | 27/27 | 27/27 | 0 |
+| Java | unaided | 22/27 | 3/27 | 0 |
+
+The skill arm holds the previous reading on every count. The unaided arm moves inside its pass-to-pass
+spread (Bun 6 to 8 caught per pass, Java 7 to 8), and its misses repeat: in Bun the `interface` where
+a `type` belongs, the `bun:test` mock, the hard delete and the widened gate with no red fixture in every
+pass; in Java the hard delete in every pass and the bespoke business exception in two. The unaided
+Java reviewer saw the dropped `remove(...)` result and never asked for a soft delete.
+
+Two grader defects, the twenty-second and twenty-third, each with a selftest case seen red first. The
+unaided arm reported that the `settings.ts` doc comment "argues" or "justifies" its compliance with
+"rule 17", quoting the rule, and the grader read the quoted rule as an accusation; the reported-claim
+verbs now include argue, justify, cite, invoke and quote. One earlier reading moves under it: the
+Bun unaided false positive of the clean-fixtures pass (2026-09-26, pass 3) was that sentence, so that
+row reads 0, not 1; the paragraph that called it "an opinion the standard does not hold" read the
+sentence right and the grader wrong. The skill arm praised the two clean Java files ("`MemberId.java`
+follows the rule 12 exemplar precisely", "a step toward rule 16") and the grader counted both; the two
+phrases now clear, negated they accuse. No earlier reading moves under it. The README rows read this
+pass.
