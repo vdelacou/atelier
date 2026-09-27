@@ -148,8 +148,10 @@ _NEGATED = r"(?i)\b(not|isn't|is not|aren't|are not|never|fails? to|violat\w+|br
 # "the doc comment at settings.ts:9-13 asserts its own rule 17 compliance." and puts the
 # verdict in the next sentence. Judged alone that sentence read as an accusation and cost the
 # skill arm a false positive on 2026-09-26: the eighth grader defect. An accusation verb in
-# the same sentence still makes it one.
-_REPORTS_CLAIM = r"(?i)\b(asserts?|claims?|states?|says|documents?)\b"
+# the same sentence still makes it one. The unaided arm reports the same comment with other
+# verbs ("argues the code's compliance with 'Rule 17'", "justifies the try/catch against
+# 'rule 17'"): the twenty-second defect, 2026-09-28.
+_REPORTS_CLAIM = r"(?i)\b(asserts?|claims?|states?|says|documents?|argues?|justif(?:y|ies)|cites?|invokes?|quotes?)\b"
 _ACCUSES = r"(?i)\b(breaks?|violat\w*|fails?|miss(?:es|ing)?|lacks?|weakens?|bypass\w*|leaks?|contradicts?|wrong|false)\b"
 
 
@@ -388,6 +390,17 @@ orders-db.ts line 30 looks fine to me.
         assert got["false_positives"] == [], (praise, got)
     got = grade_review("`Refund.java` needs improvement under rule 16: its error is a String.", [], java_clean)
     assert got["false_positives"] == ["src/main/java/com/example/app/domain/Refund.java"], got
+    # The twenty-second defect: a sentence that reports what a clean file's own comment argues
+    # quoted the rule it names ("the comment justifies the try/catch against \"rule 17\"") and
+    # read as a rule claim against the file. Seen twice in the unaided arm on 2026-09-28.
+    quoted = (
+        "### 11. `src/domain/shipping.ts:10-14`, the doc comment argues a rule rather than explaining the code\n"
+        "The comment justifies the `try/catch` against \"rule 17\" for a future reviewer. "
+        "The block comment argues the code's compliance with \"Rule 17\" rather than describing what it does."
+    )
+    assert grade_review(quoted, violations, clean)["false_positives"] == [], "reporting the rule a clean file's comment argues is no accusation"
+    accusing = "### 3. `src/domain/shipping.ts`\nThe comment cites rule 17, but the code violates it: the catch swallows an IO error."
+    assert grade_review(accusing, violations, clean)["false_positives"] == ["src/domain/shipping.ts"], "a cited rule with an accusation is still a claim"
     assert session_failed("Failed to authenticate. API Error: 403 Request not allowed") is not None, "a dead session must not be scored"
     assert session_failed("API Error: Can't reach the API server") is not None, "a transport error must not be scored"
     assert session_failed("## Findings\n1. rule 13: a mock in award-points.test.ts") is None, "a real review is scored"
