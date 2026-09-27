@@ -40,10 +40,23 @@ ARMS = ("with_skill", "baseline")
 EXTS = (".ts", ".tsx", ".sql", ".java", ".json", ".md")
 SKIP_PREFIX = (".claude/", "node_modules/", "skills/", ".git/")
 MAX_CHARS = 60_000
+JUDGE_TIMEOUT_S = 900  # a hung judge session is an error verdict, never a stalled batch
+
+
+FIXTURE_DIR = Path(__file__).resolve().parent / "fixture"
+# The fixture's own files, byte for byte: a run-dir file equal to its fixture copy is
+# scaffolding the agent did not touch, so it is no part of the answer (grade.py's rule).
+FIXTURE_BASELINE = {
+    str(p.relative_to(FIXTURE_DIR)): p.read_text(errors="replace")
+    for p in FIXTURE_DIR.rglob("*")
+    if p.is_file()
+}
 
 
 def collect(run_dir: Path) -> dict[str, str]:
-    """The agent's produced files, path-keyed. Mirrors grade.py's diff-only scope."""
+    """The agent's produced files, path-keyed: grade.py's diff-only scope. Until
+    2026-09-27 the unmodified fixture files rode along too, identical in both arms,
+    and spent the size budget before the answer did."""
     out: dict[str, str] = {}
     for p in sorted(run_dir.rglob("*")):
         if not p.is_file() or p.suffix not in EXTS:
@@ -51,7 +64,10 @@ def collect(run_dir: Path) -> dict[str, str]:
         rel = str(p.relative_to(run_dir))
         if rel.startswith(SKIP_PREFIX) or rel.startswith("."):
             continue
-        out[rel] = p.read_text(errors="replace")
+        text = p.read_text(errors="replace")
+        if FIXTURE_BASELINE.get(rel) == text:
+            continue
+        out[rel] = text
     return out
 
 
@@ -76,7 +92,7 @@ def blind_order(task: str, swapped: bool, arms: tuple[str, str] = ARMS) -> tuple
 
 PROMPT = """You are judging two answers to the same engineering task against a written standard.
 
-The standard is in ./skills/atelier/SKILL.md (hard rules 1-34) with detail under
+The standard is in ./skills/atelier/SKILL.md (its numbered hard rules) with detail under
 ./skills/atelier/references/. Read what the task touches before judging.
 
 THE TASK GIVEN TO BOTH:
@@ -122,7 +138,10 @@ def ask_judge(task_prompt: str, a: str, b: str, model: str | None, cwd: Path) ->
     if model:
         cmd += ["--model", model]
     env_cmd = ["env", "-u", "CLAUDECODE"] + cmd
-    res = subprocess.run(env_cmd, cwd=cwd, capture_output=True, text=True, stdin=subprocess.DEVNULL)
+    try:
+        res = subprocess.run(env_cmd, cwd=cwd, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=JUDGE_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        return {"winner": "error", "margin": 0, "why": f"judge timed out after {JUDGE_TIMEOUT_S}s", "citations": []}
     raw = res.stdout.strip()
     m = re.search(r"\{.*\}", raw, re.S)
     if not m:
@@ -205,7 +224,17 @@ def selftest() -> None:
     def inverted(v, shown):
         return shown[1] if v.get("winner") == "A" else shown[0]
     assert inverted(cited_a, ("with_skill", "baseline")) != unblind(cited_a, ("with_skill", "baseline"))
-    print("selftest OK: order is deterministic and swaps, a position-flipped verdict scores "
+    # the fixture's untouched files are no part of an answer
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        rel, text = next(iter(FIXTURE_BASELINE.items()))
+        (Path(td) / rel).parent.mkdir(parents=True, exist_ok=True)
+        (Path(td) / rel).write_text(text)
+        (Path(td) / "src" / "answer.ts").parent.mkdir(parents=True, exist_ok=True)
+        (Path(td) / "src" / "answer.ts").write_text("export const a = 1;\n")
+        got = collect(Path(td))
+        assert rel not in got and "src/answer.ts" in got, f"collect kept fixture scaffolding: {sorted(got)}"
+    print("selftest OK: the fixture's untouched files are skipped, order is deterministic and swaps, a position-flipped verdict scores "
           "inconsistent, an uncited winner is discarded, ties and errors survive collapse")
 
 

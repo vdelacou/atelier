@@ -4,6 +4,11 @@ The behavioral proof for the atelier skill: does code produced WITH the skill fo
 that code produced WITHOUT it misses? Read the delta through a 3-pass replication, because a
 single run is too noisy for a verdict (see `.claude/LESSONS.md`).
 
+**Reading this file.** It is a log, oldest first. The current reading is the last "Tier 2 for the
+<version> release" section near the end; everything above it is the history that got there, and the
+first sections (14 tasks, 37 assertions per pass) describe the first scorecard, not today's
+21 tasks and 61 assertions.
+
 ## Run
 
 - Date: 2026-08-30, re-run late the same day against the doctrine that landed during it (the
@@ -303,17 +308,12 @@ baselines stay opus.
 
 ## Threshold (Phase 4 gate, run locally)
 
-The eval runs on this machine, not in CI. A skill-touching change runs one pass and calls
-`grade.py <runs-dir> --min-with-skill 24 --min-delta 4`, a single-pass floor kept deliberately
-conservative: this 3-pass baseline runs 37/37 per pass with a per-pass delta of 8 or 9, so the
-floor sits far below the observed range and fires only on a real regression, not on the unaided
-arm's noise:
-
-```bash
-CONFORMANCE_MODEL=claude-opus-5 CONFORMANCE_TAG=preland bash scripts/conformance-eval/run.sh
-python3 scripts/conformance-eval/grade.py \
-  skills/atelier-workspace/conformance-*/runs-claude-opus-5-preland --min-with-skill 24 --min-delta 4
-```
+Superseded by the Tiers above: a doctrine edit runs tier 1 and a release tier 2, both graded against
+the frozen baseline arm. The threshold flags remain for a manual floor, and they need a baseline to
+measure a delta against: `grade.py <runs-dir> --frozen-baseline --min-with-skill <n> --min-delta <m>`.
+Since 2026-09-27 `--min-delta` with neither a graded baseline arm nor `--frozen-baseline` refuses to
+run; before, it compared the skill arm against zero and always passed, which is what the command this
+section used to show (a skill-only run, no baseline) did.
 
 There is deliberately no CI job for it. The gate spawns a nested `claude -p` per task per arm, which
 on GitHub Actions means an `ANTHROPIC_API_KEY` secret and a metered bill for something the local

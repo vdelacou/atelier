@@ -5,6 +5,11 @@ atelier-review-me catch that a skill-less senior-engineer review misses? The con
 measures generation; this measures the enforcement moment. Read through a 3-pass replication,
 single runs are too noisy for a verdict (`.claude/LESSONS.md`).
 
+**Reading this file.** It is a log, oldest first. The current reading is the last dated section
+near the end; the Run section below describes the first scorecard (11 planted violations, 2 clean
+files), not today's fixture (12 and 6 for the Bun variant, 9 and 2 for Java, per `violations*.json`
+and `clean-files*.json`).
+
 ## Run
 
 - Date: 2026-08-30

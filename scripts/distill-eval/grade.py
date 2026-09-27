@@ -45,7 +45,6 @@ ENTRIES = PLANTED["entries"]
 BY_ID = {e["id"]: e for e in ENTRIES}
 HEAD_RE = re.compile(r"^#{2,4} \[(\w+)\] (\d{4}-\d{2}-\d{2}) \| (.*)$")  # any heading level
 TAILS = ("Affects:", "Applies to:", "Rule for next time:", "Merges:", "Supersedes:")
-HARD = ("live", "ledger", "verbatim", "untouched", "no-commit")
 OUT = "out"
 
 
@@ -198,12 +197,37 @@ def turns(run):
     return n
 
 
+def session_failed(run):
+    """A session that never produced an answer is no reading: an error result (an
+    expired login, an unreachable API) or no result event at all without the
+    watchdog's .capped marker. Scored, an untouched tree passed every hard check with
+    recall 0 and inflated the arm's "hard pass" line (until 2026-09-27)."""
+    result = None
+    for line in read(run / ".transcript.jsonl").splitlines():
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        if ev.get("type") == "result":
+            result = ev
+    if result is None:
+        return None if (run / ".capped").exists() else "no result event (the session never finished)"
+    text = str(result.get("result", "")).strip()
+    if result.get("is_error") and text.startswith(("API Error", "Failed to authenticate")):
+        return text.splitlines()[0][:80]
+    return None
+
+
 def report(runs_dir):
     runs = sorted(p for p in runs_dir.iterdir() if p.is_dir() and re.search(r"-\d+$", p.name))
     if not runs:
         sys.exit(f"grade.py: no <arm>-<n> run dirs under {runs_dir}")
     arms = {}
     for run in runs:
+        failed = session_failed(run)
+        if failed:
+            print(f"{run.name}: session failed ({failed}), not scored")
+            continue
         g = grade_run(run)
         hard_ok = not g["fail"]
         got = sum(g["recall"].values())
@@ -378,7 +402,18 @@ def selftest():
     shutil.rmtree(tmp, ignore_errors=True)
     if bad:
         sys.exit(f"grade.py --selftest: {bad} case(s) wrong")
-    print("grade.py --selftest: every hard check fails on its plant, the perfect pass scores 11/11")
+    dead = Path(tempfile.mkdtemp(prefix="distill-dead-")) / "dead-1"
+    dead.mkdir()
+    (dead / ".transcript.jsonl").write_text(json.dumps({"type": "result", "is_error": True, "result": "Failed to authenticate. API Error: 403 Request not allowed"}) + "\n")
+    assert session_failed(dead), "a failed login must not be scored"
+    (dead / ".transcript.jsonl").write_text("")
+    assert session_failed(dead), "a session with no result event must not be scored"
+    (dead / ".capped").write_text("capped\n")
+    assert not session_failed(dead), "a capped session keeps what it produced and is graded"
+    (dead / ".transcript.jsonl").write_text(json.dumps({"type": "result", "is_error": False, "result": "Done.", "num_turns": 9}) + "\n")
+    assert not session_failed(dead), "a finished session is scored"
+    shutil.rmtree(dead.parent, ignore_errors=True)
+    print("grade.py --selftest: every hard check fails on its plant, the perfect pass scores 11/11, a dead session is not scored")
 
 
 if __name__ == "__main__":

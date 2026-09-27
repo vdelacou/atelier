@@ -18,6 +18,8 @@ the 60-turn cap in the 2.4.0 pass and nothing on disk could say where their turn
     python3 scripts/conformance-eval/transcript.py <transcript.jsonl> <max-turns>   # prints the result text
 """
 
+from __future__ import annotations  # `X | None` hints under the Python 3.9 macOS ships
+
 import json
 import sys
 from pathlib import Path

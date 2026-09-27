@@ -34,6 +34,8 @@ name carries a hyphen on purpose: a module named select.py shadows the stdlib se
 subprocess needs.
 """
 
+from __future__ import annotations  # `X | None` hints under the Python 3.9 macOS ships
+
 import json
 import re
 import subprocess
@@ -176,10 +178,38 @@ def pick(tasks: list[dict], rules: set[int], canon: set[str]) -> list[str]:
 
 
 def git_diff(ref: str) -> str:
-    return subprocess.run(
-        ["git", "diff", "-U0", ref, "--", str(SKILL_DIR / "SKILL.md"), str(SKILL_DIR / "references")],
+    """The skill diff since `ref`, untracked files included: `git diff` alone skips a new
+    reference nobody has added yet, which selected nothing for it (until 2026-09-27)."""
+    paths = [str(SKILL_DIR / "SKILL.md"), str(SKILL_DIR / "references")]
+    diff = subprocess.run(
+        ["git", "diff", "-U0", ref, "--", *paths],
         cwd=REPO_ROOT, capture_output=True, text=True, check=True,
     ).stdout
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "--", *paths],
+        cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+    ).stdout.split()
+    for rel in untracked:
+        # --no-index exits 1 whenever the files differ, which here is always
+        diff += subprocess.run(
+            ["git", "diff", "--no-index", "-U0", "--", "/dev/null", rel],
+            cwd=REPO_ROOT, capture_output=True, text=True,
+        ).stdout
+    return diff
+
+
+def changed_assets(ref: str) -> list[str]:
+    """Shipped assets changed since `ref`, untracked included. No trigger-table row maps an
+    asset to a rule, so they select nothing; reported so the smoke tests or tier 2 is a
+    conscious call, not a silent skip (every asset change was invisible until 2026-09-27)."""
+    path = str(SKILL_DIR / "assets")
+    names = subprocess.run(
+        ["git", "diff", "--name-only", ref, "--", path], cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+    ).stdout.split()
+    names += subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "--", path], cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+    ).stdout.split()
+    return sorted({n.split("/assets/", 1)[-1] for n in names})
 
 
 def selftest() -> None:
@@ -266,8 +296,12 @@ def main() -> None:
         diff = Path(args[args.index("--diff-file") + 1]).read_text()
         skill_text = Path(args[args.index("--skill-file") + 1]).read_text()
     elif "--since" in args:
-        diff = git_diff(args[args.index("--since") + 1])
+        since = args[args.index("--since") + 1]
+        diff = git_diff(since)
         skill_text = (REPO_ROOT / SKILL_DIR / "SKILL.md").read_text()
+        assets = changed_assets(since)
+        if assets:
+            print(f"assets changed (select nothing; their smoke tests prove them, consider tier 2): {', '.join(assets)}", file=sys.stderr)
     else:
         sys.exit(__doc__)
     rules, canon, unmapped, counts = touched(diff, skill_text, canon_ids)

@@ -89,6 +89,16 @@ def names(base: str, text: str) -> bool:
     return re.search(rf"(?<![\w.-]){re.escape(base)}", text) is not None
 
 
+def session_failed(review: str) -> str | None:
+    """A review that is nothing but a transport or login error is no reading: scored,
+    it read as 0 caught and 0 false positives (the conformance grader has skipped
+    these since 2026-09-03; this one scored them until 2026-09-27)."""
+    text = review.strip()
+    if text.startswith(("API Error", "Failed to authenticate")) and len(text) < 300:
+        return text.splitlines()[0][:80]
+    return None
+
+
 def grade_review(review: str, violations: list[dict], clean_files: list[str]) -> dict:
     paras = paragraphs(review)
     units = findings(review)
@@ -378,7 +388,10 @@ orders-db.ts line 30 looks fine to me.
         assert got["false_positives"] == [], (praise, got)
     got = grade_review("`Refund.java` needs improvement under rule 16: its error is a String.", [], java_clean)
     assert got["false_positives"] == ["src/main/java/com/example/app/domain/Refund.java"], got
-    print("selftest OK: catches evidence, requires the rule token for citation, flags clean-file claims, ignores exonerations and reported claims, reads plural and hyphenated citations, splits bold headings, reads a numbered heading as one finding, wants node:fs named, ignores call arguments, names a file whole, reads exemption, accurate and praise as clearing, scores an empty review 0")
+    assert session_failed("Failed to authenticate. API Error: 403 Request not allowed") is not None, "a dead session must not be scored"
+    assert session_failed("API Error: Can't reach the API server") is not None, "a transport error must not be scored"
+    assert session_failed("## Findings\n1. rule 13: a mock in award-points.test.ts") is None, "a real review is scored"
+    print("selftest OK: skips a dead session, catches evidence, requires the rule token for citation, flags clean-file claims, ignores exonerations and reported claims, reads plural and hyphenated citations, splits bold headings, reads a numbered heading as one finding, wants node:fs named, ignores call arguments, names a file whole, reads exemption, accurate and praise as clearing, scores an empty review 0")
 
 
 def main() -> None:
@@ -405,7 +418,12 @@ def main() -> None:
         if not review_file.exists():
             print(f"{run.name}: no .review.txt, skipped")
             continue
-        got = grade_review(review_file.read_text(errors="replace"), violations, clean_files)
+        review = review_file.read_text(errors="replace")
+        failed = session_failed(review)
+        if failed:
+            print(f"{run.name}: session failed ({failed}), not scored")
+            continue
+        got = grade_review(review, violations, clean_files)
         missed = [v["id"] for v in violations if v["id"] not in got["caught"]]
         print(
             f"{run.name}: caught {len(got['caught'])}/{total}, rule-cited {len(got['rule_cited'])}/{total}, "

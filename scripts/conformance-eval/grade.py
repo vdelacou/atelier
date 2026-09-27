@@ -14,6 +14,8 @@ A run directory is <runs-dir>/<task-id>-<arm>/ where arm is with_skill or
 baseline. Missing directories are reported as ungraded, not failed.
 """
 
+from __future__ import annotations  # `X | None` hints under the Python 3.9 macOS ships
+
 import hashlib
 from fnmatch import fnmatch
 import json
@@ -443,10 +445,13 @@ def main() -> None:
     positional = [a for a in args if not a.startswith("--") and not a.lstrip("-").isdigit()]
     runs_dir = Path(positional[0]) if positional else None
     if runs_dir is None:
-        workspaces = sorted(Path("skills/atelier-workspace").glob("conformance-*/runs"))
+        # run.sh names them runs-<model>[-<tag>]; the bare `runs` this looked for never
+        # existed, so the no-argument form always exited (fixed 2026-09-27): newest wins.
+        workspaces = sorted(Path("skills/atelier-workspace").glob("conformance-*/runs*"), key=lambda p: p.stat().st_mtime)
         if not workspaces:
             sys.exit("no conformance workspace found; pass the runs dir explicitly")
         runs_dir = workspaces[-1]
+        print(f"grading the newest runs dir: {runs_dir}")
 
     tasks = json.loads((HERE / "tasks.json").read_text())
     frozen = None
@@ -456,6 +461,12 @@ def main() -> None:
         frozen = load_frozen(frozen_path, tasks)
         if isinstance(frozen, str):
             sys.exit(f"FROZEN BASELINE UNUSABLE: {frozen}")
+        # run.sh puts the model in the runs dir name (runs-<model>[-<tag>]). Runs by
+        # another model against this fixture compare two models, not two arms.
+        frozen_model = str(frozen.get("model", ""))
+        if frozen_model and frozen_model not in runs_dir.name:
+            print(f"WARNING: the frozen baseline was measured with {frozen_model}, and {runs_dir.name} "
+                  f"does not name it: the delta below mixes a model difference into the skill's effect")
     if only_task is not None:
         tasks = [task for task in tasks if task["id"] == only_task]
     grand = {"with_skill": [0, 0], "baseline": [0, 0]}
@@ -541,6 +552,10 @@ def main() -> None:
         ws_p, bl_p = grand["with_skill"][0], grand["baseline"][0]
         # A live baseline arm wins when it was graded; otherwise the frozen arm stands in,
         # over the assertions it covers.
+        if grand["baseline"][1] == 0 and frozen is None and min_delta is not None:
+            # No baseline arm was graded and no frozen arm stands in: the delta would be
+            # measured against zero and always pass (the documented gate did until 2026-09-27).
+            sys.exit("EVAL GATE UNUSABLE: --min-delta needs a graded baseline arm or --frozen-baseline")
         if grand["baseline"][1] == 0 and frozen is not None:
             bl_p = frozen_grand[0]
             ws_p = sum(1 for task in tasks for _d, _r, p in (

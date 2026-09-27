@@ -13,6 +13,8 @@ Usage:
         [--model <name>] [--out <path>]
 """
 
+from __future__ import annotations  # `X | None` hints under the Python 3.9 macOS ships
+
 import datetime
 import json
 import os
