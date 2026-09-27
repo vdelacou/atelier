@@ -1,13 +1,13 @@
-# .github/workflows/ci.yml - the authoritative gate set (rules 4.6, 15.1)
+# .github/workflows/ci.yml - the authoritative gate set (canon 4.6, 15.1)
 #
 # CI runs every gate, fast and slow, on a frozen lockfile, so a bypassed local
 # hook is still caught. This is the line that cannot be skipped with
-# --no-verify: make it a required status check in branch protection (rule 13.2,
+# --no-verify: make it a required status check in branch protection (canon 13.2,
 # governance.md), and nothing merges while it is red. The pre-commit hook
 # (assets/pre-commit) is the fast first line; this is the real one.
 #
 # Actions are pinned to major tags for readability; pin to a commit SHA for
-# supply-chain safety in a real repo (rule 5.4).
+# supply-chain safety in a real repo (canon 5.4).
 name: ci
 on:
   push:
@@ -33,7 +33,7 @@ jobs:
       - name: commit size per commit in the range (gate 1 / canon 8.1)
         run: bash scripts/check-commit-range.sh
       - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile # lockfile drift fails here (rule 5.3)
+      - run: bun install --frozen-lockfile # lockfile drift fails here (canon 5.3)
       - name: package.json (no latest / * / bare dist-tag)
         run: bash scripts/check-package-json.sh
       - name: install gitleaks (pinned and checksum-verified; not preinstalled on ubuntu runners)

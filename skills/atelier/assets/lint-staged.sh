@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Fast staged lint for the pre-commit hook (rule 15.1): run ESLint on the
+# Fast staged lint for the pre-commit hook (canon 15.1): run ESLint on the
 # staged TS files only, so the hook stays O(staged files) and quick. The full,
 # type-aware, zero-warning `lint:strict` runs in CI (assets/ci.yml), where its
 # ~25s cost does not sit between the developer and every commit.

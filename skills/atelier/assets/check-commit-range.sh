@@ -21,7 +21,7 @@
 # Keep MAX_FILES / MAX_LINES in lockstep with check-commit-size.sh.
 #
 # Adopted from a consumer repo that had written it independently, found by the
-# 2026-08-30 field test (field-test.md). See references/workflow.md
+# 2026-08-30 field test. See references/workflow.md
 # (Commit size limits).
 set -euo pipefail
 

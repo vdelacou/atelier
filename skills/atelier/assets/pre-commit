@@ -3,7 +3,7 @@
 # atelier pre-commit hook - the fast gates only
 #
 # A pre-commit hook earns its keep by staying fast. A multi-minute hook trains
-# `git commit --no-verify` (rule 15.1, and 15.3), so the hook carries only the
+# `git commit --no-verify` (canon 15.1 and 15.3), so the hook carries only the
 # gates that are fast and stay fast as the repo grows: each is O(staged files)
 # or O(1), and the whole hook targets a few-seconds budget. The full, slow, and
 # repo-scaling gates (the whole test suite, per-tier coverage, and Stryker

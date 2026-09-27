@@ -1,15 +1,15 @@
-# .github/workflows/ci.yml (Java/Quarkus variant) - the authoritative gate set (rules 4.6, 15.1)
+# .github/workflows/ci.yml (Java/Quarkus variant) - the authoritative gate set (canon 4.6, 15.1)
 #
 # CI runs every gate, fast and slow, so a bypassed local hook is still caught.
 # This is the required merge check; the pre-commit-java hook is the fast first
-# line. Make it a required status check in branch protection (rule 13.2).
+# line. Make it a required status check in branch protection (canon 13.2).
 #
 # The CVE scan and the vendored-standard check are NOT here: both change
 # independently of your diff, so they ride in audit-java.yml on a schedule
 # rather than blocking an unrelated commit (references/workflow.md).
 #
 # Actions are pinned to major tags for readability; pin to a commit SHA for
-# supply-chain safety in a real repo (rule 5.4).
+# supply-chain safety in a real repo (canon 5.4).
 name: ci
 on:
   push:
