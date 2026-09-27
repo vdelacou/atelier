@@ -21,8 +21,9 @@ Unit tests never touch a real model: fast, deterministic, free (rule 13's fakes 
 **Pin the exact model snapshot.** A floating alias (`-latest`, an undated name) is repointed silently by the provider; your behaviour then changes with no commit in your repo. Pin a dated snapshot in config, exactly as rule 19 pins packages: pinned, every behaviour change has a diff, an author, and an eval run. Swapping provider, model, or prompt is one adapter and one config line, never a hunt through the codebase.
 
 ```ts
-// composition/env.ts: the pin is config, reviewed like a lockfile change
-llmModel: envEnum('LLM_MODEL', ['gemini-2.5-flash-002'] as const),
+// composition/env.ts: the pin is config, reviewed like a lockfile change. The value is the
+// provider's dated snapshot id (the shape below is a placeholder, not a real model), never an alias.
+llmModel: envEnum('LLM_MODEL', ['provider-model-2026-06-15'] as const),
 ```
 
 ## 2. Narrow, well-shaped holes; the core stays deterministic
@@ -72,7 +73,9 @@ const run = async (): Promise<void> => {
 ```yaml
 on:
   pull_request:
-    paths: ["prompts/**", "src/use-cases/ports/llm.ts", "src/infra/*llm*", "evals/**"]
+    # every path that can change the answer: the prompt, the port, the adapter, the pin
+    # (composition/env.ts), the hole's output schema, and the cases themselves (rule 32)
+    paths: ["prompts/**", "src/use-cases/ports/llm.ts", "src/infra/*llm*", "src/composition/env.ts", "src/domain/**/*schema*", "evals/**"]
 jobs:
   evals:
     steps:

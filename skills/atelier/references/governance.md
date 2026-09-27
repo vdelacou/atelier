@@ -37,7 +37,7 @@ upstream moves independently of your diff, and degrades when it cannot check, sa
 
 Two tiers, one rule: the record changes in the same commit as the code it explains, so it cannot drift.
 
-- **Every significant decision** gets a one-line `[decision]` entry in `.claude/LESSONS.md` (append-only; superseded by a newer entry when it changes). This is the index and stays the default (`references/lessons.md`).
+- **Every significant decision** gets a `[decision]` entry in `.claude/LESSONS.md` (the title line plus the few sentences `references/lessons.md` asks for) (append-only; superseded by a newer entry when it changes). This is the index and stays the default (`references/lessons.md`).
 - **Decisions with rejected alternatives and a reversal path worth keeping** (a vendor, a storage engine, a deliberate lock-in, a security tradeoff) additionally get a full decision record: `docs/adr/NNNN-title.md`, committed with the change. The atelier-grill-me interview output is the natural draft. One trap in the standard MADR template: its `Deciders` field invites a person's name into a tracked file, which rule 26 forbids. Put the accountable ROLE or team handle there (the same string CODEOWNERS uses); who typed it is already in the commit metadata, permanently and for free.
 
 ```markdown
@@ -73,7 +73,7 @@ export const createInvoiceRoute = createRoute({
 });
 ```
 
-Java: MicroProfile OpenAPI annotations on the resource render the spec from the code itself (`references/java-quarkus.md`). Either way the wire contract is also where DTO shapes stop: the internal model is mapped at the boundary (`references/architecture.md`, The internal model is yours).
+Java: MicroProfile OpenAPI annotations on the resource render the spec from the code itself (`references/java-quarkus.md`). Either way the wire contract is also where DTO shapes stop: the internal model is mapped at the boundary (`references/architecture.md`, API shape and the three model boundaries).
 
 ## Numbers, not adjectives
 
@@ -86,7 +86,7 @@ Java: MicroProfile OpenAPI annotations on the resource render the spec from the 
 - Deliberately deferred work is visible with its why, not silently absent.
 - Status is honest: "blocked, waiting on X" beats an "in progress" that has not moved in a week.
 
-## Ownership is explicit (a name next to everything)
+## Ownership is explicit (an owner next to everything)
 
 Shared ownership with no name attached is how things rot: everyone assumes someone else has it.
 
@@ -97,7 +97,7 @@ Shared ownership with no name attached is how things rot: everyone assumes someo
 /docs/adr/        @org/architecture
 ```
 
-Back it with a short RACI note (`docs/OWNERSHIP.md`): for each area, exactly **one** Accountable, any number of Responsible, who is Consulted and Informed. If two teams claim Accountable, split the area. For anything that can break, you should be able to name its owner in seconds.
+Back it with a short RACI note (`docs/OWNERSHIP.md`): for each area, exactly **one** Accountable, any number of Responsible, who is Consulted and Informed, each named by team or role handle as CODEOWNERS does (rule 26 exempts CODEOWNERS and `.mailmap` only, so a person's name in the RACI note is a finding). If two teams claim Accountable, split the area. For anything that can break, you should be able to name its owner in seconds.
 
 ## Separation of duties
 
@@ -114,11 +114,12 @@ This coexists with trunk-based development (`references/workflow.md`): small sam
 Sensitive mutations record who, what, and why, durably, in the same transaction as the change, so accountability is real rather than nominal. Approvals, exceptions, and emergency access leave a record.
 
 ```ts
-export const upgradePlan = (deps: Deps) =>
+export const createUpgradePlan = (deps: Deps) =>
   async (ctx: { actorId: ActorId; reason: string }, orgId: OrgId): Promise<Result<void, PlanError>> =>
     deps.db.transaction(async (tx) => {
       await tx.update(orgs).set({ plan: 'enterprise' }).where(eq(orgs.id, orgId));
       await tx.insert(auditLog).values({ actorId: ctx.actorId, action: 'plan.upgrade', target: orgId, reason: ctx.reason, at: new Date() });
+      return ok(undefined);
     });
 ```
 
@@ -129,7 +130,7 @@ export const upgradePlan = (deps: Deps) =>
 
 ## The platform is a product
 
-Whatever paved road the team ships (templates, gate assets, scaffolds) is run like a product: an owner in CODEOWNERS, a changelog, a support channel, a deprecation policy, and a feedback loop. A golden path nobody maintains gets quietly forked around.
+Whatever paved road the team ships (templates, gate assets, scaffolds) is run like a product: an owner in CODEOWNERS, a changelog, a support channel, a deprecation policy, and a feedback loop. A golden path nobody maintains gets quietly forked around. The profile's numbers for "maintained": a first response to an issue within four business hours, and 90 percent of the services built on it on its current major, the adoption metric the owner reports.
 
 ## Review checklist
 

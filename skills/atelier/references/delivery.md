@@ -52,7 +52,7 @@ A managed service is safe to depend on when it is the managed form of an open in
 | Email | SMTP behind a port |
 | Telemetry | OpenTelemetry (`references/observability.md`) |
 
-The application reads everything from injected configuration and never imports a cloud SDK outside an adapter (rule 12's config module + the port discipline); the proprietary remainder lives in the IaC layer, which is per-cloud by nature. When a proprietary service is genuinely worth the lock-in, take it deliberately: behind a port, with the exit written down in a decision record (`references/governance.md`).
+The application reads everything from injected configuration and never imports a cloud SDK outside an adapter (the config module, `src/composition/env.ts`, whose values cross the boundary as branded types, rule 12; plus the port discipline); the proprietary remainder lives in the IaC layer, which is per-cloud by nature. When a proprietary service is genuinely worth the lock-in, take it deliberately: behind a port, with the exit written down in a decision record (`references/governance.md`).
 
 **The proof is mechanical**: a compose file boots the full stack on generic pinned backends (Postgres, MinIO), and CI runs the smoke suite against it on every merge. If that boots, the app depends on interfaces, not a cloud, and it is the same mechanism that puts a new laptop on the full system before lunch.
 
@@ -82,7 +82,7 @@ An untested backup is a rumour. Schedule a drill (at least quarterly; weekly is 
 on: { schedule: [{ cron: '0 3 * * 1' }] }
 steps:
   - run: pg_restore --clean --dbname "$RESTORE_DRILL_URL" latest.dump   # timed; production boundary, restore role
-  - run: psql "$RESTORE_DRILL_URL" -c "SELECT count(*) FROM receipts" | grep -qv ' 0$'   # a count, never a row
+  - run: test "$(psql -tAc 'SELECT count(*) FROM receipts' "$RESTORE_DRILL_URL")" -gt 0   # a count, never a row; -tA prints the bare number, so an empty table fails
   - run: psql "$ADMIN_URL" -c "DROP DATABASE restore_drill"
 ```
 

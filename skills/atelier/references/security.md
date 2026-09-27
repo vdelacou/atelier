@@ -95,10 +95,18 @@ export const parseSafeUrl = (value: string): Result<SafeUrl, SafeUrlError> => {
   }
 };
 
-// only fetchers typed to accept SafeUrl can be called, grep catches every bypass
-export const fetchJson = async (url: SafeUrl): Promise<unknown> => {
-  const response = await fetch(url);
-  return response.json();
+// only fetchers typed to accept SafeUrl can be called, grep catches every bypass; an adapter
+// like any other (src/infra/**): a deadline on the call (rule 29) and a Result, never a throw (rule 16)
+type FetchError = { readonly kind: 'http'; readonly status: number } | { readonly kind: 'network'; readonly message: string };
+
+export const fetchJson = async (url: SafeUrl): Promise<Result<unknown, FetchError>> => {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(2_000) });
+    if (!response.ok) return err({ kind: 'http', status: response.status });
+    return ok(await response.json());
+  } catch (error) {
+    return err({ kind: 'network', message: formatError(error) });
+  }
 };
 ```
 
@@ -159,7 +167,7 @@ export const readConfig = (): AppConfig => ({
 });
 ```
 
-`envVar` brands the string because a raw `string` could bypass the non-empty check; the coerced siblings return their **natural** narrow types (`envNumber` a `number`, `envEnum` the literal union), which you wrap into a domain brand (`Port`, `TimeoutMs`) only where the value carries domain meaning (hard rule 12). A connection string consumed by a driver stays an `EnvVar`; a URL that will reach `fetch` is read with `safeUrl`, not `envVar`. The one call to `readConfig()` belongs at the composition root; everything downstream takes the value as a parameter (SKILL.md, Security, never sprinkle `process.env`). When env outgrows a handful of vars or needs cross-field rules, parse it once there with a Zod schema instead, `const Env = z.object({ PORT: z.coerce.number().int().positive(), LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']) }).parse(process.env)`, same principle either way: parse once, at the edge, fail loud at startup, inject downstream.
+`envVar` brands the string because a raw `string` could bypass the non-empty check; the coerced siblings return their **natural** narrow types (`envNumber` a `number`, `envEnum` the literal union), which you wrap into a domain brand (`Port`, `TimeoutMs`) only where the value carries domain meaning (hard rule 12). A connection string consumed by a driver stays an `EnvVar`; a URL that will reach `fetch` goes through `parseSafeUrl` (above), not `envVar`. The one call to `readConfig()` belongs at the composition root; everything downstream takes the value as a parameter (SKILL.md, Security, never sprinkle `process.env`). When env outgrows a handful of vars or needs cross-field rules, parse it once there with a Zod schema instead, `const Env = z.object({ PORT: z.coerce.number().int().positive(), LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']) }).parse(process.env)`, same principle either way: parse once, at the edge, fail loud at startup, inject downstream.
 
 ```ts
 // file path that is guaranteed to live under a given root
@@ -203,7 +211,9 @@ Inside a single trust boundary the rule stops: in a CLI where the user has alrea
 // src/infra/logger.ts: adapter factory, wired once at composition (hard rule 4), never a module-level singleton
 import { createLogger, format, transports } from 'winston';
 
-const REDACTED_KEYS = new Set(['password', 'token', 'authorization', 'apiKey', 'secret', 'email', 'phone']); // secrets plus natural identifiers (rule 27); extend with the domain's own (name, address, ssn)
+// every key lowercase: the lookup lowercases the field name, so a camelCase entry ('apiKey')
+// never matched and API keys were logged in clear
+const REDACTED_KEYS = new Set(['password', 'token', 'authorization', 'apikey', 'secret', 'email', 'phone']); // secrets plus natural identifiers (rule 27); extend with the domain's own (name, address, ssn)
 
 const redactFormat = format((info) => {
   for (const key of Object.keys(info)) {

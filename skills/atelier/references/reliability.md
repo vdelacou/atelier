@@ -124,7 +124,7 @@ The same discipline applies to API responses: version or add fields; a client yo
 
 ## Performance is a budget, not a hope
 
-Commit to response-time numbers (p95/p99 per route) and prove them under production-like load before shipping: a load-test gate in the pipeline (k6 or similar) with a threshold that fails the build, e.g. `p(99) < 300ms` at expected peak. Finding the p99 from angry users is the Don't. Targets live with the other thresholds (`references/governance.md`, Numbers not adjectives); alerting on them is `references/observability.md`.
+Commit to response-time numbers (p95/p99 per route) and prove them under production-like load before shipping: a load-test gate in the pipeline (k6 or similar) with a threshold that fails the build. The profile's starting point: k6 in CI, `p(99) < 300ms` with 100 virtual users held for two minutes, raised to the expected peak once traffic is known. Finding the p99 from angry users is the Don't. Targets live with the other thresholds (`references/governance.md`, Numbers not adjectives); alerting on them is `references/observability.md`.
 
 ## Money, time, and the types that carry proof
 
