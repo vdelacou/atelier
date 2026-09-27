@@ -35,4 +35,4 @@ push wait for the owner's yes; the v2.5.0 tag stays untouched (2.5.0 was cut bef
 Follow-up 2026-09-27 (owner: "2 and 3"): MemberId.java imports java.util.regex.Pattern (the reviewer's
 premise was half wrong: the shipped Email.java exemplar writes it out twice too); Java re-measure
 fx3-r1..3, both arms; then the skills.sh re-check. The two uncommitted landings wait for the yes.
-
+Java fx3 21:24: skill 27/27 and 27/27, no false positive, no note on MemberId; unaided 24/27 and 4/27.

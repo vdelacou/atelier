@@ -16,8 +16,8 @@ whole, not any single skill.
   twenty-first, all in the false-positive lens and each with a selftest case seen red first: a
   basename matched inside a longer name (`settings.ts` in `load-settings.ts`), and "exemption",
   "accurate" and plain praise ("a rule 16 improvement", "done right") did not clear a file. No earlier
-  reading moves. A minor style note stays true on `MemberId.java` (`java.util.regex.Pattern` written
-  out twice), no rule claimed.
+  reading moves. `MemberId.java` then imports `java.util.regex.Pattern` rather than writing it out
+  twice, the one minor note left: Java 27/27 caught and cited against 24/27 and 4/27, no note left.
 
 ## [2.5.0] - 2026-09-27
 

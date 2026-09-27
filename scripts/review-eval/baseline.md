@@ -342,3 +342,8 @@ matched inside a longer name (`settings.ts` in `load-settings.ts`); "exemption" 
 "exempt"; "accurate" did not clear like "correct"; and praise in the reviewer's own words ("a rule 16
 improvement", "the rule 12 shape done right") read as accusation, while "needs improvement" and
 "requires" stay accusations. No earlier reading moves under them.
+
+`MemberId.java` then imports `java.util.regex.Pattern` instead of writing it out twice (the reviewer
+had held it to the `Email.java` exemplar, which in fact writes it out twice too). Java, three passes,
+both arms: skill 27/27 caught and cited, no false positive, and no pass left a note on `MemberId.java`;
+unaided 24/27 and 4/27. The README row reads this pass.
