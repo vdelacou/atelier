@@ -174,14 +174,7 @@ const variantStyles: Record<ButtonVariant, string> = {
 };
 
 export const Button: FC<ButtonProps> = ({ children, variant = 'primary', icon, className = '', ...props }) => {
-  const variantClass = ((): string => {
-    switch (variant) {
-      case 'secondary': return variantStyles.secondary;
-      case 'premium': return variantStyles.premium;
-      case 'ghost': return variantStyles.ghost;
-      default: return variantStyles.primary;
-    }
-  })();
+  const variantClass = variantStyles[variant];
 
   return (
     <button className={`inline-flex items-center justify-center gap-x-2 rounded-md ${variantClass} ${className}`} {...props}>

@@ -18,7 +18,7 @@ const call = (): Promise<Response> =>
     method: 'POST',
     body,
     headers: { 'idempotency-key': key }, // provider dedupes; the retry is safe
-    signal: AbortSignal.timeout(2_000), // fail fast, free the caller
+    signal: AbortSignal.timeout(2000), // fail fast, free the caller
   });
 const res = await retryOnErr(() => toResult(call()), (e) => e.kind === 'io' || e.kind === 'rate-limited', { maxAttempts: 3, baseDelayMs: 200, jitter: true });
 ```
@@ -38,7 +38,8 @@ const rows = await db.execute(sql`
   SELECT r.id, r.total_cents, count(l.id) AS line_count
   FROM receipts r LEFT JOIN receipt_lines l ON l.receipt_id = r.id
   WHERE r.org_id = ${orgId}
-  GROUP BY r.id ORDER BY r.created_at DESC LIMIT 50`);
+  GROUP BY r.id ORDER BY r.created_at DESC LIMIT 50
+`);
 await db.insert(receipts).values(newReceipt);
 ```
 

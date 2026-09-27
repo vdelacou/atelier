@@ -140,11 +140,13 @@ export const process = (orders: Order[]): void => {
 
 // GOOD - extract
 export const shipValidOrders = (orders: Order[]): void => {
-  orders.filter(isValidOrder).forEach(processOrder);
+  const validOrders = orders.filter((order) => isValidOrder(order));
+  for (const order of validOrders) processOrder(order);
 };
 
 export const processOrder = (order: Order): void => {
-  order.items.filter((item) => item.inStock).forEach(processItem);
+  const inStockItems = order.items.filter((item) => item.inStock);
+  for (const item of inStockItems) processItem(item);
 };
 ```
 

@@ -86,10 +86,10 @@ export type UserRepo = {
 // Infrastructure implements it (outer)
 export const createPostgresUserRepo = (db: Database): UserRepo => ({
   save: async (user) => {
-    /* SQL here, wrapped in ok()/err() */
+    // SQL here, wrapped in ok()/err()
   },
   findById: async (id) => {
-    /* SQL here, wrapped in ok()/err() */
+    // SQL here, wrapped in ok()/err()
   },
 });
 
@@ -297,8 +297,8 @@ export const createHttpServer = (deps: HttpDeps): { readonly fetch: (req: Reques
       const parsed = parseOrderBody(await req.text());
       if (!parsed.ok) return Response.json({ error: parsed.error.message }, { status: 400 });
       return toResponse(await deps.placeOrder(parsed.value));
-    } catch (e) {
-      return Response.json({ error: formatError(e) }, { status: 500 });
+    } catch (error) {
+      return Response.json({ error: formatError(error) }, { status: 500 });
     }
   },
 });
@@ -333,7 +333,7 @@ const toOrder = (d: ApiOrder): Order => ({ id: d.order_id, total: money(d.total_
 export const httpOrders = (api: Api): OrderGateway => ({
   list: async () => {
     const dto = await api.get<ApiOrder[]>('/orders');
-    return dto.ok ? ok(dto.value.map(toOrder)) : dto;
+    return dto.ok ? ok(dto.value.map((apiOrder) => toOrder(apiOrder))) : dto;
   },
 });
 export const fakeOrders: OrderGateway = { list: async () => ok([{ id: '1', total: money(8000, 'EUR'), customerName: 'Ada' }]) };

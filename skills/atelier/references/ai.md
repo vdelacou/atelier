@@ -63,7 +63,7 @@ const run = async (): Promise<void> => {
   }
   const score = passed / cases.length;
   console.log(`score ${score.toFixed(2)} over ${cases.length} cases, bar ${minScoreFrom(Bun.argv)}`);
-  if (score < minScoreFrom(Bun.argv)) process.exit(1);
+  if (score < minScoreFrom(Bun.argv)) process.exitCode = 1;
 };
 ```
 

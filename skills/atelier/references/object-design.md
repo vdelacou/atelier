@@ -250,7 +250,8 @@ export const parseMoney = (decimal: string, currency: Currency): Result<Money, M
   const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(decimal);
   if (!match) return err({ kind: 'malformed', value: decimal });
   const [, whole = '0', fraction = ''] = match;
-  return ok(money(Number(whole) * 100 + Number(fraction.padEnd(2, '0')), currency));
+  const cents = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
+  return ok(money(cents, currency));
 };
 
 const sameCurrency = (a: Money, b: Money): Currency => {
