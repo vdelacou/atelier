@@ -15,13 +15,13 @@ Pick this variant when the repo has a `pom.xml` (or `build.gradle`) and Java sou
 
 - **Exact versions only.** Never a version range (`[1.0,)`) and never a `-SNAPSHOT` dependency in `main`. Maven resolves ranges to whatever is newest that day, which is the `"latest"` footgun with different syntax.
 - All versions live in `<properties>` or the parent pom / BOM; children declare nothing loose. One formatter version, one runtime BOM, inherited everywhere (the one-committed-config rule).
-- **maven-enforcer-plugin** makes it executable: `requireJavaVersion` (a bare `21` means "at least 21"; avoid the `[21,)` range form, which `check-pom.sh` would flag as a version range), `requireReleaseDeps` (no `-SNAPSHOT` dependencies), `requireUpperBoundDeps`, and `bannedDependencies` for the mock libraries (rule 13: `org.mockito`, `org.easymock`, `org.powermock`, `org.jmockit`, `quarkus-junit5-mockito`, `quarkus-panache-mock`; enforcer 3.x walks the whole tree, so a transitive Mockito is caught too).
-- Renovate (or equivalent) keeps pins current so a pinned version never rots into a known-vulnerable one; **OWASP dependency-check** (or the platform's scanner) runs in CI and fails on high CVSS, the `bun audit` analogue: daily schedule plus a PR run scoped to `pom.xml`.
+- **maven-enforcer-plugin** makes it executable: `requireJavaVersion` (a bare `21` means "at least 21"; avoid the `[21,)` range form, which `check-pom.sh` would flag as a version range), `requireReleaseDeps` (no `-SNAPSHOT` dependencies), `requireUpperBoundDeps` (framework-free only: under a platform BOM the BOM converges versions, The Quarkus delta below), and `bannedDependencies` for the mock libraries (rule 13: `org.mockito`, `org.easymock`, `org.powermock`, `org.jmockit`, `quarkus-junit5-mockito`, `quarkus-panache-mock`; enforcer 3.x walks the whole tree, so a transitive Mockito is caught too).
+- Renovate (or equivalent) keeps pins current so a pinned version never rots into a known-vulnerable one; **OWASP dependency-check** (or the platform's scanner) runs in CI and fails on high CVSS, the `bun audit` analogue: daily schedule plus a PR run scoped to `pom.xml`. The canonical pom pins the plugin in `<pluginManagement>` with `failBuildOnCVSS` 7: its default, 11, never fails the build. It reads the NVD API key from `NVD_API_KEY`, which the workflow passes from a repository secret (request a free key from NVD; without one the database download is throttled to hours).
 - **google-java-format on JDK 16+** needs the `jdk.compiler` exports: commit a one-line `.mvn/jvm.config` (shown under the canonical pom below). Harmless where unneeded.
 
 ### Canonical `pom.xml`
 
-The gate skeleton every atelier Java repo carries, framework-free: a Quarkus service adds the pinned Quarkus BOM in `<dependencyManagement>` and its extensions on top. This block is extracted verbatim by `scripts/smoke-test-java.sh` in the skill repo's CI, so drift here fails a build, not a user.
+The gate skeleton every atelier Java repo carries, framework-free: a Quarkus service applies the Quarkus delta below on top of it. This block is extracted verbatim by `scripts/smoke-test-java.sh` in the skill repo's CI, so drift here fails a build, not a user.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -50,6 +50,7 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
     <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
     <pmd.plugin.version>3.28.0</pmd.plugin.version>
     <archunit.version>1.5.0</archunit.version>
+    <dependency-check.plugin.version>13.0.0</dependency-check.plugin.version>
   </properties>
 
   <dependencies>
@@ -69,15 +70,34 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
   </dependencies>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <!-- the CVE watchdog (assets/audit-java.yml runs dependency-check:check on a schedule,
+             never in verify). The default failBuildOnCVSS is 11, which never fails; 7 fails on a
+             high or critical CVE. The NVD key comes from the environment, never the pom -->
+        <plugin>
+          <groupId>org.owasp</groupId>
+          <artifactId>dependency-check-maven</artifactId>
+          <version>${dependency-check.plugin.version}</version>
+          <configuration>
+            <failBuildOnCVSS>7</failBuildOnCVSS>
+            <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
-      <!-- rule 15: warnings are errors -->
+      <!-- rule 15: warnings are errors. -classfile is the one lint off, project-level: it
+           reports defects inside third-party class files, not in this source (the
+           MicroProfile Config API behind every @ConfigProperty trips it), and no
+           source-level fix or suppression can reach it -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${compiler.plugin.version}</version>
         <configuration>
           <compilerArgs>
-            <arg>-Xlint:all</arg>
+            <arg>-Xlint:all,-classfile</arg>
             <arg>-Werror</arg>
           </compilerArgs>
         </configuration>
@@ -229,6 +249,44 @@ The gate skeleton every atelier Java repo carries, framework-free: a Quarkus ser
 </project>
 ```
 
+### The Quarkus delta
+
+A Quarkus service imports the platform BOM and declares its extensions without versions. Add the property and the `<dependencyManagement>` block, put the extensions first in `<dependencies>`, and make two edits to the canonical pom:
+
+```xml
+<!-- in <properties> -->
+<quarkus.platform.version>3.39.5</quarkus.platform.version>
+
+<!-- between </properties> and <dependencies> -->
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkus.platform</groupId>
+      <artifactId>quarkus-bom</artifactId>
+      <version>${quarkus.platform.version}</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+
+<!-- first in <dependencies>: the extensions, no versions (the BOM pins them) -->
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-rest</artifactId>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-junit</artifactId>
+  <scope>test</scope>
+</dependency>
+```
+
+- **Drop `<requireUpperBoundDeps />` from the enforcer.** The BOM is the convergence authority: it pins every version its extensions use, and its own tree does not pass the rule (on 3.39.5, `jctools-core` is managed at 4.0.5 while an extension asks for 4.0.6), so the first `validate` fails. `requireJavaVersion`, `requireReleaseDeps` and the mock ban stay.
+- **Drop the JUnit pin** (`<junit.version>` and the `<version>` on `junit-jupiter`). The BOM manages JUnit, 6.x on 3.39, and a kept pin mixes a 5.x aggregator with 6.x modules. ArchUnit, PIT and its JUnit plugin run unchanged on it.
+
+`scripts/smoke-test-java.sh` applies exactly this delta to the extracted canonical pom and proves it: the unmodified pom under the BOM fails `validate` on `RequireUpperBoundDeps`, a `@ConfigProperty` bean fails the compile under a plain `-Xlint:all`, and the delta compiles and passes `LayerRulesTest` and the tests. Bump `quarkus.platform.version` with the platform's releases; nothing else in the delta carries a version.
+
 `.mvn/jvm.config` (one line, committed):
 
 ```text
@@ -274,7 +332,7 @@ Dependency rule unchanged: `domain` imports nothing from the framework; `usecase
 | 12 branded types | Value **records with validating compact constructors** plus a `parse(...)` factory returning `Result` (below) |
 | 13 no `mock` | **No Mockito, no EasyMock, no `@InjectMock`.** Hand-written fakes implement the port interface; two gates keep the libraries out of the pom: the enforcer's `bannedDependencies` (direct or transitive, in every `mvn` run) and `check-pom.sh`'s third check in the fast hook (a declared mock coordinate) |
 | 14 outside-in classicist | Unchanged: the SUT is the application service; domain runs real; only secondary ports get fakes |
-| 15 zero warnings, no inline ignores | No `@SuppressWarnings`, ever. Compile with `-Xlint:all -Werror`; SonarJava/Error Prone severities change at project level with a comment. Three gates since 2026-09-08: `check-no-suppressions.sh` rejects `@SuppressWarnings`, `@SuppressFBWarnings`, `NOPMD`, `NOSONAR`, `CHECKSTYLE:OFF` and `noinspection` in staged Java (the fast hook) and across the tree (CI); the `NoSuppressWarnings` XPath rule in `pmd-ruleset.xml` flags the annotation in `verify` (it cannot see `@SuppressWarnings("PMD")`, which suppresses its own report, hence the grep); the canonical pom's `suppressMarker` is an impossible token, so a `// NOPMD` comment is inert |
+| 15 zero warnings, no inline ignores | No `@SuppressWarnings`, ever. Compile with `-Xlint:all,-classfile -Werror` (the one lint off reports third-party class files, not this source); SonarJava/Error Prone severities change at project level with a comment. Three gates since 2026-09-08: `check-no-suppressions.sh` rejects `@SuppressWarnings`, `@SuppressFBWarnings`, `NOPMD`, `NOSONAR`, `CHECKSTYLE:OFF` and `noinspection` in staged Java (the fast hook) and across the tree (CI); the `NoSuppressWarnings` XPath rule in `pmd-ruleset.xml` flags the annotation in `verify` (it cannot see `@SuppressWarnings("PMD")`, which suppresses its own report, hence the grep); the canonical pom's `suppressMarker` is an impossible token, so a `// NOPMD` comment is inert |
 | 16 `Result` at IO boundaries | `Result<T, E>` as a sealed interface (below); every port method returns it |
 | 17 `try/catch` quarantine | Adapters in `infra/` catch SDK/JPA exceptions and translate to `Err`; use-cases pattern-match with `switch`; one top-level handler at the entry point |
 | 18 no curried chains | n/a |

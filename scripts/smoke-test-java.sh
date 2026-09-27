@@ -22,9 +22,10 @@
 #
 # Scope: this proves OUR canonical config and shipped assets against the
 # current JDK + Maven toolchain. It does not boot Quarkus (test the code you
-# own; trust your dependencies), and ./mvnw in the fixture is a thin shim to
-# the system mvn: the hook requires the wrapper's presence, but the wrapper
-# distribution itself is not the surface under test.
+# own; trust your dependencies), but its last section builds the documented
+# Quarkus delta on the real platform BOM, where two gates once broke. ./mvnw in
+# the fixture is a thin shim to the system mvn: the hook requires the wrapper's
+# presence, but the wrapper distribution itself is not the surface under test.
 #
 # Run locally: bash scripts/smoke-test-java.sh   (needs JDK 21+, mvn, git)
 # Run in CI:   .github/workflows/ci.yml
@@ -762,6 +763,112 @@ expect_err "PIT blocks surviving mutants behind green line coverage" \
 expect_err "pit-changed.sh catches the surviving mutants in an untracked new class" \
   bash -c 'BASE=HEAD bash scripts/pit-changed.sh'
 rm src/main/java/com/example/app/domain/Unasserted.java src/test/java/com/example/app/domain/UnassertedTest.java
+
+echo "== the Quarkus delta (java-quarkus.md, The Quarkus delta) =="
+# The fixture above is framework-free. A real service imports the Quarkus BOM,
+# and two gates of the canonical pom broke on it until 2026-09-27: the BOM's
+# own tree fails requireUpperBoundDeps (jctools on 3.39.5), and the MicroProfile
+# Config API behind @ConfigProperty trips -Xlint:classfile under -Werror. This
+# builds a second tree from the extracted canonical pom plus the documented
+# delta, proves both failures on the pre-fix shape, then the delta green.
+QFX="$FX/quarkus"
+mkdir -p "$QFX"/src/main/java/com/example/app/{domain,usecases,infra} \
+         "$QFX"/src/test/java/com/example/app/{usecases,architecture}
+cp "$SKILL/assets/java/Result.java" "$SKILL/assets/java/Ok.java" \
+   "$SKILL/assets/java/Err.java" "$SKILL/assets/java/Email.java" "$QFX/src/main/java/com/example/app/domain/"
+cp "$SKILL/assets/java/LayerRulesTest.java" "$QFX/src/test/java/com/example/app/architecture/"
+cat > "$QFX/src/main/java/com/example/app/infra/Greeting.java" <<'EOF'
+package com.example.app.infra;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+@ApplicationScoped
+public class Greeting {
+  private final String name;
+
+  Greeting(@ConfigProperty(name = "greeting.name", defaultValue = "world") String name) {
+    this.name = name;
+  }
+
+  public String text() {
+    return "hello " + name;
+  }
+}
+EOF
+cat > "$QFX/src/main/java/com/example/app/usecases/Normalize.java" <<'EOF'
+package com.example.app.usecases;
+
+public final class Normalize {
+  private Normalize() {}
+
+  public static String trim(String raw) {
+    return raw.strip();
+  }
+}
+EOF
+cat > "$QFX/src/test/java/com/example/app/usecases/NormalizeTest.java" <<'EOF'
+package com.example.app.usecases;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+
+class NormalizeTest {
+  @Test
+  void trimsSurroundingSpace() {
+    assertEquals("a", Normalize.trim(" a "));
+  }
+}
+EOF
+extract_fence "$DOC" '### The Quarkus delta' > "$QFX/delta.xml"
+extract_fence "$DOC" '### Canonical `pom.xml`' > "$QFX/canonical.xml"
+# Apply the delta's three labelled fragments to the canonical pom; $1 = full
+# (both edits) or bom-only (the pre-fix shape: BOM in, the two edits not made).
+quarkus_pom() {
+  python3 - "$QFX/canonical.xml" "$QFX/delta.xml" "$1" > "$QFX/pom.xml" <<'PYEOF2'
+import re, sys
+pom, delta, mode = open(sys.argv[1]).read(), open(sys.argv[2]).read(), sys.argv[3]
+parts = re.split(r'^<!--.*-->\n', delta, flags=re.M)
+prop, dm, ext = (p.rstrip('\n') for p in parts[1:4])
+indent = lambda s, n: '\n'.join((' ' * n + l) if l else l for l in s.split('\n'))
+pom = pom.replace('  </properties>\n', indent(prop, 4) + '\n  </properties>\n\n' + indent(dm, 2) + '\n', 1)
+pom = pom.replace('  <dependencies>\n    <dependency>\n      <groupId>org.junit.jupiter</groupId>',
+                  '  <dependencies>\n' + indent(ext, 4) + '\n    <dependency>\n      <groupId>org.junit.jupiter</groupId>', 1)
+if mode == 'full':
+    pom = pom.replace('                <requireUpperBoundDeps />\n', '', 1)
+    pom = pom.replace('      <artifactId>junit-jupiter</artifactId>\n      <version>${junit.version}</version>\n',
+                      '      <artifactId>junit-jupiter</artifactId>\n', 1)
+    pom = re.sub(r'    <junit\.version>[^<]*</junit\.version>\n', '', pom, count=1)
+print(pom, end='')
+PYEOF2
+}
+cd "$QFX"
+expect_ok "the delta's fragments are in the reference (property, BOM import, extensions)" \
+  bash -c 'grep -q "quarkus.platform.version" delta.xml && grep -q "<scope>import</scope>" delta.xml && grep -q "quarkus-rest" delta.xml'
+quarkus_pom bom-only
+expect_ok "the BOM without the delta fails validate on requireUpperBoundDeps (the pre-fix shape)" \
+  bash -c 'mvn -B -q validate > q.log 2>&1; st=$?; grep -q "RequireUpperBoundDeps" q.log && [ "$st" -ne 0 ]'
+quarkus_pom full
+sed 's|<arg>-Xlint:all,-classfile</arg>|<arg>-Xlint:all</arg>|' pom.xml > pom.plain-xlint.xml
+expect_ok "a @ConfigProperty bean fails -Werror under a plain -Xlint:all (the pre-fix shape)" \
+  bash -c 'mvn -B -q -f pom.plain-xlint.xml compile > q.log 2>&1; st=$?; grep -q "warnings found and -Werror specified" q.log && [ "$st" -ne 0 ]'
+rm pom.plain-xlint.xml
+expect_ok "the Quarkus delta resolves, compiles under -Werror, and passes LayerRulesTest and the tests" \
+  mvn -B -q test
+
+echo "== the CVE watchdog is armed (audit-java.yml; the plugin's own default never fails) =="
+# dependency-check's failBuildOnCVSS defaults to 11 ("the build will never
+# fail"), and until 2026-09-27 the workflow ran the goal unpinned and
+# unconfigured. A live red case needs the multi-GB NVD database, so this proves
+# the wiring instead: the goal the workflow runs resolves the pom's pinned
+# version and threshold (a debug read of the resolved parameters; with
+# autoUpdate off and no database the goal then exits non-zero, as expected).
+expect_ok "audit-java.yml runs the goal with the NVD key from a secret" \
+  bash -c 'grep -q "org.owasp:dependency-check-maven:check" "$0" && grep -q "NVD_API_KEY: \${{ secrets.NVD_API_KEY }}" "$0"' "$SKILL/assets/audit-java.yml"
+expect_ok "the goal resolves the pinned plugin with failBuildOnCVSS 7 and the NVD key variable" \
+  bash -c 'mvn -B -X -f canonical.xml org.owasp:dependency-check-maven:check -DautoUpdate=false > dc.log 2>&1; grep -q "(f) failBuildOnCVSS = 7.0" dc.log && grep -q "(f) nvdApiKeyEnvironmentVariable = NVD_API_KEY" dc.log'
+cd "$FX"
 
 echo
 if [ "$FAILURES" -gt 0 ]; then
