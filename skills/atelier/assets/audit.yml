@@ -8,7 +8,7 @@ on:
     - cron: '0 6 * * *'        # daily watchdog: new CVEs in untouched deps
   pull_request:
     paths:                      # PR run fires only when deps actually change
-      - package.json
+      - '**/package.json'       # every workspace manifest, the root included
       - bun.lock
       - .claude/skills/**        # a re-sync of the standard is a dependency change
 permissions:

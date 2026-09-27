@@ -604,7 +604,7 @@ Why: keeping file IO on `Bun.file` is faster, has zero import ceremony, fits the
     - `mkdir -p .github/workflows && cp <skill-path>/assets/ci.yml .github/workflows/ci.yml` (the authoritative gate set: strict lint, tests, coverage, mutation on the changed files, secret scan on a frozen lockfile)
     - `cp <skill-path>/assets/mutation.yml .github/workflows/mutation.yml` (the daily full mutation sweep, `workflow_dispatch` on demand; ci.yml mutates the changed files only, so this is the only place the whole tree is measured)
     - `cp <skill-path>/assets/audit.yml .github/workflows/audit.yml` (the CVE watchdog: daily schedule plus dependency-scoped PR runs; deliberately not a gate on unrelated commits)
-    - `cp <skill-path>/assets/check-skill-pin.sh scripts/check-skill-pin.sh` (only if this repo vendors or pins the skill: the audit workflow runs it against the repository named in its `SKILL_PIN_UPSTREAM` env, comparing the whole vendored tree, and fails when any file falls behind)
+    - `cp <skill-path>/assets/check-skill-pin.sh scripts/check-skill-pin.sh` (always: the audit workflow runs it on every run. In a repo that vendors or pins the skill it compares the whole vendored tree against the repository named in its `SKILL_PIN_UPSTREAM` env and fails when any file falls behind; with nothing vendored it passes)
     - `cp <skill-path>/assets/pre-commit .githooks/pre-commit`
     - `cp <skill-path>/assets/commit-msg .githooks/commit-msg` (Conventional Commits validator, hard rule 23: dependency-free, no `package.json` change)
     - `chmod +x .githooks/pre-commit .githooks/commit-msg`
