@@ -2,7 +2,7 @@
 #
 # atelier pre-commit hook (Java/Quarkus variant): the fast gates only
 #
-# A multi-minute hook trains `git commit --no-verify` (rule 15.1, and 15.3), so
+# A multi-minute hook trains `git commit --no-verify` (canon 15.1 and 15.3), so
 # the hook carries only the fast gates. The slow, repo-scaling gates, `./mvnw
 # verify` (compile, tests, JaCoCo tiers) and PIT mutation, run in CI, the line
 # that cannot be skipped. See assets/ci-java.yml and references/java-quarkus.md.
@@ -19,18 +19,10 @@
 # the hook past the budget on your machine, move it to CI too. Never add `./mvnw
 # verify` or PIT to this hook; they are CI-only by design.
 #
-# Install once per clone (alongside the shared commit-msg validator and CI):
+# Install once per clone: copy the whole block in references/java-quarkus.md
+# (Gates and hooks). Every script gates 1-6 call and every script the three
+# workflows call is in it; a partial copy fails this hook or CI's first step.
 #
-#   cp <skill>/assets/pre-commit-java        .githooks/pre-commit
-#   cp <skill>/assets/commit-msg             .githooks/commit-msg
-#   cp <skill>/assets/ci-java.yml            .github/workflows/ci.yml
-#   cp <skill>/assets/check-commit-size.sh   scripts/check-commit-size.sh
-#   cp <skill>/assets/check-pom.sh           scripts/check-pom.sh
-#   cp <skill>/assets/check-no-suppressions.sh scripts/check-no-suppressions.sh
-#   cp <skill>/assets/check-identity.sh       scripts/check-identity.sh
-#   cp <skill>/assets/check-disciplines.sh    scripts/check-disciplines.sh   (+ check-pii-channels.sh,
-#      check-io-deadlines.sh, check-data-lifecycle.sh beside it; check-isolation-tests.sh where tenants exist)
-#   chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh
 #   git config core.hooksPath .githooks
 #
 # Bypass with `git commit --no-verify` is reserved for genuine big-bang changes

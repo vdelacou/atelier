@@ -470,10 +470,10 @@ Every `mvn test` then shuffles methods and classes; JUnit logs the seed, and `-D
 
 ## Gates and hooks
 
-Same git hooks as the Bun variant, shell only, wired with `git config core.hooksPath .githooks`, plus the CI workflow. All five artifacts ship in the skill's `assets/`; copy them, never hand-write:
+Same git hooks as the Bun variant, shell only, wired with `git config core.hooksPath .githooks`, plus the CI workflow. Every artifact below ships in the skill's `assets/`; copy them with the block after the list, never hand-write:
 
 - `assets/commit-msg`: the shipped Conventional Commits validator, unchanged (rule 23; it is dependency-free shell).
-- `assets/pre-commit-java`: the fast gates only, commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>`, the project's own dev version may be a SNAPSHOT; no mock library declared, rule 13) → no inline suppression (`scripts/check-no-suppressions.sh`, rule 15: `@SuppressWarnings`, `NOPMD`, `NOSONAR` and the rest as text) → `gitleaks protect --staged` → `./mvnw -q spotless:check`. A multi-minute hook trains `--no-verify` (canon 15.1, and 15.3), so `./mvnw verify` and PIT do not live here.
+- `assets/pre-commit-java`: the fast gates only, seven of them: commit size (`scripts/check-commit-size.sh`, shared with the Bun variant, ≤10 files / ≤300 lines) → pom sanity (`scripts/check-pom.sh`: no version ranges anywhere, no `-SNAPSHOT` in `<parent>`/`<dependencies>`/`<plugins>`, the project's own dev version may be a SNAPSHOT; no mock library declared, rule 13) → no inline suppression (`scripts/check-no-suppressions.sh`, rule 15: `@SuppressWarnings`, `NOPMD`, `NOSONAR` and the rest as text) → `gitleaks protect --staged` → identity (`scripts/check-identity.sh`, rule 26) → the discipline tripwires (`scripts/check-disciplines.sh`, rules 27, 29, 30) → `./mvnw -q spotless:check`. A multi-minute hook trains `--no-verify` (canon 15.1, and 15.3), so `./mvnw verify` and PIT do not live here.
 - `assets/check-disciplines.sh` and the three guards it runs (`check-pii-channels.sh`, `check-io-deadlines.sh`, `check-data-lifecycle.sh`; rules 27, 29, 30): core gates, hook gate 6 on the staged lines and `--all` in CI, all Java-aware (`@QueryParam`, `HttpClient` timeouts, hard deletes and destructive DDL). The isolation guard (`check-isolation-tests.sh`, rule 28) is opt-in where tenants or owners exist, since it demands a 404 test of every new `api/` route (`references/workflow.md`, Discipline tripwires).
 - `assets/audit-java.yml`: the two watchdogs that are not gate material, the OWASP CVE scan and `check-skill-pin.sh` (a vendored standard is a dependency, `references/governance.md`; the workflow's `SKILL_PIN_UPSTREAM` env names the repository the whole vendored tree is compared against), on a daily schedule plus the pull requests that touch a pom or the vendored skill.
 - `assets/pit-changed.sh`: the mutation step of CI, PIT on the classes that changed in the event's range (the pull request's base, or `github.event.before..HEAD` on a push, which the workflow exports; an unknown base fails loudly, no change in scope exits 0), plus uncommitted and untracked sources locally.
@@ -485,6 +485,7 @@ Same git hooks as the Bun variant, shell only, wired with `git config core.hooks
 - `assets/java/pmd-ruleset.xml`: the rule 35 ruleset and the rule 15 `NoSuppressWarnings` XPath rule (`CyclomaticComplexity`, `methodReportLevel` 11, so complexity 11 and above fails and 10 passes, the same boundary as the TypeScript `complexity: ['error', 10]`), copied to the repository root where the canonical pom's `maven-pmd-plugin` reads it in `verify`. `smoke-test-java.sh` plants a complexity-11 method and sees `pmd:check` red, and a complexity-10 one green. Since 2026-09-19 it carries rule 4 too: PMD's `SystemPrintln` and the `NoPrintStackTrace` XPath rule (PMD's own `AvoidPrintStackTrace` is silent on 7.17).
 
 ```bash
+mkdir -p .githooks scripts .github/workflows
 cp <skill>/assets/pre-commit-java        .githooks/pre-commit
 cp <skill>/assets/commit-msg             .githooks/commit-msg
 cp <skill>/assets/java/pmd-ruleset.xml   pmd-ruleset.xml
@@ -495,7 +496,6 @@ cp <skill>/assets/check-identity.sh       scripts/check-identity.sh
 cp <skill>/assets/check-disciplines.sh    scripts/check-disciplines.sh
 cp <skill>/assets/check-commit-messages.sh scripts/check-commit-messages.sh
 cp <skill>/assets/check-commit-range.sh    scripts/check-commit-range.sh
-mkdir -p .github/workflows
 cp <skill>/assets/pit-changed.sh         scripts/pit-changed.sh
 cp <skill>/assets/ci-java.yml            .github/workflows/ci.yml
 cp <skill>/assets/mutation-java.yml      .github/workflows/mutation-java.yml
@@ -518,9 +518,10 @@ CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the fu
 ## Bootstrap checklist (fresh Java repo)
 
 1. `quarkus create app com.example:app` (or the Maven archetype); commit the wrapper; delete sample code.
-2. Parent pom: start from the canonical `pom.xml` above (compiler `-Werror`, Spotless + google-java-format, JaCoCo tier rules, PIT `mutationThreshold=90` scoped to `domain`/`usecases`, enforcer with `requireJavaVersion`/`requireReleaseDeps`/`requireUpperBoundDeps`), add the pinned Quarkus BOM and extensions, commit `.mvn/jvm.config`. Exact versions everywhere.
+2. Parent pom: start from the canonical `pom.xml` above (compiler `-Werror`, Spotless + google-java-format, JaCoCo tier rules, PIT `mutationThreshold=90` scoped to `domain`/`usecases`, enforcer with `requireJavaVersion`/`requireReleaseDeps`/`requireUpperBoundDeps`), apply The Quarkus delta (the pinned BOM and its extensions, less `requireUpperBoundDeps` and the JUnit pin), commit `.mvn/jvm.config`. Exact versions everywhere.
 3. Scaffold packages: `domain`, `usecases/ports`, `infra`, `api`, `composition`; copy the shipped domain assets into `domain` rather than hand-writing them, then rename their package to your own groupId:
    ```bash
+   mkdir -p src/main/java/<pkg>/domain src/test/java/<pkg>/architecture
    cp <skill>/assets/java/{Result,Ok,Err,Email}.java src/main/java/<pkg>/domain/
    cp <skill>/assets/java/LayerRulesTest.java src/test/java/<pkg>/architecture/
    # LayerRulesTest is the dependency rule as a test (rule 37): rename its package and @AnalyzeClasses root.
@@ -530,7 +531,7 @@ CI (`assets/ci-java.yml`) re-runs the commit-message and pom gates, scans the fu
 4. `src/test/resources/junit-platform.properties` with the two random orderers (rule 36), then `application.properties`: authenticated-by-default policy, OIDC config placeholders, OTel enabled, JSON logging with the redaction filter, datasource for the constrained runtime role.
 5. Flyway: `src/main/resources/db/migration/V1__init.sql`; dev services or Testcontainers for the integration ring.
 6. Test support: `testsupport` package with the first hand-written fakes (logger recorder, clock); **no Mockito in the pom** (the enforcer's `bannedDependencies` and `check-pom.sh` keep it out).
-7. Hooks and CI scripts: copy the assets as above (add the four discipline tripwires when the service handles personal data, calls the network, owns a schema, or serves more than one tenant) (`pre-commit-java`, `commit-msg`, `check-commit-size.sh`, `check-pom.sh`, `check-commit-messages.sh`, `check-commit-range.sh`); `git config core.hooksPath .githooks`; optional local `gitleaks` install (CI installs its own). Verify the pom gate once: `bash scripts/check-pom.sh`.
+7. Hooks, CI and their scripts: copy the whole block in Gates and hooks above, every line of it. The hook runs identity and the discipline wrapper on every commit and CI runs them with `--all`, so none of the three core tripwires is optional (a missing script fails every commit); only calling `check-isolation-tests.sh` (rule 28) is opt-in, where tenants or owners exist. `pmd-ruleset.xml` goes to the repository root, where `verify` reads it. Then `git config core.hooksPath .githooks`; optional local `gitleaks` install (CI installs its own). Verify the pom gate once: `bash scripts/check-pom.sh`.
 8. Walking skeleton: one use-case returning `Ok` through its port, its value record, its JUnit test (propose the test first, rule 24), one resource with its REST Assured test including the 401 case.
 9. Verify green: `./mvnw spotless:check verify`, PIT on the skeleton, hooks reject a junk message and an oversized commit, and a planted domain class that imports a use-case fails `./mvnw test` on `LayerRulesTest` (rule 37); revert the plant.
 10. `.claude/LESSONS.md` header; verify no scaffolded file names a person, an employer, or a client (rule 26); stage and propose the first commit (rule 25).
