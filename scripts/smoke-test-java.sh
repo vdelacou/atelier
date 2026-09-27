@@ -347,7 +347,7 @@ expect_ok "check-commit-messages.sh passes on a conventional history" \
 # is the scheduled mutation-java.yml. The narrowed run proves the pom's
 # `${pitest.targetClasses}` property takes a comma-separated override.
 expect_ok "pit-changed.sh on a push resolves github.event.before..HEAD and runs PIT on the changed class" \
-  bash -c 'env -u BASE GITHUB_EVENT_NAME=push GITHUB_EVENT_BEFORE="$(git rev-parse HEAD~1)" bash scripts/pit-changed.sh > pit-changed.out 2>&1'
+  bash -c 'env -u BASE -u GITHUB_BASE_REF GITHUB_EVENT_NAME=push GITHUB_EVENT_BEFORE="$(git rev-parse HEAD~1)" bash scripts/pit-changed.sh > pit-changed.out 2>&1'
 expect_ok "pit-changed.sh targeted exactly the committed domain class" \
   grep -q "targeting 1 class(es): com.example.app.domain.Discount" pit-changed.out
 expect_err "pit-changed.sh fails loudly when the base ref does not resolve" \

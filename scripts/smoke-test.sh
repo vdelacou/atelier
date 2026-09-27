@@ -901,7 +901,7 @@ EOF
 sed -i.bak 's/^import { isEligible }/import { isEligible, isSenior }/' src/domain/eligibility.test.ts && rm src/domain/eligibility.test.ts.bak
 git commit -q --no-verify -am 'feat: seniors'
 expect_ok "mutate:changed on a push resolves github.event.before..HEAD and scores the changed file" \
-  bash -c 'env -u BASE GITHUB_EVENT_NAME=push GITHUB_EVENT_BEFORE="$(git rev-parse HEAD~1)" bash scripts/mutate-changed.sh > mutate-push.out 2>&1'
+  bash -c 'env -u BASE -u GITHUB_BASE_REF GITHUB_EVENT_NAME=push GITHUB_EVENT_BEFORE="$(git rev-parse HEAD~1)" bash scripts/mutate-changed.sh > mutate-push.out 2>&1'
 expect_ok "mutate:changed on a push prints the pushed range and one file in scope" \
   bash -c 'grep -q "HEAD +1" mutate-push.out && grep -q "testing 1 file(s)" mutate-push.out'
 
