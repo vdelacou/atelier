@@ -27,16 +27,21 @@ set -euo pipefail
 
 MODE="${1:-staged}"
 
-HARD_DELETE='(db\.delete\(|deleteById\(|deleteAll\(|DELETE[[:space:]]+FROM)'
+# SQL is case-insensitive, so a lowercase statement is a statement (`delete from` in a
+# quoted query and `drop table` in a migration passed until 2026-09-27). The DDL is
+# matched case-insensitively because only migration files are read; in application
+# code the lowercase form counts only as a quoted SQL string, so a comment saying
+# "delete from the cache" stays prose.
+HARD_DELETE='(db\.delete\(|deleteById\(|deleteAll\(|DELETE[[:space:]]+FROM|['"'"'"`][[:space:]]*[Dd][Ee][Ll][Ee][Tt][Ee][[:space:]]+[Ff][Rr][Oo][Mm][[:space:]])'
 DESTRUCTIVE_DDL='(DROP[[:space:]]+(COLUMN|TABLE)|RENAME[[:space:]]+(COLUMN|TO)|TRUNCATE|ALTER[[:space:]]+COLUMN[^;]*TYPE)'
 # Path-anchored: `[^:]*` stops at the first colon, so only the path is read.
 EXEMPT_PATHS='^[^:]*(erasure|retention|prune|sweep)'
 TEST_PATHS='^[^:]*(\.test\.|test-helpers/|src/test/)'
 CONTRACT_PATHS='^[^:]*[Cc]ontract'
 
-staged_added() { # $1 = path glob
+staged_added() { # $1 = path glob; header-aware, so an added line starting with `+` is read
   git diff --cached -U0 -- "$1" \
-    | awk '/^\+\+\+ b\//{f=substr($0,7)} /^\+[^+]/{print f": "substr($0,2)}' || true
+    | awk '/^diff --git /{h=1; next} h && /^\+\+\+ /{f=substr($0,7); next} /^@@/{h=0; next} !h && /^\+/{print f": "substr($0,2)}' || true
 }
 
 status=0
@@ -56,9 +61,11 @@ fi
 
 # 2. Destructive DDL in new migrations (contract-step files exempt by name).
 if [ "$MODE" = "--all" ]; then
-  ddl=$(grep -rEln "$DESTRUCTIVE_DDL" --include='*.sql' --include='*.ts' . 2>/dev/null | grep -iE 'migration' || true)
+  ddl=$(grep -rilE "$DESTRUCTIVE_DDL" --include='*.sql' --include='*.ts' \
+          --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.stryker-tmp --exclude-dir=dist --exclude-dir=build \
+          . 2>/dev/null | grep -iE 'migration' || true)
 else
-  ddl=$(staged_added '*migration*' | grep -E "$DESTRUCTIVE_DDL" || true)
+  ddl=$(staged_added '*migration*' | grep -iE "$DESTRUCTIVE_DDL" || true)
 fi
 ddl=$(echo "$ddl" | grep -v -E "$CONTRACT_PATHS" | grep -v '^$' || true)
 if [ -n "$ddl" ]; then

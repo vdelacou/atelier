@@ -55,9 +55,16 @@ first_uncovered_fetch() {
 
 status=0
 while IFS= read -r f; do
-  [ -n "$f" ] && [ -f "$f" ] || continue
+  [ -n "$f" ] || continue
   case "$f" in *.test.ts|*.test.tsx|*test-helpers*) continue ;; esac
-  content=$(cat "$f")
+  # Staged mode reads what will be committed, the index, never the working tree: a
+  # deadline added in the editor but left unstaged passed the gate until 2026-09-27.
+  if [ "$MODE" = "--all" ]; then
+    [ -f "$f" ] || continue
+    content=$(cat "$f")
+  else
+    content=$(git show ":$f")
+  fi
   case "$f" in
     *.java)
       if echo "$content" | grep -q 'HttpClient\.new' \

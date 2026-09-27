@@ -11,7 +11,8 @@
 #   bun test [args]                   the repo's test suite
 #   bash scripts/<file> [args]        a file that exists under scripts/
 #   ./scripts/<file> [args]           the same, executed directly
-#   ./mvnw [args]                     the committed Maven wrapper
+#   ./mvnw <phase or check> [flags]   the committed Maven wrapper: lifecycle phases,
+#                                     spotless:check, pmd:check, -q/-B/-e/-ntp/-o only
 #   test -f|-d|-e <path>              a path assertion
 #
 # Every word must be plain (letters, digits and . _ / : = @ % + , -), so a pipe, a
@@ -124,9 +125,24 @@ entry_point() {
       return 1
       ;;
     ./mvnw)
-      if [ -f mvnw ]; then return 0; fi
-      reason="there is no ./mvnw in this repo"
-      return 1
+      if [ ! -f mvnw ]; then
+        reason="there is no ./mvnw in this repo"
+        return 1
+      fi
+      # Lifecycle phases, the two check goals and the quiet/batch flags only. A -D
+      # property or a qualified plugin goal (exec:exec -Dexec.executable=...) runs any
+      # executable, which made ./mvnw a way around the whole allow-list until 2026-09-27.
+      for word in "${w[@]:1}"; do
+        case "$word" in
+          validate | compile | test | package | verify | install | clean | spotless:check | pmd:check) ;;
+          -q | --quiet | -B | --batch-mode | -e | --errors | -ntp | --no-transfer-progress | -o | --offline) ;;
+          *)
+            reason="'./mvnw $word' is not a lifecycle phase, spotless:check, pmd:check or a quiet/batch flag (a -D property or a plugin goal can run any executable)"
+            return 1
+            ;;
+        esac
+      done
+      return 0
       ;;
     test)
       case "${w[1]:-}" in

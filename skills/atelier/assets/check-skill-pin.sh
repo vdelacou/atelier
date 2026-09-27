@@ -44,21 +44,31 @@ ZERO_SHA_NOTE="the pin is UNVERIFIED, not current"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-hash_of() { shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1; }
+# Byte comparison, no hasher: `shasum` missing from PATH made both sides an empty
+# string, and two empty strings are equal, so a stale tree read as current until
+# 2026-09-27. cmp exits 0 same, 1 different, 2 on an error, and only 0 is a match.
+same_file() { cmp -s "$1" "$2"; }
 
 # Compare two directory trees file by file; the list of stale files goes to
 # stderr, the count is the return value's message.
 compare_trees() {
-  local vend="$1" up="$2" stale=0 rel
+  local vend="$1" up="$2" stale=0 seen=0 rel
   while IFS= read -r rel; do
+    seen=$((seen + 1))
     if [ ! -f "$vend/$rel" ]; then
       echo "      missing locally: $rel" >&2
       stale=$((stale + 1))
-    elif [ "$(hash_of "$vend/$rel")" != "$(hash_of "$up/$rel")" ]; then
+    elif ! same_file "$vend/$rel" "$up/$rel"; then
       echo "      behind upstream: $rel" >&2
       stale=$((stale + 1))
     fi
   done < <(cd "$up" && find . -type f ! -path '*/.git/*' | sed 's|^\./||' | sort)
+  # An upstream listing that yields nothing (find missing, an unreadable clone) is a
+  # failure to check, never a match: zero files compared is zero files current.
+  if [ "$seen" -eq 0 ]; then
+    echo "      the upstream tree listed no files ($up); nothing was compared" >&2
+    return 1
+  fi
   [ "$stale" -eq 0 ] && return 0
   echo "      $stale file(s) behind" >&2
   return 1
@@ -113,7 +123,7 @@ check_pin() {
   if [ -d "$upstream" ]; then
     upstream="$upstream/SKILL.md"
   fi
-  if [ "$(hash_of "$vendored")" = "$(hash_of "$upstream")" ]; then
+  if same_file "$vendored" "$upstream"; then
     echo "check-skill-pin: the vendored standard matches upstream"
     return 0
   fi
@@ -182,6 +192,12 @@ selftest() {
   printf 'detail v2\n' > "$t/vend/references/x.md"
   if ! check_pin "$t/vend" "$t/up" >/dev/null; then
     echo "selftest FAIL: a fully current tree was rejected" >&2; exit 1
+  fi
+  # Zero files compared is not a match: an upstream listing that comes back empty
+  # (find missing, an unreadable clone) reported "current" until 2026-09-27.
+  mkdir -p "$t/empty-up"
+  if check_pin "$t/vend" "$t/empty-up" >/dev/null 2>&1; then
+    echo "selftest FAIL: an empty upstream tree read as a match" >&2; exit 1
   fi
 
   # Clone mode: the shipped workflow points at a repository URL, so the default

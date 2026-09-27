@@ -614,6 +614,24 @@ cat > packages/widget/package.json <<'EOF'
 { "name": "widget", "dependencies": { "pad": "npm:left-pad@latest" } }
 EOF
 expect_err "package.json gate rejects an npm: alias resolving to latest" bash scripts/check-package-json.sh
+# The blank pin: "", "x" and an npm: alias naming no version all install the newest
+# release (bun resolved each to latest), and all three passed until 2026-09-27.
+cat > packages/widget/package.json <<'EOF'
+{ "name": "widget", "dependencies": { "left-pad": "" } }
+EOF
+expect_err "package.json gate rejects an empty version (the blank pin)" bash scripts/check-package-json.sh
+cat > packages/widget/package.json <<'EOF'
+{ "name": "widget", "dependencies": { "left-pad": "x" } }
+EOF
+expect_err "package.json gate rejects an \"x\" version" bash scripts/check-package-json.sh
+cat > packages/widget/package.json <<'EOF'
+{ "name": "widget", "dependencies": { "pad": "npm:left-pad" } }
+EOF
+expect_err "package.json gate rejects an npm: alias with no version" bash scripts/check-package-json.sh
+cat > packages/widget/package.json <<'EOF'
+{ "name": "widget", "dependencies": { "pad": "npm:left-pad@^1.3.0", "core": "workspace:*" } }
+EOF
+expect_ok "package.json gate accepts a versioned npm: alias and a workspace range" bash scripts/check-package-json.sh
 rm -rf packages
 
 # Rule 5 had no gate until 2026-09-08: a tracked npm lockfile or a script calling
@@ -733,6 +751,10 @@ git config --unset user.name && git config --unset user.email
 printf 'export const f = (): Promise<Response> => fetch("https://svc.test/x");\n' > src/infra/no-deadline.ts
 git add src/infra/no-deadline.ts
 expect_err "deadline guard blocks fetch without a deadline marker" bash scripts/check-io-deadlines.sh
+# The staged content is what the gate judges: a deadline added in the working tree
+# but left unstaged does not clear it (the guard read the working tree until 2026-09-27).
+printf 'export const f = (): Promise<Response> => fetch("https://svc.test/x", { signal: AbortSignal.timeout(2_000) });\n' > src/infra/no-deadline.ts
+expect_err "deadline guard judges the index, not an unstaged fix in the working tree" bash scripts/check-io-deadlines.sh
 git reset -q && rm src/infra/no-deadline.ts
 # The doctrine's own idiom is globalThis.fetch (references/bun-typescript.md),
 # which the old call pattern never matched, and the old marker was the bare word
@@ -769,6 +791,20 @@ printf 'DROP TABLE legacy;\n' > migrations/0002_drop_legacy.sql
 git add migrations/0002_drop_legacy.sql
 expect_err "lifecycle guard blocks DROP TABLE in a migration" bash scripts/check-data-lifecycle.sh
 git reset -q && rm migrations/0002_drop_legacy.sql
+# SQL is case-insensitive; lowercase DDL and a lowercase quoted DELETE passed until
+# 2026-09-27. A comment that says "delete from the cache" is prose and stays green.
+printf 'drop table legacy;\n' > migrations/0002_drop_legacy.sql
+git add migrations/0002_drop_legacy.sql
+expect_err "lifecycle guard blocks lowercase drop table in a migration" bash scripts/check-data-lifecycle.sh
+git reset -q && rm migrations/0002_drop_legacy.sql
+printf "export const purge = 'delete from orders where id = \$1';\n" > src/infra/purge.ts
+git add src/infra/purge.ts
+expect_err "lifecycle guard blocks a lowercase quoted delete from" bash scripts/check-data-lifecycle.sh
+git reset -q && rm src/infra/purge.ts
+printf '// delete from the cache when the entry is stale\nexport const ttlMs = 60_000;\n' > src/infra/cache-note.ts
+git add src/infra/cache-note.ts
+expect_ok "lifecycle guard reads a comment about deleting from a cache as prose" bash scripts/check-data-lifecycle.sh
+git reset -q && rm src/infra/cache-note.ts
 printf 'ALTER TABLE receipts DROP COLUMN amount;\n' > migrations/0003_contract_amount.sql
 git add migrations/0003_contract_amount.sql
 expect_ok "lifecycle guard passes the contract-step migration" bash scripts/check-data-lifecycle.sh
@@ -791,6 +827,13 @@ printf 'import { test, expect } from "bun:test";\ntest("cross-tenant read is not
 git add src/infra/http/invoices.test.ts
 expect_ok "isolation guard passes once the 404 test is staged" bash scripts/check-isolation-tests.sh
 git reset -q && rm -rf src/infra/http
+# --all (the CI mode) reads the same configured globs as the hook: it hardcoded
+# src/infra/http until 2026-09-27, so a repo that moved its routes was never audited.
+sed "s|^ROUTE_GLOBS_TS=.*|ROUTE_GLOBS_TS='src/routes/'|" scripts/check-isolation-tests.sh > scripts/iso-routes.sh
+mkdir -p src/routes
+printf 'export const listInvoices = (): number => 1;\n' > src/routes/invoices.ts
+expect_err "isolation guard --all audits the configured route globs" bash scripts/iso-routes.sh --all
+rm -rf src/routes scripts/iso-routes.sh
 
 echo "== docs-check (canon 12.1): the README Verify block runs repo entry points, and nothing else =="
 # Since 2026-09-26 the Verify block is never shell: a line runs only when it names an
@@ -814,7 +857,17 @@ expect_err "docs-check refuses a command that is not an entry point" bash script
 printf 'test -f $(touch docs-check-ran)\n' | verify_readme
 expect_err "docs-check refuses a command substitution" bash scripts/check-docs.sh README.md
 expect_err "and a refused block runs nothing (no docs-check-ran file)" test -e docs-check-ran
-rm -f README.md docs-check-ran
+# ./mvnw takes lifecycle phases, spotless:check, pmd:check and quiet/batch flags only:
+# a -D property or a plugin goal (exec:exec -Dexec.executable=...) runs any executable,
+# and any argument passed until 2026-09-27. The stub wrapper records every run.
+printf '#!/usr/bin/env bash\necho "$@" >> docs-check-ran\n' > mvnw && chmod +x mvnw
+printf './mvnw -q spotless:check verify\n' | verify_readme
+expect_ok "docs-check runs ./mvnw with a lifecycle phase and a check goal" bash scripts/check-docs.sh README.md
+rm -f docs-check-ran
+printf './mvnw -q exec:exec -Dexec.executable=touch -Dexec.args=pwned\n' | verify_readme
+expect_err "docs-check refuses ./mvnw with a plugin goal and a -D property" bash scripts/check-docs.sh README.md
+expect_err "and the refused ./mvnw line never ran" test -e docs-check-ran
+rm -f README.md docs-check-ran mvnw
 
 echo "== staleness gate (a vendored standard is a dependency; references/governance.md) =="
 # Proven on the real skill tree: a vendored copy identical to upstream passes,

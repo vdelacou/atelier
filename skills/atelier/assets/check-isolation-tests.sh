@@ -19,7 +19,7 @@
 ROUTE_GLOBS_TS='src/infra/http/'
 ROUTE_GLOBS_JAVA='src/main/java/.*/api/'
 #
-# This is the weakest of the four guards by design. The real contract is the
+# This is the weakest of the five guards by design. The real contract is the
 # per-endpoint test of references/isolation.md; this wire just refuses the
 # common failure of landing a route with no isolation test at all. Health and
 # public routes: name them *public* or *health* to exempt them (path convention,
@@ -29,13 +29,15 @@ set -euo pipefail
 
 MODE="${1:-staged}"
 
+# Both modes read the same globs: --all (the CI mode) hardcoded src/infra/http and
+# */api/* until 2026-09-27, so a repo that adjusted the globs was checked on commit
+# and never in CI.
+ROUTE_PATTERN="^(${ROUTE_GLOBS_TS}.*\.ts|${ROUTE_GLOBS_JAVA}.*\.java)$"
 route_files() {
   if [ "$MODE" = "--all" ]; then
-    { find src/infra/http -type f -name '*.ts' 2>/dev/null;
-      find src/main/java -type f -name '*.java' -path '*/api/*' 2>/dev/null; } || true
+    find src -type f \( -name '*.ts' -o -name '*.java' \) 2>/dev/null | grep -E "$ROUTE_PATTERN" || true
   else
-    git diff --cached --name-only --diff-filter=A 2>/dev/null \
-      | grep -E "^(${ROUTE_GLOBS_TS}.*\.ts|${ROUTE_GLOBS_JAVA}.*\.java)$" || true
+    git diff --cached --name-only --diff-filter=A 2>/dev/null | grep -E "$ROUTE_PATTERN" || true
   fi
 }
 

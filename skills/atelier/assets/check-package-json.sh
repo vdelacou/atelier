@@ -92,15 +92,19 @@ if [ -z "$manifests" ]; then
 fi
 
 # Match a VALUE position (after the colon) equal to the bare strings
-# "latest", "*", or a bare dist-tag ("beta", "alpha", "next", "canary",
-# "rc"), or an npm: alias resolving to one, all non-deterministic in
-# exactly the way rule 19 bans. Only the four dependency blocks are read, so
-# a version-shaped value elsewhere (publishConfig.tag: "next", an engines
-# field, a script) is not a finding (a false positive found 2026-09-02).
-# Catches:  "any-pkg": "latest",   "x": "*",   "plugin": "beta",   "a": "npm:b@latest"
-# Permits:  "x": "^1.2.3" / "~1.2.3" / ">=1.0.0" / "^4.0.0-beta.0",  "next": "16.3.6"
+# "latest", "*", "x" / "X", the empty string, or a bare dist-tag ("beta",
+# "alpha", "next", "canary", "rc"), or an npm: alias resolving to one or naming
+# no version at all, all of which install whatever is newest, in exactly the
+# way rule 19 bans ("" and "x" passed until 2026-09-27, the blank-pin trap).
+# Only the four dependency blocks are read, so a version-shaped value elsewhere
+# (publishConfig.tag: "next", an engines field, a script) is not a finding (a
+# false positive found 2026-09-02).
+# Catches:  "any-pkg": "latest",   "x": "*",   "y": "",   "z": "x",   "plugin": "beta",
+#           "a": "npm:b@latest",   "a": "npm:b",   "a": "npm:@s/b"
+# Permits:  "x": "^1.2.3" / "~1.2.3" / ">=1.0.0" / "^4.0.0-beta.0",  "next": "16.3.6",
+#           "a": "npm:b@^1.2.3",   "w": "workspace:*"
 violations=$(echo "$manifests" | tr '\n' '\0' | xargs -0 awk '
-  BEGIN { V = ":[[:space:]]*\"(\\*|latest|beta|alpha|next|canary|rc|npm:[^\"]*@(latest|\\*))\"" }
+  BEGIN { V = ":[[:space:]]*\"(\\*|[xX]|latest|beta|alpha|next|canary|rc|npm:(@[^/\"]+\\/)?[^@\"]+(@(latest|\\*|[xX])?)?)?\"" }
   FNR == 1 { inblock = 0 }
   {
     s = $0
@@ -123,7 +127,7 @@ if [ -z "$violations" ]; then
 fi
 
 cat <<EOF >&2
-  ╳ a package.json declares a forbidden version string ("latest", "*", or a bare dist-tag):
+  ╳ a package.json declares a forbidden version string ("latest", "*", "x", "", a bare dist-tag, or an npm: alias with none of its own):
 
 $(echo "$violations" | sed 's/^/      /')
 
