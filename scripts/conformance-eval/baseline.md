@@ -648,3 +648,36 @@ arm's 61/61 is a delta of about 25 assertions; the 2.4.0 release pass read 61/61
 unaided arm reading the repo's context. One harness fix from the run: with both arms, `run.sh`'s
 incremental scorecard printed the other arm's line too, and an arm still running read 0 (its tree lands
 at copy-back since the isolation change); it now prints the landed arm only.
+
+## Tier 2 for the 2.6.0 release (2026-09-28)
+
+The full matrix, both arms, 21 tasks, opus, 120 turns and 40 minutes, three jobs, 01:16 to 03:32, after
+the pre-release audit's doctrine, example and gate fixes. The review eval ran alongside for the first
+hour; no session was throttled (every rate-limit event reads "allowed").
+
+| Arm | Score | Production-discipline tier (h1 to h7) |
+|---|---|---|
+| skill | 60/61 (h6 from its rerun, below) | 23/24 |
+| unaided | 38/61 | 9/24 |
+
+One session capped: h6-ai-full's skill arm was still working at 40 minutes (88 tool calls, the last
+ones on its README and tests) and read 0/5, but not as produced. The runner lost its tree: `claude`
+outlives SIGTERM for a moment, so the watchdog had exited and been reaped before the runner killed it,
+and under `set -e` the failed kill ended the function before the copy-back (fixed in bac3a61 for the
+conformance and distill runners, proven with a stub session; no earlier run was capped since the
+2026-09-27 `exec` change, so no earlier reading moves). The session was rerun alone and ran to the cap
+again; the fixed runner graded it as produced: 5/5, each check read in the code (the provider behind a port, the dated `claude-haiku-4-5-20251001` pin, the
+reply parsed into a `Result`, an eval workflow on the pin and prompt paths with `--min-score 0.9`, a
+spend cap reserved per owner before the call). h6's skill arm took 17 minutes in the 2.5.0 pass and ran
+to 40 twice here: a watch item for the cap, not a finding yet.
+
+The one other skill-arm miss is h5-isolation-full's 7.3: that session wrote the claim-derived filter
+and the cross-tenant test and no database-side second layer, which rule 28 requires. The 2.4.0 and
+2.5.0 passes both wrote one, and this release only strengthened the example (ENABLE and FORCE ROW LEVEL
+SECURITY before the policy), so two more skill-arm samples of h5 ran: both 3/3, each with a migration
+that enables row-level security and creates the policy. Two of three: variance at one sample per
+release, not a regression; the score keeps the first pass's miss.
+
+The turn census: skill median 41 and at most 75 (e7), unaided median 14 and at most 33. The fixture is
+re-frozen with this pass's baseline arm summed in, five isolated passes (the four above reproduced
+exactly first): 181/305 over 105 runs, an expected 36.2/61 per pass and 8.8/24 on the discipline tier.
