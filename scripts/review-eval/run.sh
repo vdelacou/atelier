@@ -15,9 +15,9 @@
 #                                       coupling)
 #   base/                               pre-change state (adds the test that the
 #                                       diff later weakens)
-#   changed/                            the diff under review: 11 planted
-#                                       violations (violations.json) + 2 clean
-#                                       changed files (clean-files.json)
+#   changed/                            the diff under review: the planted
+#                                       violations (violations.json) and the
+#                                       clean changed files (clean-files.json)
 #
 # The diff is materialised OUTSIDE the agent sandbox (git here, then .git
 # stripped), so the agent reviews ./changes.diff plus the tree and never needs

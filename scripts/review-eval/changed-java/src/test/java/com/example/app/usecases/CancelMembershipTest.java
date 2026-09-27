@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.example.app.domain.MemberId;
 import com.example.app.domain.Ok;
 import com.example.app.domain.Refund;
 import com.example.app.usecases.ports.Orders;
@@ -19,7 +20,7 @@ class CancelMembershipTest {
     when(orders.remove("m-1")).thenReturn(new Ok<>(null));
     when(orders.recentIds(10)).thenReturn(new Ok<>(List.of()));
 
-    Refund refund = new CancelMembership(orders).cancel("m-1", 12000, 12, 4);
+    Refund refund = new CancelMembership(orders).cancel(new MemberId("m-1"), 12000, 12, 4);
 
     assertEquals(8000, refund.amountCents());
     verify(orders).remove("m-1");

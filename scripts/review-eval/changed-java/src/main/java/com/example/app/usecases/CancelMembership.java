@@ -1,5 +1,6 @@
 package com.example.app.usecases;
 
+import com.example.app.domain.MemberId;
 import com.example.app.domain.Ok;
 import com.example.app.domain.Refund;
 import com.example.app.usecases.ports.Orders;
@@ -13,13 +14,13 @@ public final class CancelMembership {
   }
 
   @SuppressWarnings("unchecked")
-  public Refund cancel(String memberId, long paidCents, int monthsTotal, int monthsUsed) {
+  public Refund cancel(MemberId memberId, long paidCents, int monthsTotal, int monthsUsed) {
     var refund = Refund.prorated(paidCents, monthsTotal, monthsUsed);
-    if (!(refund instanceof Ok<Refund, String> ok)) {
-      throw new RefundDeclinedException("proration failed for " + memberId);
+    if (!(refund instanceof Ok<Refund, Refund.Error> ok)) {
+      throw new RefundDeclinedException("proration failed for " + memberId.value());
     }
-    orders.remove(memberId);
-    System.out.println("cancelled membership " + memberId + ", refunding " + ok.value().amountCents());
+    orders.remove(memberId.value());
+    System.out.println("cancelled membership " + memberId.value() + ", refunding " + ok.value().amountCents());
     return ok.value();
   }
 }
