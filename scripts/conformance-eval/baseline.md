@@ -617,3 +617,34 @@ been reading a summary of the doctrine. Against this fixture the 2.4.0 release's
 measured under the old runner, its injected copy never depending on the walk-up) faces an expected
 36.0/61 rather than 46.0/61, and every tier-1 delta since 2026-09-03 understated the skill by about
 ten assertions. The skill arm's first isolated reading is the 2.5.0 tier 2.
+
+## Corrected checks (2026-09-27)
+
+One assertion, found by the 2.5.0 tier-2 pass. `h6-ai-full` 10.11 (present mode: model output crosses
+a validation checkpoint) accepted `safeParse`, a `.parse(` call or the word schema, so it credited a
+bare `JSON.parse` and missed the standard's own boundary form. The skill arm summarised the thread as
+free text, guarded the provider body with type guards and made the text a branded `ThreadSummary`
+only through `parseThreadSummary`, a `Result` that refuses empty and over-long output: a real
+checkpoint the pattern read as absent. The unaided arm's credits were right by accident: behind each
+`JSON.parse` stood a hand-written shape check. The pattern now also accepts a `parse[A-Z]...(` call,
+and the selftest's fourth scenario pins the branded parse and a `safeParse` green and model text used
+as it came red, red under the previous tasks.json. The seventeenth grader defect across the evals, and
+like most before it, the one that punished the better code. No earlier skill run carried the shape.
+
+## Tier 2 for the 2.5.0 release (2026-09-27)
+
+The full matrix, both arms, 21 tasks, opus, 120 turns and 40 minutes, three jobs, 15:24 to 17:18, the
+isolated runner of 2026-09-26: the skill arm's first isolated reading. No session capped, none refused.
+
+| Arm | Score | Production-discipline tier (h1 to h7) |
+|---|---|---|
+| skill | 61/61 (60/61 before the 10.11 correction above) | 24/24 |
+| unaided | 35/61 | 8/24 |
+
+The turn census: skill median 41 and at most 76 (h7), unaided median 15 and at most 27. The fixture is
+re-frozen from four isolated passes, the three of 2026-09-26/27 plus this pass's baseline arm, under
+the corrected tasks.json: 143/244 over 84 runs, an expected 35.75/61 per pass, against which the skill
+arm's 61/61 is a delta of about 25 assertions; the 2.4.0 release pass read 61/61 to 45/61 with the
+unaided arm reading the repo's context. One harness fix from the run: with both arms, `run.sh`'s
+incremental scorecard printed the other arm's line too, and an arm still running read 0 (its tree lands
+at copy-back since the isolation change); it now prints the landed arm only.

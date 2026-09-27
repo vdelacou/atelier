@@ -242,8 +242,12 @@ def selftest() -> None:
     # read of caller input (`ctx.params.orgId`, `req.query.tenantId`) and ignores a
     # method call on a query builder (`query.byOrg(orgId)`): the 2.3.0 tier-2 pass
     # read the skill arm 60/61 on exactly that call, the fifth grader defect.
+    # 10.11 credits the standard's own boundary form, a branded `parseX` returning Result,
+    # beside a schema parse: the 2.5.0 tier-2 pass read the skill arm 60/61 on a free-text
+    # summary validated by `parseThreadSummary` (the seventeenth grader defect across the evals).
     h6 = next(task for task in tasks if task["id"] == "h6-ai-full")
     eval_gate = next(a for a in h6["assertions"] if a["rule"] == "4.8")
+    checkpoint = next(a for a in h6["assertions"] if a["rule"] == "10.11")
     h4 = next(task for task in tasks if task["id"] == "h4-trap-tenant")
     absence = next(a for a in h4["assertions"] if a["rule"] == "7.5")
     caller = next(a for a in h4["assertions"] if a["rule"] == "7.1" and a["mode"] == "absent")
@@ -268,6 +272,12 @@ def selftest() -> None:
          "it('returns 404 for an invoice of a different organisation', () => {});\n", absence, True),
         ("7.5 same-owner only", "src/infra/http/invoices.test.ts",
          "it('lists the invoices of the signed-in organisation', () => {});\n", absence, False),
+        ("10.11 branded parse of the model's text", "src/infra/llm-summary.ts",
+         "const parsed = parseThreadSummary(block.text);\nif (!parsed.ok) return err({ kind: 'invalid-output' });\n", checkpoint, True),
+        ("10.11 schema safeParse", "src/infra/llm-summary.ts",
+         "const parsed = SummaryShape.safeParse(body);\n", checkpoint, True),
+        ("10.11 model text used as it came", "src/infra/llm-summary.ts",
+         "return ok(body.content[0].text);\n", checkpoint, False),
     ]
     # 10.9 reads production code only: a Set.delete inside a repository fake under
     # src/test-helpers/ is bookkeeping, not a hard delete (the 2026-09-10 tier-1 pass read
@@ -396,7 +406,7 @@ def selftest() -> None:
             if got != want:
                 print(f"SELFTEST FAILED: transcript read {got!r}, expected {want!r}")
                 sys.exit(1)
-    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8, 7.1 and 7.5 credit shape over vocabulary, 10.9 and 6.3 read production code only, the frozen baseline is keyed to its assertions and checked before any --task filter, a dead session is not scored, a turn-capped one is marked and scored, a transcript yields the result text and the turn count")
+    print("selftest OK: a pristine fixture copy scores 0, comments are not implementation, URLs survive stripping, paths count as evidence, 4.8, 7.1, 7.5 and 10.11 credit shape over vocabulary, 10.9 and 6.3 read production code only, the frozen baseline is keyed to its assertions and checked before any --task filter, a dead session is not scored, a turn-capped one is marked and scored, a transcript yields the result text and the turn count")
 
 
 def _flag_val(args: list[str], name: str) -> int | None:

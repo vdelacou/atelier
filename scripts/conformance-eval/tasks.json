@@ -537,7 +537,7 @@
       },
       {
         "desc": "model output crosses a validation checkpoint",
-        "pattern": "safeParse|\\.parse\\(|[Ss]chema",
+        "pattern": "safeParse|\\.parse\\(|[Ss]chema|\\bparse[A-Z]\\w*\\(",
         "mode": "present",
         "rule": "10.11"
       },

@@ -133,8 +133,10 @@ run_one() { # $1 = task id, $2 = arm
   else
     echo "FAILED: $id-$arm (see $dir/.run.log)"
   fi
-  # Incremental grading: the scorecard line for this task, as soon as it lands.
-  python3 "$HERE/grade.py" "$OUT" --task "$id" 2>/dev/null | grep -E "^  (with_skill|baseline) " | sed "s/^/  [$id] /" || true
+  # Incremental grading: the scorecard line for this task and arm, as soon as it lands. Only
+  # this arm's line: the other arm may still be running, and its tree lands at copy-back, so
+  # its line would read 0 (both arms, 2026-09-27).
+  python3 "$HERE/grade.py" "$OUT" --task "$id" 2>/dev/null | grep -E "^  $arm " | sed "s/^/  [$id] /" || true
 }
 
 for id in "${TASK_IDS[@]}"; do
