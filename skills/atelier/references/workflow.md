@@ -299,65 +299,31 @@ To also remap the author and committer fields, add `--mailmap` with `Intended Na
 
 ## Gates: a fast pre-commit hook plus the full set in CI
 
-The gate set has two homes, split by speed and not by importance (canon 15.1). The pre-commit hook runs the **fast gates** only, because a multi-minute hook trains `git commit --no-verify` (rule 15.3). Every gate, fast and slow, also runs in **CI**, the line that cannot be skipped and the required merge check (canon 4.6). The full test suite, per-tier coverage, and Stryker mutation are slow and grow with the codebase, so they live in CI and only in CI.
+The gate set has two homes, split by speed and not by importance (canon 15.1). The pre-commit hook runs the **fast gates** only, because a multi-minute hook trains `git commit --no-verify` (canon 15.3). Every gate, fast and slow, also runs in **CI**, the line that cannot be skipped and the required merge check (canon 4.6). The full test suite, per-tier coverage, and Stryker mutation are slow and grow with the codebase, so they live in CI and only in CI.
 
-This is the **Bun-script variant's** mechanism. The Next.js monorepo uses `simple-git-hooks` (pre-commit runs each package's test + lint; commit-msg runs commitlint) instead, see `references/nextjs-monorepo.md`. Never install both: `core.hooksPath` and `simple-git-hooks` overwrite each other.
+This is the **Bun-script variant's** mechanism. The Next.js monorepo uses `simple-git-hooks` (pre-commit runs gate 2, the identity gate and the discipline wrapper, then each package's test + lint; commit-msg runs commitlint) instead, see `references/nextjs-monorepo.md`. Never install both: `core.hooksPath` and `simple-git-hooks` overwrite each other. The Java variant's hook is `assets/pre-commit-java` (`references/java-quarkus.md`, Gates and hooks).
 
-**The pre-commit hook (fast gates, target under ~5s):**
+**The pre-commit hook (fast gates, target under ~5s), `assets/pre-commit`:**
 
 | # | Gate | Purpose | Typical time |
 |:--:|:---|:---|:--:|
 | 1 | `scripts/check-commit-size.sh` | <=10 files AND <=300 lines | <1s |
 | 2 | `scripts/check-package-json.sh` | no `"latest"` / `"*"` / bare dist-tag (rule 19); no foreign lockfile, no `scripts` entry calling `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite` directly (rule 5) | <1s |
 | 3 | `gitleaks protect --staged` | secret scan on the staged diff | ~50ms |
-| 4 | `bun run lint:staged` | ESLint on the staged TS files only | ~1-2s |
-| 5 | `bun run typecheck` | `tsc --noEmit` clean | seconds |
+| 4 | `scripts/check-identity.sh` | no person, employer or client named in the staged lines (rule 26) | <1s |
+| 5 | `scripts/check-disciplines.sh` | the core discipline tripwires on the staged lines: personal data channels, IO deadlines, data lifecycle (rules 27, 29, 30; Discipline tripwires below) | <1s |
+| 6 | `bun run lint:staged` | ESLint on the staged TS files only | ~1-2s |
+| 7 | `bun run typecheck` | `tsc --noEmit` clean | seconds |
 
 Every gate here is O(staged files) or O(1). Typecheck is the one that grows with the whole codebase; if it exceeds the hook budget on your repo, move it to CI too. Never add the test suite, coverage, or mutation to the hook.
 
-**CI (`assets/ci.yml`, the authoritative merge gate):** `check-commit-messages.sh` and `check-commit-range.sh` straight after checkout (both need only git history), then install on a frozen lockfile, `check-package-json.sh`, `gitleaks detect` (full history; the workflow installs its own pinned gitleaks), `lint:strict` (type-aware, zero warnings, ~25s), `typecheck`, `bun test` (the whole suite), `bun run coverage` (per-tier), `bun run mutate:changed` on every event (the changed files only, 1-3 min per file; on a push the range is `github.event.before..HEAD`, which the workflow exports). The full sweep is never a commit gate: `assets/mutation.yml` runs `bun run mutate` once a day on a schedule. Make it a required status check in branch protection (canon 13.2) so a bypassed hook is still caught. The CVE scan is deliberately NOT in this job; it ships as its own workflow, `assets/audit.yml` (see Dependency scanning below).
-
-A ready-to-copy hook lives in the skill at `assets/pre-commit`, the CI workflow at `assets/ci.yml`, and the staged-lint helper at `assets/lint-staged.sh`. The companion scripts (`check-commit-size.sh`, `check-package-json.sh`, `mutate-staged.sh`, `mutate-changed.sh`, `regenerate-coverage-preload.ts`) live alongside, plus `assets/commit-msg`, a separate git hook documented under *Commit message format* below.
+**CI (`assets/ci.yml`, the authoritative merge gate):** `check-commit-messages.sh` and `check-commit-range.sh` straight after checkout (both need only git history), then install on a frozen lockfile, `check-package-json.sh`, `gitleaks detect` (full history; the workflow installs its own pinned, checksum-verified gitleaks), `check-identity.sh --all` and `check-disciplines.sh --all` (the whole tree), `lint:strict` (type-aware, zero warnings, ~25s), `typecheck`, `bun test --randomize` (the whole suite, rule 36), `regenerate-coverage-preload.ts --check`, `bun run coverage` (per-tier), `bun run mutate:changed` on every event (the changed files only, 1-3 min per file; on a push the range is `github.event.before..HEAD`, which the workflow exports). The full sweep is never a commit gate: `assets/mutation.yml` runs `bun run mutate` once a day on a schedule. Make it a required status check in branch protection (canon 13.2) so a bypassed hook is still caught. The CVE scan is deliberately NOT in this job; it ships as its own workflow, `assets/audit.yml` (see Dependency CVE scanning (CI) below).
 
 ### Install once per clone
 
-```bash
-mkdir -p .githooks scripts .github/workflows
-cp <skill>/assets/pre-commit .githooks/pre-commit
-cp <skill>/assets/commit-msg .githooks/commit-msg
-cp <skill>/assets/ci.yml .github/workflows/ci.yml
-cp <skill>/assets/lint-staged.sh scripts/lint-staged.sh
-cp <skill>/assets/check-commit-size.sh scripts/check-commit-size.sh
-cp <skill>/assets/check-package-json.sh scripts/check-package-json.sh
-cp <skill>/assets/check-commit-messages.sh scripts/check-commit-messages.sh
-cp <skill>/assets/check-coverage.ts scripts/check-coverage.ts
-cp <skill>/assets/regenerate-coverage-preload.ts scripts/regenerate-coverage-preload.ts
-cp <skill>/assets/mutate-staged.sh scripts/mutate-staged.sh
-cp <skill>/assets/mutate-changed.sh scripts/mutate-changed.sh
-cp <skill>/assets/stryker.conf.json stryker.conf.json
-chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh scripts/check-coverage.ts scripts/regenerate-coverage-preload.ts
-git config core.hooksPath .githooks
-# Generate the initial coverage-preload.ts from the current src/ tree
-bun run scripts/regenerate-coverage-preload.ts
-```
+The copy steps live in one place, the Bootstrap checklist of `references/bun-typescript.md` (step 14): the hooks, every script they and the three workflows call, the workflows themselves, and `git config core.hooksPath .githooks`. The Bun smoke test replays that checklist, so it is the copy block that is proven to work; do not keep a second one here. Then generate the initial preload once: `bun run scripts/regenerate-coverage-preload.ts`.
 
 `core.hooksPath .githooks` picks up **both** `.githooks/pre-commit` (the fast gates, on the staged diff) and `.githooks/commit-msg` (Conventional Commits, on the message), one config, two hooks. `.github/workflows/ci.yml` is the authoritative gate set that runs every gate on every push and pull request.
-
-Add to `package.json`:
-
-```json
-{
-  "scripts": {
-    "lint:staged": "bash scripts/lint-staged.sh",
-    "mutate": "stryker run",
-    "mutate:changed": "bash scripts/mutate-changed.sh",
-    "mutate:staged": "bash scripts/mutate-staged.sh"
-  },
-  "devDependencies": {
-    "@stryker-mutator/core": "^9.6.1"
-  }
-}
-```
 
 Install gitleaks (optional but recommended): `brew install gitleaks` on macOS, or grab a binary from `github.com/gitleaks/gitleaks/releases`. The hook degrades gracefully if `gitleaks` is missing (it warns and continues) so first-time clones don't break.
 
