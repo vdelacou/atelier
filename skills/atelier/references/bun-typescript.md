@@ -111,17 +111,19 @@ import globals from 'globals';
 import tsPlugin from 'typescript-eslint';
 
 // `mock` from `bun:test` is process-global once installed and leaks into every
-// other test file the runner loads. Use dependency injection (createXFromApi or
+// other test file the runner loads, and `spyOn`, `jest` and `vi` are the same
+// mocking machinery under other names. Use dependency injection (createXFromApi or
 // installFetchMock) instead. See references/testing-infra.md. A const, because
 // every layer zone below has to repeat it (see the replace-not-merge note).
 const MOCK_BAN = {
   name: 'bun:test',
-  importNames: ['mock'],
+  importNames: ['mock', 'spyOn', 'jest', 'vi'],
   message:
-    '`mock` from bun:test is forbidden: it leaks across test files. Use dependency injection: refactor the production code to accept the SDK as a parameter, then pass a fake at construction (hard rule 13).',
+    '`mock`, `spyOn`, `jest` and `vi` from bun:test are forbidden: mocks leak across test files. Use dependency injection: refactor the production code to accept the SDK as a parameter, then pass a fake at construction (hard rule 13).',
 };
 
-// The style rules as lint (hard rules 1, 7, 10, 18). ESLint REPLACES a rule's options
+// The style rules as lint (hard rules 1, 7, 10, 18, and 13's call-recording assertions).
+// ESLint REPLACES a rule's options
 // when a second block matches the same file, it never merges them, so every scoped
 // `no-restricted-syntax` block below spreads this list before its own selector.
 const STYLE_BANS = [
@@ -131,6 +133,10 @@ const STYLE_BANS = [
   {
     selector: 'VariableDeclarator[id.name!=/^create[A-Z]/] > ArrowFunctionExpression > ArrowFunctionExpression.body',
     message: 'No curried arrow chains: one arrow with all its parameters, wrapped at the call site; the DI factory `createX = (deps) => (input) => ...` is the one exemption (hard rule 18, references/clean-code.md).',
+  },
+  {
+    selector: 'MemberExpression[property.name=/^(toHaveBeen(Last|Nth)?Called|toBeCalled|toHave(Last|Nth)?Returned)/]',
+    message: 'No call-recording assertions: a hand-written fake records what it received and the test asserts on that record (hard rule 13, references/testing.md).',
   },
 ];
 // Hard rule 17: a use-case pattern-matches the Result a port returns; a catch there means the port lied.
@@ -149,6 +155,10 @@ const FS_BAN = {
 // Branded types and `expect(...).toBe(raw)`); only tests and the fakes may import one.
 // It rides inside the zones because flat config replaces a rule's options: a separate
 // no-restricted-imports block would wipe the mock ban and the zone for its files.
+const INFRA_NO_USE_CASE = {
+  group: ['**/use-cases/*', '!**/use-cases/ports'],
+  message: 'src/infra implements the use-case ports and never imports a use-case: dependencies point inward (hard rule 37, references/architecture.md, the dependency table).',
+};
 const UNSAFE_BAN = {
   group: ['**'],
   importNamePattern: 'Unsafe$',
@@ -160,7 +170,8 @@ const UNSAFE_BAN = {
 // and a layer left out of a list is one it is allowed to reach. Production files only: a
 // test reaches for the fakes in src/test-helpers/ by design, and the fakes may build
 // their values with the *Unsafe helpers, so that zone alone leaves UNSAFE_BAN out.
-const layerZone = (layer, forbidden, files = [`src/${layer}/**/*.ts`]) => ({
+// `extraPatterns` carries a ban a name list cannot say, like infra's below.
+const layerZone = (layer, forbidden, files = [`src/${layer}/**/*.ts`], extraPatterns = []) => ({
   files,
   ignores: ['**/*.test.ts'],
   rules: {
@@ -173,6 +184,7 @@ const layerZone = (layer, forbidden, files = [`src/${layer}/**/*.ts`]) => ({
             group: forbidden.flatMap((name) => [`**/${name}`, `**/${name}/**`]),
             message: `src/${layer} must not import ${forbidden.join(', ')}: dependencies point inward (hard rule 37, references/architecture.md, the dependency table).`,
           },
+          ...extraPatterns,
           ...(layer === 'test-helpers' ? [] : [UNSAFE_BAN]),
         ],
       },
@@ -205,12 +217,12 @@ export default [
       'prefer-template': 'error',
       quotes: ['error', 'single', { avoidEscape: true }],
       'no-restricted-imports': ['error', { paths: [MOCK_BAN] }],
-      // Hard rules 1, 7, 10, 18 (STYLE_BANS above); the scoped blocks below add 17 and 20.
+      // Hard rules 1, 7, 10, 18 and 13's call assertions (STYLE_BANS above); the scoped blocks below add 17 and 20.
       'no-restricted-syntax': ['error', ...STYLE_BANS],
       // Hard rule 15, the other tools' escape hatches: every @ts- form (the recommended preset
       // allows a described @ts-expect-error) and the markers other tools read, anywhere in a comment.
       '@typescript-eslint/ban-ts-comment': ['error', { 'ts-expect-error': true, 'ts-ignore': true, 'ts-nocheck': true, 'ts-check': false }],
-      'no-warning-comments': ['error', { terms: ['prettier-ignore', 'stryker disable', 'nosonar', 'sonar-ignore', 'snyk-ignore', 'deepcode ignore', 'biome-ignore', 'oxlint-disable', 'c8 ignore', 'v8 ignore', 'istanbul ignore'], location: 'anywhere' }],
+      'no-warning-comments': ['error', { terms: ['prettier-ignore', 'stryker disable', 'nosonar', 'sonar-ignore', 'snyk-ignore', 'deepcode ignore', 'biome-ignore', 'oxlint-disable', 'c8 ignore', 'v8 ignore', 'istanbul ignore', 'gitleaks:allow'], location: 'anywhere' }],
       '@typescript-eslint/explicit-function-return-type': ['error', { allowExpressions: true, allowTypedFunctionExpressions: true }],
       '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
     },
@@ -240,7 +252,11 @@ export default [
   layerZone('domain', ['use-cases', 'infra', 'presenter', 'composition', 'test-helpers']),
   layerZone('use-cases', ['infra', 'presenter', 'composition', 'test-helpers']),
   layerZone('presenter', ['use-cases', 'infra', 'composition', 'test-helpers']),
-  layerZone('infra', ['presenter', 'composition', 'test-helpers']),
+  // An adapter implements the use-case ports and never imports a use-case (the table
+  // allows infra the domain and the ports only). Gitignore semantics cannot re-include a
+  // file under an excluded directory, so the pattern excludes the entries of use-cases/
+  // and re-includes ports/ itself; a use-case at any depth stays banned.
+  layerZone('infra', ['presenter', 'composition', 'test-helpers'], undefined, [INFRA_NO_USE_CASE]),
   layerZone('composition', ['test-helpers']),
   // The fakes may reach the ports they stand for and the entry points a test harness
   // drives; an adapter is the one thing they may never wrap, or the fake stops being a fake.
@@ -559,7 +575,7 @@ No `try/catch` anywhere outside `src/infra/**`, pure-domain fallbacks for native
 
 The shared `formatError(err: unknown): string` helper lives in `src/domain/utilities/format-error.ts`. Use it in every `catch (error)` block in `src/infra/**`, never `String(error)`, which returns `"[object Object]"` for non-Error throws (SonarJS S6551).
 
-`process.exit(1)` is allowed only in `src/main.ts` after the top-level catch. Never inside a use-case, adapter, or domain module.
+A failed run ends in `src/main.ts` only, after the top-level catch, by setting `process.exitCode = 1`: never `process.exit(1)` (unicorn's `no-process-exit`, on in the recommended set, rejects it outside a hashbang CLI file, and a hard exit can drop log lines still being written), and never an exit code set inside a use-case, adapter, or domain module.
 
 ## File IO (rule 20)
 

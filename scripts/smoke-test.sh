@@ -387,6 +387,30 @@ import { createFetchGreeting } from '../infra/fetch-greeting.ts';
 
 export const wired = createFetchGreeting('https://svc.test');
 EOF
+# An adapter implements the use-case ports and imports no use-case; until 2026-09-27
+# the infra zone forbade only presenter, composition and test-helpers.
+ban_red "layer zone rejects an adapter importing a use-case (rule 37)" src/infra/reaches-use-case.ts "never imports a use-case" <<'EOF'
+import { runPipeline } from '../use-cases/run-pipeline.ts';
+
+export const wired = runPipeline;
+EOF
+mkdir -p src/use-cases/ports
+cat > src/use-cases/ports/greeting-store.ts <<'EOF'
+export type GreetingStore = { readonly save: (text: string) => Promise<void> };
+EOF
+cat > src/infra/memory-greeting-store.ts <<'EOF'
+import type { GreetingStore } from '../use-cases/ports/greeting-store.ts';
+
+export const createMemoryGreetingStore = (saved: string[]): GreetingStore => ({
+  save: (text) => {
+    saved.push(text);
+    return Promise.resolve();
+  },
+});
+EOF
+expect_ok "an adapter importing the port it implements stays green (rule 37)" bun run lint
+rm -f src/infra/memory-greeting-store.ts src/use-cases/ports/greeting-store.ts
+rmdir src/use-cases/ports
 # Rule 13 had shipped since the first config and no fixture had ever seen it red. Two
 # places carry the ban: the base block (any test file) and every layer zone, which
 # re-declares it by hand because ESLint replaces a rule's options per block; the
@@ -402,6 +426,29 @@ ban_red "the domain zone still carries the mock ban (rule 13, replace-not-merge)
 import { mock } from 'bun:test';
 
 export const fake = mock(() => 1);
+EOF
+# spyOn, jest and vi are bun:test's mocking machinery under other names, and a
+# call-recording assertion is a mock by its shape whatever built the spy; until
+# 2026-09-27 the ban named only `mock`, and both of these passed.
+ban_red "mock ban rejects spyOn from bun:test (rule 13)" src/domain/spied.test.ts "hard rule 13)" <<'EOF'
+import { expect, spyOn, test } from 'bun:test';
+
+const store = { save: (value: string): string => value };
+
+test('a spied call', () => {
+  const spy = spyOn(store, 'save');
+  store.save('x');
+  expect(spy).not.toBeNull();
+});
+EOF
+ban_red "a call-recording assertion is rejected whatever built the spy (rule 13)" src/domain/recorded.test.ts "hard rule 13," <<'EOF'
+import { expect, test } from 'bun:test';
+
+const recorder = { calls: 0 };
+
+test('a recorded call', () => {
+  expect(recorder).toHaveBeenCalledWith('x');
+});
 EOF
 # The *Unsafe boundary (references/testing.md, Branded types) rides inside every zone
 # since 2026-09-27; the reference used to teach a separate no-restricted-imports block,
@@ -431,6 +478,19 @@ export const greetingUnsafe = (raw: string): string => raw;
 EOF
 expect_ok "a test and a fake importing an *Unsafe helper stay green" bun run lint
 rm src/domain/greeting-unsafe.test.ts src/domain/greeting-unsafe.ts src/test-helpers/greeting-fake.ts
+# A failed run sets process.exitCode in src/main.ts (bun-typescript.md, Error handling):
+# unicorn's no-process-exit rejects process.exit outside a hashbang file, so the
+# process.exit(1) the doctrine taught until 2026-09-27 failed the shipped lint.
+ban_red "process.exit in src/main.ts is rejected (unicorn/no-process-exit)" src/main.ts "unicorn/no-process-exit" <<'EOF'
+export const run = async (): Promise<number> => 1;
+process.exit(await run());
+EOF
+cat > src/main.ts <<'EOF'
+export const run = async (): Promise<number> => 1;
+process.exitCode = await run();
+EOF
+expect_ok "process.exitCode in src/main.ts stays green" bun run lint
+rm src/main.ts
 # Rule 15 was prose until 2026-09-08: five of these seven forms passed the canonical config,
 # and a file-level disable switched off every other ban. The directive forms are red through
 # noInlineConfig (the comment is inert and reported), the @ts- forms through ban-ts-comment,
@@ -478,6 +538,11 @@ export const rare = (n: number): number => {
   /* c8 ignore next */
   return n < 0 ? -n : n;
 };
+EOF
+# gitleaks honours an inline allow comment unless called with --ignore-gitleaks-allow;
+# every shipped call carries the flag since 2026-09-27, and the lint rejects the comment.
+ban_red "a gitleaks:allow comment is rejected (rule 15)" src/domain/allowed.ts "'gitleaks:allow'" <<'EOF'
+export const endpoint = 'https://svc.test'; // gitleaks:allow
 EOF
 # unicorn's recommended set is on since 2026-09-27 (the plugin had been registered with no rule
 # on). throw-new-error is unicorn's alone and stable across its majors, so its tag is the proof.

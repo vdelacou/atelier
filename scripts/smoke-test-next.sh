@@ -374,6 +374,27 @@ import { mock } from 'bun:test';
 
 export const fake = mock(() => 1);
 EOF
+# spyOn and a call-recording assertion passed until 2026-09-27: the ban named only `mock`.
+ban_red "mock ban rejects spyOn from bun:test (rule 13)" src/lib/spied.test.ts "hard rule 13)" <<'EOF'
+import { expect, spyOn, test } from 'bun:test';
+
+const store = { save: (value: string): string => value };
+
+test('a spied call', () => {
+  const spy = spyOn(store, 'save');
+  store.save('x');
+  expect(spy).not.toBeNull();
+});
+EOF
+ban_red "a call-recording assertion is rejected whatever built the spy (rule 13)" src/lib/recorded.test.ts "hard rule 13," <<'EOF'
+import { expect, test } from 'bun:test';
+
+const recorder = { calls: 0 };
+
+test('a recorded call', () => {
+  expect(recorder).toHaveBeenCalledWith('x');
+});
+EOF
 # Rule 15 in this variant's config: directives inert and reported, every @ts- form and the
 # other tools' markers rejected (2026-09-08).
 ban_red "eslint-disable-next-line is inert and reported (rule 15)" src/lib/loud.ts "noInlineConfig" <<'EOF'
@@ -392,6 +413,9 @@ EOF
 ban_red "prettier-ignore is rejected (rule 15)" src/lib/unformatted.ts "'prettier-ignore'" <<'EOF'
 // prettier-ignore
 export const table = [1,2,3,   4];
+EOF
+ban_red "a gitleaks:allow comment is rejected (rule 15)" src/lib/allowed.ts "'gitleaks:allow'" <<'EOF'
+export const endpoint = 'https://svc.test'; // gitleaks:allow
 EOF
 # unicorn's recommended set is on since 2026-09-27, as in the Bun config; throw-new-error is
 # unicorn's alone and stable across its majors, so its tag is the proof.
@@ -481,6 +505,23 @@ rule21_hits=$(bunx eslint src/components/atoms/bad-widget.tsx 2>&1 | grep -c 'ha
 [ "${rule21_hits:-0}" -ge 4 ] && pass "rule 21 caught (${rule21_hits} findings: hook, next import, use client, app-code import)" \
   || { echo "expected >=4 'hard rule 21' findings, got ${rule21_hits:-0}"; fail "rule 21 enforcement"; }
 rm src/components/atoms/bad-widget.tsx
+# The member form and React 19's use() are hooks too; the bare-name selector missed
+# both until 2026-09-27.
+cat > src/components/atoms/member-hooks.tsx <<'EOF'
+import * as React from 'react';
+import { use } from 'react';
+import type { ReactNode } from 'react';
+
+export const MemberHooks = ({ label }: { label: Promise<string> }): ReactNode => {
+  const [open] = React.useState(false);
+  const text = use(label);
+  return <span>{open ? text : ''}</span>;
+};
+EOF
+hook_hits=$(bunx eslint src/components/atoms/member-hooks.tsx 2>&1 | grep -c 'No hooks inside the design system' || true)
+[ "${hook_hits:-0}" -ge 2 ] && pass "rule 21 catches React.useState and use() (${hook_hits} findings)" \
+  || { echo "expected >=2 hook findings, got ${hook_hits:-0}"; fail "rule 21 member-form and use() hooks"; }
+rm src/components/atoms/member-hooks.tsx
 
 echo "== negative path: rule 22, a class/style attribute outside the design system is rejected =="
 cat > app/_bad.tsx <<'EOF'

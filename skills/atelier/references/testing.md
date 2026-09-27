@@ -363,7 +363,7 @@ expect(spy.sentEmails).toContain(email('user@example.com'));
 
 ### No `mock` from `bun:test` (absolute, enforced by lint)
 
-The entire `mock` namespace of `bun:test` is banned: `mock()`, `mock.module()`, `.toHaveBeenCalledWith`, `.toHaveBeenCalledTimes`. The canonical `no-restricted-imports` block that enforces this lives in `references/bun-typescript.md` (ESLint config section); it bans the entire `mock` namespace from `bun:test`.
+The entire mocking surface of `bun:test` is banned: `mock()`, `mock.module()`, `spyOn`, and the `jest` and `vi` compatibility objects, plus every call-recording assertion (`.toHaveBeenCalled*`, `.toBeCalled*`, `.toHaveReturned*`) whatever built the spy. The canonical config in `references/bun-typescript.md` (`eslint.config.js`) enforces both halves: `MOCK_BAN` in `no-restricted-imports` names the four imports, and a `STYLE_BANS` selector rejects the assertions. A hand-written fake records what it received, and the test asserts on that record.
 
 ```ts
 // BANNED

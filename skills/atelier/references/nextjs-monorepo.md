@@ -204,6 +204,10 @@ const STYLE_BANS = [
     selector: 'VariableDeclarator[id.name!=/^create[A-Z]/] > ArrowFunctionExpression > ArrowFunctionExpression.body',
     message: 'No curried arrow chains: one arrow with all its parameters, wrapped at the call site; the DI factory `createX = (deps) => (input) => ...` is the one exemption (hard rule 18, references/clean-code.md).',
   },
+  {
+    selector: 'MemberExpression[property.name=/^(toHaveBeen(Last|Nth)?Called|toBeCalled|toHave(Last|Nth)?Returned)/]',
+    message: 'No call-recording assertions: a hand-written fake records what it received and the test asserts on that record (hard rule 13, references/testing.md).',
+  },
 ];
 // Hard rule 17 for the server archetype: a use-case pattern-matches the Result a port returns.
 const TRY_BAN = {
@@ -215,8 +219,8 @@ const TRY_BAN = {
 // layer zone below carries the mock ban itself.
 const MOCK_BAN = {
   name: 'bun:test',
-  importNames: ['mock'],
-  message: '`mock` from bun:test is forbidden, it leaks across test files. Use a hand-written fake (hard rule 13).',
+  importNames: ['mock', 'spyOn', 'jest', 'vi'],
+  message: '`mock`, `spyOn`, `jest` and `vi` from bun:test are forbidden, mocks leak across test files. Use a hand-written fake (hard rule 13).',
 };
 // Hard rule 21: the design system imports react and its own lower layers only. The atoms and
 // molecules zones spread this list again for the same replace-not-merge reason.
@@ -241,6 +245,12 @@ const UPWARD = 'imports point upward inside the design system (hard rule 37, ref
 // A `<factory>Unsafe` helper casts a brand without validating (references/testing.md,
 // Branded types and `expect(...).toBe(raw)`); only tests and the fakes may import one. It
 // rides inside the zones: a separate no-restricted-imports block would replace them.
+// An adapter implements the use-case ports and never imports a use-case; the pattern
+// excludes the entries of use-cases/ and re-includes ports/ (gitignore semantics).
+const INFRA_NO_USE_CASE = {
+  group: ['**/use-cases/*', '!**/use-cases/ports'],
+  message: 'src/infra implements the use-case ports and never imports a use-case: dependencies point inward (hard rule 37, references/architecture.md, the dependency table).',
+};
 const UNSAFE_BAN = {
   group: ['**'],
   importNamePattern: 'Unsafe$',
@@ -323,7 +333,7 @@ const eslintConfig = defineConfig([
       // Hard rule 15, the other tools' escape hatches: every @ts- form (the recommended preset
       // allows a described @ts-expect-error) and the markers other tools read, anywhere in a comment.
       '@typescript-eslint/ban-ts-comment': ['error', { 'ts-expect-error': true, 'ts-ignore': true, 'ts-nocheck': true, 'ts-check': false }],
-      'no-warning-comments': ['error', { terms: ['prettier-ignore', 'stryker disable', 'nosonar', 'sonar-ignore', 'snyk-ignore', 'deepcode ignore', 'biome-ignore', 'oxlint-disable', 'c8 ignore', 'v8 ignore', 'istanbul ignore'], location: 'anywhere' }],
+      'no-warning-comments': ['error', { terms: ['prettier-ignore', 'stryker disable', 'nosonar', 'sonar-ignore', 'snyk-ignore', 'deepcode ignore', 'biome-ignore', 'oxlint-disable', 'c8 ignore', 'v8 ignore', 'istanbul ignore', 'gitleaks:allow'], location: 'anywhere' }],
     },
   },
   {
@@ -401,7 +411,10 @@ const eslintConfig = defineConfig([
       'no-restricted-syntax': [
         'error',
         ...STYLE_BANS,
-        { selector: 'CallExpression[callee.name=/^use[A-Z]/]', message: 'No hooks inside the design system: hoist state to the page shell via src/lib/hooks (hard rule 21).' },
+        // Bare `useX()`, React 19's `use()`, and the member forms (`React.useState()`): the
+        // bare selector alone missed the last two until 2026-09-27.
+        { selector: 'CallExpression[callee.name=/^use([A-Z]|$)/]', message: 'No hooks inside the design system: hoist state to the page shell via src/lib/hooks (hard rule 21).' },
+        { selector: 'CallExpression[callee.property.name=/^use([A-Z]|$)/]', message: 'No hooks inside the design system: hoist state to the page shell via src/lib/hooks (hard rule 21).' },
         { selector: 'Program > ExpressionStatement[directive="use client"]', message: "The 'use client' boundary belongs to page shells, not design-system components (hard rule 21)." },
       ],
       // Accessible by default (canon 17.6): the design system is where a11y is won or
@@ -445,7 +458,7 @@ const eslintConfig = defineConfig([
   layerZone('domain', ['use-cases', 'infra', 'presenter', 'composition', 'test-helpers', 'lib', 'page', 'components'], [FS_AT_THE_EDGES]),
   layerZone('use-cases', ['infra', 'presenter', 'composition', 'test-helpers', 'lib', 'page', 'components'], [FS_AT_THE_EDGES]),
   layerZone('presenter', ['use-cases', 'infra', 'composition', 'test-helpers']),
-  layerZone('infra', ['presenter', 'composition', 'test-helpers', 'page', 'components']),
+  layerZone('infra', ['presenter', 'composition', 'test-helpers', 'page', 'components'], [INFRA_NO_USE_CASE]),
   layerZone('composition', ['test-helpers']),
   layerZone('test-helpers', ['infra']),
   pluginJs.configs.recommended,
