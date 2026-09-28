@@ -6,6 +6,15 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Fixed
+- **`check-skill-pin.sh` on Windows.** Git for Windows sets `core.autocrlf=true` system-wide, so the
+  gate's shallow clone of upstream checked text out with CRLF, and since the byte comparison of 2.6.0
+  every file of a current LF vendored copy read as behind upstream (all 71 of the main skill, in a
+  reproduction under that setting). The clone now runs with `core.autocrlf=false` and compares
+  upstream's committed bytes on any machine; the selftest plants the setting at system and global
+  scope, where Git for Windows keeps it, and expects a match, seen red first. Re-copy
+  `check-skill-pin.sh`.
+
 ## [2.6.0] - 2026-09-28
 
 The audit release. A six-part audit of the whole tree before release found eleven blockers and about

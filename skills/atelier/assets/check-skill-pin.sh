@@ -90,7 +90,10 @@ resolve_upstream() {
     curl -sSfL "$src" -o "$WORK/upstream.md" 2>/dev/null || return 1
     echo "$WORK/upstream.md"
   elif [[ "$src" =~ ^(https?://|git@|ssh://|file://) ]]; then
-    git clone --quiet --depth 1 "$src" "$WORK/clone" 2>/dev/null || return 1
+    # Conversion off: compare upstream's committed bytes, not the machine's line endings.
+    # Git for Windows sets core.autocrlf=true system-wide, and a CRLF checkout made every
+    # file of a current LF copy read as behind (2026-09-28).
+    git -c core.autocrlf=false clone --quiet --depth 1 "$src" "$WORK/clone" 2>/dev/null || return 1
     [ -d "$WORK/clone/$SUBDIR" ] || { echo "check-skill-pin: $src has no $SUBDIR directory" >&2; return 1; }
     echo "$WORK/clone/$SUBDIR"
   else
@@ -212,11 +215,20 @@ selftest() {
     echo "selftest FAIL: a current tree was rejected against a cloned upstream" >&2; exit 1
   fi
   rm -rf "$WORK/clone"
+  # Git for Windows sets core.autocrlf=true system-wide, so a plain clone checked upstream
+  # out with CRLF and a current LF copy read as behind in every file (a consumer on
+  # Windows, 2026-09-28). The config is planted where that machine carries it.
+  printf '[core]\n\tautocrlf = true\n' > "$t/autocrlf.gitconfig"
+  if ! ( export GIT_CONFIG_SYSTEM="$t/autocrlf.gitconfig" GIT_CONFIG_GLOBAL="$t/autocrlf.gitconfig"
+         UPSTREAM="file://$t/repo" run "$t/vend" ) >/dev/null 2>&1; then
+    echo "selftest FAIL: a current tree was rejected against an upstream cloned under core.autocrlf=true" >&2; exit 1
+  fi
+  rm -rf "$WORK/clone"
   printf 'detail v1\n' > "$t/vend/references/x.md"
   if UPSTREAM="file://$t/repo" run "$t/vend" >/dev/null 2>&1; then
     echo "selftest FAIL: a stale reference passed against a cloned upstream" >&2; exit 1
   fi
-  echo "selftest OK: gate rejects a stale vendored copy (file, tree, and cloned upstream), accepts a current one, degrades when it cannot check"
+  echo "selftest OK: gate rejects a stale vendored copy (file, tree, and cloned upstream), accepts a current one (also cloned under core.autocrlf=true), degrades when it cannot check"
 }
 
 if [ "${1:-}" = "--selftest" ]; then
