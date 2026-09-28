@@ -98,7 +98,7 @@ The skill detects the variant from the tree and reads the matching reference. Sa
 | Stack | Idiom | Detected by |
 |---|---|---|
 | Bun TypeScript script | Clean Architecture under `src/`, strict flat ESLint with SonarJS, type-aware rules, the style bans and layer zones, a Logger port with a Winston adapter | `"module": "src/main.ts"` in `package.json` |
-| Next.js monorepo | Bun workspaces, Atomic Design with a logic-free design system, Tailwind v4 sealed inside `src/components/**`, i18n route groups, static export, a bundle budget | `packages/*` and `next.config.ts` |
+| Next.js monorepo | Bun workspaces, Atomic Design with a logic-free design system, Tailwind v4 sealed inside `src/components/**`, i18n route groups, static export, a bundle budget | `packages/*` with Bun workspaces, or `next.config.ts` |
 | Java (Quarkus) | Records and a sealed `Result`, ports as small interfaces with hand-written fakes, Maven wrapper with exact pins, Spotless, JaCoCo tiers, PIT, Flyway expand-contract, ArchUnit layer rules, authenticated-by-default resources | `pom.xml` with `src/main/java/**` |
 
 ## Five skills, five moments
@@ -121,7 +121,7 @@ The full text is [`SKILL.md`](skills/atelier/SKILL.md). This is the shape.
 |---|---|
 | **Code** | `const` arrow functions and typed records. No `class`, no `function` declaration, no `interface`, no curried chain, no `console.*`. Records and sealed types in Java, no Mockito, no `@SuppressWarnings`. Bun only, never `npm`, `pnpm`, `yarn`, `node` or `vite` directly; Maven wrapper with exact pins. Nothing pinned to `latest` or `*`. |
 | **Structure** | Clean Architecture with the dependency rule as lint (ArchUnit in Java). Atomic Design with a logic-free design system the app layer never styles. SOLID through typed records and function contracts. YAGNI, KISS, DRY after the third occurrence. |
-| **Boundaries** | Brand what crosses a trust boundary or feeds a sink, with a two-tier factory: `parseX` returns `Result`, `x` asserts a proven value. Every IO port returns `Result<T, PortError>`. `try/catch` is quarantined to `infra/` and `main.ts`. |
+| **Boundaries** | Brand what crosses a trust boundary or feeds a sink, with a two-tier factory: `parseX` returns `Result`, `x` asserts a proven value. Every IO port returns `Result<T, PortError>`. `try/catch` is quarantined to `infra/`, the entry point and a domain fallback around a native thrower, never in a use-case. |
 | **Tests** | Outside-in classicist TDD at the primary port. Hand-written fakes, never mocks. Random order. Coverage 100 on `domain` and `use-cases`, 80 on the rest. Mutation at 90 or above on the changed files in CI. |
 | **Lint and commits** | 0 errors and 0 warnings, no inline ignore survives, complexity at most 10. Conventional Commits by hook. At most 10 files and 300 lines per commit, trunk-based. |
 | **Two gates** | The agent never commits or pushes without your yes. It never creates, edits, deletes or weakens a test without showing you the change first; TDD stays test-first by proposing the red test. |
@@ -130,8 +130,8 @@ The full text is [`SKILL.md`](skills/atelier/SKILL.md). This is the shape.
 | **Reliability** | A deadline on every outbound call. Bounded jittered retries with idempotency keys. The transactional outbox. Optimistic locking. Soft delete and expand-contract migrations. |
 | **AI models** | The model behind a port with a hand-written fake. Pinned dated snapshots. Output treated as untrusted. Prompt-injection fencing. Eval gates in CI. Per-caller spend caps. |
 | **Operations** | SLOs as numbers, correlated OpenTelemetry, symptom-based alerts. Pipeline-only deploys with canary and one-step rollback, infrastructure as code, SBOM and signed artifacts, restore drills. |
-| **Product** | Error copy that names the cause and the next step. Honest flows. Semantic HTML, keyboard, contrast and an axe gate. Validate before you build. |
-| **Memory** | An append-only `.claude/LESSONS.md` the agent reads at session start and extends at session end, and a live `.claude/PLAN.md` so a long task survives a context reset. |
+| **Product** | Error copy that names the cause and the next step. Honest flows. Semantic HTML, keyboard, contrast and a jsx-a11y lint gate. Validate before you build. |
+| **Memory** | An append-only `.claude/LESSONS.md` the agent reads at session start and extends on your yes at session end, and a live `.claude/PLAN.md` so a long task survives a context reset. |
 
 Rules are non-negotiable by design. When a request would break one, the agent rewrites to comply and tells you in one sentence what it substituted.
 
@@ -158,7 +158,7 @@ Each eval runs the same tasks with and without the skill on Claude Opus and grad
 | Memory cleanup, 27 planted journal entries over 3 passes ([scorecard](scripts/distill-eval/baseline.md)) | 33/33 checks | 24/33 checks |
 | Memory cleanup, entries rewritten with no original kept | 0 | 31 |
 
-The gap is widest on the rules that hurt most in production. The unaided agent never once preferred soft delete to a hard `DELETE`, in either eval (0 of 16 checks over four isolated passes), and put a port in front of a dependency in 2 of 16.
+The gap is widest on the rules that hurt most in production. The unaided agent never once preferred soft delete to a hard `DELETE`, in either eval (0 of 20 checks over five isolated passes), and put a port in front of a dependency in 2 of 20.
 
 Eight CI jobs run on every push to this repo: the canon drift and citation gates, the grader selftests, and three smoke tests that replay the install on the current unpinned toolchain and prove each shipped gate green on a conforming tree and red on its target violation. A new ESLint, TypeScript, Stryker, Next or Maven-plugin major that breaks an asset fails here before it reaches you. A [field test](field-test.md) on a real consumer repo found the defects the evals could not, and each became a fix.
 
@@ -198,4 +198,4 @@ The engineering substance comes from Clean Code and Clean Architecture (Robert C
 
 ## Versioning and license
 
-The suite is versioned as a whole in [CHANGELOG.md](./CHANGELOG.md). The current release is 2.6.0, the audit release: a whole-tree audit closed eleven blockers, among them two critical Next.js advisories in the skeleton and a Quarkus auth default that protected nothing, and the gates that passed their own violation now fail on it. [MIT](./LICENSE).
+The suite is versioned as a whole in [CHANGELOG.md](./CHANGELOG.md). The current release is 2.6.0, the audit release: a whole-tree audit closed eleven blockers, among them a Next.js pin carrying two critical advisories and a Quarkus auth default that protected nothing, and the gates that passed their own violation now fail on it. [MIT](./LICENSE).
