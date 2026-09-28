@@ -6,6 +6,17 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Added
+- **`assets/gitattributes`, copied to `.gitattributes` by every variant's bootstrap checklist.** Text
+  checks out LF on every machine, Windows batch files (the Maven wrapper's `mvnw.cmd`) CRLF. Under Git
+  for Windows' system-wide `core.autocrlf=true` a consumer's checkout turned every text file CRLF:
+  prettier's `endOfLine: 'lf'` then failed every file in the TypeScript variants' lint gate, and
+  `check-skill-pin.sh` read a current vendored copy as stale. atelier-greenfield's scaffold carries it;
+  atelier-review-me's adopt install lands it first, before the hooks exist, with a CRLF tree
+  renormalized in a commit of its own. Each smoke test proves a checkout under that setting is CRLF
+  without the file and LF with it. Consumers: copy it, then `git add --renormalize .` in a commit of
+  its own if the tree holds CRLF text.
+
 ### Fixed
 - **`check-skill-pin.sh` on Windows.** Git for Windows sets `core.autocrlf=true` system-wide, so the
   gate's shallow clone of upstream checked text out with CRLF, and since the byte comparison of 2.6.0
@@ -18,6 +29,10 @@ whole, not any single skill.
   `.gitattributes` (`* text=auto eol=lf`); before it, the skills CLI wrote the vendored files with
   CRLF on Windows, so they differed from the index and from upstream until renormalized. A Windows
   install made before this fix re-runs `bunx skills update` to get LF files.
+
+### Harness
+- The matrix's note on canon 3.5 quoted the Next reference's gateway sentence but cited its
+  static-export line; it cites the gateway line, and the matrices hold 239 pinned citations.
 
 ## [2.6.0] - 2026-09-28
 
