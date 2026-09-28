@@ -108,7 +108,7 @@ Decision: NO-GO. Re-decide by <date>. Owner: <role or team handle> (a person's n
 
 1. New failure path: does the user see cause + next step from the catalog, with a stable error code underneath, and no internals leaked?
 2. Any copy hardcoded in a component instead of the catalog?
-3. Keyboard-only walk of the new flow: does it work? Labels, focus, contrast from tokens? Does the axe gate cover it?
+3. Keyboard-only walk of the new flow: does it work? Labels, focus, contrast from tokens? Does the jsx-a11y lint gate cover it?
 4. Any flow that traps the user: no human path, asymmetric cancel, a dark pattern in the copy?
 5. New feature: what evidence says someone wants it, and what adoption threshold decides keep-or-kill after launch?
 6. Market-specific behaviour: driven by config and measured completion, not the home market's habits?
