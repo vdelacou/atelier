@@ -668,6 +668,7 @@ manifest or the lockfile (`references/workflow.md`, Dependency CVE scanning). It
 
 ```bash
 mkdir -p .github/workflows scripts
+cp <skill>/assets/gitattributes          .gitattributes
 cp <skill>/assets/ci-next.yml            .github/workflows/ci.yml
 cp <skill>/assets/audit.yml              .github/workflows/audit.yml
 cp <skill>/assets/check-skill-pin.sh     scripts/check-skill-pin.sh
@@ -872,7 +873,7 @@ This module-level singleton is the **sanctioned rule-4 exception** for this vari
 2. `bun init -y`, then replace `package.json` with the skeleton above (rename `name`).
 3. Create `tsconfig.json`, `eslint.config.mjs`, `postcss.config.mjs`, and `next.config.ts` with the blocks above.
 4. Create `.vscode/settings.json` and `.vscode/extensions.json` at the repo root if not present.
-5. From repo root: copy the CI workflows and their scripts as the CI section above shows (`assets/ci-next.yml` to `.github/workflows/ci.yml`, `assets/audit.yml` to `.github/workflows/audit.yml`; `check-skill-pin.sh`, `check-commit-range.sh`, `check-package-json.sh`, `check-docs.sh`, `check-identity.sh`, `check-disciplines.sh` with `check-pii-channels.sh`, `check-io-deadlines.sh` and `check-data-lifecycle.sh`, `check-bundle-size.sh` to `scripts/`, `chmod +x`; gate 2 is what the hook calls first), then `bun install`, then `bun run prepare` to install git hooks.
+5. From repo root: copy `assets/gitattributes` to `.gitattributes` (LF on every machine), then the CI workflows and their scripts as the CI section above shows (`assets/ci-next.yml` to `.github/workflows/ci.yml`, `assets/audit.yml` to `.github/workflows/audit.yml`; `check-skill-pin.sh`, `check-commit-range.sh`, `check-package-json.sh`, `check-docs.sh`, `check-identity.sh`, `check-disciplines.sh` with `check-pii-channels.sh`, `check-io-deadlines.sh` and `check-data-lifecycle.sh`, `check-bundle-size.sh` to `scripts/`, `chmod +x`; gate 2 is what the hook calls first), then `bun install`, then `bun run prepare` to install git hooks.
 6. Create `src/lib/utils/logger.ts`.
 7. Set up `app/globals.css` for Tailwind v4.
 8. Lay out `src/components/{atoms,molecules,organisms}/`, `src/page/`, `src/lib/`, `src/config/`, `src/types/`.

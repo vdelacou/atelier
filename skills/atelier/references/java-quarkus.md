@@ -508,6 +508,7 @@ mkdir -p .githooks scripts .github/workflows
 cp <skill>/assets/pre-commit-java        .githooks/pre-commit
 cp <skill>/assets/commit-msg             .githooks/commit-msg
 cp <skill>/assets/java/pmd-ruleset.xml   pmd-ruleset.xml
+cp <skill>/assets/gitattributes          .gitattributes
 cp <skill>/assets/check-commit-size.sh   scripts/check-commit-size.sh
 cp <skill>/assets/check-pom.sh           scripts/check-pom.sh
 cp <skill>/assets/check-no-suppressions.sh scripts/check-no-suppressions.sh

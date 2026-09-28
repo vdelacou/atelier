@@ -141,7 +141,7 @@ Atelier is not a list of preferences. It is the executable form of a written can
 
 The two are audited against each other, in both directions. The forward matrix, [`conformance-matrix.md`](conformance-matrix.md), gives every one of the 120 sub-concepts a row and a verdict with file-and-line evidence: 118 covered, 2 where the skill is stricter than the canon, none missing, none contradicted. The reverse matrix, [`reverse-matrix.md`](reverse-matrix.md), takes each hard rule back to the canon: most sit on a canon row, some exceed it, and the nine that fix a language or toolchain choice are stack bindings the canon leaves to a profile on purpose. When the two collide, the canon wins and the skill amends. When the skill exposes a defect in the canon, the fix is a [proposed revision](docs/global-rules/proposed-revisions.md), and the accepted ones have changed the canon.
 
-CI keeps this honest. A drift gate hashes the vendored canon and refuses a matrix whose count, titles or order no longer match it. The 240 citations the matrices make are pinned to the content of the line they cite, so an edit that moves a cited line fails the build until the citation is re-anchored.
+CI keeps this honest. A drift gate hashes the vendored canon and refuses a matrix whose count, titles or order no longer match it. The 239 citations the matrices make are pinned to the content of the line they cite, so an edit that moves a cited line fails the build until the citation is re-anchored.
 
 ## How we know it works
 

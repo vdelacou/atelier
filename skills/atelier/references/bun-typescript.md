@@ -597,7 +597,7 @@ Why: keeping file IO on `Bun.file` is faster, has zero import ceremony, fits the
 3. Create `tsconfig.json` with the block above (includes `"types": ["bun"]`).
 4. Create `eslint.config.js` with the flat config above (includes `sonarjs.configs.recommended` and type-aware `@typescript-eslint` rules behind `LINT_STRICT=1`).
 5. Create `.vscode/settings.json` and `.vscode/extensions.json`.
-6. Drop in a Node `.gitignore`, plus `*-service-account*.json` if Firebase is in play.
+6. Drop in a Node `.gitignore`, plus `*-service-account*.json` if Firebase is in play, and `cp <skill-path>/assets/gitattributes .gitattributes` (text checks out LF on every machine: Git for Windows turns a checkout CRLF without it, and the formatter's `endOfLine: 'lf'` then fails every file).
 7. `bun install` to resolve the skeleton's ranges; then `bun update` to bump every dep to its current latest matching version. Commit `bun.lock` and the updated `package.json` together. From this point, every new dep is added via `bun add <pkg>` (runtime) or `bun add -d <pkg>` (dev), never hand-edit `package.json`.
 8. Scaffold the Clean Architecture layout (see `references/architecture.md`): `mkdir -p src/{domain,use-cases/ports,infra,presenter,composition,test-helpers}`.
 9. Create `src/domain/result.ts` with the `Result<T, E>` type and helpers from `references/result-type.md`.
