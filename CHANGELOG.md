@@ -14,6 +14,10 @@ whole, not any single skill.
   upstream's committed bytes on any machine; the selftest plants the setting at system and global
   scope, where Git for Windows keeps it, and expects a match, seen red first. Re-copy
   `check-skill-pin.sh`.
+- **A clone or a skills CLI install checks out LF on every machine.** The repository now carries a
+  `.gitattributes` (`* text=auto eol=lf`); before it, the skills CLI wrote the vendored files with
+  CRLF on Windows, so they differed from the index and from upstream until renormalized. A Windows
+  install made before this fix re-runs `bunx skills update` to get LF files.
 
 ## [2.6.0] - 2026-09-28
 
