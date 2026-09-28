@@ -198,4 +198,4 @@ The engineering substance comes from Clean Code and Clean Architecture (Robert C
 
 ## Versioning and license
 
-The suite is versioned as a whole in [CHANGELOG.md](./CHANGELOG.md). The current release is 2.6.0, the audit release: a whole-tree audit closed eleven blockers, among them a Next.js pin carrying two critical advisories and a Quarkus auth default that protected nothing, and the gates that passed their own violation now fail on it. [MIT](./LICENSE).
+The suite is versioned as a whole in [CHANGELOG.md](./CHANGELOG.md). The current release is 2.6.1, which fixes Windows checkouts (the line endings a consumer's gates and the skill-pin check read) on top of 2.6.0, the audit release: a whole-tree audit closed eleven blockers, among them a Next.js pin carrying two critical advisories and a Quarkus auth default that protected nothing, and the gates that passed their own violation now fail on it. [MIT](./LICENSE).

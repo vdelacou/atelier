@@ -6,6 +6,24 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-09-28
+
+The Windows release. Git for Windows sets `core.autocrlf=true` system-wide, and under it a consumer's
+checkout turned CRLF: the TypeScript variants' lint gate failed every file, and the skill-pin check
+reported a current vendored copy as stale. Both are fixed and proven under that setting in every
+variant's smoke test.
+
+### Upgrading from 2.6.0
+
+- Copy `assets/gitattributes` to `.gitattributes` at the repository root, and re-copy
+  `check-skill-pin.sh`.
+- Most repos need nothing more: `git ls-files --eol | grep i/crlf` lists the files committed with
+  CRLF, usually none. If it lists some, `git add --renormalize .` in a commit of its own; it rewrites
+  every line of those files, the big-bang change for which the commit-size gate's header sanctions a
+  `--no-verify` justified in the commit body.
+- A Windows install of the skills made before this release re-runs `bunx skills update` to get LF
+  files.
+
 ### Added
 - **`assets/gitattributes`, copied to `.gitattributes` by every variant's bootstrap checklist.** Text
   checks out LF on every machine, Windows batch files (the Maven wrapper's `mvnw.cmd`) CRLF. Under Git
@@ -14,8 +32,7 @@ whole, not any single skill.
   `check-skill-pin.sh` read a current vendored copy as stale. atelier-greenfield's scaffold carries it;
   atelier-review-me's adopt install lands it first, before the hooks exist, with a CRLF tree
   renormalized in a commit of its own. Each smoke test proves a checkout under that setting is CRLF
-  without the file and LF with it. Consumers: copy it, then `git add --renormalize .` in a commit of
-  its own if the tree holds CRLF text.
+  without the file and LF with it.
 
 ### Fixed
 - **`check-skill-pin.sh` on Windows.** Git for Windows sets `core.autocrlf=true` system-wide, so the
@@ -27,12 +44,21 @@ whole, not any single skill.
   `check-skill-pin.sh`.
 - **A clone or a skills CLI install checks out LF on every machine.** The repository now carries a
   `.gitattributes` (`* text=auto eol=lf`); before it, the skills CLI wrote the vendored files with
-  CRLF on Windows, so they differed from the index and from upstream until renormalized. A Windows
-  install made before this fix re-runs `bunx skills update` to get LF files.
+  CRLF on Windows, so they differed from the index and from upstream until renormalized.
+- `references/product.md`'s review checklist asked whether "the axe gate" covered a new flow; the gate
+  is `eslint-plugin-jsx-a11y`, and a runtime axe scan is the optional deeper pass.
+
+### Changed
+- The README's claims match the tree: the unaided soft-delete and port counts read the five frozen
+  passes (0 and 2 of 20), the product row names the jsx-a11y gate, the Next variant is detected by
+  its workspaces or its `next.config.ts`, and `try/catch` is quarantined to `infra/`, the entry point
+  and a domain fallback around a native thrower.
 
 ### Harness
 - The matrix's note on canon 3.5 quoted the Next reference's gateway sentence but cited its
   static-export line; it cites the gateway line, and the matrices hold 239 pinned citations.
+- The em-dash gate refuses a base it cannot resolve (exit 2) instead of passing on `HEAD~1..HEAD`, a
+  narrower range than the one asked for; only the push path keeps that fallback.
 
 ## [2.6.0] - 2026-09-28
 
