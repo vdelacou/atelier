@@ -81,8 +81,13 @@ mkdir -p .github/workflows
 cp "$SKILL/assets/ci.yml" .github/workflows/ci.yml
 cp "$SKILL/assets/mutation.yml" .github/workflows/mutation.yml
 cp "$SKILL/assets/stryker.conf.json" ./
+cp "$SKILL/assets/gitattributes" .gitattributes
 chmod +x .githooks/pre-commit .githooks/commit-msg scripts/*.sh scripts/check-coverage.ts scripts/regenerate-coverage-preload.ts
 git config core.hooksPath .githooks
+# The checklist's .gitattributes keeps a checkout LF under Git for Windows' core.autocrlf=true,
+# which endOfLine 'lf' and check-skill-pin.sh both need (2026-09-28).
+expect_ok "the shipped .gitattributes keeps a checkout LF under core.autocrlf=true (CRLF without it)" \
+  bash "$REPO_ROOT/scripts/smoke-eol-checkout.sh" .gitattributes
 
 # --- canonical configs, extracted from the reference doc ---
 extract_fence "$DOC" '## `tsconfig.json`' > tsconfig.json

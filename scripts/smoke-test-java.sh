@@ -92,6 +92,9 @@ cp "$SKILL/assets/check-pii-channels.sh" "$SKILL/assets/check-io-deadlines.sh" \
    "$SKILL/assets/check-data-lifecycle.sh" "$SKILL/assets/check-isolation-tests.sh" scripts/
 cp "$SKILL/assets/check-no-suppressions.sh" "$SKILL/assets/check-identity.sh" "$SKILL/assets/check-disciplines.sh" scripts/
 cp "$SKILL/assets/java/pmd-ruleset.xml" pmd-ruleset.xml
+cp "$SKILL/assets/gitattributes" .gitattributes
+expect_ok "the shipped .gitattributes keeps a checkout LF under core.autocrlf=true (CRLF without it; mvnw.cmd CRLF)" \
+  bash "$REPO_ROOT/scripts/smoke-eol-checkout.sh" .gitattributes
 # The dependency rule as a test (rule 37): a shipped asset, copied as a real bootstrap does.
 mkdir -p src/test/java/com/example/app/architecture
 cp "$SKILL/assets/java/LayerRulesTest.java" src/test/java/com/example/app/architecture/

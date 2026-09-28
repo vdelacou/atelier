@@ -147,6 +147,9 @@ git reset -q && rm src/lib/leak.ts
 # scripts/check-workflow-assets.sh proves in the skill repo that every script it calls
 # ships and that the bootstrap copies it.
 mkdir -p .github/workflows
+cp "$REPO_ROOT/skills/atelier/assets/gitattributes" .gitattributes
+expect_ok "the shipped .gitattributes keeps a checkout LF under core.autocrlf=true (CRLF without it)" \
+  bash "$REPO_ROOT/scripts/smoke-eol-checkout.sh" .gitattributes
 cp "$REPO_ROOT/skills/atelier/assets/ci-next.yml" .github/workflows/ci.yml
 expect_ok "ci-next.yml re-checks the commit messages with commitlint over the range" grep -q "commitlint --from" .github/workflows/ci.yml
 expect_ok "ci-next.yml runs the commit-size range gate and gate 2" bash -c 'grep -q "check-commit-range.sh" .github/workflows/ci.yml && grep -q "check-package-json.sh" .github/workflows/ci.yml'
