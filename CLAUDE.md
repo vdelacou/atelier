@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 This repo IS the atelier coding standard, packaged as an Agent Skill suite. It is not a
-Bun/Java application, so the hard rules 1-37 are the *product*, not constraints on this
+Bun/Java application, so the hard rules 1-38 are the *product*, not constraints on this
 tree. What binds work HERE is the authoring and process discipline below.
 
 ## Authoring conventions

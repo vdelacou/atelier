@@ -11,6 +11,12 @@ whole, not any single skill.
 - Copy `assets/check-reply.py` to `scripts/check-reply.py` and `assets/claude-settings.json` to
   `.claude/settings.json`; when that file already exists, merge its `Stop` entry instead. The hook
   needs python3.
+- Hard rule 38: re-copy `check-commit-range.sh`, which now fails on a merge commit in the range, so
+  land branches by rebase; copy `assets/check-branches.sh` to `scripts/` and `assets/branches.yml` to
+  `.github/workflows/`; have the owner set the host to rebase-only merges with automatic head-branch
+  deletion (`references/workflow.md`, Branch lifecycle, has the one `gh api` call); delete the
+  branches the first watchdog run reports as landed. Re-copy `assets/claude-md-pointer.md` into your
+  `CLAUDE.md`: the block names hard rules 1-38.
 
 ### Added
 - A reply gate. `assets/check-reply.py --hook` is a Claude Code Stop hook, wired by the new
@@ -27,6 +33,20 @@ whole, not any single skill.
   with a "Stop hook error" notice between. Given session logs, the probe counts the gate's own
   blocks per session: the blocks, the ones after a session's first, and the restatements that still
   broke a rule.
+- Hard rule 38, the branch lifecycle: a branch starts from a fetched `main`, lives less than a day,
+  stays current by rebase, lands by rebase or fast-forward (never a merge commit, never a squash of
+  several commits, which builds one commit gate 1 rejects), is deleted on the remote and locally the
+  moment it lands, and follow-up work starts from the new `main`; nobody force-pushes or deletes
+  `main`. Canon 8.1 asked for short-lived branches deleted the same day; nothing said how a branch
+  lands, and nothing enforced it: the session that merged the reply gate left its branch on the
+  remote. `check-commit-range.sh` now rejects a merge commit in every pull request and push, stepping
+  over only GitHub's synthetic merge of a pull request into its base (its subject read from a real
+  run), and the new daily `branches.yml` runs `check-branches.sh`, which fails on a branch whose work
+  already landed (judged by content with `git merge-tree`, so rebase and squash merges count) and on
+  one whose oldest unlanded commit is more than a day old (`MAX_BRANCH_AGE_HOURS`; `KEEP_BRANCHES`,
+  default `^release/`). Every variant's checklist copies the pair, `check-workflow-assets.sh`
+  enforces it, greenfield proves the merge rejection red, review-me reads a branch's history, and
+  each selftest goes red under a mutation of each behaviour.
 
 ### Harness
 - The same file is the reply probe: given transcripts, session logs or eval run dirs it prints every
@@ -37,7 +57,7 @@ whole, not any single skill.
   `--selftest` proves each tag on its own plant and both modes, checks the cut list against
   SKILL.md, and runs in CI beside the review grader.
 - `check-workflow-assets.sh` checks the shipped Claude settings like a workflow: they parse, and
-  every variant's checklist copies the hook's script.
+  every variant's checklist copies the hook's script. The same mapping covers `branches.yml`.
 - This repository runs its own reply gate: `.claude/settings.json` points the Stop hook at the
   shipped asset, so replies in a session here are held to the rules it ships.
 
