@@ -1,7 +1,7 @@
 # Atelier reverse matrix (skill rules into canon)
 
 The forward audit (`conformance-matrix.md`) proves every canon sub-concept has a home in the
-skill. This is the other direction: one row per atelier hard rule 1-37, asking whether
+skill. This is the other direction: one row per atelier hard rule 1-38, asking whether
 the canon carries the rule's substance. Audited against the 117-row canon (120 rows today); 13.5's acceptance moved three rows the same day, and the 10.2 strengthening (accepted 2026-08-30) moved row 17. Three verdicts:
 
 - **CANON-ROW**: a canon sub-concept carries the substance at comparable strength.
@@ -64,17 +64,18 @@ re-audit when the hard-rule list changes.
 | 35 | Cyclomatic complexity at most 10 per function, lint-enforced | STRICTER-THAN | 1.2 | Added 2026-09-03. The canon caps complexity and duplication (1.2); the profile fixes the number at 10 and gates it in every variant (ESLint `complexity`, PMD `CyclomaticComplexity`). The number lives in the profiles appendix (P6 row B, accepted 2026-09-03, under canon 1.2) |
 | 36 | Tests run in random order; no test depends on another | CANON-ROW | 4.9 | Added 2026-09-06 together with canon 4.9, which this rule caused: `bun test --randomize` everywhere the suite runs, JUnit random orderers in Java, the seed printed and replayable |
 | 37 | Dependencies point inward, lint-enforced per layer | CANON-ROW | 3.1 | Added 2026-09-08. The canon says dependencies point inward (3.1); the profile makes the dependency table of `architecture.md` lint, one `no-restricted-imports` zone per layer in the canonical Bun config (`layerZone`, the mock ban repeated in each because ESLint replaces a rule's options per block), tests excepted. Found when a domain file importing infra passed every gate; a consumer repo's first agent run had hand-rolled the same zones. Java got its half the same day: `assets/java/LayerRulesTest.java` (ArchUnit 1.5.0, `archunit-junit5` in the canonical pom) runs the layered architecture plus two framework bans in every `mvn test` |
+| 38 | A branch lives less than a day and lands linear | STRICTER-THAN | 8.1 | Added 2026-10-04. The canon asks for short-lived branches off main, integrated daily and deleted the same day (8.1); the profile fixes how a branch lands (rebase or fast-forward, never a merge commit or a squash of several commits, which gate 1 would reject on `main`), that it is deleted on landing, and that follow-up work starts from the new `main`, then gates it: `check-commit-range.sh` rejects a merge commit in every pull request and push, and the daily `branches.yml` watchdog fails on a landed or day-old branch. Found when the session that merged the reply gate left its branch on the remote |
 
 ## Tally
 
 | Verdict | Count | Rules |
 |---|---|---|
 | CANON-ROW | 22 | 8, 10, 11, 12, 14, 15, 16, 17, 19, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 36, 37 |
-| STRICTER-THAN | 6 | 4, 13, 21, 22, 28, 35 |
+| STRICTER-THAN | 7 | 4, 13, 21, 22, 28, 35, 38 |
 | NO-COUNTERPART, stack binding | 9 | 1, 2, 3, 5, 6, 7, 9, 18, 20 |
-| Total | 37 | |
+| Total | 38 | |
 
-Counting plainly: 22 covered, 6 stricter, 9 stack bindings (re-counted 2026-09-09 after rows 36 and 37). The stack bindings are the point of
+Counting plainly: 22 covered, 7 stricter, 9 stack bindings (re-counted 2026-10-04 after row 38). The stack bindings are the point of
 a profile and propose nothing back to the canon. The audit's one actionable finding, three
 agent-discipline rules (24-26) with no canon home, became P6 row 13.5 and was ACCEPTED the same
 day, which is why those rows read CANON-ROW with an at-audit-time note: this file caused the

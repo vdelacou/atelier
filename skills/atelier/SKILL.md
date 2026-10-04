@@ -72,11 +72,12 @@ Rules 27-34 are the production disciplines. They apply in every variant, and eac
 33. **Never build authentication or cryptography yourself.** An OIDC provider or a vetted library for login, sessions, tokens, and password hashing (argon2id or bcrypt); admin surfaces behind SSO plus MFA; endpoints authenticated by default with rate limits and TLS as the baseline; certificates issued and renewed by the platform (`references/security.md`, `references/delivery.md`).
 34. **Production data never leaves production.** Lower environments and tests run on deterministic synthetic fixtures that mimic shape and volume; when a bug only reproduces on production data, debug production with read access and observability rather than copying the data out (`references/privacy.md`).
 
-Rules 35-37 arrived later (2026-09): complexity (35), random order (36) and the layer lint (37); they sit after the disciplines so that no existing citation moves.
+Rules 35-38 arrived later: complexity (35), random order (36) and the layer lint (37) in 2026-09, the branch lifecycle (38) in 2026-10; they sit after the disciplines so that no existing citation moves.
 
 35. **Cyclomatic complexity at most 10 per function.** Lint-enforced in every variant (ESLint `complexity: ['error', 10]`, PMD `CyclomaticComplexity` at level 11); it counts what the size caps cannot see, a one-line chain of `&&`/`??`/ternaries or a wide `switch`; the fix is never a bigger number, split the function or dispatch on a map (`references/workflow.md`, Complexity gate).
 36. **Tests run in random order; no test depends on another.** `bun test --randomize` is the test script in every Bun and Next.js repo, in CI, in Stryker's runner and in the inner loop alike; Java sets `MethodOrderer$Random` and `ClassOrderer$Random` in `junit-platform.properties`. A red run prints its seed and `--seed=<n>` replays it (Java: the CI step prints the seed it passes as `-Djunit.jupiter.execution.order.random.seed`). Each test owns its setup and teardown; state shared between tests is a defect, never a flake (`references/testing.md`, Random order).
 37. **Dependencies point inward, lint-enforced per layer.** `domain/` imports nothing else in `src/`; `use-cases/` sees `domain/` and its own `ports/`; `infra/` sees `domain/` and the ports it implements; `presenter/` sees `domain/`; `composition/` sees everything; no production code imports `src/test-helpers/**`. One `no-restricted-imports` zone per layer in `eslint.config.js` (and in `eslint.config.mjs`, where the design system's own layers point upward too: atoms never import molecules or organisms, molecules never organisms) rejects the rest, tests excepted; Java runs the shipped ArchUnit `LayerRulesTest` in every `mvn test` (`references/architecture.md`, Dependency rule; `references/java-quarkus.md`, Source architecture).
+38. **A branch lives less than a day and lands linear.** Commit to `main`, or branch from a freshly fetched `main` and land the same day; keep your branch current by rebasing onto `main`; land by rebase or fast-forward, never a merge commit and never a squash of several commits (it builds one commit gate 1 rejects); delete the branch on the remote and locally the moment it lands (a remote delete is a push, rule 25), and start follow-up work from the new `main`; nobody force-pushes or deletes `main`. `check-commit-range.sh` rejects a merge commit in every pull request and push, the daily `branches.yml` watchdog (`check-branches.sh`) fails on a landed branch left on the remote or one more than a day old, and the owner sets the host to rebase-only merges with automatic head-branch deletion (`references/workflow.md`, Branch lifecycle).
 
 ## The TDD process (non-negotiable, every feature)
 
@@ -130,12 +131,13 @@ The hard rules are universal unless this table says otherwise. Gates and tooling
 | Layer zones (rule 37) | `layerZone` blocks in `eslint.config.js`, one per layer under `src/` | `layerZone` blocks in `eslint.config.mjs`: `src/components/atoms` never imports molecules or organisms, `src/components/molecules` never organisms, and the server sub-variant's `src/{domain,use-cases,infra,presenter,composition}` get the Bun zones; rule 21 seals the design system from app code | `assets/java/LayerRulesTest.java` (ArchUnit, `archunit-junit5` in the canonical pom), runs in `mvn test` and so in `verify` and CI |
 | Identity (rule 26) | `check-identity.sh` as hook gate 4 (the staged lines) and a `ci.yml` step (`--all`, the whole tree) | The same script second in the `simple-git-hooks` line and a `ci-next.yml` step | The same script as hook gate 5 and a `ci-java.yml` step |
 | Reply gate (Interaction) | `assets/check-reply.py` as `scripts/check-reply.py`, run by the Claude Code Stop hook in `.claude/settings.json` (`assets/claude-settings.json`; needs python3) | The same pair at the repo root | The same pair |
+| Branch lifecycle (rule 38) | `check-commit-range.sh` in `ci.yml` rejects a merge commit in the range; `branches.yml` runs `check-branches.sh` daily; the host set to rebase-only merges with head-branch deletion | The same pair, `ci-next.yml` running the range gate | The same pair, `ci-java.yml` running the range gate |
 
 Whatever the variant, **every gate proves it can fail**: when you add or change a gate (a lint rule, a coverage tier, a hook, a CI check), land a violation fixture the gate must reject and keep it re-running, so a toolchain upgrade that silently disables the gate turns CI red instead of quiet. A gate only ever seen green is a hypothesis. The skill repo's own smoke tests are the reference implementation: each proves its gates pass on compliant code AND block their target violation.
 
 ## Reference files: read when, skip when
 
-Dotted ids in these files (canon 1.3, canon 15.10) are sub-concepts of the published Global Rules, the canon this standard is audited against; it is vendored at `docs/global-rules/` in the skill repository and does not ship inside the skill. The hard rules are the plain integers 1-37. Read a reference when its condition holds and not otherwise; the conditions are files touched, repo shape, or rules triggered.
+Dotted ids in these files (canon 1.3, canon 15.10) are sub-concepts of the published Global Rules, the canon this standard is audited against; it is vendored at `docs/global-rules/` in the skill repository and does not ship inside the skill. The hard rules are the plain integers 1-38. Read a reference when its condition holds and not otherwise; the conditions are files touched, repo shape, or rules triggered.
 
 | Reference | Read when | Skip when |
 |:---|:---|:---|
@@ -155,7 +157,7 @@ Dotted ids in these files (canon 1.3, canon 15.10) are sub-concepts of the publi
 | `code-smells.md` | review flags a smell; a refactor spans more than one module | greenfield code |
 | `complexity.md` | tempted to add an abstraction, dependency, or config knob (guideline 2) | a one-line change |
 | `behavioural-examples.md` | a guideline 1-5 call is unclear | otherwise |
-| `workflow.md` | touching hooks, CI, coverage, mutation, or lint config; suppressing a warning (15); commit size or message; rules 5, 19, 23-26, 35; the confirmation gates | an inner-loop edit with the gates green |
+| `workflow.md` | touching hooks, CI, coverage, mutation, or lint config; suppressing a warning (15); commit size or message; creating, landing or deleting a branch; rules 5, 19, 23-26, 35, 38; the confirmation gates | an inner-loop edit with the gates green |
 | `lessons.md` | the first session in a repo; proposing entries at wrap-up | otherwise |
 | `privacy.md` | the diff holds a name, email, phone, free-text field, log line, or query string; rules 27, 34 | no personal data |
 | `isolation.md` | any query or route scoped by user, tenant, or org; rule 28 | a single-user CLI |
@@ -175,7 +177,7 @@ Dotted ids in these files (canon 1.3, canon 15.10) are sub-concepts of the publi
 3. Propose a failing test in `*.test.ts` with a concrete, domain-language name; get the confirmation rule 24 requires; write it and watch it fail.
 4. Write the simplest arrow-function code that makes it green.
 5. Refactor: object calisthenics, primitives that cross a trust boundary promoted to branded types (rule 12), extraction on the third duplication. The hard rules bind throughout.
-6. Work trunk-based: small green commits to `main` (at most 10 files and 300 lines), unfinished work behind a flag, never a long-lived branch (`references/workflow.md`, Trunk-based development). Each commit and each push waits for the user's yes (rule 25).
+6. Work trunk-based: small green commits to `main` (at most 10 files and 300 lines), unfinished work behind a flag, never a long-lived branch; a branch, when one helps, starts from a fetched `main`, lands the same day by rebase and is deleted on landing (rule 38; `references/workflow.md`, Trunk-based development and Branch lifecycle). Each commit and each push waits for the user's yes (rule 25).
 7. If legacy code uses a forbidden pattern and the repo's gates are not yet installed, match the local style in that file only; flag the drift once and offer to refactor (atelier-review-me's adopt mode sequences the migration). Where the gates run, the rules bind. If the repo follows the standard but its `CLAUDE.md` carries no atelier pointer block, offer once to add it from `assets/claude-md-pointer.md`; deterministic repo context beats probabilistic skill triggering.
 8. At wrap-up, update `.claude/PLAN.md` to its final state and propose the `[mistake]`, `[decision]`, `[gotcha]` entries worth keeping (`references/lessons.md`).
 
@@ -189,7 +191,7 @@ Dotted ids in these files (canon 1.3, canon 15.10) are sub-concepts of the publi
 
 ## Red flags (stop and rethink)
 
-Any hard-rule breach (1-37) is a red flag by definition, as is any breach of the clean-code numbers or of complexity management (a speculative abstraction, extraction before the third duplication, a module with more than one reason to change, hardcoded values that should be configuration). The traps the gates cannot catch, from an infra adapter with no test seam to a `process.env` assignment, and the per-rule symptoms of a discipline breach (27-34) are listed in `references/workflow.md`, Red flags the gates miss; read it when reviewing.
+Any hard-rule breach (1-38) is a red flag by definition, as is any breach of the clean-code numbers or of complexity management (a speculative abstraction, extraction before the third duplication, a module with more than one reason to change, hardcoded values that should be configuration). The traps the gates cannot catch, from an infra adapter with no test seam to a `process.env` assignment, and the per-rule symptoms of a discipline breach (27-34) are listed in `references/workflow.md`, Red flags the gates miss; read it when reviewing.
 
 ## Remember
 
