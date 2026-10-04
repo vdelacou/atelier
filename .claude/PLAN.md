@@ -23,17 +23,19 @@ Interaction section only where the skill arm misses. Commits and the push each n
    fixed or named.
 4. [x] The draft Interaction edit and its companion cascade, below, not in SKILL.md. DoD: drafted
    and held.
-5. [ ] Owner, locally: the probe over session logs from an atelier consumer repo, and over the
-   latest review-eval and distill-eval runs, both arms. DoD: a per-arm count per candidate, and the
-   findings read by hand.
-6. [ ] Apply only the clauses whose tags show a skill-arm habit; the mechanics below. DoD: per
-   CLAUDE.md (tier 1, the companion sweep, CHANGELOG Unreleased).
+5. [x] The reading, done in the cloud session because the owner could not run locally: 16 of the
+   owner's recent cloud coding sessions across 7 consumer repos, the latest 1,000 events of each,
+   read from the raw pages the MCP client saved (nothing retyped), 831 replies. DoD: a count per
+   tag, the findings read by hand. Result under Status.
+6. [x] Decide the follow-up with the owner: the reading shelves the draft and points at the
+   enforcement of a rule the section already has. DoD: the choice recorded here. Chosen
+   2026-10-04: a reply gate, the next plan.
 7. [ ] Land in slices on the owner's yes; push on its own yes.
 
-## Draft Interaction edit (held until step 5)
+## Draft Interaction edit (shelved by the step 5 reading)
 
-One bullet after "Prose:" in `skills/atelier/SKILL.md`, Interaction. Each clause ships only if the
-probe shows the skill arm missing it; its tag is in brackets and comes out of the shipped text.
+One bullet after "Prose:" in `skills/atelier/SKILL.md`, Interaction; each clause was to ship only if
+the probe showed the skill arm missing it (its tag in brackets). None did; see Status.
 
     - Reports and asks: state a result beside the command that proved it, or say it was not run,
       never "should pass" [unverified-claim]; name who acted, "I edited `foo.test.ts`", never "the
@@ -43,31 +45,27 @@ probe shows the skill arm missing it; its tag is in brackets and comes out of th
       tag, review only]; at most 25 words a sentence and 6 sentences a paragraph [long-sentence,
       long-paragraph].
 
-Companion cascade: the four echoes at line 12 of atelier-distill, atelier-greenfield,
-atelier-review-me and atelier-grill-me gain "results with their proof, asks set apart" inside the
-parenthesis, after "answer first".
-
-Mechanics when it ships: the insertion shifts every later SKILL.md line and citations-lock.json pins
-21 SKILL.md citations, so `check-citations.py --reanchor`, then `--lock` after reading the moved
-evidence; the adopted tags move from CANDIDATE to DOCTRINE in check-reply.py, and its selftest's
-drift check names the new phrases; `select-tasks.py --since` dry run, tier 1 if it selects a task.
-
-How to read step 5: the eval prompts fix a reply's shape (conformance a file list, review findings
-grouped by severity, distill a short summary), so they read reports, not chat; a consumer repo's
-session logs (`python3 scripts/check-reply.py ~/.claude/projects/<slug>/`) are the closest reading of
-a real session. To credit a clause, run review-eval and distill-eval from a worktree with the draft
-applied and probe both sides, three passes per side (LESSONS 2026-09-26: credit by ablation, read
-against variance).
-
 ## Status
 
-Steps 1-4 done 2026-10-04. The probe: five doctrine tags, six candidates, `--selftest` green on
-Python 3.10 to 3.13 and red under ten mutations, one per behaviour (the could-not exemption, the
-sidechain skip, the derived .result.txt skip, the cut-list drift, the buried-ask paragraph rule, the
-participle stoplist, quote stripping, a quote's closing full stop, emphasis markers, questions as
-claims). First reading, this session's own log: 10 bold lead-ins in one answer (real misses), plus
-one hedge, one passive and one 27-word sentence (real by the candidates' definitions). Three false
-positives found and fixed on the way: a quoted mention read as a claim, a `**` after a full stop
-stopped the sentence split, and a question read as a hedge. CI step, CLAUDE.md and CHANGELOG
-written; citations (239), drift, frontmatter (5/5) and the em-dash scan of the diff green. Steps 1-4
-approved to land 2026-10-04, three slices committed and pushed to main-f7v4vj. Next: step 5, locally.
+Steps 1-4 landed 2026-10-04 (9fd53a0, 8a62dc5, cc8efdc on main-f7v4vj). Step 5, 831 replies (632 from
+the current model in 13 sessions, 199 from the previous model in 3), 3,941 sentences:
+
+- Doctrine: a bold lead-in in 42 of the current model's 67 replies over 1,000 characters (63%), and in
+  none of the previous model's 41. Split by whether a tool call named atelier: 17 of 33 (52%) where it did,
+  25 of 34 (74%) where it did not; too few to credit the skill, enough to say the rule does not
+  hold. 8 em dashes, all from the previous model, in one session. No cut word, emoji or Title Case heading.
+- Candidates, per 100 sentences: unverified-claim 0.1, both hits false (a mutant that "would still
+  pass", a post a fan "would pass along"); hedge 2.7, 30 read by hand: 15 conditionals, counterfactuals
+  or politeness, 7 honest uncertainty in a diagnosis, 5 unchecked predictions, 3 unclear; passive
+  1.9, mostly harmless, a few hide who acted; long-sentence 5.1, one repo at 10.9; buried-ask 0.1,
+  all 5 in one repo; long-paragraph 0.0.
+- Verdict: no STE clause shows a habit, and a can/must/will rule would push honest uncertainty
+  toward false certainty, against "never fabricate". The miss is an existing rule that a doctrine
+  line alone does not hold on the current model: per Writing a gate, it needs a gate.
+- Probe fixes from the reading, each selftested and red under a mutation: the harness's own notices
+  (model `<synthetic>`, an API error or a /context table) are skipped, and a check or cross mark
+  (U+2713-2718) passes as a status glyph.
+- Limits: atelier's presence is inferred from tool inputs, not proven; 21 assistant events came
+  back inline and were skipped rather than retyped; two sessions yielded nothing.
+
+Next: the reply gate, planned when this file is overwritten for it.
