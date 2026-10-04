@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/skills/atelier/assets/check-reply.py\" --hook"
+          }
+        ]
+      }
+    ]
+  }
+}
