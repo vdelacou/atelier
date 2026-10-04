@@ -262,6 +262,26 @@ Practical loop: pull/rebase often to stay close to the trunk; run the four-check
 
 This is the default for this codebase. It overrides any tooling habit of "branch first by default": branch only when a short-lived branch genuinely helps (e.g. a PR-review gate your team requires), and merge it the same day.
 
+### Branch lifecycle (hard rule 38)
+
+A branch is a short detour from the trunk: its whole life fits in a day, and it leaves nothing behind. Six steps, two of them machine-checked:
+
+1. Start from a freshly fetched `main` (`git fetch origin && git switch -c <name> origin/main`), or commit to `main` directly.
+2. Keep your own branch current by rebasing it onto `main` (`git rebase origin/main`), never by merging `main` into it.
+3. Land it by rebase or fast-forward: the host's "Rebase and merge", never a merge commit, and never a squash of several commits, which builds one commit that fails gate 1 on `main`. `check-commit-range.sh` rejects a merge commit in every pull request and every push (GitHub's synthetic merge of a pull request into its base, which a pull_request checkout sits on, is stepped over).
+4. Delete it the moment it lands, on the remote and locally (`git push origin --delete <name>`, `git branch -D <name>`). For the agent the remote delete is a push, so it waits for the user's yes (rule 25); when the host refuses it, say so and point the user at the host's delete button.
+5. Follow-up work after a landing starts a fresh branch from the new `main`, never more commits on the landed one.
+6. Nobody force-pushes or deletes `main`.
+
+The host enforces what git alone cannot. The owner sets it once, as code, to rebase-only merges with automatic head-branch deletion, and protects `main` against force pushes and deletion in the branch-protection code of `references/delivery.md`:
+
+```bash
+gh api -X PATCH repos/{owner}/{repo} -F allow_rebase_merge=true -F allow_merge_commit=false \
+  -F allow_squash_merge=false -F delete_branch_on_merge=true
+```
+
+`assets/branches.yml` runs `check-branches.sh` every morning and fails on a remote branch whose work is already on `main`, judged by content with `git merge-tree` so a rebase or squash merge counts as landed, and on one whose oldest commit not on `main` is more than a day old (`MAX_BRANCH_AGE_HOURS`, default 24). `KEEP_BRANCHES` (default `^release/`) exempts the release branches cut from the trunk when a release ships; a team that keeps other long-lived branches names them there, and owns the drift that follows. It is a watchdog, not a merge gate: a branch goes stale while nobody pushes to it.
+
 ## Confirmation gates (rules 24 and 25)
 
 Two behavioural gates, not lint-enforced; the discipline is the enforcement, exactly as for rule 11.
