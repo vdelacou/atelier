@@ -6,6 +6,17 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Harness
+- A reply probe, `scripts/check-reply.py`, measures how an agent's replies read before any edit to the
+  Interaction section. Five of that section's rules are doctrine tags that fail it (an em dash, a cut
+  word, a bold lead-in, a decorative emoji, a Title Case heading). Six candidates from Simplified
+  Technical English (ASD-STE100) are counted per arm and never fail it: a hedged result ("should
+  pass"), any other hedge, an event passive, a sentence over 25 words, a paragraph over 6 sentences,
+  and a question buried in a report paragraph. It reads text files, stream-json transcripts, Claude
+  Code session logs and run dirs; `--selftest` proves each tag fires on its own plant and nowhere
+  else, and runs in CI beside the review grader. A conformance run's final reply is a file list by
+  prompt, so review-eval's reviews, distill-eval's summaries and session logs carry the prose.
+
 ## [2.6.1] - 2026-09-28
 
 The Windows release. Git for Windows sets `core.autocrlf=true` system-wide, and under it a consumer's
