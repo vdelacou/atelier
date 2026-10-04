@@ -24,7 +24,9 @@ whole, not any single skill.
   gives the bold lead-in's replacement shape. Each smoke test proves exit 2 with the tag, a pass on
   a plain reply, the loop guard, and that the copied settings run the copied script; on the real
   CLI a blocked list came back plain, $0.037 for both turns. The cost: a blocked reply shows twice,
-  with a "Stop hook error" notice between.
+  with a "Stop hook error" notice between. Given session logs, the probe counts the gate's own
+  blocks per session: the blocks, the ones after a session's first, and the restatements that still
+  broke a rule.
 
 ### Harness
 - The same file is the reply probe: given transcripts, session logs or eval run dirs it prints every
@@ -36,6 +38,8 @@ whole, not any single skill.
   SKILL.md, and runs in CI beside the review grader.
 - `check-workflow-assets.sh` checks the shipped Claude settings like a workflow: they parse, and
   every variant's checklist copies the hook's script.
+- This repository runs its own reply gate: `.claude/settings.json` points the Stop hook at the
+  shipped asset, so replies in a session here are held to the rules it ships.
 
 ## [2.6.1] - 2026-09-28
 
