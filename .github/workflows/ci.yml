@@ -117,6 +117,10 @@ jobs:
       # vanished, an archived entry edited, PLAN.md or the CHANGELOG touched, and a
       # commit each fail their hard check, and a moot entry left live costs recall.
       - run: python3 scripts/distill-eval/grade.py --selftest
+      # Proves the reply probe can fail: each Interaction tag and each Simplified Technical
+      # English candidate fires on its own plant and nowhere else, code, quotations and subagent
+      # text are never read, and the cut list still equals the Interaction section's.
+      - run: python3 scripts/check-reply.py --selftest
   matrix-drift:
     name: conformance-matrix drift gate
     runs-on: ubuntu-latest
