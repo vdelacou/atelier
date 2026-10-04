@@ -495,6 +495,22 @@ git reset -q -- src/main/java/com/example/app/domain/Credit.java && rm src/main/
 git config user.name 'atelier-smoke'
 expect_ok "identity guard passes the scaffold under a one-word git name with --all (rule 26)" bash scripts/check-identity.sh --all
 
+echo "== reply gate (the Interaction section, a Claude Code Stop hook) =="
+# Copied as the bootstrap does (java-quarkus.md, Gates and hooks); the proof runs the copied settings' own Stop
+# command, so settings that pointed anywhere but the copied script fail here too. Red
+# means exit 2 AND the rule's tag: python3 also exits 2 when it cannot open the script.
+mkdir -p .claude && cp "$SKILL/assets/check-reply.py" scripts/check-reply.py && cp "$SKILL/assets/claude-settings.json" .claude/settings.json
+STOP_CMD=$(python3 -c 'import json; print(json.load(open(".claude/settings.json"))["hooks"]["Stop"][0]["hooks"][0]["command"])')
+stop_event() { python3 -c 'import json, sys; print(json.dumps({"hook_event_name": "Stop", "stop_hook_active": sys.argv[2] == "1", "last_assistant_message": sys.argv[1]}))' "$1" "$2"; }
+gate_rc=0; stop_event '- **Deadline.** The adapter owns it now.' 0 | CLAUDE_PROJECT_DIR="$PWD" bash -c "$STOP_CMD" >"$LOG" 2>&1 || gate_rc=$?
+if [ "$gate_rc" -eq 2 ] && grep -q 'bold-lead-in' "$LOG"; then pass "reply gate blocks a bold lead-in through the shipped settings (exit 2, its tag)"
+else cat "$LOG"; fail "reply gate did not block a bold lead-in with exit 2 and its tag (exit $gate_rc)"; fi
+gate_rc=0; stop_event 'The adapter owns the deadline now.' 0 | CLAUDE_PROJECT_DIR="$PWD" bash -c "$STOP_CMD" >"$LOG" 2>&1 || gate_rc=$?
+if [ "$gate_rc" -eq 0 ]; then pass "reply gate passes a plain reply"; else cat "$LOG"; fail "reply gate blocked a plain reply (exit $gate_rc)"; fi
+gate_rc=0; stop_event '- **Deadline.** The adapter owns it now.' 1 | CLAUDE_PROJECT_DIR="$PWD" bash -c "$STOP_CMD" >"$LOG" 2>&1 || gate_rc=$?
+if [ "$gate_rc" -eq 0 ]; then pass "reply gate passes the restated reply (stop_hook_active: no loop)"; else cat "$LOG"; fail "reply gate blocked the restated reply (exit $gate_rc)"; fi
+rm scripts/check-reply.py .claude/settings.json && rmdir .claude
+
 # 4d. The four discipline tripwires on their JAVA triggers (rules 27-30). All
 # four ship Java detection (@QueryParam, HttpClient, hard delete, api/ routes),
 # so the Java variant gets them proven the same way the Bun smoke proves the

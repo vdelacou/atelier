@@ -133,6 +133,22 @@ expect_err "identity guard blocks the committer's name in a tracked file (rule 2
 git reset -q && rm decision.md
 printf 'maintained by adalovelace\n' > decision.md && git add decision.md
 expect_ok "identity guard passes a handle (rule 26)" bash scripts/check-identity.sh
+
+echo "== reply gate (the Interaction section, a Claude Code Stop hook) =="
+# Copied as the bootstrap does (nextjs-monorepo.md, the CI copy block); the proof runs the copied settings' own Stop
+# command, so settings that pointed anywhere but the copied script fail here too. Red
+# means exit 2 AND the rule's tag: python3 also exits 2 when it cannot open the script.
+mkdir -p .claude && cp "$REPO_ROOT/skills/atelier/assets/check-reply.py" scripts/check-reply.py && cp "$REPO_ROOT/skills/atelier/assets/claude-settings.json" .claude/settings.json
+STOP_CMD=$(python3 -c 'import json; print(json.load(open(".claude/settings.json"))["hooks"]["Stop"][0]["hooks"][0]["command"])')
+stop_event() { python3 -c 'import json, sys; print(json.dumps({"hook_event_name": "Stop", "stop_hook_active": sys.argv[2] == "1", "last_assistant_message": sys.argv[1]}))' "$1" "$2"; }
+gate_rc=0; stop_event '- **Deadline.** The adapter owns it now.' 0 | CLAUDE_PROJECT_DIR="$PWD" bash -c "$STOP_CMD" >"$LOG" 2>&1 || gate_rc=$?
+if [ "$gate_rc" -eq 2 ] && grep -q 'bold-lead-in' "$LOG"; then pass "reply gate blocks a bold lead-in through the shipped settings (exit 2, its tag)"
+else cat "$LOG"; fail "reply gate did not block a bold lead-in with exit 2 and its tag (exit $gate_rc)"; fi
+gate_rc=0; stop_event 'The adapter owns the deadline now.' 0 | CLAUDE_PROJECT_DIR="$PWD" bash -c "$STOP_CMD" >"$LOG" 2>&1 || gate_rc=$?
+if [ "$gate_rc" -eq 0 ]; then pass "reply gate passes a plain reply"; else cat "$LOG"; fail "reply gate blocked a plain reply (exit $gate_rc)"; fi
+gate_rc=0; stop_event '- **Deadline.** The adapter owns it now.' 1 | CLAUDE_PROJECT_DIR="$PWD" bash -c "$STOP_CMD" >"$LOG" 2>&1 || gate_rc=$?
+if [ "$gate_rc" -eq 0 ]; then pass "reply gate passes the restated reply (stop_hook_active: no loop)"; else cat "$LOG"; fail "reply gate blocked the restated reply (exit $gate_rc)"; fi
+rm scripts/check-reply.py .claude/settings.json && rmdir .claude
 git reset -q && rm decision.md
 # Rules 27, 29, 30 (2026-09-10): the discipline wrapper is the third hook step; a personal
 # identifier in a query string under src/lib is red, the wrapper names the rule.
