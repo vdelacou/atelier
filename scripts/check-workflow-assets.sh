@@ -8,6 +8,10 @@
 #      preinstall (gitleaks) with no earlier install step in the file, or
 #      downloads it from a release without a sha256sum -c before its first use.
 #
+# The shipped Claude Code settings (claude-settings.json, the reply gate's Stop
+# hook, 2026-10-04) run `scripts/<name>` the same way, in every variant, so they
+# get the same checks: JSON parses as YAML, and each variant must copy the script.
+#
 # Usage:
 #   bash scripts/check-workflow-assets.sh              # lint the shipped assets
 #   bash scripts/check-workflow-assets.sh --selftest   # prove the gate can fail
@@ -69,6 +73,7 @@ lint_workflow() {
     audit.yml) refs=("$bun_ref" "$next_ref") ;;
     ci-java.yml|audit-java.yml|mutation-java.yml) refs=("$java_ref") ;;
     ci-next.yml) refs=("$next_ref") ;;
+    claude-settings.json) refs=("$bun_ref" "$next_ref" "$java_ref") ;;
     *)
       echo "FAIL $wf: no bootstrap reference is mapped for this workflow (add it to check 3's case list)" >&2
       fails=1
@@ -158,13 +163,21 @@ selftest() {
   mkdir -p "$tmp/v3d" && cp "$tmp/v3/ci.yml" "$tmp/v3d/audit.yml"
   out=$(BOOTSTRAP_REF_NEXT="$tmp/bare-ref.md" lint_workflow "$tmp/v3d/audit.yml" "$tmp/assets" 2>&1) && { echo "selftest FAIL: audit.yml passed with a Next reference that never copies its script" >&2; exit 1; }
   case "$out" in *"bare-ref.md never copies assets/present.sh"*) ;; *) echo "selftest FAIL: audit.yml was rejected, but not on the Next reference:" >&2; echo "$out" >&2; exit 1 ;; esac
+  # violation 3e: the Claude settings ship with every variant, so the Java reference must copy
+  # the hook's script too (the Bun and Next references here do, so Java is the only reason)
+  mkdir -p "$tmp/v3e"
+  printf '{"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "python3 scripts/present.sh --hook"}]}]}}\n' > "$tmp/v3e/claude-settings.json"
+  out=$(BOOTSTRAP_REF_NEXT="$tmp/ref.md" BOOTSTRAP_REF_JAVA="$tmp/bare-ref.md" lint_workflow "$tmp/v3e/claude-settings.json" "$tmp/assets" 2>&1) && { echo "selftest FAIL: claude-settings.json passed with a Java reference that never copies its hook script" >&2; exit 1; }
+  case "$out" in *"bare-ref.md never copies assets/present.sh"*) ;; *) echo "selftest FAIL: claude-settings.json was rejected, but not on the Java reference:" >&2; echo "$out" >&2; exit 1 ;; esac
+  BOOTSTRAP_REF_NEXT="$tmp/ref.md" BOOTSTRAP_REF_JAVA="$tmp/ref.md" lint_workflow "$tmp/v3e/claude-settings.json" "$tmp/assets" \
+    || { echo "selftest FAIL: claude-settings.json was rejected with every reference copying its script" >&2; exit 1; }
 
   # the compliant fixture passes: a verified download, an installed binary, a copied script
   wf=$(fixture ok 'steps:\n  - run: |\n      curl -sSfL -o g.tar.gz https://github.com/gitleaks/gitleaks/releases/download/vX/g.tar.gz\n      echo "0000  g.tar.gz" | sha256sum -c -\n      tar -xzf g.tar.gz gitleaks\n  - run: gitleaks git --redact\n  - run: bash scripts/present.sh\n')
   if ! lint_workflow "$wf" "$tmp/assets"; then
     echo "selftest FAIL: compliant fixture was rejected" >&2; exit 1
   fi
-  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, an unverified release download, an uncopied bootstrap script, a missing bootstrap reference, an unmapped workflow and a variant that ships audit.yml without its script, each for its own reason; a compliant workflow passes"
+  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, an unverified release download, an uncopied bootstrap script, a missing bootstrap reference, an unmapped workflow, a variant that ships audit.yml without its script and a variant that ships the Claude settings without the hook's script, each for its own reason; a compliant workflow and compliant settings pass"
 }
 
 if [ "${1:-}" = "--selftest" ]; then
@@ -174,10 +187,10 @@ fi
 
 status=0
 # every shipped workflow, not a name pattern: a new one is mapped or it fails check 3
-for wf in "$ASSETS_DIR"/*.yml; do
+for wf in "$ASSETS_DIR"/*.yml "$ASSETS_DIR"/claude-settings.json; do
   lint_workflow "$wf" "$ASSETS_DIR" || status=1
 done
 if [ "$status" -eq 0 ]; then
-  echo "check-workflow-assets: shipped workflows are self-sufficient"
+  echo "check-workflow-assets: shipped workflows and Claude settings are self-sufficient"
 fi
 exit $status
