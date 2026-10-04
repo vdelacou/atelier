@@ -20,7 +20,9 @@ so a reply is restated at most once and the gate never loops. Exit 0 passes; exi
 is not a Stop event, a visible hook error and never a silent pass. It needs only python3.
 
 The probe, file or directory arguments, reads replies after the fact and counts every tag; a
-doctrine finding exits 1. Its candidate tags come from Simplified Technical English (ASD-STE100
+doctrine finding exits 1. On transcripts it also counts the gate's own blocks per session, read
+from the feedback Claude Code hands back: blocks, the ones after a session's first, and the
+restatements that still broke a rule. Its candidate tags come from Simplified Technical English (ASD-STE100
 Issue 7, read through the 0xpili/simplified-technical-english skill on 2026-10-04). They are not
 doctrine and never block or fail: they are counted so an Interaction edit lands only where agents
 miss, and 831 real replies showed no habit for any of them (2026-10-04).
@@ -240,26 +242,64 @@ def arm_of(path: Path) -> str:
     return "-"
 
 
-def transcript_replies(path: Path) -> list[str]:
-    """Each assistant text block of a stream-json transcript or a session log, in order."""
-    replies: list[str] = []
+def events_of(path: Path) -> list[dict]:
+    """The JSON events of a stream-json transcript or a session log; any other line is skipped."""
+    events: list[dict] = []
     for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
         try:
             event = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if not isinstance(event, dict) or event.get("type") != "assistant":
+        if isinstance(event, dict):
+            events.append(event)
+    return events
+
+
+def reply_texts(event: dict) -> list[str]:
+    """The text blocks of an assistant event that a person reads; nothing for any other event."""
+    if event.get("type") != "assistant" or event.get("isSidechain") or event.get("parent_tool_use_id"):
+        return []  # a subagent talking to its parent is not a reply to the person
+    message = event.get("message")
+    if not isinstance(message, dict) or message.get("model") == "<synthetic>":
+        return []  # the harness's notice (an API error, a /context table), not the agent's words
+    content = message.get("content")
+    blocks = content if isinstance(content, list) else []
+    return [b["text"] for b in blocks
+            if isinstance(b, dict) and b.get("type") == "text" and isinstance(b.get("text"), str) and b["text"].strip()]
+
+
+def user_text(event: dict) -> str:
+    """The text of a user event, whether its content is a string (a session log) or blocks (stream-json)."""
+    message = event.get("message") if event.get("type") == "user" else None
+    content = message.get("content") if isinstance(message, dict) else None
+    if isinstance(content, list):
+        return "\n".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text")
+    return content if isinstance(content, str) else ""
+
+
+def transcript_replies(path: Path) -> list[str]:
+    """Each assistant text block of a stream-json transcript or a session log, in order."""
+    return [text for event in events_of(path) for text in reply_texts(event)]
+
+
+def gate_blocks(path: Path) -> tuple[int, int]:
+    """The reply gate's blocks in a transcript, and the restatements that still broke a rule.
+
+    A block is the feedback Claude Code hands back: a user event that opens with "Stop hook
+    feedback" and carries the gate's own message, so another hook's feedback, or a person quoting
+    the message, is not one. Its restatement is the next reply after it."""
+    blocks = still = 0
+    restating = False
+    for event in events_of(path):
+        said = user_text(event)
+        if said.lstrip().startswith("Stop hook feedback") and GATE_SAID in said:
+            blocks, restating = blocks + 1, True
             continue
-        if event.get("isSidechain") or event.get("parent_tool_use_id"):
-            continue  # a subagent talking to its parent, not a reply to the person
-        message = event.get("message")
-        if isinstance(message, dict) and message.get("model") == "<synthetic>":
-            continue  # the harness's notice (an API error, a /context table), not the agent's words
-        content = message.get("content") if isinstance(message, dict) else None
-        for block in content if isinstance(content, list) else []:
-            if isinstance(block, dict) and block.get("type") == "text" and str(block.get("text", "")).strip():
-                replies.append(block["text"])
-    return replies
+        texts = reply_texts(event)
+        if restating and texts:
+            restating = False
+            still += any(tag in DOCTRINE for tag, _ in check("\n\n".join(texts))[0])
+    return blocks, still
 
 
 def files_in(root: Path) -> list[Path]:
@@ -273,20 +313,32 @@ def files_in(root: Path) -> list[Path]:
     return found
 
 
-def collect(args: list[str]) -> list[tuple[str, str, str]]:
-    """(arm, label, reply) for every reply the arguments name."""
-    replies: list[tuple[str, str, str]] = []
+def paths_of(args: list[str]) -> list[Path]:
+    """The files the arguments name: a file as given, a directory walked for reply files."""
+    paths: list[Path] = []
     for arg in args:
         root = Path(arg)
         if not root.exists():
             print(f"check-reply.py: no such file or directory: {arg}", file=sys.stderr)
             sys.exit(2)
-        for path in files_in(root) if root.is_dir() else [root]:
-            if path.suffix == ".jsonl":
-                replies += [(arm_of(path), f"{path}#{i}", text) for i, text in enumerate(transcript_replies(path), 1)]
-            else:
-                replies.append((arm_of(path), str(path), path.read_text(encoding="utf-8", errors="replace")))
+        paths += files_in(root) if root.is_dir() else [root]
+    return paths
+
+
+def collect(args: list[str]) -> list[tuple[str, str, str]]:
+    """(arm, label, reply) for every reply the arguments name."""
+    replies: list[tuple[str, str, str]] = []
+    for path in paths_of(args):
+        if path.suffix == ".jsonl":
+            replies += [(arm_of(path), f"{path}#{i}", text) for i, text in enumerate(transcript_replies(path), 1)]
+        else:
+            replies.append((arm_of(path), str(path), path.read_text(encoding="utf-8", errors="replace")))
     return replies
+
+
+def gates_in(args: list[str]) -> list[tuple[str, tuple[int, int]]]:
+    """(arm, (blocks, restatements still breaking a rule)) for each transcript the arguments name."""
+    return [(arm_of(path), gate_blocks(path)) for path in paths_of(args) if path.suffix == ".jsonl"]
 
 
 def excerpt(text: str, width: int = 110) -> str:
@@ -294,8 +346,9 @@ def excerpt(text: str, width: int = 110) -> str:
     return flat if len(flat) <= width else flat[: width - 3] + "..."
 
 
-def report(replies: list[tuple[str, str, str]]) -> int:
-    """Print every finding, then the counts per arm; 1 when any doctrine tag fired."""
+def report(replies: list[tuple[str, str, str]], gates: list[tuple[str, tuple[int, int]]] = ()) -> int:
+    """Print every finding, then the counts per arm, with the gate's blocks per session where
+    transcripts were read; 1 when any doctrine tag fired."""
     counts: dict[str, Counter] = {}
     for arm, label, reply in replies:
         found, n_sentences, n_words = check(reply)
@@ -304,12 +357,21 @@ def report(replies: list[tuple[str, str, str]]) -> int:
         for tag, evidence in found:
             tally[tag] += 1
             print(f"{label}: {tag}: {excerpt(evidence)}")
-    for arm in sorted(counts):
-        tally = counts[arm]
+    sessions: dict[str, list[tuple[int, int]]] = {}
+    for arm, counted in gates:
+        sessions.setdefault(arm, []).append(counted)
+    for arm in sorted(set(counts) | set(sessions)):
+        tally = counts.get(arm, Counter())
         per = max(tally["sentences"], 1) / 100
         print(f"\narm {arm}: {tally['replies']} replies, {tally['sentences']} sentences, {tally['words']} words")
         print("  doctrine: " + ", ".join(f"{tag} {tally[tag]}" for tag in DOCTRINE))
         print("  candidate (per 100 sentences): " + ", ".join(f"{tag} {tally[tag]} ({tally[tag] / per:.1f})" for tag in CANDIDATE))
+        if arm in sessions:
+            runs = sessions[arm]
+            blocked = [b for b, _ in runs if b]
+            print(f"  gate: {sum(blocked)} block(s) in {len(blocked)} of {len(runs)} session(s), "
+                  f"{sum(b - 1 for b in blocked)} after a session's first, "
+                  f"{sum(s for _, s in runs)} restatement(s) still breaking a rule")
     doctrine = sum(tally[tag] for tally in counts.values() for tag in DOCTRINE)
     print(f"\n{doctrine} doctrine finding(s): the Interaction section already bans these" if doctrine
           else "\nno doctrine finding; the candidates are counts, never a failure")
@@ -323,6 +385,7 @@ FIXES = {
     "emoji": "words (pass, fail, done)",
     "heading-case": "sentence case, a capital for the first word and proper nouns only",
 }
+GATE_SAID = "This reply breaks the atelier Interaction rules"  # gate_blocks counts the feedback by it
 
 
 def hook(stdin: str) -> int:
@@ -347,8 +410,7 @@ def hook(stdin: str) -> int:
             found.setdefault(tag, []).append(evidence)
     if not found:
         return 0
-    print("This reply breaks the atelier Interaction rules. Send it again in full, fixed, with no preface:",
-          file=sys.stderr)
+    print(f"{GATE_SAID}. Send it again in full, fixed, with no preface:", file=sys.stderr)
     for tag, evidence in found.items():
         print(f"- {tag} ({len(evidence)}): {excerpt(evidence[0], 80)}; fix: {FIXES[tag]}", file=sys.stderr)
     return 2
@@ -479,15 +541,49 @@ def selftest() -> int:
             told = said.getvalue()
             if code != want_code or (want_text not in told if want_text else told):
                 failures.append(f"the gate gave {name} exit {code} and {told!r}")
+            if code == 2 and not told.startswith(GATE_SAID):
+                failures.append(f"the gate's feedback does not open with the message gate_blocks counts: {told!r}")
+
+        # The count: two blocks (a session log's string, stream-json's text block), one restatement
+        # fixed and one still broken; another hook's feedback and a person quoting the message are
+        # not blocks, and a broken reply with no block before it is no restatement.
+        feedback = f"Stop hook feedback: [python3 scripts/check-reply.py --hook]: {GATE_SAID}. Send it again"
+        said_by = [
+            ("assistant", PLANTS["bold-lead-in"]),
+            ("meta", feedback),
+            ("assistant", "The adapter owns the deadline now."),
+            ("assistant", PLANTS["em-dash"]),
+            ("blocks", feedback),
+            ("thinking", "Restate it."),
+            ("assistant", PLANTS["em-dash"]),
+            ("meta", "Stop hook feedback: [~/.claude/stop-hook-git-check.sh]: There are uncommitted changes."),
+            ("person", f"Why did it say {GATE_SAID}?"),
+        ]
+        shapes = {
+            "assistant": lambda s: {"type": "assistant", "message": {"content": [{"type": "text", "text": s}]}},
+            "thinking": lambda s: {"type": "assistant", "message": {"content": [{"type": "thinking", "thinking": s}]}},
+            "meta": lambda s: {"type": "user", "isMeta": True, "message": {"role": "user", "content": s}},
+            "blocks": lambda s: {"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": s}]}},
+            "person": lambda s: {"type": "user", "message": {"role": "user", "content": s}},
+        }
+        (tmp / "gated.jsonl").write_text("\n".join(json.dumps(shapes[k](s)) for k, s in said_by) + "\n")
+        if gate_blocks(tmp / "gated.jsonl") != (2, 1):
+            failures.append(f"the gate's blocks read as {gate_blocks(tmp / 'gated.jsonl')}, not (2, 1)")
     finally:
         shutil.rmtree(tmp)
 
-    # The exit status: a candidate never fails a run, a doctrine finding always does.
+    # The exit status: a candidate never fails a run, a doctrine finding always does; with
+    # transcripts read, each arm reports the gate's blocks per session.
     with contextlib.redirect_stdout(io.StringIO()) as printed:
         passing = report([("-", "clean", CLEAN), ("-", "hedged", PLANTS["hedge"])])
         failing = report([("-", "dashed", PLANTS["em-dash"])])
+        report([("with_skill", "r", CLEAN)], [("with_skill", (2, 1)), ("with_skill", (0, 0)), ("with_skill", (1, 0))])
     if passing != 0 or failing != 1 or "dashed: em-dash: " not in printed.getvalue():
         failures.append(f"exit {passing} on a candidate, {failing} on a doctrine finding")
+    gate_line = ("gate: 3 block(s) in 2 of 3 session(s), 1 after a session's first, "
+                 "1 restatement(s) still breaking a rule")
+    if gate_line not in printed.getvalue():
+        failures.append(f"the per-arm gate line is missing or wrong: {printed.getvalue()[-300:]!r}")
 
     for failure in failures:
         print(f"check-reply.py --selftest: {failure}")
@@ -511,7 +607,7 @@ def main(argv: list[str]) -> int:
     if not any(reply.strip() for _, _, reply in replies):
         print("check-reply.py: no reply found in the input", file=sys.stderr)
         return 2
-    return report(replies)
+    return report(replies, gates_in(argv) if argv else [])
 
 
 if __name__ == "__main__":
