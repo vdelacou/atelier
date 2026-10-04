@@ -773,6 +773,14 @@ gate_rc=0; stop_event '- **Deadline.** The adapter owns it now.' 1 | CLAUDE_PROJ
 if [ "$gate_rc" -eq 0 ]; then pass "reply gate passes the restated reply (stop_hook_active: no loop)"; else cat "$LOG"; fail "reply gate blocked the restated reply (exit $gate_rc)"; fi
 rm scripts/check-reply.py .claude/settings.json && rmdir .claude
 
+echo "== branch watchdog (rule 38: no landed or day-old branch left on the remote) =="
+# Copied as the bootstrap does (bun-typescript.md, step 14); the selftest plants each case and greps its tag.
+cp "$SKILL/assets/check-branches.sh" scripts/ && mkdir -p .github/workflows && cp "$SKILL/assets/branches.yml" .github/workflows/branches.yml
+expect_ok "check-branches.sh selftest (landed by rebase and by squash, day-old, release/ kept, a fresh branch passes)" \
+  bash scripts/check-branches.sh --selftest
+expect_ok "branches.yml runs the copied watchdog" grep -q "bash scripts/check-branches.sh" .github/workflows/branches.yml
+rm scripts/check-branches.sh .github/workflows/branches.yml
+
 printf 'export const f = (): Promise<Response> => fetch("https://svc.test/x");\n' > src/infra/no-deadline.ts
 git add src/infra/no-deadline.ts
 expect_err "deadline guard blocks fetch without a deadline marker" bash scripts/check-io-deadlines.sh
@@ -1012,6 +1020,15 @@ expect_err "check-commit-range.sh walks github.event.before..HEAD on a push, not
   env -u GITHUB_BASE_REF GITHUB_EVENT_BEFORE="$(git rev-parse HEAD~2)" bash scripts/check-commit-range.sh
 git reset -q --mixed HEAD~2   # keeps every other untracked file the later scenarios need
 rm -f oversized*.txt
+# Rule 38 (2026-10-04): a merge commit in the range is red, with the rule's tag. Both commits
+# are empty, so a mixed reset to the head before them undoes exactly what this created.
+pre_merge=$(git rev-parse HEAD)
+git checkout -q -b smoke-side && git commit -q --no-verify --allow-empty -m 'chore: side commit' && git checkout -q -
+git merge -q --no-ff --no-verify smoke-side -m 'Merge branch smoke-side' >/dev/null 2>&1
+if bash scripts/check-commit-range.sh HEAD~1 HEAD >"$LOG" 2>&1; then cat "$LOG"; fail "check-commit-range.sh accepted a merge commit (rule 38)"
+elif grep -q 'rule 38' "$LOG"; then pass "check-commit-range.sh rejects a merge commit, naming rule 38"
+else cat "$LOG"; fail "check-commit-range.sh rejected the merge, but not for rule 38"; fi
+git reset -q --mixed "$pre_merge" && git branch -q -D smoke-side
 cat > src/domain/eligibility.ts <<'EOF'
 export const isEligible = (age: number): boolean => age >= 18;
 EOF

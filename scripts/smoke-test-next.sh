@@ -149,6 +149,16 @@ if [ "$gate_rc" -eq 0 ]; then pass "reply gate passes a plain reply"; else cat "
 gate_rc=0; stop_event '- **Deadline.** The adapter owns it now.' 1 | CLAUDE_PROJECT_DIR="$PWD" bash -c "$STOP_CMD" >"$LOG" 2>&1 || gate_rc=$?
 if [ "$gate_rc" -eq 0 ]; then pass "reply gate passes the restated reply (stop_hook_active: no loop)"; else cat "$LOG"; fail "reply gate blocked the restated reply (exit $gate_rc)"; fi
 rm scripts/check-reply.py .claude/settings.json && rmdir .claude
+
+echo "== branch watchdog (rule 38: no landed or day-old branch left on the remote) =="
+# Copied as the bootstrap does (nextjs-monorepo.md, the CI copy block); the selftest plants each case and greps its tag.
+cp "$REPO_ROOT/skills/atelier/assets/check-branches.sh" "$REPO_ROOT/skills/atelier/assets/check-commit-range.sh" scripts/ && mkdir -p .github/workflows && cp "$REPO_ROOT/skills/atelier/assets/branches.yml" .github/workflows/branches.yml
+expect_ok "check-branches.sh selftest (landed by rebase and by squash, day-old, release/ kept, a fresh branch passes)" \
+  bash scripts/check-branches.sh --selftest
+expect_ok "branches.yml runs the copied watchdog" grep -q "bash scripts/check-branches.sh" .github/workflows/branches.yml
+expect_ok "check-commit-range.sh selftest, its rule 38 cases included (a merge commit red, GitHub's synthetic merge stepped over)" \
+  bash scripts/check-commit-range.sh --selftest
+rm scripts/check-branches.sh scripts/check-commit-range.sh .github/workflows/branches.yml && rmdir .github/workflows .github
 git reset -q && rm decision.md
 # Rules 27, 29, 30 (2026-09-10): the discipline wrapper is the third hook step; a personal
 # identifier in a query string under src/lib is red, the wrapper names the rule.
