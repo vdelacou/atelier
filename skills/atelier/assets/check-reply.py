@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Reply probe: does an agent's reply to a person read the way the Interaction section asks?
+"""The reply gate: does an agent's reply to a person read the way the Interaction section asks?
 
-skills/atelier/SKILL.md, Interaction, says how a reply reads. Five of its rules are mechanical
-enough to match, and they are the doctrine tags; any one of them exits 1:
+The atelier skill's SKILL.md, Interaction, says how a reply reads. Five of its rules are
+mechanical enough to match, and they are the doctrine tags:
 
   em-dash         U+2014 in the reply's own prose
   cut-word        the section's cut list: delve, leverage, robust, seamless, nuanced, "it's worth noting"
@@ -11,9 +11,19 @@ enough to match, and they are the doctrine tags; any one of them exits 1:
                   cross marks U+2713-2718, which a status table uses as glyphs
   heading-case    a Title Case heading: two or more capitalised content words, none lowercase
 
-The candidate tags come from Simplified Technical English (ASD-STE100 Issue 7, read through the
-0xpili/simplified-technical-english skill on 2026-10-04). They are not doctrine: the probe counts
-them so an Interaction edit lands only where the skill arm misses, and they never fail a run.
+The gate, --hook, is a Claude Code Stop hook (assets/claude-settings.json wires it). It reads the
+Stop event on stdin and checks the reply in its last_assistant_message field, or the transcript's
+last reply where an older Claude Code sends no such field (the docs warn the transcript can lag).
+A doctrine finding exits 2 with each tag and its fix on stderr: Claude Code hands that text back to
+the agent, which sends the reply again, fixed. The second stop carries stop_hook_active and passes,
+so a reply is restated at most once and the gate never loops. Exit 0 passes; exit 1 is stdin that
+is not a Stop event, a visible hook error and never a silent pass. It needs only python3.
+
+The probe, file or directory arguments, reads replies after the fact and counts every tag; a
+doctrine finding exits 1. Its candidate tags come from Simplified Technical English (ASD-STE100
+Issue 7, read through the 0xpili/simplified-technical-english skill on 2026-10-04). They are not
+doctrine and never block or fail: they are counted so an Interaction edit lands only where agents
+miss, and 831 real replies showed no habit for any of them (2026-10-04).
 
   unverified-claim  a result stated as a hedge: "should pass", "probably fixed", "might be green"
   hedge             any other should, would, might, may, could, probably, likely, possibly,
@@ -36,15 +46,16 @@ Inputs, any mix; no argument reads one reply from stdin:
     derived from it), and so are the skills/, subagents/, node_modules/ and .git/ subtrees
 
 Code, block quotes, URLs and double-quoted text (a mention, not a use) are never read, emphasis
-markers are dropped, and a table row gets the doctrine character checks only.
-The conformance prompt asks for a bare file list as the final reply, so its transcripts carry
+markers are dropped, and a table row gets the doctrine character checks only. In the skill's own
+evals the conformance prompt asks for a bare file list as the final reply, so its transcripts carry
 prose only in the narration between tool calls: review-eval's reviews, distill-eval's summaries
 and real session logs are the inputs that say most. Counts roll up per arm, read from a run dir's
 with_skill or baseline suffix ("-" elsewhere). Each tag is a pattern, not a parser: read the
-findings before the counts (.claude/LESSONS.md, 2026-09-26).
+findings before the counts.
 
-    python3 scripts/check-reply.py <file-or-dir>...    # findings, then the counts per arm
-    python3 scripts/check-reply.py --selftest          # each tag fires on its plant and nowhere else
+    python3 scripts/check-reply.py --hook < stop-event.json   # the gate: 2 blocks, 0 passes
+    python3 scripts/check-reply.py <file-or-dir>...            # the probe: findings, then counts per arm
+    python3 skills/atelier/assets/check-reply.py --selftest    # in the skill tree: every tag, both modes
 """
 
 from __future__ import annotations  # `X | None` hints under the Python 3.9 macOS ships
@@ -60,8 +71,7 @@ import tempfile
 from collections import Counter
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
-SKILL = REPO / "skills/atelier/SKILL.md"
+SKILL = Path(__file__).resolve().parent.parent / "SKILL.md"  # in the skill tree, assets/ sits beside it
 
 DOCTRINE = ("em-dash", "cut-word", "bold-lead-in", "emoji", "heading-case")
 CANDIDATE = ("unverified-claim", "hedge", "passive", "long-sentence", "long-paragraph", "buried-ask")
@@ -306,6 +316,44 @@ def report(replies: list[tuple[str, str, str]]) -> int:
     return 1 if doctrine else 0
 
 
+FIXES = {
+    "em-dash": "a comma, a colon, parentheses or a period",
+    "cut-word": "the plain word, or nothing",
+    "bold-lead-in": "open the item with a plain sentence; labelled items go in a table",
+    "emoji": "words (pass, fail, done)",
+    "heading-case": "sentence case, a capital for the first word and proper nouns only",
+}
+
+
+def hook(stdin: str) -> int:
+    """The Stop hook: 2 blocks with the doctrine findings on stderr, 0 passes, 1 is bad input."""
+    try:
+        event = json.loads(stdin)
+    except json.JSONDecodeError:
+        event = None
+    if not isinstance(event, dict) or event.get("hook_event_name") != "Stop":
+        print("check-reply.py --hook: stdin is not a Claude Code Stop event", file=sys.stderr)
+        return 1
+    if event.get("stop_hook_active"):
+        return 0  # the restated reply passes: one restatement per reply, never a loop
+    reply = event.get("last_assistant_message")
+    if not isinstance(reply, str):  # an older Claude Code: the transcript's last reply
+        path = Path(str(event.get("transcript_path", "")))
+        replies = transcript_replies(path) if path.is_file() else []
+        reply = replies[-1] if replies else ""
+    found: dict[str, list[str]] = {}
+    for tag, evidence in check(reply)[0]:
+        if tag in DOCTRINE:
+            found.setdefault(tag, []).append(evidence)
+    if not found:
+        return 0
+    print("This reply breaks the atelier Interaction rules. Send it again in full, fixed, with no preface:",
+          file=sys.stderr)
+    for tag, evidence in found.items():
+        print(f"- {tag} ({len(evidence)}): {excerpt(evidence[0], 80)}; fix: {FIXES[tag]}", file=sys.stderr)
+    return 2
+
+
 CLEAN = (
     "## What changed in the adapter\n\n"
     "I moved the deadline into the adapter (`src/infra/http.ts`), and the suite passes: "
@@ -358,16 +406,21 @@ def selftest() -> int:
             failures.append(f"the {tag} plant drew {tags(plant)}")
 
     # The doctrine tags mirror the Interaction section: a cut word added or dropped there, or a
-    # rule reworded away, fails here until this file follows.
-    interaction = SKILL.read_text(encoding="utf-8").split("## Interaction", 1)[1].split("\n## ", 1)[0]
-    listed = re.search(r"\bcut (.+?)\.(?:\s|$)", interaction)
-    cut = tuple(w.strip().strip('"') for w in listed.group(1).split(",")) if listed else ()
-    if cut != CUT_WORDS:
-        failures.append(f"SKILL.md cuts {cut}, this file {CUT_WORDS}")
+    # rule reworded away, fails here until this file follows. A copy outside the skill tree has
+    # no SKILL.md beside it, and that is a failure too, never a skipped check.
+    text = SKILL.read_text(encoding="utf-8") if SKILL.is_file() else ""
+    interaction = text.partition("## Interaction")[2].split("\n## ", 1)[0]
+    if not interaction:
+        failures.append(f"the drift check needs the skill tree: no Interaction section at {SKILL}")
+    else:
+        listed = re.search(r"\bcut (.+?)\.(?:\s|$)", interaction)
+        cut = tuple(w.strip().strip('"') for w in listed.group(1).split(",")) if listed else ()
+        if cut != CUT_WORDS:
+            failures.append(f"SKILL.md cuts {cut}, this file {CUT_WORDS}")
+        failures += [f"the Interaction section no longer names {rule!r}"
+                     for rule in ("em dash", "bold lead-in", "sentence-case headings", "decorative emoji")
+                     if rule not in interaction]
     failures += [f"CUT_WORD misses {w!r}" for w in CUT_WORDS if not CUT_WORD.search(w)]
-    failures += [f"the Interaction section no longer names {rule!r}"
-                 for rule in ("em dash", "bold lead-in", "sentence-case headings", "decorative emoji")
-                 if rule not in interaction]
 
     # Inputs: only the person-facing assistant text of a transcript, a run dir's arm, and nothing
     # from a copied skill or a derived .result.txt.
@@ -402,6 +455,30 @@ def selftest() -> int:
                 ("with_skill", ".transcript.jsonl#2", "I fixed the hook.")]
         if got != want:
             failures.append(f"the run dirs read as {got}")
+
+        # The gate: a doctrine finding blocks with its tag and fix, a candidate never blocks, the
+        # restated reply passes, an older Claude Code's transcript is read, bad input is an error.
+        (tmp / "session.jsonl").write_text(json.dumps(
+            {"type": "assistant", "message": {"content": [{"type": "text", "text": PLANTS["em-dash"]}]}}) + "\n")
+        stop = {"hook_event_name": "Stop", "stop_hook_active": False}
+        cases = [
+            ("a bold lead-in", {**stop, "last_assistant_message": PLANTS["bold-lead-in"]}, 2, "- bold-lead-in (1): "),
+            ("the clean reply", {**stop, "last_assistant_message": CLEAN}, 0, ""),
+            ("a candidate", {**stop, "last_assistant_message": PLANTS["hedge"]}, 0, ""),
+            ("the restated reply", {**stop, "stop_hook_active": True,
+                                    "last_assistant_message": PLANTS["bold-lead-in"]}, 0, ""),
+            ("a turn with no text", {**stop, "last_assistant_message": ""}, 0, ""),
+            ("an older Claude Code", {**stop, "transcript_path": str(tmp / "session.jsonl")}, 2, "- em-dash (1): "),
+            ("another event", {"hook_event_name": "SubagentStop", "last_assistant_message": PLANTS["em-dash"]},
+             1, "not a Claude Code Stop event"),
+            ("stdin that is not JSON", "not json", 1, "not a Claude Code Stop event"),
+        ]
+        for name, event, want_code, want_text in cases:
+            with contextlib.redirect_stderr(io.StringIO()) as said:
+                code = hook(event if isinstance(event, str) else json.dumps(event))
+            told = said.getvalue()
+            if code != want_code or (want_text not in told if want_text else told):
+                failures.append(f"the gate gave {name} exit {code} and {told!r}")
     finally:
         shutil.rmtree(tmp)
 
@@ -417,13 +494,16 @@ def selftest() -> int:
     if failures:
         return 1
     print(f"check-reply.py --selftest: each of the {len(PLANTS)} tags fires on its own plant and nowhere else, "
-          "the clean reply passes, transcripts and run dirs read as replies, the cut list matches SKILL.md")
+          "the clean reply passes, transcripts and run dirs read as replies, the gate blocks a doctrine finding "
+          "once and nothing else, the cut list matches SKILL.md")
     return 0
 
 
 def main(argv: list[str]) -> int:
     if argv == ["--selftest"]:
         return selftest()
+    if argv == ["--hook"]:
+        return hook(sys.stdin.read())
     if argv and argv[0] in ("-h", "--help"):
         print(__doc__)
         return 0
