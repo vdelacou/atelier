@@ -673,6 +673,8 @@ cp <skill>/assets/ci-next.yml            .github/workflows/ci.yml
 cp <skill>/assets/audit.yml              .github/workflows/audit.yml
 cp <skill>/assets/check-skill-pin.sh     scripts/check-skill-pin.sh
 cp <skill>/assets/check-commit-range.sh  scripts/check-commit-range.sh
+cp <skill>/assets/check-branches.sh     scripts/check-branches.sh
+cp <skill>/assets/branches.yml          .github/workflows/branches.yml
 cp <skill>/assets/check-package-json.sh  scripts/check-package-json.sh
 cp <skill>/assets/check-bundle-size.sh   scripts/check-bundle-size.sh
 cp <skill>/assets/check-docs.sh          scripts/check-docs.sh

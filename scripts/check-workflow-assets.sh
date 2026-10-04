@@ -73,7 +73,7 @@ lint_workflow() {
     audit.yml) refs=("$bun_ref" "$next_ref") ;;
     ci-java.yml|audit-java.yml|mutation-java.yml) refs=("$java_ref") ;;
     ci-next.yml) refs=("$next_ref") ;;
-    claude-settings.json) refs=("$bun_ref" "$next_ref" "$java_ref") ;;
+    claude-settings.json|branches.yml) refs=("$bun_ref" "$next_ref" "$java_ref") ;;
     *)
       echo "FAIL $wf: no bootstrap reference is mapped for this workflow (add it to check 3's case list)" >&2
       fails=1
