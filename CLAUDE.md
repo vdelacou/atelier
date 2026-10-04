@@ -28,9 +28,9 @@ tree. What binds work HERE is the authoring and process discipline below.
   rules, with-skill vs baseline), `review-eval/` (does atelier-review-me catch planted
   violations in a diff, recall + rule-citation + false-positives vs a skill-less reviewer),
   `distill-eval/` (does atelier-distill keep every live lesson, account for every entry and touch
-  nothing else, on a journal with every verdict planted, vs an unaided pass). `check-reply.py`
-  probes the replies themselves, in those runs or a Claude Code session log, against the
-  Interaction section.
+  nothing else, on a journal with every verdict planted, vs an unaided pass). The reply gate,
+  `skills/atelier/assets/check-reply.py`, doubles as the probe of the replies themselves, in those
+  runs or a Claude Code session log, against the Interaction section.
 
 ## Verify commands
 - Once per clone: `git config core.hooksPath .githooks`, or the repo's own pre-commit and commit-msg
@@ -40,8 +40,8 @@ tree. What binds work HERE is the authoring and process discipline below.
   edit shifts cited lines, `--reanchor` moves every pinned citation, both ends of a range, to the line
   that now holds its snippet and re-keys those lock entries, refusing an ambiguous or vanished one and
   never locking a citation that was not locked before; `--lock` after a human read the new or changed
-  evidence) and `bash scripts/check-workflow-assets.sh` (shipped CI workflows parse and are
-  self-sufficient); both take `--selftest`. `python3 scripts/check-matrix-drift.py` (fast; the matrix
+  evidence) and `bash scripts/check-workflow-assets.sh` (shipped CI workflows and Claude settings
+  parse and are self-sufficient); both take `--selftest`. `python3 scripts/check-matrix-drift.py` (fast; the matrix
   rows, their order and the canon sha256 pins; `--selftest`). The pre-commit hook runs the citation
   and drift checks.
 - `bash scripts/smoke-test.sh` / `smoke-test-next.sh` / `smoke-test-java.sh` (the CI e2e gates;
@@ -59,12 +59,14 @@ tree. What binds work HERE is the authoring and process discipline below.
 - `python3 scripts/distill-eval/grade.py --selftest` (fast; CI, in the review-grader job). The
   full eval: `DISTILL_MODEL=claude-opus-5 bash scripts/distill-eval/run.sh`, then
   `python3 scripts/distill-eval/grade.py <runs-dir>`.
-- `python3 scripts/check-reply.py --selftest` (fast; CI, in the review-grader job). The probe:
-  `python3 scripts/check-reply.py <runs-dir or ~/.claude/projects/<slug>/>...`; the Interaction
-  section's mechanical rules fail it, and the Simplified Technical English candidates (hedged
-  results, passives, sentence and paragraph caps, buried asks) are counted per arm. A conformance
-  run's final reply is a file list by prompt, so the prose is in review-eval's `.review.txt`,
-  distill-eval's transcripts and session logs.
+- `python3 skills/atelier/assets/check-reply.py --selftest` (fast; CI, in the review-grader job;
+  needs the skill tree, since it checks the cut list against SKILL.md). As the probe:
+  `python3 skills/atelier/assets/check-reply.py <runs-dir or ~/.claude/projects/<slug>/>...`; the
+  Interaction section's mechanical rules fail it, and the Simplified Technical English candidates
+  (hedged results, passives, sentence and paragraph caps, buried asks) are counted per arm. A
+  conformance run's final reply is a file list by prompt, so the prose is in review-eval's
+  `.review.txt`, distill-eval's transcripts and session logs. As the gate, `--hook` reads a Claude
+  Code Stop event (`references/workflow.md`, Reply gate).
 - `python3 scripts/conformance-eval/select-tasks.py --selftest` (fast; the CI gate for the tier-1
   selection). Three tiers (baseline.md, Tiers): tier 0 is the CI selftests; tier 1 after any doctrine
   edit is `CONFORMANCE_SINCE=<ref> CONFORMANCE_MODEL=claude-opus-5 bash scripts/conformance-eval/run.sh`

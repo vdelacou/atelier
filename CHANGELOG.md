@@ -6,16 +6,36 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Upgrading from 2.6.1
+
+- Copy `assets/check-reply.py` to `scripts/check-reply.py` and `assets/claude-settings.json` to
+  `.claude/settings.json`; when that file already exists, merge its `Stop` entry instead. The hook
+  needs python3.
+
+### Added
+- A reply gate. `assets/check-reply.py --hook` is a Claude Code Stop hook, wired by the new
+  `assets/claude-settings.json`, that holds the Interaction section's five mechanical rules (no em
+  dash, no cut word, no bold lead-in, no decorative emoji, sentence-case headings): a reply that
+  breaks one exits 2 with each tag and its fix, the agent restates it, and the second stop passes,
+  so a reply is restated at most once. A doctrine line alone did not hold the bold lead-in rule: in
+  831 replies from 16 real cloud sessions (2026-10-04), 63 percent of the current model's long
+  replies broke it, and 52 percent where a tool call named atelier. Every variant's checklist copies
+  the pair, greenfield proves it red, review-me's adopt mode merges it, and the Interaction line
+  gives the bold lead-in's replacement shape. Each smoke test proves exit 2 with the tag, a pass on
+  a plain reply, the loop guard, and that the copied settings run the copied script; on the real
+  CLI a blocked list came back plain, $0.037 for both turns. The cost: a blocked reply shows twice,
+  with a "Stop hook error" notice between.
+
 ### Harness
-- A reply probe, `scripts/check-reply.py`, measures how an agent's replies read before any edit to the
-  Interaction section. Five of that section's rules are doctrine tags that fail it (an em dash, a cut
-  word, a bold lead-in, a decorative emoji, a Title Case heading). Six candidates from Simplified
-  Technical English (ASD-STE100) are counted per arm and never fail it: a hedged result ("should
-  pass"), any other hedge, an event passive, a sentence over 25 words, a paragraph over 6 sentences,
-  and a question buried in a report paragraph. It reads text files, stream-json transcripts, Claude
-  Code session logs and run dirs; `--selftest` proves each tag fires on its own plant and nowhere
-  else, and runs in CI beside the review grader. A conformance run's final reply is a file list by
-  prompt, so review-eval's reviews, distill-eval's summaries and session logs carry the prose.
+- The same file is the reply probe: given transcripts, session logs or eval run dirs it prints every
+  finding and counts per arm. Six candidates from Simplified Technical English (ASD-STE100) are
+  counted and never block: a hedged result ("should pass"), any other hedge, an event passive, a
+  sentence over 25 words, a paragraph over 6 sentences, and a question buried in a report. The
+  831-reply reading found no habit for any of them, so the drafted clauses stay out of the doctrine.
+  `--selftest` proves each tag on its own plant and both modes, checks the cut list against
+  SKILL.md, and runs in CI beside the review grader.
+- `check-workflow-assets.sh` checks the shipped Claude settings like a workflow: they parse, and
+  every variant's checklist copies the hook's script.
 
 ## [2.6.1] - 2026-09-28
 
