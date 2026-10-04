@@ -7,7 +7,8 @@ enough to match, and they are the doctrine tags; any one of them exits 1:
   em-dash         U+2014 in the reply's own prose
   cut-word        the section's cut list: delve, leverage, robust, seamless, nuanced, "it's worth noting"
   bold-lead-in    a list item that opens on a bold phrase and carries on past it
-  emoji           a pictograph or dingbat (U+1F000-1FAFF, U+2600-27BF)
+  emoji           a pictograph or dingbat (U+1F000-1FAFF, U+2600-27BF), less the check and
+                  cross marks U+2713-2718, which a status table uses as glyphs
   heading-case    a Title Case heading: two or more capitalised content words, none lowercase
 
 The candidate tags come from Simplified Technical English (ASD-STE100 Issue 7, read through the
@@ -29,7 +30,8 @@ Inputs, any mix; no argument reads one reply from stdin:
   - a text or Markdown file is one reply (review-eval's .review.txt, a pasted answer)
   - a .jsonl transcript: each assistant text block is one reply, from the claude -p stream-json the
     conformance and distill evals keep or a Claude Code session log under ~/.claude/projects/;
-    thinking, tool calls, user turns and subagent messages are not replies and are skipped
+    thinking, tool calls, user turns, subagent messages and the harness's own notices (model
+    <synthetic>: an API error, a /context table) are not replies and are skipped
   - a directory is walked for both; a .result.txt beside a .transcript.jsonl is skipped (it is
     derived from it), and so are the skills/, subagents/, node_modules/ and .git/ subtrees
 
@@ -69,7 +71,7 @@ MAX_SENTENCES = 6
 
 EM_DASH = "\u2014"
 CUT_WORD = re.compile(r"\b(?:delv\w*|leverag\w*|robust\w*|seamless\w*|nuanced|it['\u2019]s worth noting)\b", re.IGNORECASE)
-EMOJI = re.compile("[\U0001F000-\U0001FAFF\u2600-\u27BF]")
+EMOJI = re.compile("[\U0001F000-\U0001FAFF\u2600-\u2712\u2719-\u27BF]")
 LIST_ITEM = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 BOLD_LEAD_IN = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(?:\*\*[^*\n]+\*\*|__[^_\n]+__)[:.]?\s*\S")
 HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(.*?)[\s#]*$")
@@ -241,6 +243,8 @@ def transcript_replies(path: Path) -> list[str]:
         if event.get("isSidechain") or event.get("parent_tool_use_id"):
             continue  # a subagent talking to its parent, not a reply to the person
         message = event.get("message")
+        if isinstance(message, dict) and message.get("model") == "<synthetic>":
+            continue  # the harness's notice (an API error, a /context table), not the agent's words
         content = message.get("content") if isinstance(message, dict) else None
         for block in content if isinstance(content, list) else []:
             if isinstance(block, dict) and block.get("type") == "text" and str(block.get("text", "")).strip():
@@ -315,7 +319,7 @@ CLEAN = (
     "retry right beside it.** It stops after three tries with jitter.\n\n"
     "```ts\n// robust \u2014 code is not prose, and it should pass\n```\n\n"
     "> A quoted line keeps its own punctuation \u2014 robust or not.\n\n"
-    "| Check | Result |\n|:---|:---|\n| Lint | 0 warnings |\n\n"
+    "| Check | Result |\n|:---|:---|\n| Lint | 0 warnings |\n| Types | \u2713 |\n\n"
     "- The first item is plain.\n"
     "- The second names `should pass` inside code, and [a link](https://example.com/robust).\n\n"
     "---\n\n"
@@ -384,6 +388,8 @@ def selftest() -> int:
             {"type": "assistant", "isSidechain": True, "message": {"id": "m3", "content": [
                 {"type": "text", "text": PLANTS["emoji"]}]}},
             {"type": "assistant", "message": {"id": "m4", "content": [{"type": "text", "text": "I fixed the hook."}]}},
+            {"type": "assistant", "message": {"id": "m5", "model": "<synthetic>", "content": [
+                {"type": "text", "text": PLANTS["em-dash"]}]}},
             {"type": "result", "result": PLANTS["em-dash"]},
         ]
         (run / ".transcript.jsonl").write_text("\n".join(json.dumps(e) for e in events) + "\nnot json\n")
