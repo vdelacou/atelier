@@ -28,7 +28,9 @@ tree. What binds work HERE is the authoring and process discipline below.
   rules, with-skill vs baseline), `review-eval/` (does atelier-review-me catch planted
   violations in a diff, recall + rule-citation + false-positives vs a skill-less reviewer),
   `distill-eval/` (does atelier-distill keep every live lesson, account for every entry and touch
-  nothing else, on a journal with every verdict planted, vs an unaided pass).
+  nothing else, on a journal with every verdict planted, vs an unaided pass). `check-reply.py`
+  probes the replies themselves, in those runs or a Claude Code session log, against the
+  Interaction section.
 
 ## Verify commands
 - Once per clone: `git config core.hooksPath .githooks`, or the repo's own pre-commit and commit-msg
@@ -57,6 +59,12 @@ tree. What binds work HERE is the authoring and process discipline below.
 - `python3 scripts/distill-eval/grade.py --selftest` (fast; CI, in the review-grader job). The
   full eval: `DISTILL_MODEL=claude-opus-5 bash scripts/distill-eval/run.sh`, then
   `python3 scripts/distill-eval/grade.py <runs-dir>`.
+- `python3 scripts/check-reply.py --selftest` (fast; CI, in the review-grader job). The probe:
+  `python3 scripts/check-reply.py <runs-dir or ~/.claude/projects/<slug>/>...`; the Interaction
+  section's mechanical rules fail it, and the Simplified Technical English candidates (hedged
+  results, passives, sentence and paragraph caps, buried asks) are counted per arm. A conformance
+  run's final reply is a file list by prompt, so the prose is in review-eval's `.review.txt`,
+  distill-eval's transcripts and session logs.
 - `python3 scripts/conformance-eval/select-tasks.py --selftest` (fast; the CI gate for the tier-1
   selection). Three tiers (baseline.md, Tiers): tier 0 is the CI selftests; tier 1 after any doctrine
   edit is `CONFORMANCE_SINCE=<ref> CONFORMANCE_MODEL=claude-opus-5 bash scripts/conformance-eval/run.sh`
@@ -74,7 +82,7 @@ tree. What binds work HERE is the authoring and process discipline below.
   scripts/conformance-eval/judge.py <runs-dir>` over run dirs the conformance eval produced.
 - CI (`.github/workflows/ci.yml`) runs eight jobs on every push (frontmatter, the em-dash and
   identity gates, the three smoke tests, two grader-selftest jobs (conformance with the selector
-  and the judge; review with distill), matrix drift with the citation,
+  and the judge; review with distill and the reply probe), matrix drift with the citation,
   workflow-asset and staleness selftests); `canary.yml` weekly-probes
   three deliberate toolchain concessions (whether the typescript pin can lift, whether the three
   disabled sonarjs rules can go back on, and whether Oxlint can replace ESLint with every function
