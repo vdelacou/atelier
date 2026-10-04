@@ -272,6 +272,18 @@ Two behavioural gates, not lint-enforced; the discipline is the enforcement, exa
 
 **Unattended (headless) runs.** Both gates hold when nobody can answer. The one carve-out is creation: writing a NEW test for new code proceeds without the pause, because blocking on a question nobody can answer would make TDD impossible. Every other gated action on an EXISTING test (edit, weaken, delete, skip, rename) stays forbidden unattended, and so do commit and push; do the work, stage it, and put the gated proposals in the final report.
 
+## Reply gate (the Interaction section)
+
+SKILL.md's Interaction section says how a reply to a person reads, and five of its rules are mechanical: no em dash, no cut word, no bold lead-in on a list item, no decorative emoji, sentence-case headings. A doctrine line alone does not hold them: on 2026-10-04, 831 replies from 16 real cloud sessions in seven consumer repos carried a bold lead-in in 63 percent of the current model's long replies, and in 52 percent even where a tool call named atelier.
+
+**The gate.** `assets/check-reply.py --hook` is a Claude Code `Stop` hook, wired by `assets/claude-settings.json`: copy the script to `scripts/check-reply.py` and the settings to `.claude/settings.json`, or merge their `Stop` entry when that file already exists. When the agent ends a turn, Claude Code sends the hook the reply (`last_assistant_message`; the transcript's last reply on a version without that field). A doctrine finding exits 2 with each tag, an example and its fix on stderr; Claude Code hands that text back to the agent, which sends the reply again, fixed. The second stop carries `stop_hook_active` and passes, so a reply is restated at most once and the gate cannot loop. Input that is not a Stop event exits 1, a visible hook error and never a silent pass. It needs `python3` and nothing else.
+
+**What it costs.** A blocked reply appears twice, the original and its restatement, with a "Stop hook error" notice between them, and the restatement costs its own length in output tokens (a three-item list and its restatement: $0.037 together, 2026-10-04). How often it fires after the first block of a session is not yet measured. It holds against an explicit request too: asked for bold labels, the agent restated without them, the same rewrite-to-comply the hard rules ask of code.
+
+**What stays a count.** The file is also a probe: given files or directories (eval transcripts, `~/.claude/projects/<slug>/` session logs) it prints every finding and counts per arm. Its Simplified Technical English candidates (a hedged result such as "should pass", any hedge, an event passive, sentences over 25 words, paragraphs over 6 sentences, a question buried in a report) never block: the 831-reply reading found no habit to fix, and a rule allowing only can, must and will would push honest uncertainty toward false certainty.
+
+**The proof.** Each variant's smoke test copies the pair as a bootstrap does and proves exit 2 with the `bold-lead-in` tag on a planted reply, a pass on a plain one, the loop guard, and that the copied settings run the copied script. In the skill repository, CI runs the file's `--selftest` (every tag on its own plant, both modes, the cut list against this section) and `check-workflow-assets.sh`, which fails a variant whose checklist does not copy the hook's script.
+
 ## Commit identity (rule 26)
 
 Every commit carries an author and a committer (each a name plus an email), taken from git config, and whatever they are becomes permanent public history the moment you push. Carrying the contributor's real identity in that metadata is normal, the default of the whole open-source world, and never a finding, an audit item, or a publish blocker.

@@ -681,6 +681,8 @@ cp <skill>/assets/check-disciplines.sh   scripts/check-disciplines.sh
 cp <skill>/assets/check-pii-channels.sh  scripts/check-pii-channels.sh
 cp <skill>/assets/check-io-deadlines.sh  scripts/check-io-deadlines.sh
 cp <skill>/assets/check-data-lifecycle.sh scripts/check-data-lifecycle.sh
+cp <skill>/assets/check-reply.py         scripts/check-reply.py
+mkdir -p .claude && cp <skill>/assets/claude-settings.json .claude/settings.json   # the reply gate; merge its Stop entry if the file exists
 chmod +x scripts/*.sh
 ```
 
