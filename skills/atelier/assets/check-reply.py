@@ -68,6 +68,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 from collections import Counter
@@ -544,6 +545,24 @@ def selftest() -> int:
             if code == 2 and not told.startswith(GATE_SAID):
                 failures.append(f"the gate's feedback does not open with the message gate_blocks counts: {told!r}")
 
+        # Claude Code sends the event as raw UTF-8, and Windows Python reads and writes a pipe in
+        # cp1252 unless UTF-8 mode is on: an em dash or an emoji arrived as other characters and
+        # passed, the feedback quoted them garbled, and the probe crashed printing an emoji.
+        # PYTHONIOENCODING reproduces that machine on any machine.
+        cp1252 = {**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"}
+        script = str(Path(__file__).resolve())
+        for name, plant, tag in (("an em dash", PLANTS["em-dash"], "- em-dash (1): "),
+                                 ("an emoji", PLANTS["emoji"], "- emoji (1): ")):
+            sent = json.dumps({**stop, "last_assistant_message": plant}, ensure_ascii=False).encode("utf-8")
+            run = subprocess.run([sys.executable, script, "--hook"], input=sent, capture_output=True, env=cp1252)
+            told = run.stderr.decode("utf-8", errors="replace")
+            if run.returncode != 2 or tag + plant not in told:
+                failures.append(f"the gate gave {name} sent as UTF-8 under cp1252 exit {run.returncode} and {told[-160:]!r}")
+        (tmp / "emoji.txt").write_text(PLANTS["emoji"] + "\n", encoding="utf-8")
+        run = subprocess.run([sys.executable, script, str(tmp / "emoji.txt")], capture_output=True, env=cp1252)
+        if PLANTS["emoji"] not in run.stdout.decode("utf-8", errors="replace"):
+            failures.append(f"the probe under cp1252 did not print its emoji finding: {run.stderr.decode('utf-8', 'replace')[-160:]!r}")
+
         # The count: two blocks (a session log's string, stream-json's text block), one restatement
         # fixed and one still broken; another hook's feedback and a person quoting the message are
         # not blocks, and a broken reply with no block before it is no restatement.
@@ -591,19 +610,32 @@ def selftest() -> int:
         return 1
     print(f"check-reply.py --selftest: each of the {len(PLANTS)} tags fires on its own plant and nowhere else, "
           "the clean reply passes, transcripts and run dirs read as replies, the gate blocks a doctrine finding "
-          "once and nothing else, the cut list matches SKILL.md")
+          "once and nothing else, an em dash and an emoji sent as UTF-8 block and quote intact under cp1252, "
+          "the cut list matches SKILL.md")
     return 0
 
 
+def read_stdin() -> str:
+    """Claude Code sends UTF-8. Windows Python decodes a pipe in the ANSI code page (cp1252) unless
+    UTF-8 mode is on, which turned an em dash into three other characters, so read the bytes."""
+    return sys.stdin.buffer.read().decode("utf-8", errors="replace")
+
+
 def main(argv: list[str]) -> int:
+    # Findings quote the reply: under cp1252 the hook's feedback garbled an em dash or an emoji and
+    # the probe crashed printing one, so write UTF-8 on every platform.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
     if argv == ["--selftest"]:
         return selftest()
     if argv == ["--hook"]:
-        return hook(sys.stdin.read())
+        return hook(read_stdin())
     if argv and argv[0] in ("-h", "--help"):
         print(__doc__)
         return 0
-    replies = collect(argv) if argv else [("-", "stdin", sys.stdin.read())]
+    replies = collect(argv) if argv else [("-", "stdin", read_stdin())]
     if not any(reply.strip() for _, _, reply in replies):
         print("check-reply.py: no reply found in the input", file=sys.stderr)
         return 2
