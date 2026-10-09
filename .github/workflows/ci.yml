@@ -40,24 +40,55 @@ jobs:
         run: bash skills/atelier/assets/check-identity.sh --all
 
   asset-smoke-test:
-    name: asset smoke test (Bun variant, all gates)
-    runs-on: ubuntu-latest
+    name: asset smoke test (Bun variant, all gates, ${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows too (2026-10-09): Bun prints the coverage table there as
+        # src\domain\x.ts, and the coverage gate and the preload generator passed
+        # every file in silence until they normalised the separator.
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash   # Git Bash on Windows, never the WSL stub
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
+      # The smoke test calls python3; the Windows image ships python.exe only.
+      - name: python3 on PATH (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          py="$(command -v python)"
+          cp "${py%.exe}.exe" "$(dirname "$py")/python3.exe"
+          python3 --version
       # Deliberately unpinned toolchain inside the smoke test: a new ESLint /
       # TypeScript / Stryker major that breaks a shipped asset or a documented
       # config should fail here before a user hits it.
       - run: bash scripts/smoke-test.sh
 
   next-smoke-test:
-    name: next.js smoke test (rules 21-22 enforcement)
-    runs-on: ubuntu-latest
+    name: next.js smoke test (rules 21-22 enforcement, ${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]   # every variant proves itself on Windows too (2026-10-09)
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash   # Git Bash on Windows, never the WSL stub
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
+      # The smoke test calls python3; the Windows image ships python.exe only.
+      - name: python3 on PATH (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          py="$(command -v python)"
+          cp "${py%.exe}.exe" "$(dirname "$py")/python3.exe"
+          python3 --version
       # Scaffolds a Next.js package from the canonical configs in
       # references/nextjs-monorepo.md, then asserts conforming code passes and
       # rule 21/22 violations are caught, so a future ESLint/Next major can't
@@ -65,9 +96,16 @@ jobs:
       - run: bash scripts/smoke-test-next.sh
 
   java-smoke-test:
-    name: java smoke test (Quarkus variant, all gates)
-    runs-on: ubuntu-latest
+    name: java smoke test (Quarkus variant, all gates, ${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]   # every variant proves itself on Windows too (2026-10-09)
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash   # Git Bash on Windows, never the WSL stub
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -76,6 +114,13 @@ jobs:
           java-version: '21'
           # no `cache: maven`, it requires a pom.xml in the repo, and this
           # repo's pom is generated at runtime by the smoke test
+      # The smoke test calls python3; the Windows image ships python.exe only.
+      - name: python3 on PATH (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          py="$(command -v python)"
+          cp "${py%.exe}.exe" "$(dirname "$py")/python3.exe"
+          python3 --version
       # Scaffolds a Maven repo from the canonical pom.xml in
       # references/java-quarkus.md and the shipped hook assets, then proves the
       # gate chain passes on a conforming tree (spotless, verify with JaCoCo
