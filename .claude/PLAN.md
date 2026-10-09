@@ -1,59 +1,47 @@
-# Plan: the coverage gate and the preload generator on Windows paths (2026-10-09)
+# Plan: the reply gate reads and writes UTF-8 on Windows (2026-10-09)
 
-The previous plan (hard rule 38) closed: PR #2 merged by rebase into main (26b15bc) and main-f7v4vj
-was deleted on the remote. A proposal for rule 38's host side (main as the default branch,
-rebase-only, auto-delete, a ruleset protecting main, and a daily drift check) was researched on
-2026-10-05 but never written up. It waits on the owner, after this fix.
+The previous plan (the coverage gate and the preload generator on Windows paths) closed with PR #3
+merged by rebase into main (a38c9e0): eight commits, all eleven checks green, the three smoke tests
+green on windows-latest. The remote main-f7v4vj still waits on the owner's delete button. The
+proposal for rule 38's host side (main as the default branch, rebase-only, auto-delete, a ruleset
+protecting main, a daily drift check) still waits on the owner, after this fix.
 
-The bug, as reported: on Windows, Bun prints the coverage table as `src\domain\x.ts`, so
-`check-coverage.ts` matches no tier prefix, skips every row, prints "no files" for every tier and
-exits 0. `regenerate-coverage-preload.ts` builds paths with `path.relative`, which returns
-backslashes there, so every file groups under the unwritten 'other' key: the preload imports
-nothing, untested infra, composition and presenter files never reach the table, and `--check`
-reports "in sync". `EXCLUDE` and the import specifiers share the slash assumption. Only the Bun
-variant ships the two files (Next has no coverage gate; Java uses JaCoCo).
-
-The fix normalises each path once, where it enters: `rowAt` in check-coverage, `rel` and
-`fromOut` in the generator (`p.replaceAll('\\', '/')`). The guards make the gate prove it can fail
-(canon 15.10). One deviation from the request: the bootstrap checklist creates `src/presenter` and
-`src/composition` empty (bun-typescript.md step 8) and generates the preload at step 12, so "a scan
-directory exists but nothing was emitted" would fail every fresh scaffold. The guard fires when the
-walk found files under a scan directory and the preload imports fewer of them.
+The bug, found while auditing the other assets for PR #3: `check-reply.py` reads the Stop event with
+`sys.stdin.read()`, which decodes in the locale's encoding. Claude Code sends the event as raw UTF-8,
+and Windows Python decodes a pipe as the ANSI code page (cp1252) unless UTF-8 mode is on, so an em
+dash arrives as three other characters and the gate exits 0 on a reply it must block (reproduced
+with `PYTHONIOENCODING=cp1252`: exit 0 for an em dash and for an emoji, against exit 2 under UTF-8).
+The output has the mirror problem: stderr's backslashreplace kept the hook from crashing, but its
+feedback quoted an emoji as `\u2705` and an em dash as a cp1252 byte, and the probe, on stdout,
+crashed with UnicodeEncodeError (exit 1) printing an emoji. The smoke tests never saw any of it:
+their events go through `json.dumps`, which escapes every non-ASCII character. The owner chose a
+separate PR for it.
 
 ## Steps and definition of done
 
 1. [x] Restart main-f7v4vj from origin/main. DoD: at origin/main's tip.
-2. [x] check-coverage.ts: normalise in `rowAt`; a row under `src/` in no tier and no skip rule
-   fails the run by name; `--selftest` feeds planted table lines: a Windows row under its tier's
-   gate is a violation, a `src/` row in no tier falls through, skipped and non-`src/` rows pass,
-   both column layouts parse. DoD: selftest green, and red under each mutation (no normalisation,
-   no fall-through check, a broken skip rule, the `src/` scope dropped, layout 1 dropped).
-3. [x] regenerate-coverage-preload.ts: normalise `rel` and `fromOut`; the walk counts each scan
-   directory's files, and the generator fails, writing and comparing nothing, when the preload
-   imports fewer; `--selftest` with `path.win32`: the unnormalised Windows shape trips the guard,
-   the normalised one groups and imports `'../src/infra/x.ts'`. DoD: selftest green, red under each
-   mutation (no normalisation on `fromOut`, no guard); the smoke fixture's preload unchanged.
-4. [x] Bun smoke test: runs both selftests, and a covered `src/jobs/` file makes `bun run coverage`
-   exit 1 naming it. ci.yml runs all three smoke tests on windows-latest beside ubuntu-latest (the
-   owner's choice), in Git Bash, with `python3` copied from `python.exe`. DoD: the Linux smoke green
-   here; the Windows legs green in CI before merge.
-5. [x] Doctrine: workflow.md's coverage sections (the normalisation, the fall-through failure, the
-   guard, the selftests); the matrix 15.2 note; citations re-anchored. DoD: citations intact, drift,
-   frontmatter, workflow-asset and em-dash gates green.
-6. [x] CHANGELOG Unreleased (Fixed, Upgrading: re-copy both assets, regenerate the preload), CLAUDE.md
-   CI line. DoD: read.
-7. [ ] Land in slices on the owner's yes, push on its own yes, a pull request; drive the Windows leg
-   green; rebase merge; the branch deleted on both sides.
+2. [x] check-reply.py: `main` reads stdin as UTF-8 bytes, in `--hook` and in the probe's stdin mode,
+   and sets stdout and stderr to UTF-8. `--selftest` runs the script under `PYTHONIOENCODING=cp1252`
+   (`PYTHONUTF8=0`) with an em dash and an emoji sent as raw UTF-8, and expects exit 2 with each
+   tag. DoD: selftest green, red under each mutation (stdin read in the locale's encoding, the
+   output left in it).
+3. [x] The three smoke tests: one more reply-gate case sends an em dash and an emoji as raw UTF-8
+   through the copied settings and expects exit 2 with both tags. On the Windows legs that is the
+   real platform. DoD: green here; green on windows-latest in CI.
+4. [x] workflow.md's Reply gate (the encoding, and why); the reply gate's own Unreleased Added entry
+   carries the fix, since the gate has not shipped in a release. DoD: citations re-anchored once and
+   intact, drift, frontmatter, em-dash gates green.
+5. [ ] Land in slices on the owner's yes, push on its own yes, a pull request; CI green; rebase
+   merge; the branch deleted on both sides.
 
 ## Status
 
-Steps 1-6 done 2026-10-09. Both selftests green, and red under each of nine mutations (check-coverage:
-no normalisation, no fall-through, a broken skip rule, the src/ scope dropped, layout 1 dropped, the
-threshold inverted; the generator: no normalisation on rel, none on fromOut, the guard disabled). On a
-fixture the generator's output is byte-identical to the old one, an empty src/presenter passes, and a
-SCAN_DIRS entry spelt ./src/infra stops the run with nothing written. The Bun smoke test: 150 checks
-green on Linux (the first run caught six unicorn/prefer-string-raw errors in the selftest literals).
-Citations re-anchored (16), 239 intact; drift, frontmatter, workflow assets and the em-dash scan green.
-The owner said yes to landing, Windows legs for all three smoke tests, pushing CI fixes without asking
-until green, and the reply gate's Windows stdin bug (cp1252 hides an em dash) as a separate PR after.
-Next (step 7): seven slices, push, the pull request, the Windows legs green.
+Steps 1-4 done 2026-10-09. The selftest runs the script under PYTHONIOENCODING=cp1252: an em dash
+and an emoji sent as raw UTF-8 block and are quoted intact, and the probe prints an emoji finding.
+It goes red under four mutations (stdin in the locale's encoding, no output reconfigure, stderr
+only, stdout only). The old gate measured under cp1252: exit 0 on both characters sent raw, and
+the probe crashed (exit 1) printing an emoji. The new smoke case passes on the new gate and fails
+the old one with exit 0. All three smoke tests green here (Bun 151, Next 52, Java 82 checks).
+Citations intact (nothing moved), drift and frontmatter green. The owner said yes to landing.
+Next (step 5): four slices, push over the stale remote main-f7v4vj with --force-with-lease (its
+eight commits are on main), PR #4, CI green on the Windows legs, rebase merge.
