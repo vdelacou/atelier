@@ -8,7 +8,11 @@
  *
  * Exit codes:
  *   0  every non-skipped file meets its tier's threshold
- *   1  at least one file is below gate, or `bun test` failed
+ *   1  at least one file is below gate, a file under src/ matches no tier and
+ *      no skip rule, or `bun test` failed
+ *
+ * `--selftest` runs planted table rows through the same parser and checks,
+ * without `bun test`, and exits 1 unless each planted violation is caught.
  *
  * Tune per-project by editing COVERAGE_RULES and SKIPPED below.
  *
@@ -79,11 +83,14 @@ const isSourcePath = (path: string): boolean => path !== 'File' && path !== 'All
 const percentAt = (parts: ReadonlyArray<string>, index: number): number => Number.parseFloat(parts[index] ?? '');
 
 const rowAt = (parts: ReadonlyArray<string>, layout: Layout): FileRow | undefined => {
-  const path = parts[layout.path];
-  if (!path || !isSourcePath(path)) return undefined;
+  const raw = parts[layout.path];
+  if (!raw || !isSourcePath(raw)) return undefined;
   const funcs = percentAt(parts, layout.funcs);
   const lines = percentAt(parts, layout.lines);
   if (Number.isNaN(funcs) || Number.isNaN(lines)) return undefined;
+  // Bun prints the platform's separator (src\domain\x.ts on Windows), and every prefix
+  // and skip rule here is written with '/', so the path is normalised once, where it enters.
+  const path = raw.replaceAll('\\', '/');
   return { path: path.startsWith('./') ? path.slice(2) : path, funcs, lines };
 };
 
@@ -96,6 +103,12 @@ const parseRow = (line: string): FileRow | undefined => {
   }
   return undefined;
 };
+
+const parseRows = (output: string): ReadonlyArray<FileRow> =>
+  output
+    .split('\n')
+    .map((line) => parseRow(line))
+    .filter((r): r is FileRow => r !== undefined);
 
 // We pass `--preload ./scripts/coverage-preload.ts` HERE rather than wiring
 // the preload via `bunfig.toml`'s `[test] preload = [...]`. The preload
@@ -152,6 +165,20 @@ const collectViolations = (rows: ReadonlyArray<FileRow>): ReadonlyArray<Violatio
   return violations;
 };
 
+// A row under src/ that no tier and no skip rule claims is judged by nothing, so it fails
+// the run by name: a new directory, or a path the prefixes cannot read, would otherwise pass
+// in silence (the Windows table did, with "no files" in every tier).
+const collectUnmatched = (rows: ReadonlyArray<FileRow>): ReadonlyArray<FileRow> =>
+  rows.filter((r) => r.path.startsWith('src/') && !isSkipped(r.path) && findTier(r.path) === undefined);
+
+const printUnmatched = (unmatched: ReadonlyArray<FileRow>): void => {
+  console.error('\ncoverage: files under src/ that no tier and no skip rule claims:');
+  for (const row of unmatched) {
+    console.error(`  ${row.path}`);
+  }
+  console.error('\ncoverage: add the directory to COVERAGE_RULES (or a genuine non-code entry to SKIPPED); a file no gate judges passes unchecked.');
+};
+
 const printViolations = (violations: ReadonlyArray<Violation>): void => {
   console.error('\ncoverage: per-file gate violations:');
   for (const v of violations) {
@@ -167,22 +194,54 @@ const main = async (): Promise<number> => {
     console.error('\ncoverage: `bun test --coverage` exited non-zero; fix test failures first.');
     return status;
   }
-  const rows = output
-    .split('\n')
-    .map((line) => parseRow(line))
-    .filter((r): r is FileRow => r !== undefined);
+  const rows = parseRows(output);
   if (rows.length === 0) {
     console.error('\ncoverage: no file rows parsed from the coverage report. Check that `bun test --coverage` is producing a text table.');
     return 1;
   }
   printTierSummary(rows);
   const violations = collectViolations(rows);
-  if (violations.length === 0) {
+  const unmatched = collectUnmatched(rows);
+  if (violations.length === 0 && unmatched.length === 0) {
     console.log('\ncoverage: all files meet their tier gate.');
     return 0;
   }
-  printViolations(violations);
+  if (violations.length > 0) printViolations(violations);
+  if (unmatched.length > 0) printUnmatched(unmatched);
   return 1;
 };
 
-process.exit(await main());
+// The gate proves it can fail before it judges (canon 15.10): planted rows go through the
+// parser and checks a real run uses. Bun on Windows prints backslashes; both layouts appear.
+const SELFTEST_TABLE: ReadonlyArray<string> = [
+  'File                         | % Funcs | % Lines | Uncovered Line #s',
+  'All files                    |   72.00 |   70.00 |',
+  String.raw` src\domain\shout.ts          |   50.00 |   40.00 | 3-4`,
+  ' src/infra/http.ts            |   90.00 |   85.00 |',
+  '| src/jobs/tick.ts | 100.00 | 100.00 | |',
+  String.raw` src\test-helpers\fake.ts     |    0.00 |    0.00 | 1-9`,
+  ' src/main.ts                  |    0.00 |    0.00 | 1-3',
+  ' scripts/coverage-preload.ts  |  100.00 |  100.00 |',
+];
+
+const selftest = (): number => {
+  const rows = parseRows(SELFTEST_TABLE.join('\n'));
+  const caught = collectViolations(rows).map((v) => `${v.file.path} ${v.tier} ${v.metric}`);
+  const unmatched = collectUnmatched(rows).map((r) => r.path);
+  const failures = [
+    caught.join(', ') === 'src/domain/shout.ts domain funcs, src/domain/shout.ts domain lines'
+      ? ''
+      : `a Windows row under the domain gate gave [${caught.join(', ')}], not its funcs and lines violations`,
+    unmatched.join(', ') === 'src/jobs/tick.ts' ? '' : `the src/ row in no tier gave [${unmatched.join(', ')}], not src/jobs/tick.ts alone`,
+  ].filter((f) => f !== '');
+  for (const failure of failures) {
+    console.error(`coverage: selftest FAIL: ${failure}`);
+  }
+  if (failures.length > 0) return 1;
+  console.log(
+    'coverage: selftest OK: a Windows row under its tier gate fails on funcs and lines, a src/ row in no tier and no skip rule fails by name, skipped and non-src rows pass, both table layouts parse'
+  );
+  return 0;
+};
+
+process.exit(process.argv.includes('--selftest') ? selftest() : await main());

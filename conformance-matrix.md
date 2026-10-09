@@ -116,7 +116,7 @@ Canon 4.4 asks core code at "100 percent line coverage and a mutation score of a
 glue at an explicit looser floor (80 percent line)" using Stryker for TS
 (global-rules-dos-and-donts.md:745 Do). The skill's `assets/check-coverage.ts` sets
 `domain` and `use-cases` to threshold 100 and `infra`, `composition`, `presenter` to 80
-(check-coverage.ts:34-38), and `assets/stryker.conf.json` sets the mutation break at 90. The
+(check-coverage.ts:38-42), and `assets/stryker.conf.json` sets the mutation break at 90. The
 numbers line up exactly. On mechanics the skill is if anything tighter than the canon's
 per-module framing: it enforces per-file against a path-prefix tier, so one weak file fails
 rather than a module average, and it ships a coverage-preload that forces untested files to
@@ -228,7 +228,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.1 | Test in layers | COVERED | testing.md:107-121 | doctrine | Unit, integration, e2e, performance layers each named |
 | 4.2 | Keep unit tests in milliseconds | COVERED | testing.md:410; testing.md:140 | doctrine | In-memory fakes, no real IO in unit tests; literal ms target not stated |
 | 4.3 | Have a testing philosophy | COVERED | testing.md:184-186; SKILL.md:84 | rule | Every fixed bug becomes a permanent reproducing test |
-| 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:34-38; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3); CI mutates the changed files per run, the full sweep is the daily assets/mutation.yml (2026-09-03) |
+| 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:38-42; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3); CI mutates the changed files per run, the full sweep is the daily assets/mutation.yml (2026-09-03) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:49; testing.md:290; java-quarkus.md:224; check-pom.sh:62 | gate | Mock ban is absolute and gated in every variant (ESLint in TypeScript; the enforcer's `bannedDependencies` plus `check-pom.sh` in Java since 2026-09-08), exceeding canon advisory prefer-fakes |
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; assets/ci-java.yml; assets/ci-next.yml; governance.md:106 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on the changed files on a frozen lockfile as the required merge check; the full mutation sweep is scheduled (assets/mutation.yml) |
 | 4.7 | Hold generated code to the same bar | COVERED | workflow.md:544 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
@@ -357,7 +357,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 15.1 | Make the standard executable | COVERED | assets/pre-commit; assets/ci.yml; assets/ci-java.yml; assets/ci-next.yml | gate | Resolved Phase 2: hook restructured to 5 fast gates, full suite/coverage/mutation/strict-lint relocated to CI as the required merge gate (Watchlist 1) |
-| 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:162; assets/check-coverage.ts:148 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
+| 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:162; assets/check-coverage.ts:161 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
 | 15.3 | No silent opt-out | COVERED | workflow.md:62-83; SKILL.md:51; bun-typescript.md:205; bun-typescript.md:224; assets/java/pmd-ruleset.xml:56; check-no-suppressions.sh:43; java-quarkus.md:256 | gate | Project-level severity change with a reason; inline suppressions banned, and since 2026-09-08 gated in every variant: both TypeScript configs (`noInlineConfig` makes directives inert and reported, `ban-ts-comment` every `@ts-` form, `no-warning-comments` the other tools' markers) and Java (`check-no-suppressions.sh` in hook and CI, the `NoSuppressWarnings` PMD rule, an inert `NOPMD` marker) |
 | 15.4 | Test the bypass, not the happy path | COVERED | testing.md:630-638; testing.md:531-538 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
 | 15.5 | Compliance is not proof | COVERED | workflow.md:543; governance.md:129 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
