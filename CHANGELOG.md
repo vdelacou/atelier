@@ -17,6 +17,11 @@ whole, not any single skill.
   deletion (`references/workflow.md`, Branch lifecycle, has the one `gh api` call); delete the
   branches the first watchdog run reports as landed. Re-copy `assets/claude-md-pointer.md` into your
   `CLAUDE.md`: the block names hard rules 1-38.
+- Bun: re-copy `check-coverage.ts` and `regenerate-coverage-preload.ts`, then run
+  `bun run scripts/regenerate-coverage-preload.ts`. On Windows the old preload imported nothing,
+  so expect the first coverage run there to list the untested files it was hiding. A file under
+  `src/` in a directory with no tier now fails the gate: give the directory a tier in
+  `COVERAGE_RULES`, or add a genuine non-code entry to `SKIPPED`.
 
 ### Added
 - A reply gate. `assets/check-reply.py --hook` is a Claude Code Stop hook, wired by the new
@@ -48,7 +53,24 @@ whole, not any single skill.
   enforces it, greenfield proves the merge rejection red, review-me reads a branch's history, and
   each selftest goes red under a mutation of each behaviour.
 
+### Fixed
+- The Bun coverage gate and the preload generator passed silently on Windows. Bun prints the
+  coverage table as `src\domain\x.ts` there, so `check-coverage.ts` matched no tier, skipped every
+  row, printed "no files" for each tier and exited 0; `regenerate-coverage-preload.ts` built its
+  paths with `path.relative`, which answers with backslashes there, so every file fell into an
+  unwritten group, the preload imported nothing, untested infra, composition and presenter files
+  never reached the table, and `--check` reported "in sync". `EXCLUDE` and the import specifiers
+  had the same slash assumption. Both now normalise each path to `/` where it enters. Neither can
+  pass that way again: the gate fails on a row under `src/` that no tier and no skip rule claims,
+  and the generator fails, writing nothing, when the walk found files under a scan directory that
+  the preload would not import (an empty one passes: the bootstrap creates two). Each takes
+  `--selftest`, which proves the Windows shape is caught and goes red under a mutation of each
+  part, and the Bun smoke test runs both and plants a `src/` file in no tier and a misspelt scan
+  directory.
+
 ### Harness
+- The three smoke tests run on `windows-latest` beside Linux, in Git Bash, so each variant's gates
+  prove themselves where Bun, git and the JDK print Windows paths.
 - The same file is the reply probe: given transcripts, session logs or eval run dirs it prints every
   finding and counts per arm. Six candidates from Simplified Technical English (ASD-STE100) are
   counted and never block: a hedged result ("should pass"), any other hedge, an event passive, a

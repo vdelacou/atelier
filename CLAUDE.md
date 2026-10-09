@@ -87,7 +87,8 @@ tree. What binds work HERE is the authoring and process discipline below.
   The judging itself is local and paired: `JUDGE_MODEL=claude-opus-5 python3
   scripts/conformance-eval/judge.py <runs-dir>` over run dirs the conformance eval produced.
 - CI (`.github/workflows/ci.yml`) runs eight jobs on every push (frontmatter, the em-dash and
-  identity gates, the three smoke tests, two grader-selftest jobs (conformance with the selector
+  identity gates, the three smoke tests, each on Linux and on Windows in Git Bash, two
+  grader-selftest jobs (conformance with the selector
   and the judge; review with distill and the reply probe), matrix drift with the citation,
   workflow-asset and staleness selftests); `canary.yml` weekly-probes
   three deliberate toolchain concessions (whether the typescript pin can lift, whether the three
