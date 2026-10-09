@@ -56,12 +56,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
-      # The smoke test calls python3; the Windows image ships python.exe only.
+      # The smoke test calls python3; a Windows image that ships python.exe alone gets a copy
+      # (windows-latest of 2026-10-09 already carries python3.exe, and cp onto it fails).
       - name: python3 on PATH (Windows)
         if: runner.os == 'Windows'
         run: |
-          py="$(command -v python)"
-          cp "${py%.exe}.exe" "$(dirname "$py")/python3.exe"
+          if ! command -v python3 >/dev/null; then
+            py="$(command -v python)"
+            cp "${py%.exe}.exe" "$(dirname "$py")/python3.exe"
+          fi
           python3 --version
       # Deliberately unpinned toolchain inside the smoke test: a new ESLint /
       # TypeScript / Stryker major that breaks a shipped asset or a documented
@@ -82,12 +85,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
-      # The smoke test calls python3; the Windows image ships python.exe only.
+      # The smoke test calls python3; a Windows image that ships python.exe alone gets a copy
+      # (windows-latest of 2026-10-09 already carries python3.exe, and cp onto it fails).
       - name: python3 on PATH (Windows)
         if: runner.os == 'Windows'
         run: |
-          py="$(command -v python)"
-          cp "${py%.exe}.exe" "$(dirname "$py")/python3.exe"
+          if ! command -v python3 >/dev/null; then
+            py="$(command -v python)"
+            cp "${py%.exe}.exe" "$(dirname "$py")/python3.exe"
+          fi
           python3 --version
       # Scaffolds a Next.js package from the canonical configs in
       # references/nextjs-monorepo.md, then asserts conforming code passes and
@@ -114,12 +120,15 @@ jobs:
           java-version: '21'
           # no `cache: maven`, it requires a pom.xml in the repo, and this
           # repo's pom is generated at runtime by the smoke test
-      # The smoke test calls python3; the Windows image ships python.exe only.
+      # The smoke test calls python3; a Windows image that ships python.exe alone gets a copy
+      # (windows-latest of 2026-10-09 already carries python3.exe, and cp onto it fails).
       - name: python3 on PATH (Windows)
         if: runner.os == 'Windows'
         run: |
-          py="$(command -v python)"
-          cp "${py%.exe}.exe" "$(dirname "$py")/python3.exe"
+          if ! command -v python3 >/dev/null; then
+            py="$(command -v python)"
+            cp "${py%.exe}.exe" "$(dirname "$py")/python3.exe"
+          fi
           python3 --version
       # Scaffolds a Maven repo from the canonical pom.xml in
       # references/java-quarkus.md and the shipped hook assets, then proves the
