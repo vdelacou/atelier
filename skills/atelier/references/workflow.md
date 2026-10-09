@@ -90,7 +90,7 @@ One script handles this, shipped in the skill at `assets/`:
 
 | Script | Job |
 |---|---|
-| `assets/regenerate-coverage-preload.ts` | Walks `src/{infra,composition,presenter}/`, excludes `*.test.ts` / `ports/` / `index.ts`, writes a fresh `scripts/coverage-preload.ts` |
+| `assets/regenerate-coverage-preload.ts` | Walks `src/{infra,composition,presenter}/`, excludes `*.test.ts` / `ports/` / `index.ts`, writes a fresh `scripts/coverage-preload.ts` with `/` in every path on every platform |
 
 `scripts/coverage-preload.ts` itself is always **generated**, never hand-written: copy the regenerate script into a new repo and run it once to create the initial preload.
 
@@ -103,6 +103,8 @@ bun run scripts/regenerate-coverage-preload.ts
 # Exit non-zero if the on-disk file is out of sync, for pre-commit / CI.
 bun run scripts/regenerate-coverage-preload.ts --check
 ```
+
+Both modes fail, writing and comparing nothing, when the walk found files under a scan directory that the preload would not import. That was the Windows failure until 2026-10-09: `path.relative` answers `src\infra\x.ts` there, every path missed its group, the preload imported nothing, and `--check` still reported "in sync". Paths are now normalised to `/` where they enter. An empty scan directory is not a failure, since the bootstrap creates `src/presenter` and `src/composition` empty. `--selftest` proves the guard and the normalisation with Windows path semantics on any machine.
 
 **Wire `--check` into CI, right before the coverage gate.** An out-of-sync preload silently lies about coverage, so the check belongs beside the gate it protects, and the coverage gate runs in CI:
 
@@ -152,6 +154,8 @@ A ready-to-copy `check-coverage.ts` lives in the skill at `assets/check-coverage
 Every `src/infra/*.ts`, `src/composition/env.ts`, and `src/presenter/cli.ts` carries a real 80% gate: most end up at 100% once the three infra-test patterns (see `references/testing-infra.md`) are in routine use. The "we'll add infra tests later" road leads to a coverage gate that trivially passes.
 
 `bun run coverage` exits non-zero if any file falls below its gate and prints the offending paths with current-vs-required numbers. A tier summary at the end highlights the worst funcs/lines per tier, so a single sloppy file is visible without scrolling the per-file table.
+
+It also exits non-zero on a file under `src/` that no tier and no skip rule claims: a new directory gets a tier in `COVERAGE_RULES` or, for a genuine non-code entry, a line in `SKIPPED`, never silence. It reads the table with `/` on every platform, because Bun prints `src\domain\x.ts` on Windows, where until 2026-10-09 every row matched no tier and the gate passed with "no files" in each. `bun run scripts/check-coverage.ts --selftest` feeds planted rows (a Windows row under its gate, a `src/` row in no tier) through the same parser and checks, and fails unless each is caught.
 
 If a file cannot hit the gate, the fix is usually **restructure the code so the dead branch goes away**, not lower the threshold. A threshold reduction must be justified in the commit message.
 

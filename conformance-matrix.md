@@ -121,7 +121,7 @@ numbers line up exactly. On mechanics the skill is if anything tighter than the 
 per-module framing: it enforces per-file against a path-prefix tier, so one weak file fails
 rather than a module average, and it ships a coverage-preload that forces untested files to
 appear at 0 percent, which is precisely canon 15.2's Do ("an untested file reports as 0 percent
-and drags the number down", 15.2 Do; workflow.md:162-197). Both verdicts COVERED, enforced by
+and drags the number down", 15.2 Do; workflow.md:166-201). Both verdicts COVERED, enforced by
 the coverage and mutation gates; the per-file tightening is noted but not scored as STRICTER
 because the canon's clauses are all met rather than exceeded in kind.
 
@@ -134,9 +134,9 @@ is `{ "hono": "4.6.14", "zod": "3.24.1" }`, exact pins (global-rules-dos-and-don
 The skill permits and generates exactly the forbidden shape. `assets/check-package-json.sh`
 bans only `latest`, `*`, and bare dist-tags, and its own comment lists what it "Permits: 'x':
 '^1.2.3' / '~1.2.3' / '>=1.0.0'" (check-package-json.sh:104), while `bun add` "pins to ^X.Y.Z
-automatically" (check-package-json.sh:139) and workflow.md:377 requires "a concrete version
+automatically" (check-package-json.sh:139) and workflow.md:381 requires "a concrete version
 (X.Y.Z) or a real range (^X.Y.Z ...)". The scan clause is covered as doctrine (`bun audit` in
-CI daily and on dependency PRs, security.md:67, workflow.md:631) and the automated-update
+CI daily and on dependency PRs, security.md:67, workflow.md:635) and the automated-update
 clause is covered thinly (Renovate is named, but only in the Java reference, java-quarkus.md:19;
 the Bun side leans on a manual `bun update` cadence and ships no Renovate or dependabot config).
 But the pin clause is contradicted, and CONTRADICTS dominates. The skill's rationale (a
@@ -231,7 +231,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:38-42; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3); CI mutates the changed files per run, the full sweep is the daily assets/mutation.yml (2026-09-03) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:49; testing.md:290; java-quarkus.md:224; check-pom.sh:62 | gate | Mock ban is absolute and gated in every variant (ESLint in TypeScript; the enforcer's `bannedDependencies` plus `check-pom.sh` in Java since 2026-09-08), exceeding canon advisory prefer-fakes |
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; assets/ci-java.yml; assets/ci-next.yml; governance.md:106 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on the changed files on a frozen lockfile as the required merge check; the full mutation sweep is scheduled (assets/mutation.yml) |
-| 4.7 | Hold generated code to the same bar | COVERED | workflow.md:544 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
+| 4.7 | Hold generated code to the same bar | COVERED | workflow.md:548 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:40-85; SKILL.md:71 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
 | 4.9 | Run the tests in random order | COVERED | SKILL.md:78; testing.md:675; bun-typescript.md:35; assets/ci.yml:56; assets/stryker.conf.json:8; java-quarkus.md:484 | gate | Added 2026-09-06 with hard rule 36: `bun test --randomize` is the test script, the CI step and Stryker's runner; JUnit random method and class order in Java; the seed prints on red and replays |
 
@@ -278,10 +278,10 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 8.1 | Trunk-based development with small commits | COVERED | workflow.md:252-356; assets/check-commit-size.sh:19 | gate | Trunk, sub-day branches, small commits; size gate 1 plus commit-msg; rule 38 lands a branch by rebase and deletes it: check-commit-range.sh rejects a merge commit, the daily check-branches.sh a landed or day-old branch |
+| 8.1 | Trunk-based development with small commits | COVERED | workflow.md:256-360; assets/check-commit-size.sh:19 | gate | Trunk, sub-day branches, small commits; size gate 1 plus commit-msg; rule 38 lands a branch by rebase and deletes it: check-commit-range.sh rejects a merge commit, the daily check-branches.sh a landed or day-old branch |
 | 8.2 | Automated pipeline, progressive delivery, one-step rollback | COVERED | delivery.md:7-12 | doctrine | Pipeline-only deploy, canary, one-re-run rollback |
 | 8.3 | Infrastructure as code | COVERED | delivery.md:22 | doctrine | Every resource in version-controlled IaC, rebuilt with one command |
-| 8.4 | Vertical slices | COVERED | architecture.md:34-50; workflow.md:259 | doctrine | Feature-cohesive slices, deploy independently or dark behind a flag; archetype src/ is layer-first |
+| 8.4 | Vertical slices | COVERED | architecture.md:34-50; workflow.md:263 | doctrine | Feature-cohesive slices, deploy independently or dark behind a flag; archetype src/ is layer-first |
 | 8.5 | Change contracts additively / expand-contract | COVERED | reliability.md:113-115; assets/check-data-lifecycle.sh:36 | tripwire | Expand-migrate-contract; check-data-lifecycle.sh blocks DROP COLUMN/TABLE, RENAME, TRUNCATE, ALTER COLUMN TYPE outside a *contract* migration, a default gate via check-disciplines.sh since 2026-09-10 |
 | 8.6 | Separate and ephemeral environments | COVERED | delivery.md:30 | doctrine | Throwaway per-branch environments keyed to the PR, destroyed on close |
 
@@ -357,14 +357,14 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
 | 15.1 | Make the standard executable | COVERED | assets/pre-commit; assets/ci.yml; assets/ci-java.yml; assets/ci-next.yml | gate | Resolved Phase 2: hook restructured to 5 fast gates, full suite/coverage/mutation/strict-lint relocated to CI as the required merge gate (Watchlist 1) |
-| 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:162; assets/check-coverage.ts:161 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3) |
+| 15.2 | Prefer failing loud to passing quietly | COVERED | workflow.md:166; assets/check-coverage.ts:161 | gate | Coverage-preload forces untested files to 0 percent and fails loud (Watchlist 3); since 2026-10-09 a src/ file in no tier fails by name, the preload generator fails when a scan directory's files would not be imported, and both read Windows paths (Bun prints backslashes there, and every row had passed) |
 | 15.3 | No silent opt-out | COVERED | workflow.md:62-83; SKILL.md:51; bun-typescript.md:205; bun-typescript.md:224; assets/java/pmd-ruleset.xml:56; check-no-suppressions.sh:43; java-quarkus.md:256 | gate | Project-level severity change with a reason; inline suppressions banned, and since 2026-09-08 gated in every variant: both TypeScript configs (`noInlineConfig` makes directives inert and reported, `ban-ts-comment` every `@ts-` form, `no-warning-comments` the other tools' markers) and Java (`check-no-suppressions.sh` in hook and CI, the `NoSuppressWarnings` PMD rule, an inert `NOPMD` marker) |
 | 15.4 | Test the bypass, not the happy path | COVERED | testing.md:630-638; testing.md:531-538 | gate | Tests assert forbidden paths refused; the gate-proving surplus that once made this row STRICTER became canon row 15.10 |
-| 15.5 | Compliance is not proof | COVERED | workflow.md:543; governance.md:129 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
-| 15.6 | Audit the gaps between systems | COVERED | workflow.md:535; testing.md:646 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
-| 15.7 | Fix the class, not the instance | COVERED | workflow.md:536-540 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
-| 15.8 | Make proof re-checkable | COVERED | governance.md:80-129; workflow.md:543 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
-| 15.9 | Spend human judgment where it counts | COVERED | workflow.md:592; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
+| 15.5 | Compliance is not proof | COVERED | workflow.md:547; governance.md:129 | doctrine | Proof is a re-runnable check anyone can execute, not a ticked box |
+| 15.6 | Audit the gaps between systems | COVERED | workflow.md:539; testing.md:646 | rule | Test the full edge-to-DB path; the gap between correct systems is where attacks live |
+| 15.7 | Fix the class, not the instance | COVERED | workflow.md:540-544 | gate | Enumerate the whole class with rg, fix every hit, add a CI guard |
+| 15.8 | Make proof re-checkable | COVERED | governance.md:80-129; workflow.md:547 | doctrine | Reproducible evidence plus the access to run it; never a screenshot |
+| 15.9 | Spend human judgment where it counts | COVERED | workflow.md:596; atomic-design.md:153 | gate | Machine owns mechanics so review spends on design and naming |
 | 15.10 | Prove the gate can fail | COVERED | SKILL.md:136; scripts/smoke-test.sh | gate | Doctrine after the variant gate table, every gate lands with a violation fixture it must reject; the repo smoke tests are the reference implementation |
 
 ### Pillar 16: Measure whether you are improving
