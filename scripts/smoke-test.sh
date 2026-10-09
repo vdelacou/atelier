@@ -12,7 +12,8 @@
 #   - every gate passes on a conforming tree (the fast pre-commit hook run
 #     end-to-end, plus the CI gates run directly, Stryker included)
 #   - every gate FAILS on the violation it exists to block (untested infra
-#     file, stale preload, oversized commit, "latest" version, junk commit
+#     file, a src/ file in no coverage tier, stale preload, a preload that
+#     would drop a scan directory's files, oversized commit, "latest" version, junk commit
 #     message, complexity 11, an order-dependent test chain, and the style
 #     bans: a class, an inline type specifier, a use-case try/catch, a curried
 #     chain, node:fs in the domain, a domain import of infra, a mock import,
@@ -252,6 +253,13 @@ bunx eslint --fix src/domain/result.ts src/domain/greeting.ts src/domain/greetin
   src/infra/fetch-greeting.ts src/infra/fetch-greeting.test.ts >/dev/null 2>&1 || true
 
 echo "== positive path: every gate green on a conforming tree =="
+# Bun prints the coverage table with the platform's separator, src\domain\x.ts on Windows, and
+# until 2026-10-09 both tools read only '/' there: the gate passed every row and the preload
+# imported nothing. Each selftest proves it fails on that shape before the real runs below.
+expect_ok "check-coverage.ts selftest (a Windows row under its gate fails, a src/ row in no tier fails by name)" \
+  bun run scripts/check-coverage.ts --selftest
+expect_ok "regenerate-coverage-preload.ts selftest (an unnormalised Windows path fails, a normalised one imports with /)" \
+  bun run scripts/regenerate-coverage-preload.ts --selftest
 expect_ok "regenerate coverage preload" bun run scripts/regenerate-coverage-preload.ts
 expect_ok "preload --check in sync" bun run scripts/regenerate-coverage-preload.ts --check
 expect_ok "bun test --randomize (the test script, rule 36)" bun test --randomize
@@ -572,6 +580,32 @@ bun run scripts/regenerate-coverage-preload.ts >/dev/null
 echo '// stale' >> scripts/coverage-preload.ts
 expect_err "preload --check rejects stale preload" bun run scripts/regenerate-coverage-preload.ts --check
 bun run scripts/regenerate-coverage-preload.ts >/dev/null
+
+# A covered file under src/ that no tier and no skip rule claims fails the run by name: no gate
+# would judge it otherwise (2026-10-09; the Windows table matched no tier and passed every row).
+mkdir -p src/jobs
+cat > src/jobs/tick.ts <<'EOF'
+export const tick = (count: number): number => count + 1;
+EOF
+cat > src/jobs/tick.test.ts <<'EOF'
+import { expect, test } from 'bun:test';
+import { tick } from './tick.ts';
+
+test('a tick advances the count by one', () => {
+  expect(tick(1)).toBe(2);
+});
+EOF
+expect_ok "coverage gate rejects a covered src/ file in no tier and no skip rule, by name" \
+  bash -c 'bun run coverage > coverage-tier.out 2>&1; [ $? -eq 1 ] && grep -q "no tier and no skip rule" coverage-tier.out && grep -q "src/jobs/tick.ts" coverage-tier.out'
+rm -r src/jobs coverage-tier.out
+
+# The generator refuses to write when the walk found files under a scan directory that the preload
+# would not import (on Windows every path missed its group before 2026-10-09); a SCAN_DIRS entry
+# spelt ./src/infra drops them the same way on any machine, and the preload on disk stays as it was.
+sed "s#'src/infra'#'./src/infra'#" scripts/regenerate-coverage-preload.ts > scripts/regenerate-misspelt.ts
+expect_ok "preload generator writes nothing when a scan directory's files would not be imported" \
+  bash -c 'bun run scripts/regenerate-misspelt.ts > preload-guard.out 2>&1; [ $? -eq 1 ] && grep -q "holds 1 file(s) for the preload, which would import 0" preload-guard.out && bun run scripts/regenerate-coverage-preload.ts --check >/dev/null'
+rm scripts/regenerate-misspelt.ts preload-guard.out
 
 git add -A
 expect_err "commit-size gate rejects oversized stage" bash scripts/check-commit-size.sh
