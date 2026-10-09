@@ -148,6 +148,11 @@ gate_rc=0; stop_event 'The adapter owns the deadline now.' 0 | CLAUDE_PROJECT_DI
 if [ "$gate_rc" -eq 0 ]; then pass "reply gate passes a plain reply"; else cat "$LOG"; fail "reply gate blocked a plain reply (exit $gate_rc)"; fi
 gate_rc=0; stop_event '- **Deadline.** The adapter owns it now.' 1 | CLAUDE_PROJECT_DIR="$PWD" bash -c "$STOP_CMD" >"$LOG" 2>&1 || gate_rc=$?
 if [ "$gate_rc" -eq 0 ]; then pass "reply gate passes the restated reply (stop_hook_active: no loop)"; else cat "$LOG"; fail "reply gate blocked the restated reply (exit $gate_rc)"; fi
+# Claude Code sends the event as raw UTF-8, which Windows Python read as cp1252 until 2026-10-09: an
+# em dash or an emoji arrived as other characters and passed. This event carries both, unescaped.
+gate_rc=0; python3 -c 'import json, sys; sys.stdout.buffer.write(json.dumps({"hook_event_name": "Stop", "stop_hook_active": False, "last_assistant_message": "The suite is green " + chr(0x2705) + " and the adapter " + chr(0x2014) + " owns it."}, ensure_ascii=False).encode("utf-8"))' | CLAUDE_PROJECT_DIR="$PWD" bash -c "$STOP_CMD" >"$LOG" 2>&1 || gate_rc=$?
+if [ "$gate_rc" -eq 2 ] && grep -q 'em-dash' "$LOG" && grep -q 'emoji' "$LOG"; then pass "reply gate blocks an em dash and an emoji sent as raw UTF-8 (exit 2, both tags)"
+else cat "$LOG"; fail "reply gate did not block an em dash and an emoji sent as raw UTF-8 with exit 2 and both tags (exit $gate_rc)"; fi
 rm scripts/check-reply.py .claude/settings.json && rmdir .claude
 
 echo "== branch watchdog (rule 38: no landed or day-old branch left on the remote) =="
