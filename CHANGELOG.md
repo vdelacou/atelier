@@ -37,7 +37,10 @@ whole, not any single skill.
   CLI a blocked list came back plain, $0.037 for both turns. The cost: a blocked reply shows twice,
   with a "Stop hook error" notice between. Given session logs, the probe counts the gate's own
   blocks per session: the blocks, the ones after a session's first, and the restatements that still
-  broke a rule.
+  broke a rule. It reads the event and writes its feedback as UTF-8 on every platform: Claude Code
+  sends raw UTF-8, and Windows Python decodes a pipe as cp1252 unless UTF-8 mode is on, which let an
+  em dash and an emoji through. `--selftest` proves it under `PYTHONIOENCODING=cp1252`, and each
+  smoke test sends both characters unescaped, which on the Windows legs is the real platform.
 - Hard rule 38, the branch lifecycle: a branch starts from a fetched `main`, lives less than a day,
   stays current by rebase, lands by rebase or fast-forward (never a merge commit, never a squash of
   several commits, which builds one commit gate 1 rejects), is deleted on the remote and locally the
