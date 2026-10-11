@@ -36,8 +36,10 @@ whole, not any single skill.
   a plain reply, the loop guard, and that the copied settings run the copied script; on the real
   CLI a blocked list came back plain, $0.037 for both turns. The cost: a blocked reply shows twice,
   with a "Stop hook error" notice between. Given session logs, the probe counts the gate's own
-  blocks per session: the blocks, the ones after a session's first, and the restatements that still
-  broke a rule. It reads the event and writes its feedback as UTF-8 on every platform: Claude Code
+  blocks per session: the blocks, the ones after a session's first, the restatements that still
+  broke a rule, and the replies that broke one mid-turn, which the gate never judges: it reads a
+  turn's last message only, and a summary written before an AskUserQuestion call is not that
+  message. It reads the event and writes its feedback as UTF-8 on every platform: Claude Code
   sends raw UTF-8, and Windows Python decodes a pipe as cp1252 unless UTF-8 mode is on, which let an
   em dash and an emoji through. `--selftest` proves it under `PYTHONIOENCODING=cp1252`, and each
   smoke test sends both characters unescaped, which on the Windows legs is the real platform.
