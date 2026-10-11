@@ -22,7 +22,8 @@ is not a Stop event, a visible hook error and never a silent pass. It needs only
 The probe, file or directory arguments, reads replies after the fact and counts every tag; a
 doctrine finding exits 1. On transcripts it also counts the gate's own blocks per session, read
 from the feedback Claude Code hands back: blocks, the ones after a session's first, and the
-restatements that still broke a rule. Its candidate tags come from Simplified Technical English (ASD-STE100
+restatements that still broke a rule. It counts the replies that broke a rule mid-turn too, text
+followed by a tool call in the same turn, which the gate never judges. Its candidate tags come from Simplified Technical English (ASD-STE100
 Issue 7, read through the 0xpili/simplified-technical-english skill on 2026-10-04). They are not
 doctrine and never block or fail: they are counted so an Interaction edit lands only where agents
 miss, and 831 real replies showed no habit for any of them (2026-10-04).
@@ -283,24 +284,46 @@ def transcript_replies(path: Path) -> list[str]:
     return [text for event in events_of(path) for text in reply_texts(event)]
 
 
-def gate_blocks(path: Path) -> tuple[int, int]:
-    """The reply gate's blocks in a transcript, and the restatements that still broke a rule.
+def breaks_a_rule(text: str) -> bool:
+    return any(tag in DOCTRINE for tag, _ in check(text)[0])
+
+
+def tool_calls(event: dict) -> bool:
+    """Whether a main-thread assistant event calls a tool; a subagent's calls are its own."""
+    if event.get("type") != "assistant" or event.get("isSidechain") or event.get("parent_tool_use_id"):
+        return False
+    content = (event.get("message") or {}).get("content")
+    return any(isinstance(b, dict) and b.get("type") == "tool_use" for b in content or [])
+
+
+def gate_blocks(path: Path) -> tuple[int, int, int]:
+    """The reply gate's blocks in a transcript, the restatements that still broke a rule, and the
+    replies that broke one mid-turn, where the gate never looks.
 
     A block is the feedback Claude Code hands back: a user event that opens with "Stop hook
     feedback" and carries the gate's own message, so another hook's feedback, or a person quoting
-    the message, is not one. Its restatement is the next reply after it."""
-    blocks = still = 0
+    the message, is not one. Its restatement is the next reply after it. The gate judges a turn's
+    last message only, so text followed by a tool call in the same turn, such as a summary before
+    an AskUserQuestion call, reaches the person unjudged (2026-10-11)."""
+    blocks = still = unjudged = 0
     restating = False
+    pending: list[str] = []  # this turn's text since its last tool call
     for event in events_of(path):
         said = user_text(event)
         if said.lstrip().startswith("Stop hook feedback") and GATE_SAID in said:
-            blocks, restating = blocks + 1, True
+            blocks, restating, pending = blocks + 1, True, []
             continue
+        if event.get("type") == "user":
+            pending = []  # a prompt starts a turn; a tool's result follows the call that counted the text
         texts = reply_texts(event)
         if restating and texts:
             restating = False
-            still += any(tag in DOCTRINE for tag, _ in check("\n\n".join(texts))[0])
-    return blocks, still
+            still += breaks_a_rule("\n\n".join(texts))
+        pending += texts
+        if tool_calls(event):
+            unjudged += sum(breaks_a_rule(text) for text in pending)
+            pending = []
+    return blocks, still, unjudged
 
 
 def files_in(root: Path) -> list[Path]:
@@ -337,8 +360,9 @@ def collect(args: list[str]) -> list[tuple[str, str, str]]:
     return replies
 
 
-def gates_in(args: list[str]) -> list[tuple[str, tuple[int, int]]]:
-    """(arm, (blocks, restatements still breaking a rule)) for each transcript the arguments name."""
+def gates_in(args: list[str]) -> list[tuple[str, tuple[int, int, int]]]:
+    """(arm, (blocks, restatements still breaking a rule, mid-turn replies breaking one)) for each
+    transcript the arguments name."""
     return [(arm_of(path), gate_blocks(path)) for path in paths_of(args) if path.suffix == ".jsonl"]
 
 
@@ -347,7 +371,7 @@ def excerpt(text: str, width: int = 110) -> str:
     return flat if len(flat) <= width else flat[: width - 3] + "..."
 
 
-def report(replies: list[tuple[str, str, str]], gates: list[tuple[str, tuple[int, int]]] = ()) -> int:
+def report(replies: list[tuple[str, str, str]], gates: list[tuple[str, tuple[int, int, int]]] = ()) -> int:
     """Print every finding, then the counts per arm, with the gate's blocks per session where
     transcripts were read; 1 when any doctrine tag fired."""
     counts: dict[str, Counter] = {}
@@ -358,7 +382,7 @@ def report(replies: list[tuple[str, str, str]], gates: list[tuple[str, tuple[int
         for tag, evidence in found:
             tally[tag] += 1
             print(f"{label}: {tag}: {excerpt(evidence)}")
-    sessions: dict[str, list[tuple[int, int]]] = {}
+    sessions: dict[str, list[tuple[int, int, int]]] = {}
     for arm, counted in gates:
         sessions.setdefault(arm, []).append(counted)
     for arm in sorted(set(counts) | set(sessions)):
@@ -369,10 +393,11 @@ def report(replies: list[tuple[str, str, str]], gates: list[tuple[str, tuple[int
         print("  candidate (per 100 sentences): " + ", ".join(f"{tag} {tally[tag]} ({tally[tag] / per:.1f})" for tag in CANDIDATE))
         if arm in sessions:
             runs = sessions[arm]
-            blocked = [b for b, _ in runs if b]
+            blocked = [b for b, _, _ in runs if b]
             print(f"  gate: {sum(blocked)} block(s) in {len(blocked)} of {len(runs)} session(s), "
                   f"{sum(b - 1 for b in blocked)} after a session's first, "
-                  f"{sum(s for _, s in runs)} restatement(s) still breaking a rule")
+                  f"{sum(s for _, s, _ in runs)} restatement(s) still breaking a rule, "
+                  f"{sum(u for _, _, u in runs)} mid-turn reply(ies) breaking a rule, which the gate never judges")
     doctrine = sum(tally[tag] for tally in counts.values() for tag in DOCTRINE)
     print(f"\n{doctrine} doctrine finding(s): the Interaction section already bans these" if doctrine
           else "\nno doctrine finding; the candidates are counts, never a failure")
@@ -586,8 +611,32 @@ def selftest() -> int:
             "person": lambda s: {"type": "user", "message": {"role": "user", "content": s}},
         }
         (tmp / "gated.jsonl").write_text("\n".join(json.dumps(shapes[k](s)) for k, s in said_by) + "\n")
-        if gate_blocks(tmp / "gated.jsonl") != (2, 1):
-            failures.append(f"the gate's blocks read as {gate_blocks(tmp / 'gated.jsonl')}, not (2, 1)")
+        if gate_blocks(tmp / "gated.jsonl") != (2, 1, 0):
+            failures.append(f"the gate's blocks read as {gate_blocks(tmp / 'gated.jsonl')}, not (2, 1, 0)")
+
+        # Mid-turn: a summary that breaks a rule before a question is never judged and counts; a
+        # clean one does not; a turn's last message is the gate's to judge, so it never counts, even
+        # broken and even when the next turn calls a tool; a subagent's call after the last message
+        # (a background agent still working) does not make that message mid-turn.
+        call = lambda name: {"type": "tool_use", "id": f"toolu_{name}", "name": name, "input": {}}
+        result = lambda name: {"type": "user", "message": {"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": f"toolu_{name}", "content": "ok"}]}}
+        turns = [
+            shapes["person"]("Ship it?"),
+            shapes["assistant"](PLANTS["bold-lead-in"]),  # a session log writes each block apart
+            {"type": "assistant", "message": {"content": [call("AskUserQuestion")]}},
+            result("AskUserQuestion"),
+            shapes["assistant"](PLANTS["cut-word"]),
+            shapes["person"]("And the adapter?"),
+            {"type": "assistant", "message": {"content": [{"type": "text", "text": "Checking the adapter."}, call("Bash")]}},
+            result("Bash"),
+            shapes["assistant"](PLANTS["em-dash"]),
+            {"type": "assistant", "isSidechain": True, "message": {"content": [
+                {"type": "text", "text": PLANTS["em-dash"]}, call("Grep")]}},
+        ]
+        (tmp / "midturn.jsonl").write_text("\n".join(json.dumps(e) for e in turns) + "\n")
+        if gate_blocks(tmp / "midturn.jsonl") != (0, 0, 1):
+            failures.append(f"the mid-turn replies read as {gate_blocks(tmp / 'midturn.jsonl')}, not (0, 0, 1)")
     finally:
         shutil.rmtree(tmp)
 
@@ -596,11 +645,11 @@ def selftest() -> int:
     with contextlib.redirect_stdout(io.StringIO()) as printed:
         passing = report([("-", "clean", CLEAN), ("-", "hedged", PLANTS["hedge"])])
         failing = report([("-", "dashed", PLANTS["em-dash"])])
-        report([("with_skill", "r", CLEAN)], [("with_skill", (2, 1)), ("with_skill", (0, 0)), ("with_skill", (1, 0))])
+        report([("with_skill", "r", CLEAN)], [("with_skill", (2, 1, 1)), ("with_skill", (0, 0, 2)), ("with_skill", (1, 0, 0))])
     if passing != 0 or failing != 1 or "dashed: em-dash: " not in printed.getvalue():
         failures.append(f"exit {passing} on a candidate, {failing} on a doctrine finding")
     gate_line = ("gate: 3 block(s) in 2 of 3 session(s), 1 after a session's first, "
-                 "1 restatement(s) still breaking a rule")
+                 "1 restatement(s) still breaking a rule, 3 mid-turn reply(ies) breaking a rule, which the gate never judges")
     if gate_line not in printed.getvalue():
         failures.append(f"the per-arm gate line is missing or wrong: {printed.getvalue()[-300:]!r}")
 
@@ -611,6 +660,7 @@ def selftest() -> int:
     print(f"check-reply.py --selftest: each of the {len(PLANTS)} tags fires on its own plant and nowhere else, "
           "the clean reply passes, transcripts and run dirs read as replies, the gate blocks a doctrine finding "
           "once and nothing else, an em dash and an emoji sent as UTF-8 block and quote intact under cp1252, "
+          "a broken mid-turn reply counts and a turn's last message never does, "
           "the cut list matches SKILL.md")
     return 0
 
