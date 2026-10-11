@@ -1,47 +1,49 @@
-# Plan: the reply gate reads and writes UTF-8 on Windows (2026-10-09)
+# Plan: the reply gate's first reading, its blind spot, and the next check-in (2026-10-11)
 
-The previous plan (the coverage gate and the preload generator on Windows paths) closed with PR #3
-merged by rebase into main (a38c9e0): eight commits, all eleven checks green, the three smoke tests
-green on windows-latest. The remote main-f7v4vj still waits on the owner's delete button. The
-proposal for rule 38's host side (main as the default branch, rebase-only, auto-delete, a ruleset
-protecting main, a daily drift check) still waits on the owner, after this fix.
-
-The bug, found while auditing the other assets for PR #3: `check-reply.py` reads the Stop event with
-`sys.stdin.read()`, which decodes in the locale's encoding. Claude Code sends the event as raw UTF-8,
-and Windows Python decodes a pipe as the ANSI code page (cp1252) unless UTF-8 mode is on, so an em
-dash arrives as three other characters and the gate exits 0 on a reply it must block (reproduced
-with `PYTHONIOENCODING=cp1252`: exit 0 for an em dash and for an emoji, against exit 2 under UTF-8).
-The output has the mirror problem: stderr's backslashreplace kept the hook from crashing, but its
-feedback quoted an emoji as `\u2705` and an em dash as a cp1252 byte, and the probe, on stdout,
-crashed with UnicodeEncodeError (exit 1) printing an emoji. The smoke tests never saw any of it:
-their events go through `json.dumps`, which escapes every non-ASCII character. The owner chose a
-separate PR for it.
+The previous plan (the reply gate reads and writes UTF-8 on every platform) closed with PR #4 merged
+by rebase into main (926ec04). The firing-rate check-in fired on 2026-10-11 and found one session
+that ran with the gate, this repository's own: 4 blocks in 25 judged replies, all bold lead-ins,
+3 after the session's first, every restatement clean. It also found a blind spot: the Stop hook
+judges a turn's last message only, and 2 of the 6 replies that broke a rule after the gate went
+live were summaries written before an AskUserQuestion call. panda-social-cli wired the gate on
+2026-10-05 (1a94fa7) but no session has run with it; ask-marcel-studio, extract-html and
+run-with-heart are not wired; the two ask-marcel org repos could not be read, and their cloud
+sessions ran one Stop hook per turn. The owner chose all three next steps: record the reading,
+close the blind spot with a pre-question hook, re-arm the check-in.
 
 ## Steps and definition of done
 
-1. [x] Restart main-f7v4vj from origin/main. DoD: at origin/main's tip.
-2. [x] check-reply.py: `main` reads stdin as UTF-8 bytes, in `--hook` and in the probe's stdin mode,
-   and sets stdout and stderr to UTF-8. `--selftest` runs the script under `PYTHONIOENCODING=cp1252`
-   (`PYTHONUTF8=0`) with an em dash and an emoji sent as raw UTF-8, and expects exit 2 with each
-   tag. DoD: selftest green, red under each mutation (stdin read in the locale's encoding, the
-   output left in it).
-3. [x] The three smoke tests: one more reply-gate case sends an em dash and an emoji as raw UTF-8
-   through the copied settings and expects exit 2 with both tags. On the Windows legs that is the
-   real platform. DoD: green here; green on windows-latest in CI.
-4. [x] workflow.md's Reply gate (the encoding, and why); the reply gate's own Unreleased Added entry
-   carries the fix, since the gate has not shipped in a release. DoD: citations re-anchored once and
-   intact, drift, frontmatter, em-dash gates green.
-5. [ ] Land in slices on the owner's yes, push on its own yes, a pull request; CI green; rebase
-   merge; the branch deleted on both sides.
+1. [x] Re-arm the check-in (trig_01SaAdsRteii5z8BaXw2RFpA) for 2026-10-18 08:00 UTC with what the
+   first one learned. DoD: the trigger shows next_run_at 2026-10-18T08:00:00Z and the new prompt.
+2. [x] Probe the pre-question hook before any doctrine. AskUserQuestion is not offered to a headless
+   run, so the probe holds a Bash call instead (PreToolUse runs the same way for every tool).
+   Found: the text written before the call is not in the transcript when the hook fires and lands
+   within 100 ms, so a hook must wait for its own tool_use_id; a hold lands as an is_error
+   tool_result, so a retry can see it; and held twice (Opus 5.5, feedback asking for the text in
+   the same message as the call), the model retried with no text both times and fixed the prose
+   only in its final reply. DoD: the finding recorded; nothing built on it.
+3. [x] workflow.md's Reply gate: the first reading replaces "not yet measured", and a paragraph
+   names the blind spot and the probe. DoD: citations re-anchored once and intact, drift and the
+   em-dash scan green.
+4. [x] The owner's call on the blind spot, since the hook as designed does not fix the text before
+   the question: measure first. The probe's gate line counts the mid-turn replies that broke a
+   rule, text followed by a tool call in the same turn (a prompt starts a turn, a subagent's calls
+   are its own, a turn's last message is the gate's). The check-in asks for that count in place of
+   the hook's blocks. DoD: a planted session in the selftest counts its one broken summary before a
+   question and never two turns' broken last messages or a subagent's broken text and call, four
+   mutants go red (never counts, counts every text, counts a subagent's call, no reset at a
+   prompt), and workflow.md and the changelog name the count and why nothing was built.
+5. [ ] Land on the owner's yes: commits, push over the landed remote main-f7v4vj with a pinned
+   lease, a pull request, CI green, rebase merge.
 
 ## Status
 
-Steps 1-4 done 2026-10-09. The selftest runs the script under PYTHONIOENCODING=cp1252: an em dash
-and an emoji sent as raw UTF-8 block and are quoted intact, and the probe prints an emoji finding.
-It goes red under four mutations (stdin in the locale's encoding, no output reconfigure, stderr
-only, stdout only). The old gate measured under cp1252: exit 0 on both characters sent raw, and
-the probe crashed (exit 1) printing an emoji. The new smoke case passes on the new gate and fails
-the old one with exit 0. All three smoke tests green here (Bun 151, Next 52, Java 82 checks).
-Citations intact (nothing moved), drift and frontmatter green. The owner said yes to landing.
-Next (step 5): four slices, push over the stale remote main-f7v4vj with --force-with-lease (its
-eight commits are on main), PR #4, CI green on the Windows legs, rebase merge.
+Steps 1-4 done 2026-10-11. The owner chose to measure the blind spot first. On the session log of
+the first reading the probe reads 4 blocks, 3 after the session's first, 0 restatements still
+breaking a rule and 3 mid-turn replies breaking a rule, each a bold-lead-in summary before an
+AskUserQuestion call (2026-10-04 09:53, before the gate went live; 10-04 12:09; 10-09 15:07). The
+session's second log repeats those events from 2026-10-04 14:01 on, which the check-in now knows
+to skip. Selftest green, the four mutants red, citations intact after one re-anchor (9 moved with
+workflow.md), drift and the em-dash scan green. The owner said yes to landing. Next (step 5):
+three slices, push over the landed remote main-f7v4vj with --force-with-lease pinned to 574eb10,
+PR #5, CI green, rebase merge on the owner's go.
