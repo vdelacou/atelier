@@ -2,6 +2,12 @@
 
 Journal of mistakes, decisions, and gotchas for this repo, newest first. Append-only between compaction passes: supersede a decision with a newer `[decision]`; only an approved compaction pass rewrites or retires entries, into `.claude/lessons.archive.md`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [mistake] 2026-10-15 | a re-anchor run on a half-copied matrix and lock moves a citation twice
+
+Slicing PR #3 (2026-10-09), I copied the final, already re-anchored `conformance-matrix.md` into the scratch worktree while its `citations-lock.json` was still the old one, then ran `check-citations.py --reanchor` there. The script computes each move from the lock (old line to the line that now holds the snippet) and rewrites every citation token still naming an old line, so a token the copy had already moved was moved again wherever its new line was another entry's old one, which left row 15.7 citing 544-548. Rebuilding slices 5 to 7 with one re-anchor from a matching pair fixed it. PR #6 sliced cleanly: each slice that shifted cited lines re-anchored its own untouched pair, and the final pair was copied only at the slice where every cited file was final.
+
+Rule for next time: run `--reanchor` only where the matrix and the lock come from the same state; copy the two together or not at all.
+
 ## [gotcha] 2026-09-27 | an eval session started inside the repo reads the repo
 
 Run from a folder in this tree, `claude -p` loaded this `CLAUDE.md` and the project memory and listed the installed atelier skills; isolated, the unaided conformance arm fell from 46 to 36 of 61. Eval sessions start outside the repo with `--setting-sources project,local` plus the user's settings file.
