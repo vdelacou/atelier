@@ -268,23 +268,24 @@ This is the default for this codebase. It overrides any tooling habit of "branch
 
 ### Branch lifecycle (hard rule 38)
 
-A branch is a short detour from the trunk: its whole life fits in a day, and it leaves nothing behind. Six steps, two of them machine-checked:
+A branch is a short detour from the trunk: its whole life fits in a day, and it leaves nothing behind. `main` is the trunk and the host's default branch; a new repository starts on it (`git init -b main`). Six steps, the gates and the host holding steps 2, 3, 4 and 6:
 
 1. Start from a freshly fetched `main` (`git fetch origin && git switch -c <name> origin/main`), or commit to `main` directly.
 2. Keep your own branch current by rebasing it onto `main` (`git rebase origin/main`), never by merging `main` into it.
 3. Land it by rebase or fast-forward: the host's "Rebase and merge", never a merge commit, and never a squash of several commits, which builds one commit that fails gate 1 on `main`. `check-commit-range.sh` rejects a merge commit in every pull request and every push (GitHub's synthetic merge of a pull request into its base, which a pull_request checkout sits on, is stepped over).
 4. Delete it the moment it lands, on the remote and locally (`git push origin --delete <name>`, `git branch -D <name>`). For the agent the remote delete is a push, so it waits for the user's yes (rule 25); when the host refuses it, say so and point the user at the host's delete button.
 5. Follow-up work after a landing starts a fresh branch from the new `main`, never more commits on the landed one.
-6. Nobody force-pushes or deletes `main`.
+6. Nobody force-pushes or deletes `main`: the host's ruleset refuses both, to admins too.
 
-The host enforces what git alone cannot. The owner sets it once, as code, to rebase-only merges with automatic head-branch deletion, and protects `main` against force pushes and deletion in the branch-protection code of `references/delivery.md`:
+The host enforces what git alone cannot, and its owner sets it once, as code. `assets/check-host.py --apply`, run with an admin token after the first push, makes `main` the default branch (renaming the current default when there is no `main`, and printing the four commands each clone runs after the rename), allows rebase merges only, deletes head branches on merge, and creates the ruleset in `assets/host-ruleset.json`: on the default branch, with no bypass, no deletion, no force push and linear history, so no merge commit reaches `main` by any path. The ruleset requires neither a pull request nor a status check, because step 1 allows committing to `main` directly; a team that lands only through pull requests adds those rules to the file, and the check then holds them too. `--apply` changes the host's configuration, which is the owner's call: the agent proposes it and runs it on the owner's yes, like a push (rule 25).
 
 ```bash
-gh api -X PATCH repos/{owner}/{repo} -F allow_rebase_merge=true -F allow_merge_commit=false \
-  -F allow_squash_merge=false -F delete_branch_on_merge=true
+python3 scripts/check-host.py --apply   # the owner, once, with gh signed in as an admin
 ```
 
-`assets/branches.yml` runs `check-branches.sh` every morning and fails on a remote branch whose work is already on `main`, judged by content with `git merge-tree` so a rebase or squash merge counts as landed, and on one whose oldest commit not on `main` is more than a day old (`MAX_BRANCH_AGE_HOURS`, default 24). `KEEP_BRANCHES` (default `^release/`) exempts the release branches cut from the trunk when a release ships; a team that keeps other long-lived branches names them there, and owns the drift that follows. It is a watchdog, not a merge gate: a branch goes stale while nobody pushes to it.
+`assets/branches.yml` runs two watchdogs every morning. `check-branches.sh` fails on a remote branch whose work is already on `main`, judged by content with `git merge-tree` so a rebase or squash merge counts as landed, and on one whose oldest commit not on `main` is more than a day old (`MAX_BRANCH_AGE_HOURS`, default 24). `KEEP_BRANCHES` (default `^release/`) exempts the release branches cut from the trunk when a release ships; a team that keeps other long-lived branches names them there, and owns the drift that follows. `check-host.py` fails when the default branch is not `main`, when `main` lacks a rule the ruleset file lists, or when a merge setting has drifted. It needs read access only: GitHub's REST API shows a read-only token none of the four merge settings, GraphQL shows all four (probed 2026-10-15), and a setting GitHub does not show is an error, never a pass. Neither is a merge gate: a branch goes stale while nobody pushes to it, and a setting drifts while nobody looks.
+
+Two cases bend the host check. A private repository on GitHub Free cannot hold a ruleset, since rulesets need a public repository or a paid plan: its owner sets `HOST_RULESET: unavailable` in `branches.yml`, and the check reports `main`'s missing rules instead of failing on them; on a repository that is not private the opt-out itself fails. And a history rewrite that must force-push `main` (rule 26's scrub, Commit identity below) sets the ruleset's enforcement to disabled for that push and back to active after it; the morning check fails in between.
 
 ## Confirmation gates (rules 24 and 25)
 
@@ -331,7 +332,7 @@ git remote add origin <url>          # filter-repo strips the remote as a safety
 git push --force-with-lease origin main
 ```
 
-To also remap the author and committer fields, add `--mailmap` with `Intended Name <intended@email> <old@email>` lines. `filter-repo` rewrites every commit SHA, so this is a coordinated force-push: anyone holding a clone must re-clone.
+To also remap the author and committer fields, add `--mailmap` with `Intended Name <intended@email> <old@email>` lines. `filter-repo` rewrites every commit SHA, so this is a coordinated force-push: anyone holding a clone must re-clone. Rule 38's ruleset refuses a force push to `main` from anyone: set its enforcement to disabled for this push and back to active after it (Branch lifecycle above).
 
 **A force-push does not purge the old commits.** The rewritten branch no longer points at them, but the host keeps unreferenced commits reachable by their SHA, through cached views, and via any fork or open PR, until it garbage-collects on its own schedule. Treat a leaked commit as exposed even after the fix: rotate anything that was a live secret, and for a hard guarantee delete-and-recreate the repo or ask the host's support to purge.
 

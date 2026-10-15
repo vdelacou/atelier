@@ -21,7 +21,7 @@ Emit a machine-readable deployment event from the same job, so delivery statisti
 
 - Every resource lives in version-controlled files (OpenTofu/Terraform or equivalent) and the whole environment rebuilds from scratch with one command in minutes. A resource clicked into existence in a console has no history, no review, and no way back.
 - **Only the pipeline holds write access to production infrastructure.** Humans get read-only; a change reaches the cloud by merging reviewed code. That makes every infra change versioned, reviewed, and reversible by construction, and it is the separation-of-duties control (`references/governance.md`) expressed mechanically.
-- Branch protection itself is code (required reviews, required checks, `enforce_admins`), not a setting someone toggled once.
+- Branch protection itself is code, not a setting someone toggled once: `assets/host-ruleset.json` holds `main` against deletion, force pushes and merge commits for everyone, admins included, and `check-host.py` checks it every morning (`references/workflow.md`, Branch lifecycle). A team that lands only through pull requests adds required reviews and required status checks to that file, and the check holds them too.
 
 ## Environments: separate, honest, disposable
 
