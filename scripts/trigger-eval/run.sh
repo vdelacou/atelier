@@ -47,6 +47,9 @@ if [ -n "${TRIGGER_EVAL_SUITE:-}" ]; then
   SUITE_ARG=$(echo "$TRIGGER_EVAL_SUITE" | tr ',' '\n' | sed "s|^|$REPO_ROOT/|" | paste -sd, -)
 fi
 
+# One answered turn first, or no session of this pass runs (scripts/eval-preflight.sh).
+bash "$REPO_ROOT/scripts/eval-preflight.sh" "${TRIGGER_EVAL_MODEL:-}"
+
 cd "$HERE/$FIXTURE"
 python3 "$HERE/run_eval.py" \
   --eval-set "$SET" \
