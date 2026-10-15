@@ -51,14 +51,15 @@ lint_workflow() {
     echo "NOTE $wf: no YAML parser on this machine (python3 with PyYAML, or ruby); the parse check is skipped here and runs in CI" >&2
   fi
 
-  # 1. every `scripts/<name>` referenced in a run line must ship in assets/
+  # 1. every `scripts/<name>` referenced in a run line must ship in assets/, a data file a
+  #    script reads too (branches.yml names the ruleset check-host.py holds main to)
   while IFS= read -r ref; do
     local base="${ref#scripts/}"
     if [ ! -f "$assets_dir/$base" ]; then
       echo "FAIL $wf: references $ref but $assets_dir/$base does not exist" >&2
       fails=1
     fi
-  done < <(grep -oE 'scripts/[A-Za-z0-9._-]+\.(sh|ts|py|js)' "$wf" | sort -u)
+  done < <(grep -oE 'scripts/[A-Za-z0-9._-]+\.(sh|ts|py|js|json)' "$wf" | sort -u)
 
   # 3. every variant that ships the workflow must tell consumers to copy each of them.
   #    An unmapped workflow and a missing reference are failures: until 2026-09-27 both
@@ -92,7 +93,7 @@ lint_workflow() {
         echo "FAIL $wf: needs scripts/$sbase but $ref never copies assets/$sbase" >&2
         fails=1
       fi
-    done < <(grep -oE 'scripts/[A-Za-z0-9._-]+\.(sh|ts|py|js)' "$wf" | sort -u)
+    done < <(grep -oE 'scripts/[A-Za-z0-9._-]+\.(sh|ts|py|js|json)' "$wf" | sort -u)
   done
 
   # 2. a non-preinstalled binary needs an install step BEFORE its first bare use
@@ -123,7 +124,7 @@ selftest() {
   local tmp; tmp=$(mktemp -d)
   trap "rm -rf '$tmp'" EXIT
   mkdir -p "$tmp/assets"
-  touch "$tmp/assets/present.sh"
+  touch "$tmp/assets/present.sh" "$tmp/assets/present.json"
   # One reference that copies every script the fixtures call, so a case is red for
   # its own reason and never for a missing copy line; each case asserts the reason.
   printf 'copy assets/present.sh and assets/missing.sh into scripts/\n' > "$tmp/ref.md"
@@ -154,6 +155,9 @@ selftest() {
   # violation 3: a script the bootstrap reference never copies
   printf 'a bootstrap doc that copies nothing\n' > "$tmp/bare-ref.md"
   BOOTSTRAP_REF_BUN="$tmp/bare-ref.md" red "an uncopied script" "never copies assets/present.sh" "$(fixture v3 'steps:\n  - run: bash scripts/present.sh\n')"
+  # violation 3f: a data file the workflow hands a script, which the reference never copies
+  red "an uncopied data file" "never copies assets/present.json" \
+    "$(fixture v3f 'steps:\n  - run: bash scripts/present.sh\n    env:\n      RULESET: scripts/present.json\n')"
   # violation 3b: the bootstrap reference is missing (skipped silently until 2026-09-27)
   BOOTSTRAP_REF_BUN="$tmp/no-such-ref.md" red "a missing bootstrap reference" "does not exist" "$tmp/v3/ci.yml"
   # violation 3c: a workflow no variant is mapped to (skipped silently until 2026-09-27)
@@ -177,7 +181,7 @@ selftest() {
   if ! lint_workflow "$wf" "$tmp/assets"; then
     echo "selftest FAIL: compliant fixture was rejected" >&2; exit 1
   fi
-  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, an unverified release download, an uncopied bootstrap script, a missing bootstrap reference, an unmapped workflow, a variant that ships audit.yml without its script and a variant that ships the Claude settings without the hook's script, each for its own reason; a compliant workflow and compliant settings pass"
+  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, an unverified release download, an uncopied bootstrap script, an uncopied data file, a missing bootstrap reference, an unmapped workflow, a variant that ships audit.yml without its script and a variant that ships the Claude settings without the hook's script, each for its own reason; a compliant workflow and compliant settings pass"
 }
 
 if [ "${1:-}" = "--selftest" ]; then

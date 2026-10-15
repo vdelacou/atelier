@@ -674,7 +674,9 @@ cp <skill>/assets/audit.yml              .github/workflows/audit.yml
 cp <skill>/assets/check-skill-pin.sh     scripts/check-skill-pin.sh
 cp <skill>/assets/check-commit-range.sh  scripts/check-commit-range.sh
 cp <skill>/assets/check-branches.sh     scripts/check-branches.sh
-cp <skill>/assets/branches.yml          .github/workflows/branches.yml
+cp <skill>/assets/check-host.py          scripts/check-host.py
+cp <skill>/assets/host-ruleset.json      scripts/host-ruleset.json
+cp <skill>/assets/branches.yml          .github/workflows/branches.yml   # rule 38's daily watchdog; after the first push the owner runs python3 scripts/check-host.py --apply once
 cp <skill>/assets/check-package-json.sh  scripts/check-package-json.sh
 cp <skill>/assets/check-bundle-size.sh   scripts/check-bundle-size.sh
 cp <skill>/assets/check-docs.sh          scripts/check-docs.sh
