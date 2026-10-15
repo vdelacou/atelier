@@ -12,6 +12,25 @@ Archived 2026-10-15: graduated, `CLAUDE.md:59-62` (Verify commands: every eval s
 
 ---
 
+## [gotcha] 2026-09-26 | a grader can flatter the skill arm too: grade the words, not the format
+
+The eleventh grader defect read format as content and failed the unaided arm's faithful archives (quoted bodies, `###` entries, a retitled entry), the first to run that way; this revises "grader defects favour the weaker answer" (2026-09-26). Rule for next time: read the unaided arm's files as closely as the skill arm's.
+
+Archived 2026-10-15: merged into "grader defects mislead both ways; read the answer before the number".
+
+---
+
+## [gotcha] 2026-09-26 | grader defects favour the weaker answer; read the answer before the number
+
+Ten grader defects so far, in the conformance and the review eval alike, and every one favoured the less thorough answer, because a weaker answer says less and gives the instrument less to misread: an exoneration that cites a rule read as an accusation, "rules 3 and 1" cited neither rule, a regex written from the violation matched a conforming `query.byOrg(orgId)`, a hard-delete check read a test fake's `Map.delete`, and the word `eval` was asserted where the run shipped `evals/` with a bar. An absent-mode assertion gets a green fixture from a conforming shape that shares its vocabulary on the day it is written, shares the tripwire's scope (`exclude` the test tier by default), and asserts the shape, not the naming. When a grader and a skill disagree, check first whether the skill told the answer to write the very sentence the grader penalises, and give two numbered lists that share numbers distinct citation forms (`rule N`, `guideline N`). A clean fixture must be clean on every rule, not only on the one it was planted for.
+
+Rule for next time: when an eval reports a false positive or a miss against the skill arm, read the answer before believing the number.
+Merges: 2026-09-26 (clean fixture), 2026-09-10 (absent-mode scope), 2026-09-09 (absent-mode regex), 2026-09-03 (vocabulary assertion), 2026-08-30 (review-grader defects).
+
+Archived 2026-10-15: merged into "grader defects mislead both ways; read the answer before the number".
+
+---
+
 ## [decision] 2026-09-26 | a gap closes as canon, rule, gate and red fixture, probed on the toolchain first
 
 Every gap closed between 2026-09-06 and 2026-09-19 went the same way: take the enforcement claim (the SKILL.md table of what applies where, a rule's "lint-enforced", a reference's "the check is"), probe it in a scratch tree on the real toolchain with one violation per rule and the fixture trees included, and only then write doctrine. The closure is a canon sub-concept if missing, a hard rule if missing, the gate in its family's shape (staged lines in the hook, `--all` in CI, copied by every variant's checklist, which `check-workflow-assets.sh` enforces), a red fixture per variant proven through the hook, then tier 1. The probes kept changing the design: PMD's own `AvoidPrintStackTrace` fired on nothing, ArchUnit fails an empty layer unless `withOptionalLayers(true)`, and "optional gate" turned out to mean "inert where the concern is absent", so three tripwires went on by default. A rule that is only a table row and a habit is not a rule; the gate that fails is what makes it one.
