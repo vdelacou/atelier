@@ -1,49 +1,87 @@
-# Plan: the reply gate's first reading, its blind spot, and the next check-in (2026-10-11)
+# Plan: rule 38's host settings as code, checked daily (proposed 2026-10-15)
 
-The previous plan (the reply gate reads and writes UTF-8 on every platform) closed with PR #4 merged
-by rebase into main (926ec04). The firing-rate check-in fired on 2026-10-11 and found one session
-that ran with the gate, this repository's own: 4 blocks in 25 judged replies, all bold lead-ins,
-3 after the session's first, every restatement clean. It also found a blind spot: the Stop hook
-judges a turn's last message only, and 2 of the 6 replies that broke a rule after the gate went
-live were summaries written before an AskUserQuestion call. panda-social-cli wired the gate on
-2026-10-05 (1a94fa7) but no session has run with it; ask-marcel-studio, extract-html and
-run-with-heart are not wired; the two ask-marcel org repos could not be read, and their cloud
-sessions ran one Stop hook per turn. The owner chose all three next steps: record the reading,
-close the blind spot with a pre-question hook, re-arm the check-in.
+The previous plan (the reply gate's first reading and its mid-turn count) closed with PR #5 merged
+by rebase into main (b1e4ffb). The owner asked what atelier says about five host settings (a branch
+called `main`, `main` the default, rebase-only merges, head-branch auto-delete, a protected `main`)
+and then for a proposal to add them. Today rule 38 covers them only in part: nothing names the
+branch (no checklist runs `git init -b main`, nothing sets the host's default); rebase-only and
+auto-delete are a `gh api` snippet in workflow.md, set once by hand and never checked (atelier itself
+has auto-delete off, so `main-f7v4vj` survived PRs #3 to #5); and "protects `main`" points at "the
+branch-protection code of `references/delivery.md`", which holds one bullet and no code.
+
+Facts from GitHub's docs (2026-10-15): reading merge-related settings over REST needs
+contents:read and contents:write; anyone with read access can view a repository's active rulesets;
+rulesets need a public repository or a Pro, Team or Enterprise plan; renaming the default branch
+needs admin and moves branch protection and open pull requests with it; rule types include
+`deletion`, `non_fast_forward`, `required_linear_history`, `pull_request` and
+`required_status_checks`, and `~DEFAULT_BRANCH` targets the default branch.
+
+## The design
+
+- `assets/host-ruleset.json`: a ruleset on `~DEFAULT_BRANCH`, enforcement active, no bypass actors,
+  rules `deletion`, `non_fast_forward`, `required_linear_history`. No `pull_request` and no
+  `required_status_checks`, since rule 38 allows committing straight to `main` and both block that.
+- `assets/check-host.py` (python3 and `gh`, like `check-reply.py`): with no flag it fails when the
+  default branch is not `main`, when `main` lacks one of the ruleset's rules, when merge commits or
+  squash are allowed, rebase is off or auto-delete is off; each finding prints its fix, and a
+  setting it cannot see is named as such, never passed. `--apply` is the owner's one-time,
+  idempotent setup: rename the default branch to `main` or point the default at an existing
+  `main`, PATCH the four merge settings, create or update the ruleset, re-run the check.
+  `--selftest` serves a fake GitHub in process.
+- `branches.yml` runs it as a second step, read-only like every shipped workflow: GraphQL shows a
+  read-only token all four merge settings (step 1), so every setting is checked directly.
+- A private repository on GitHub Free cannot hold a ruleset: the doctrine names an opt-out in
+  `branches.yml` (`HOST_RULESET: unavailable`), who uses it and why; the check then reports `main`
+  unprotected without failing. Rule 26's history scrub force-pushes `main`, so workflow.md says to
+  disable the ruleset for the rewrite and restore it after.
 
 ## Steps and definition of done
 
-1. [x] Re-arm the check-in (trig_01SaAdsRteii5z8BaXw2RFpA) for 2026-10-18 08:00 UTC with what the
-   first one learned. DoD: the trigger shows next_run_at 2026-10-18T08:00:00Z and the new prompt.
-2. [x] Probe the pre-question hook before any doctrine. AskUserQuestion is not offered to a headless
-   run, so the probe holds a Bash call instead (PreToolUse runs the same way for every tool).
-   Found: the text written before the call is not in the transcript when the hook fires and lands
-   within 100 ms, so a hook must wait for its own tool_use_id; a hold lands as an is_error
-   tool_result, so a retry can see it; and held twice (Opus 5.5, feedback asking for the text in
-   the same message as the call), the model retried with no text both times and fixed the prose
-   only in its final reply. DoD: the finding recorded; nothing built on it.
-3. [x] workflow.md's Reply gate: the first reading replaces "not yet measured", and a paragraph
-   names the blind spot and the probe. DoD: citations re-anchored once and intact, drift and the
-   em-dash scan green.
-4. [x] The owner's call on the blind spot, since the hook as designed does not fix the text before
-   the question: measure first. The probe's gate line counts the mid-turn replies that broke a
-   rule, text followed by a tool call in the same turn (a prompt starts a turn, a subagent's calls
-   are its own, a turn's last message is the gate's). The check-in asks for that count in place of
-   the hook's blocks. DoD: a planted session in the selftest counts its one broken summary before a
-   question and never two turns' broken last messages or a subagent's broken text and call, four
-   mutants go red (never counts, counts every text, counts a subagent's call, no reset at a
-   prompt), and workflow.md and the changelog name the count and why nothing was built.
-5. [ ] Land on the owner's yes: commits, push over the landed remote main-f7v4vj with a pinned
-   lease, a pull request, CI green, rebase merge.
+1. [x] Probe before doctrine: a throwaway workflow on `main-f7v4vj` (one push, dropped before the
+   pull request) prints what a contents:read `GITHUB_TOKEN` sees here: REST merge fields, GraphQL
+   merge fields, `rules/branches/main`. DoD: the visible set recorded; it fixes what the daily step
+   checks directly. Found (run 38735783885, 2026-10-15, this repository, public): REST returns
+   `default_branch` and `private` but null for all four merge settings; GraphQL returns them all
+   (`rebaseMergeAllowed`, `squashMergeAllowed`, `mergeCommitAllowed` true, `deleteBranchOnMerge`
+   false: GitHub's defaults, and auto-delete off matches `main-f7v4vj` surviving its merges);
+   `rules/branches/main` and `rulesets` answer 200 with `[]`; classic `branches/main/protection`
+   answers 403. So the daily step stays read-only and reads every setting over GraphQL: no blind
+   spot left. A null still reads as not visible, never as a pass; the first daily run after the
+   owner's `--apply` proves GraphQL reports the applied values.
+2. [x] `host-ruleset.json` and `check-host.py` with `--apply` and `--selftest`. DoD: the selftest
+   is red on each drift (default `master`, no ruleset, each rule missing, squash on, merge commits
+   on, rebase off, auto-delete off, a field the token cannot see) and green on a compliant repo;
+   mutants that drop a check go red. Done: green, and red under each of 13 mutants (no default
+   check, a hidden setting passing, the opt-out holding on a public repository, any error read as
+   no branch, an empty ruleset loading, `--apply` never updating, merge values never compared, rules
+   read off the wrong branch, the opt-out failing its rules, two GraphQL names swapped, rebase wanted
+   off, a rename over a repository that has `main`). Two commits: the check (295 lines with its
+   selftest), then `--apply`.
+3. [x] `branches.yml` second step; `check-workflow-assets.sh` fails a variant whose checklist does
+   not copy the script and the ruleset; the three smoke tests run the selftest and grep the copied
+   workflow. DoD: asset selftest and all three smoke tests green here. Done: the asset check went
+   red on the real tree until the three checklists copied both files; its selftest gained an
+   uncopied data file. This repository's own CI also runs the selftest and reads its own host with
+   a read-only token (a finding passes there, exit 2 fails).
+4. [x] Doctrine and cascade: SKILL.md rule 38 and its table row, workflow.md Branch lifecycle (the
+   snippet and the dangling pointer replaced, the opt-out, the scrub note), delivery.md's bullet, the
+   three variant checklists, atelier-greenfield (`git init -b main`, `--apply` after the first push
+   on the owner's yes), atelier-review-me (the check first, `--apply` on the owner's yes), matrix
+   row 8.1, the changelog. grill-me and distill carry no echo. DoD: one citation re-anchor, drift,
+   frontmatter and em-dash green; tier 1 conformance on the skill diff. Done: 11 citations moved
+   in one re-anchor, 239 intact; tier 1 selects 0 of 21 tasks (no task exercises the touched
+   rules; assets and the delivery, java-quarkus and nextjs-monorepo references select nothing), and
+   tier 2 is not due (no description changed). reverse-matrix row 38 and the changelog's rule 38
+   entry carry the host half too.
+5. [ ] Land on the owner's yes: slices under gate 1, push with a pinned lease, a pull request, CI
+   green on Linux and Windows, rebase merge on the owner's go.
+6. [ ] The owner runs `python3 scripts/check-host.py --apply` in panda-social-cli (and atelier if it
+   should hold the same); the next morning's watchdog is green there.
 
 ## Status
 
-Steps 1-4 done 2026-10-11. The owner chose to measure the blind spot first. On the session log of
-the first reading the probe reads 4 blocks, 3 after the session's first, 0 restatements still
-breaking a rule and 3 mid-turn replies breaking a rule, each a bold-lead-in summary before an
-AskUserQuestion call (2026-10-04 09:53, before the gate went live; 10-04 12:09; 10-09 15:07). The
-session's second log repeats those events from 2026-10-04 14:01 on, which the check-in now knows
-to skip. Selftest green, the four mutants red, citations intact after one re-anchor (9 moved with
-workflow.md), drift and the em-dash scan green. The owner said yes to landing. Next (step 5):
-three slices, push over the landed remote main-f7v4vj with --force-with-lease pinned to 574eb10,
-PR #5, CI green, rebase merge on the owner's go.
+The owner said yes on 2026-10-15: build as proposed, the daily step read-only. Steps 1-4 done the
+same day; the script is Python (`check-host.py`), like `check-reply.py`, since every step parses
+JSON and the selftest serves a fake GitHub in process. Next (step 5, on the owner's yes): eight
+slices built in a scratch worktree from origin/main, push over `main-f7v4vj` (the probe commit
+750c92d dropped) with a pinned lease, PR #6, CI green on Linux and Windows, rebase merge.
