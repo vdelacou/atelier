@@ -32,7 +32,9 @@ tree. What binds work HERE is the authoring and process discipline below.
   rules, with-skill vs baseline), `review-eval/` (does atelier-review-me catch planted
   violations in a diff, recall + rule-citation + false-positives vs a skill-less reviewer),
   `distill-eval/` (does atelier-distill keep every live lesson, account for every entry and touch
-  nothing else, on a journal with every verdict planted, vs an unaided pass). The reply gate,
+  nothing else, on a journal with every verdict planted, vs an unaided pass). Each eval's `run.sh`
+  calls `scripts/eval-preflight.sh` first: one `claude -p` turn from outside the repo, and no
+  session of the pass runs unless it answers. The reply gate,
   `skills/atelier/assets/check-reply.py`, doubles as the probe of the replies themselves, in those
   runs or a Claude Code session log, against the Interaction section.
 
@@ -86,10 +88,13 @@ tree. What binds work HERE is the authoring and process discipline below.
 - `python3 scripts/conformance-eval/judge.py --selftest` (fast; the CI judge-harness gate).
   The judging itself is local and paired: `JUDGE_MODEL=claude-opus-5 python3
   scripts/conformance-eval/judge.py <runs-dir>` over run dirs the conformance eval produced.
+- `bash scripts/eval-preflight.sh --selftest` (fast; CI, in the conformance grader job): a fake
+  `claude` proves the preflight stops a pass on a 403, a transport error, a non-zero exit, another
+  answer or a hang past its cap.
 - CI (`.github/workflows/ci.yml`) runs eight jobs on every push (frontmatter, the em-dash and
   identity gates, the three smoke tests, each on Linux and on Windows in Git Bash, two
-  grader-selftest jobs (conformance with the selector
-  and the judge; review with distill and the reply probe), matrix drift with the citation,
+  grader-selftest jobs (conformance with the selector,
+  the judge and the eval preflight; review with distill and the reply probe), matrix drift with the citation,
   workflow-asset, staleness and host-check selftests, then a read of this repository's own host
   through the job's read-only token); `canary.yml` weekly-probes
   three deliberate toolchain concessions (whether the typescript pin can lift, whether the three

@@ -68,6 +68,14 @@ whole, not any single skill.
   `--apply` sets all of it once with the owner's admin token. A private repository on GitHub Free,
   which cannot hold a ruleset, opts out with `HOST_RULESET: unavailable`. Its selftest goes red under
   each of 13 mutations; CI also reads this repository's own host with a read-only token.
+- The evals stop before a pass the environment cannot run. Four times an expired sign-in, a revoked
+  token, an outage or a 403 after midnight spent a whole pass before anyone read it, as both arms
+  dropping at once. Every eval runner (trigger, conformance, review, distill) now calls
+  `scripts/eval-preflight.sh` first: one `claude -p` turn from outside the repo, with the runners'
+  isolation flags and the pass's model, and no session runs unless it answers. Its selftest, in CI,
+  stops a 403, a transport error, a non-zero exit, another answer and a hang past the cap with a
+  fake `claude`; on the real CLI it answered in 6 s, and a model that does not exist stopped it in
+  under 2 s with the CLI's own message.
 
 ### Fixed
 - The Bun coverage gate and the preload generator passed silently on Windows. Bun prints the
