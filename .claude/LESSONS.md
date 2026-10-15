@@ -2,6 +2,18 @@
 
 Journal of mistakes, decisions, and gotchas for this repo, newest first. Append-only between compaction passes: supersede a decision with a newer `[decision]`; only an approved compaction pass rewrites or retires entries, into `.claude/lessons.archive.md`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [gotcha] 2026-10-15 | a cloud worker restart can end a turn right after a tool call, so a check-in states its report before calling tools
+
+Twice (the 20:00 check-in of 2026-10-11 and the 00:00 one of 2026-10-12) the session's worker restarted right after a check-in turn's tool call, a `send_later` re-arm, the resumed turn read as complete, and the owner never got the report or the merge question: PR #5 sat green and mergeable for nearly nine hours before the owner was asked. The personal journal cannot hold this, since a cloud container's gitignored files go with it. In a check-in or event turn, write the report and the question as text before any tool call, ask in plain text rather than through a question card a restart can drop, and after a restart check whether the last report reached the owner before calling the turn complete.
+
+Rule for next time: the owner's report comes first in a turn; the tool calls follow it.
+
+## [gotcha] 2026-10-15 | a captured script waits on every process holding its pipe, and an EXIT trap reads its variables when it fires
+
+In the eval preflight's selftest, each case captured the script with `$(...)`, which waits for every writer of the pipe to close: the watchdog subshell was killed, but its orphaned `sleep` still held stdout, so each case waited out the full cap until the watchdog's stdio went to `/dev/null`. The same selftest set `trap 'rm -rf "$tmp"' EXIT` inside a function, and under `set -u` the trap fired after the function's `local tmp` was gone and failed the run; expanding the path when the trap is set (`trap "rm -rf '$tmp'" EXIT`) fixes it, as `check-workflow-assets.sh` already did.
+
+Rule for next time: send a watchdog's stdio to `/dev/null`, and expand a function's locals into its EXIT trap when the trap is set.
+
 ## [mistake] 2026-10-15 | a re-anchor run on a half-copied matrix and lock moves a citation twice
 
 Slicing PR #3 (2026-10-09), I copied the final, already re-anchored `conformance-matrix.md` into the scratch worktree while its `citations-lock.json` was still the old one, then ran `check-citations.py --reanchor` there. The script computes each move from the lock (old line to the line that now holds the snippet) and rewrites every citation token still naming an old line, so a token the copy had already moved was moved again wherever its new line was another entry's old one, which left row 15.7 citing 544-548. Rebuilding slices 5 to 7 with one re-anchor from a matching pair fixed it. PR #6 sliced cleanly: each slice that shifted cited lines re-anchored its own untouched pair, and the final pair was copied only at the slice where every cited file was final.
