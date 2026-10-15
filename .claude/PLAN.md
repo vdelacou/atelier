@@ -31,9 +31,12 @@ midnight), and each spent a pass before anyone read it. The owner asked for the 
    CLI's own "There's an issue with the selected model" text.
 4. [x] CI and docs: the selftest in ci.yml, CLAUDE.md's verify list, the changelog. DoD: fast gates
    green, no em dash added.
-5. [ ] Land on the owner's yes after PR #8 merges: commits, push, a pull request, CI green, rebase
+5. [x] Land on the owner's yes after PR #8 merges: commits, push, a pull request, CI green, rebase
    merge on the owner's go.
 
 ## Status
 
-Steps 1-4 done 2026-10-15; fast gates green. Next: step 5 once PR #8 merges, on the owner's yes.
+Steps 1-5 done: PR #9 merged by rebase into main on 2026-10-15 (7a8d176), all 11 checks green on
+Linux and Windows, the conformance grader job's preflight selftest with them. What the rule 38 plan
+left still waits on the owner: `check-host.py --apply` here and in panda-social-cli, and the delete
+of the remote `main-f7v4vj`.
