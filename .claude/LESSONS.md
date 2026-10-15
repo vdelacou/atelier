@@ -12,10 +12,6 @@ Rule for next time: run `--reanchor` only where the matrix and the lock come fro
 
 Under `claude -p`, `acceptEdits` and four allow-rule forms all left `.claude/LESSONS.md` unwritable, so the first distill-eval run scored 1/11 on both arms, and bypassing permissions was refused by the auto-mode classifier. Both arms now write what they would change under `.claude/` into `./out/`, which `grade.py` reads as the journal layer.
 
-## [gotcha] 2026-09-26 | a grader can flatter the skill arm too: grade the words, not the format
-
-The eleventh grader defect read format as content and failed the unaided arm's faithful archives (quoted bodies, `###` entries, a retitled entry), the first to run that way; this revises "grader defects favour the weaker answer" (2026-09-26). Rule for next time: read the unaided arm's files as closely as the skill arm's.
-
 ## [gotcha] 2026-09-26 | a skill fix made because of an eval must not describe the fixture's case
 
 The first wording of the distill graduate fix mirrored the planted tsconfig entry, which would score the fixture rather than the behaviour, so that run was stopped and relaunched with the general rule. Rule for next time: phrase an eval-driven fix as the general rule, and grep the fixture for its wording before rerunning.
@@ -26,12 +22,12 @@ The skills.sh audits that `npx skills add` prints (Gen, Socket, Snyk) flagged `c
 
 Rule for next time: a check that executes content from a file that is not code is a code channel whatever its comment says, and a pinned version is not a pinned artifact.
 
-## [gotcha] 2026-09-26 | grader defects favour the weaker answer; read the answer before the number
+## [gotcha] 2026-09-26 | grader defects mislead both ways; read the answer before the number
 
-Ten grader defects so far, in the conformance and the review eval alike, and every one favoured the less thorough answer, because a weaker answer says less and gives the instrument less to misread: an exoneration that cites a rule read as an accusation, "rules 3 and 1" cited neither rule, a regex written from the violation matched a conforming `query.byOrg(orgId)`, a hard-delete check read a test fake's `Map.delete`, and the word `eval` was asserted where the run shipped `evals/` with a bar. An absent-mode assertion gets a green fixture from a conforming shape that shares its vocabulary on the day it is written, shares the tripwire's scope (`exclude` the test tier by default), and asserts the shape, not the naming. When a grader and a skill disagree, check first whether the skill told the answer to write the very sentence the grader penalises, and give two numbered lists that share numbers distinct citation forms (`rule N`, `guideline N`). A clean fixture must be clean on every rule, not only on the one it was planted for.
+Eleven grader defects so far, across the conformance, review and distill evals. The first ten favoured the less thorough answer, because a weaker answer says less and gives the instrument less to misread: an exoneration that cites a rule read as an accusation, "rules 3 and 1" cited neither rule, a regex written from the violation matched a conforming `query.byOrg(orgId)`, a hard-delete check read a test fake's `Map.delete`, and the word `eval` was asserted where the run shipped `evals/` with a bar; the eleventh read format as content and failed the unaided arm's faithful archives (quoted bodies, `###` entries, a retitled entry). An absent-mode assertion gets a green fixture from a conforming shape that shares its vocabulary on the day it is written, shares the tripwire's scope (`exclude` the test tier by default), and asserts the shape, not the naming. When a grader and a skill disagree, check first whether the skill told the answer to write the very sentence the grader penalises, give two numbered lists that share numbers distinct citation forms (`rule N`, `guideline N`), and keep a clean fixture clean on every rule, not only on the one it was planted for.
 
-Rule for next time: when an eval reports a false positive or a miss against the skill arm, read the answer before believing the number.
-Merges: 2026-09-26 (clean fixture), 2026-09-10 (absent-mode scope), 2026-09-09 (absent-mode regex), 2026-09-03 (vocabulary assertion), 2026-08-30 (review-grader defects).
+Rule for next time: when an eval reports a false positive or a miss against either arm, read both arms' answers as closely before believing the number.
+Merges: 2026-09-26 (a grader can flatter the skill arm too), 2026-09-26 (grader defects favour the weaker answer), which merged 2026-09-26 (clean fixture), 2026-09-10 (absent-mode scope), 2026-09-09 (absent-mode regex), 2026-09-03 (vocabulary assertion), 2026-08-30 (review-grader defects).
 
 ## [gotcha] 2026-09-26 | both arms dropping at once is the environment, not the doctrine
 
