@@ -106,6 +106,9 @@ run_one() { # $1 = arm, $2 = pass
   fi
 }
 
+# One answered turn first, or no session of this pass runs (scripts/eval-preflight.sh).
+bash "$REPO_ROOT/scripts/eval-preflight.sh" "${DISTILL_MODEL:-}"
+
 for arm in $ARMS; do
   for n in $(seq 1 "$PASSES"); do
     run_one "$arm" "$n" &

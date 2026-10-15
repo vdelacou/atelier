@@ -107,6 +107,9 @@ run_one() { # $1 = arm
   fi
 }
 
+# One answered turn first, or no session of this pass runs (scripts/eval-preflight.sh).
+bash "$REPO_ROOT/scripts/eval-preflight.sh" "${REVIEW_MODEL:-}"
+
 for arm in $ARMS; do
   run_one "$arm" &
 done

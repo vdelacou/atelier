@@ -148,6 +148,9 @@ run_one() { # $1 = task id, $2 = arm
   python3 "$HERE/grade.py" "$OUT" --task "$id" 2>/dev/null | grep -E "^  $arm " | sed "s/^/  [$id] /" || true
 }
 
+# One answered turn first, or no session of this pass runs (scripts/eval-preflight.sh).
+bash "$REPO_ROOT/scripts/eval-preflight.sh" "${CONFORMANCE_MODEL:-}"
+
 for id in "${TASK_IDS[@]}"; do
   for arm in $ARMS; do
     run_one "$id" "$arm" &
