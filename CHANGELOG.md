@@ -12,10 +12,12 @@ whole, not any single skill.
   `.claude/settings.json`; when that file already exists, merge its `Stop` entry instead. The hook
   needs python3.
 - Hard rule 38: re-copy `check-commit-range.sh`, which now fails on a merge commit in the range, so
-  land branches by rebase; copy `assets/check-branches.sh` to `scripts/` and `assets/branches.yml` to
-  `.github/workflows/`; have the owner set the host to rebase-only merges with automatic head-branch
-  deletion (`references/workflow.md`, Branch lifecycle, has the one `gh api` call); delete the
-  branches the first watchdog run reports as landed. Re-copy `assets/claude-md-pointer.md` into your
+  land branches by rebase; copy `assets/check-branches.sh`, `assets/check-host.py` and
+  `assets/host-ruleset.json` to `scripts/` and `assets/branches.yml` to `.github/workflows/`; have the
+  owner run `python3 scripts/check-host.py --apply` once with an admin token, which makes `main` the
+  default branch, protects it, and sets rebase-only merges with head-branch deletion
+  (`references/workflow.md`, Branch lifecycle); delete the branches the first watchdog run reports
+  as landed. Re-copy `assets/claude-md-pointer.md` into your
   `CLAUDE.md`: the block names hard rules 1-38.
 - Bun: re-copy `check-coverage.ts` and `regenerate-coverage-preload.ts`, then run
   `bun run scripts/regenerate-coverage-preload.ts`. On Windows the old preload imported nothing,
@@ -56,7 +58,16 @@ whole, not any single skill.
   one whose oldest unlanded commit is more than a day old (`MAX_BRANCH_AGE_HOURS`; `KEEP_BRANCHES`,
   default `^release/`). Every variant's checklist copies the pair, `check-workflow-assets.sh`
   enforces it, greenfield proves the merge rejection red, review-me reads a branch's history, and
-  each selftest goes red under a mutation of each behaviour.
+  each selftest goes red under a mutation of each behaviour. The host half followed: the watchdog's
+  second step, `check-host.py`, fails when the default branch is not `main`, when `main` lacks the
+  ruleset in `host-ruleset.json` (no deletion, no force push, linear history, admins included), or
+  when merges are not rebase-only with head-branch deletion. Nothing had set the branch's name, the
+  merge settings were one `gh api` call run by hand and never checked, and "protect `main`" pointed
+  at a delivery.md bullet with no code. It reads with the workflow's read-only token, the merge
+  settings over GraphQL, since REST shows such a token none of them (probed 2026-10-15), and
+  `--apply` sets all of it once with the owner's admin token. A private repository on GitHub Free,
+  which cannot hold a ruleset, opts out with `HOST_RULESET: unavailable`. Its selftest goes red under
+  each of 13 mutations; CI also reads this repository's own host with a read-only token.
 
 ### Fixed
 - The Bun coverage gate and the preload generator passed silently on Windows. Bun prints the
