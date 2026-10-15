@@ -525,13 +525,20 @@ if [ "$gate_rc" -eq 2 ] && grep -q 'em-dash' "$LOG" && grep -q 'emoji' "$LOG"; t
 else cat "$LOG"; fail "reply gate did not block an em dash and an emoji sent as raw UTF-8 with exit 2 and both tags (exit $gate_rc)"; fi
 rm scripts/check-reply.py .claude/settings.json && rmdir .claude
 
-echo "== branch watchdog (rule 38: no landed or day-old branch left on the remote) =="
-# Copied as the bootstrap does (java-quarkus.md, Gates and hooks); the selftest plants each case and greps its tag.
-cp "$SKILL/assets/check-branches.sh" scripts/ && mkdir -p .github/workflows && cp "$SKILL/assets/branches.yml" .github/workflows/branches.yml
+echo "== branch and host watchdog (rule 38: no landed or day-old branch, main the default and protected, rebase-only) =="
+# Copied as the bootstrap does (java-quarkus.md, Gates and hooks); each selftest plants each case and greps its tag.
+cp "$SKILL/assets/check-branches.sh" "$SKILL/assets/check-host.py" "$SKILL/assets/host-ruleset.json" scripts/ \
+  && mkdir -p .github/workflows && cp "$SKILL/assets/branches.yml" .github/workflows/branches.yml
 expect_ok "check-branches.sh selftest (landed by rebase and by squash, day-old, release/ kept, a fresh branch passes)" \
   bash scripts/check-branches.sh --selftest
 expect_ok "branches.yml runs the copied watchdog" grep -q "bash scripts/check-branches.sh" .github/workflows/branches.yml
-rm scripts/check-branches.sh .github/workflows/branches.yml && rmdir .github/workflows .github
+expect_ok "check-host.py selftest (the default branch, each rule, each merge setting, a setting GitHub hides, the opt-out, --apply, the gh calls)" \
+  python3 scripts/check-host.py --selftest
+expect_ok "branches.yml runs the copied host check on the copied ruleset" \
+  grep -q "python3 scripts/check-host.py" .github/workflows/branches.yml
+expect_ok "branches.yml hands the host check the copied ruleset" grep -q "RULESET: scripts/host-ruleset.json" .github/workflows/branches.yml
+rm scripts/check-branches.sh scripts/check-host.py scripts/host-ruleset.json .github/workflows/branches.yml \
+  && rmdir .github/workflows .github
 
 # 4d. The four discipline tripwires on their JAVA triggers (rules 27-30). All
 # four ship Java detection (@QueryParam, HttpClient, hard delete, api/ routes),

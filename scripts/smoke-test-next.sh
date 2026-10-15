@@ -155,15 +155,23 @@ if [ "$gate_rc" -eq 2 ] && grep -q 'em-dash' "$LOG" && grep -q 'emoji' "$LOG"; t
 else cat "$LOG"; fail "reply gate did not block an em dash and an emoji sent as raw UTF-8 with exit 2 and both tags (exit $gate_rc)"; fi
 rm scripts/check-reply.py .claude/settings.json && rmdir .claude
 
-echo "== branch watchdog (rule 38: no landed or day-old branch left on the remote) =="
-# Copied as the bootstrap does (nextjs-monorepo.md, the CI copy block); the selftest plants each case and greps its tag.
-cp "$REPO_ROOT/skills/atelier/assets/check-branches.sh" "$REPO_ROOT/skills/atelier/assets/check-commit-range.sh" scripts/ && mkdir -p .github/workflows && cp "$REPO_ROOT/skills/atelier/assets/branches.yml" .github/workflows/branches.yml
+echo "== branch and host watchdog (rule 38: no landed or day-old branch, main the default and protected, rebase-only) =="
+# Copied as the bootstrap does (nextjs-monorepo.md, the CI copy block); each selftest plants each case and greps its tag.
+cp "$REPO_ROOT/skills/atelier/assets/check-branches.sh" "$REPO_ROOT/skills/atelier/assets/check-commit-range.sh" \
+  "$REPO_ROOT/skills/atelier/assets/check-host.py" "$REPO_ROOT/skills/atelier/assets/host-ruleset.json" scripts/ \
+  && mkdir -p .github/workflows && cp "$REPO_ROOT/skills/atelier/assets/branches.yml" .github/workflows/branches.yml
 expect_ok "check-branches.sh selftest (landed by rebase and by squash, day-old, release/ kept, a fresh branch passes)" \
   bash scripts/check-branches.sh --selftest
 expect_ok "branches.yml runs the copied watchdog" grep -q "bash scripts/check-branches.sh" .github/workflows/branches.yml
+expect_ok "check-host.py selftest (the default branch, each rule, each merge setting, a setting GitHub hides, the opt-out, --apply, the gh calls)" \
+  python3 scripts/check-host.py --selftest
+expect_ok "branches.yml runs the copied host check on the copied ruleset" \
+  grep -q "python3 scripts/check-host.py" .github/workflows/branches.yml
+expect_ok "branches.yml hands the host check the copied ruleset" grep -q "RULESET: scripts/host-ruleset.json" .github/workflows/branches.yml
 expect_ok "check-commit-range.sh selftest, its rule 38 cases included (a merge commit red, GitHub's synthetic merge stepped over)" \
   bash scripts/check-commit-range.sh --selftest
-rm scripts/check-branches.sh scripts/check-commit-range.sh .github/workflows/branches.yml && rmdir .github/workflows .github
+rm scripts/check-branches.sh scripts/check-commit-range.sh scripts/check-host.py scripts/host-ruleset.json \
+  .github/workflows/branches.yml && rmdir .github/workflows .github
 git reset -q && rm decision.md
 # Rules 27, 29, 30 (2026-09-10): the discipline wrapper is the third hook step; a personal
 # identifier in a query string under src/lib is red, the wrapper names the rule.
