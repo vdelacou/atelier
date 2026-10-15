@@ -90,7 +90,8 @@ tree. What binds work HERE is the authoring and process discipline below.
   identity gates, the three smoke tests, each on Linux and on Windows in Git Bash, two
   grader-selftest jobs (conformance with the selector
   and the judge; review with distill and the reply probe), matrix drift with the citation,
-  workflow-asset and staleness selftests); `canary.yml` weekly-probes
+  workflow-asset, staleness and host-check selftests, then a read of this repository's own host
+  through the job's read-only token); `canary.yml` weekly-probes
   three deliberate toolchain concessions (whether the typescript pin can lift, whether the three
   disabled sonarjs rules can go back on, and whether Oxlint can replace ESLint with every function
   kept, `scripts/oxlint-parity-probe.sh`).
