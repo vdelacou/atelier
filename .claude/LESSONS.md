@@ -8,10 +8,6 @@ Slicing PR #3 (2026-10-09), I copied the final, already re-anchored `conformance
 
 Rule for next time: run `--reanchor` only where the matrix and the lock come from the same state; copy the two together or not at all.
 
-## [gotcha] 2026-09-27 | an eval session started inside the repo reads the repo
-
-Run from a folder in this tree, `claude -p` loaded this `CLAUDE.md` and the project memory and listed the installed atelier skills; isolated, the unaided conformance arm fell from 46 to 36 of 61. Eval sessions start outside the repo with `--setting-sources project,local` plus the user's settings file.
-
 ## [gotcha] 2026-09-26 | a headless session cannot write under .claude/, so a journal eval writes into out/
 
 Under `claude -p`, `acceptEdits` and four allow-rule forms all left `.claude/LESSONS.md` unwritable, so the first distill-eval run scored 1/11 on both arms, and bypassing permissions was refused by the auto-mode classifier. Both arms now write what they would change under `.claude/` into `./out/`, which `grade.py` reads as the journal layer.

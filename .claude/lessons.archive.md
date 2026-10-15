@@ -4,6 +4,14 @@ Entries a compaction pass retired from `.claude/LESSONS.md`, verbatim, newest fi
 
 ---
 
+## [gotcha] 2026-09-27 | an eval session started inside the repo reads the repo
+
+Run from a folder in this tree, `claude -p` loaded this `CLAUDE.md` and the project memory and listed the installed atelier skills; isolated, the unaided conformance arm fell from 46 to 36 of 61. Eval sessions start outside the repo with `--setting-sources project,local` plus the user's settings file.
+
+Archived 2026-10-15: graduated, `CLAUDE.md:59-62` (Verify commands: every eval session starts outside the repo, and a new runner follows the same shape).
+
+---
+
 ## [decision] 2026-09-26 | a gap closes as canon, rule, gate and red fixture, probed on the toolchain first
 
 Every gap closed between 2026-09-06 and 2026-09-19 went the same way: take the enforcement claim (the SKILL.md table of what applies where, a rule's "lint-enforced", a reference's "the check is"), probe it in a scratch tree on the real toolchain with one violation per rule and the fixture trees included, and only then write doctrine. The closure is a canon sub-concept if missing, a hard rule if missing, the gate in its family's shape (staged lines in the hook, `--all` in CI, copied by every variant's checklist, which `check-workflow-assets.sh` enforces), a red fixture per variant proven through the hook, then tier 1. The probes kept changing the design: PMD's own `AvoidPrintStackTrace` fired on nothing, ArchUnit fails an empty layer unless `withOptionalLayers(true)`, and "optional gate" turned out to mean "inert where the concern is absent", so three tripwires went on by default. A rule that is only a table row and a habit is not a rule; the gate that fails is what makes it one.
