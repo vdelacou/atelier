@@ -199,6 +199,17 @@ jobs:
       # bootstrap reference; non-preinstalled binaries get an install step.
       - run: bash scripts/check-workflow-assets.sh --selftest
       - run: bash scripts/check-workflow-assets.sh
+      # rule 38's host check proves itself on a fake GitHub (each drift, the opt-out, --apply, the
+      # calls gh receives), then reads this repository's own host through this job's read-only
+      # token, as a consumer's daily branches.yml does: findings (exit 1) are this repository's
+      # drift and pass here; a setting GitHub stops showing such a token is exit 2 and fails.
+      - run: python3 skills/atelier/assets/check-host.py --selftest
+      - name: check-host.py reads this repository's host with a read-only token
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rc=0; python3 skills/atelier/assets/check-host.py || rc=$?
+          [ "$rc" -le 1 ] || { echo "check-host.py could not read the host with a read-only token (exit $rc)"; exit 1; }
       # the shipped staleness gate proves itself: file, tree, and cloned-upstream
       # modes reject a stale copy, and the degrade paths (unset or unreachable
       # upstream) pass with a note instead of blocking.
