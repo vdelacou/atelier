@@ -73,15 +73,14 @@ needs admin and moves branch protection and open pull requests with it; rule typ
    rules; assets and the delivery, java-quarkus and nextjs-monorepo references select nothing), and
    tier 2 is not due (no description changed). reverse-matrix row 38 and the changelog's rule 38
    entry carry the host half too.
-5. [ ] Land on the owner's yes: slices under gate 1, push with a pinned lease, a pull request, CI
+5. [x] Land on the owner's yes: slices under gate 1, push with a pinned lease, a pull request, CI
    green on Linux and Windows, rebase merge on the owner's go.
 6. [ ] The owner runs `python3 scripts/check-host.py --apply` in panda-social-cli (and atelier if it
    should hold the same); the next morning's watchdog is green there.
 
 ## Status
 
-The owner said yes on 2026-10-15: build as proposed, the daily step read-only. Steps 1-4 done the
-same day; the script is Python (`check-host.py`), like `check-reply.py`, since every step parses
-JSON and the selftest serves a fake GitHub in process. Next (step 5, on the owner's yes): eight
-slices built in a scratch worktree from origin/main, push over `main-f7v4vj` (the probe commit
-750c92d dropped) with a pinned lease, PR #6, CI green on Linux and Windows, rebase merge.
+Steps 1-5 done: PR #6 merged by rebase into main on 2026-10-15 (f875951), all 11 checks green on
+Linux and Windows, and its CI step read this repository's host with a read-only token (6 findings:
+no ruleset, merge commits and squash allowed, auto-delete off). Step 6 waits on the owner's
+`--apply`, here and in panda-social-cli; the remote `main-f7v4vj` waits on the owner's delete.
