@@ -155,6 +155,9 @@ jobs:
       # verdict scores inconsistent rather than as a win, and an uncited winner
       # is discarded. An inverted unblinding would silently invert every result.
       - run: python3 scripts/conformance-eval/judge.py --selftest
+      # The evals' preflight stops a pass before its first session when the CLI cannot answer
+      # (four passes were spent that way before it existed); a fake claude proves each refusal.
+      - run: bash scripts/eval-preflight.sh --selftest
 
   review-grader-selftest:
     name: review-eval and distill-eval grader selftests
