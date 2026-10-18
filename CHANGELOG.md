@@ -6,6 +6,15 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-10-18
+
+The trunk and reply release. Hard rule 38 makes `main` the trunk: a branch starts from a fetched
+`main`, lives less than a day and lands by rebase, and a daily watchdog and a host check hold every
+repository to it. A reply gate, a Claude Code Stop hook, holds an agent's replies to the Interaction
+section's five mechanical rules. TypeScript 7 runs the type gate beside the 6.0 API the lint plugins
+need, on Bun 1.4; Next.js moves to 16.4.2; and rule 26 blocks only in a public repository. The tier-2
+pass reads 61/61 with the skill and 35/61 without (`scripts/conformance-eval/baseline.md`).
+
 ### Upgrading from 2.6.1
 
 - Copy `assets/check-reply.py` to `scripts/check-reply.py` and `assets/claude-settings.json` to
