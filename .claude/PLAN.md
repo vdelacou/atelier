@@ -1,54 +1,51 @@
-# Plan: TypeScript 7 beside the 6.0 API, and Next.js 16.4.2 (2026-10-18)
+# Plan: rule 26 blocks in a public repository and warns in a private one (2026-10-18)
 
-The previous plan (the eval preflight) closed with PR #9 merged; what the rule 38 plan left still waits
-on the owner: `check-host.py --apply` here and in panda-social-cli, and the delete of the remote
-`main-f7v4vj`. The owner's change request of 2026-10-18 (an uploaded document, tested on a copy of main
-at 6cc240e) asks for TypeScript 7 as the `tsc` binary while ESLint keeps every rule.
+The previous plan (TypeScript 7 beside the 6.0 API) closed with PR #12 rebase-merged on 2026-10-18
+(main d10e519), all 11 checks green on Linux and Windows. The owner then asked that rule 26 (no
+person, employer or client named in file contents) block only in a public repository and only warn
+in a private one, and chose the mechanism: a committed declaration the hook reads, which CI checks
+against the host.
 
 ## The design
 
-- TypeScript 7.0 has no JavaScript API: typescript-eslint 8.71.2 refuses it (peer range
-  `>=4.8.4 <6.1.0`) and eslint-plugin-sonarjs 4.2.2 crashes in `ts-api-utils`. So both stacks install
-  two aliases: `typescript` is `npm:@typescript/typescript6@^6.0.2` (the 6.0 API the lint plugins
-  `require`, binary `tsc6`), and `@typescript/native` is `npm:typescript@^7.0.2` (binary `tsc`, which
-  the `typecheck` script, the hooks and CI run). `check-package-json.sh` already permits an `npm:`
-  alias with a caret range.
-- Next.js: the template moves to `next` and `eslint-config-next` 16.4.2, and the tsconfig sets
-  `"types": ["bun"]`, which TypeScript 6 and 7 need to find `bun:test` (TS2307 otherwise, in `tsc` and
-  in `next build`). `next build` type-checks with `tsc6`.
-- The weekly `unpinned-typescript` canary keeps `SMOKE_TS_SPEC=typescript`, which now installs
-  TypeScript 7 as `typescript`: it stays red until typescript-eslint and sonarjs load TypeScript 7.1,
-  and green then means the aliases can go.
+- `check-identity.sh` decides by visibility: CI's `REPO_VISIBILITY` (the host's own answer, `private`
+  or `public`, from `github.event.repository.private`) when set, else `.github/visibility` (one
+  committed line reading `private`); neither, or any other word, is public. Public: a hit exits 1, as
+  today. Private: a hit prints a warning naming each hit and rule 26 (a `::warning::` annotation under
+  GitHub Actions) and exits 0. A file saying private while the host says public exits 1 with or
+  without a hit, so a repository made public cannot keep warning.
+- Every shipped CI workflow's identity step passes `REPO_VISIBILITY`, and so does this repository's
+  own CI. Both of their triggers (push and pull_request) carry `github.event.repository`.
+- Doctrine: rule 26's line in SKILL.md and its enforcement row, workflow.md's Commit identity (a
+  "public blocks, private warns" paragraph with the going-public steps) and its two gate tables, the
+  three variant references, atelier-greenfield (declare a private repository at bootstrap) and
+  atelier-review-me (adopt mode declares it; the judgment's severity). atelier-grill-me and
+  atelier-distill do not mention rule 26.
 
 ## Steps and definition of done
 
-1. [x] Bun stack: `bun-typescript.md` (the TypeScript bullet, the template, the load-bearing clause),
-   `smoke-test.sh` (install line and comment), `oxlint-parity-probe.sh` (spec and comment),
-   `canary.yml` (comment 1 and the last step). DoD: `bash scripts/smoke-test.sh` passes every check
-   with `.bin/tsc` reporting TypeScript 7. Done: 154 of 154 under Bun 1.4.2. Under the container's
-   Bun 1.3.14 it went red (32 checks): 1.3.14 resolves `@typescript/typescript6`'s own
-   `@typescript/old` dependency to the wrapper, so `require('typescript')` is `{}`; 1.4.0 to 1.4.2
-   resolve it right, and a 1.3-written `bun.lock` stays broken until its `@typescript/old` line goes.
-   The Runtime line now asks for Bun 1.4.
-2. [x] Next.js stack: `nextjs-monorepo.md` (template versions and aliases, tsconfig `types`, the two
-   notes) and `smoke-test-next.sh` (the package.json it writes). DoD: `bash scripts/smoke-test-next.sh`
-   passes every check. Done: 55 of 55 under Bun 1.4.2.
-3. [x] The text that names the old pin: `CLAUDE.md`, `docs/upstream/sonarjs-ts7.md` (status note),
-   a `.claude/LESSONS.md` entry and a CHANGELOG entry with an upgrade line. DoD: the fast gates green
-   (frontmatter, em dash, citations re-anchored, matrix drift, workflow assets), no em dash added.
-   Done: all green; nine citations moved by one or two lines and were re-anchored.
-4. [x] The request's untested items that are cheap here: the Oxlint parity probe with the new spec,
-   and the canary's run (`SMOKE_TS_SPEC=typescript`). DoD: the probe reads both gaps; the canary run
-   goes red at typescript-eslint's refusal, the signal the job relies on. Done: the probe reads both
-   gaps open on Oxlint 1.88.0; the canary run goes red at lint (32 checks), where sonarjs crashes in
-   `ts-api-utils` before typescript-eslint's own refusal is reached.
-5. [ ] Land on the owner's yes (given 2026-10-18: commit, push, PR, merge on green): four commits under
-   gate 1, push, PR #12, CI green on Linux and Windows, rebase merge. Tier 1 skipped by the owner: the
-   selector picked 4 tasks only through the Bun reference's rule-20 row and two version numbers read as
-   canon ids (5.9, 7.1).
+1. [x] The gate: `check-identity.sh` and the four CI workflows. DoD: by hand in a scratch repo, public
+   blocks, private warns with the rule named, the host's answer wins, and a stale declaration is red
+   with no hit.
+2. [x] The proofs: the Bun smoke test plants each case (private warns with the rule's tag, a public
+   host outranks the file, another word in the file blocks, a private host warns, a stale declaration
+   is red with no hit) and checks that ci.yml hands the identity step the host's answer; the Next and
+   Java smoke tests plant the private warning and check their CI workflow the same way. DoD: the three
+   smoke tests green under Bun 1.4.2.
+3. [x] The doctrine and its cascade (SKILL.md rule 26 and its row, workflow.md, the variant references,
+   greenfield, review-me), keeping the pinned openings of `SKILL.md:62` and `check-identity.sh:3`.
+   DoD: fast gates green, citations re-anchored where lines moved, no lock snippet changed.
+4. [x] CHANGELOG (an upgrade line and a Changed entry) and a LESSONS `[decision]` entry. DoD: no em
+   dash, the fast gates green.
+5. [ ] Land after PR #12 merges, on the owner's yes: commits under gate 1, a pull request, CI green on
+   Linux and Windows, rebase merge. Tier 1 per the selector, the owner's call.
 
 ## Status
 
-Steps 1-4 done 2026-10-18. Next: step 5. After it, the owner's second request: rule 26 blocks only in
-a public repository and warns in a private one, declared by `.github/visibility` and checked in CI
-against the host's own answer.
+Steps 1-4 done 2026-10-18. Step 1: by hand, 14 cases right (public blocks, private warns naming the
+rule, the host's answer wins, a stale file is red with no hit, CRLF and capitals read, a subfolder
+finds the file, the Actions annotation). Step 2: under Bun 1.4.2 the Bun smoke test passed 160 of 160,
+Next.js 57 of 57 and Java 87 of 87, and five broken copies of the gate each turned one or two of the
+planted cases red. Steps 3-4: fast gates green, ten citations moved by two lines, no lock snippet
+changed; the tier-1 selector picks 0 of 21 tasks. Step 5: the owner said yes on 2026-10-18 (commit,
+push, PR, merge on green); five commits, PR #13.
