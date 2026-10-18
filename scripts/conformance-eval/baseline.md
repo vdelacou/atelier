@@ -681,3 +681,28 @@ release, not a regression; the score keeps the first pass's miss.
 The turn census: skill median 41 and at most 75 (e7), unaided median 14 and at most 33. The fixture is
 re-frozen with this pass's baseline arm summed in, five isolated passes (the four above reproduced
 exactly first): 181/305 over 105 runs, an expected 36.2/61 per pass and 8.8/24 on the discipline tier.
+
+## Tier 2 for the 2.7.0 release (2026-10-18)
+
+The full matrix, both arms, 21 tasks, `claude-opus-5`, 120 turns and 40 minutes, three jobs, 09:07 to
+10:34 UTC, in a cloud container with Bun 1.4.2 first on PATH, so the template's TypeScript aliases
+installed as the release ships them (the container's Bun 1.3.14 resolves them wrongly; CHANGELOG,
+Upgrading from 2.6.1). Since the 2.6.0 pass: hard rule 38, the reply gate, the eval preflight,
+TypeScript 7 beside the 6.0 API with Next.js 16.4.2, and rule 26's visibility split.
+
+| Arm | Score | Production-discipline tier (h1 to h7) |
+|---|---|---|
+| skill | 61/61 | 24/24 |
+| unaided | 35/61 | 10/24 |
+
+No session capped. h6-ai-full's skill arm, which ran to the cap twice in the 2.6.0 pass, finished in 81
+turns, and h5-isolation-full's skill arm wrote the database-side second layer (7.3) that the 2.6.0 pass
+missed once. The skill arm missed nothing, so no extra samples ran. The unaided arm reads 35/61 against
+the frozen fixture's expected 36.2/61, and 10/24 against 8.8/24 on the discipline tier.
+
+The turn census: skill median 37 and at most 81 (h6), unaided median 16 and at most 27 (e7).
+
+The fixture is not re-frozen with this pass. `freeze-baseline.py` sums passes by re-grading their runs
+dirs, and the five earlier passes' dirs were not in this container (the workspace is gitignored), so
+it stays at five passes, 181/305. This pass's runs went to the owner as a tarball, so a re-freeze over
+six passes can run where the other five live.
