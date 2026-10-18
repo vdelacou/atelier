@@ -15,8 +15,9 @@ fails on each finding:
 It needs read access only. GitHub's REST API hides the merge settings from a read-only token, so
 they come from GraphQL, which shows them (probed 2026-10-15); a setting GitHub still does not show
 is an error, never a pass. HOST_RULESET=unavailable is for a private repository on GitHub Free,
-which cannot hold a ruleset: main's missing rules are then reported, not failed, and the opt-out
-itself fails on a repository that is not private.
+which cannot hold a ruleset: main's rules are then named as unchecked and never read, since GitHub
+answers that read with a 403 there too (2026-10-18), so the check holds the default branch and the
+merge settings alone; the opt-out itself fails on a repository that is not private.
 
 --apply is the owner's one-time setup, idempotent, with an admin token: it points the default
 branch at main (renaming the current default when there is no main), allows rebase merges only,
@@ -149,10 +150,18 @@ def check(host: GitHub, ruleset: dict, opt_out: bool) -> tuple[list, list]:
     findings, notes = [], []
     if seen["default"] != "main":
         findings.append(f"DEFAULT  the default branch is {seen['default']}, not main")
-    active = host.rules_on_main()
-    for kind in (rule["type"] for rule in ruleset["rules"]):
-        if kind not in active:
-            (notes if opt_out else findings).append(f"RULE  main has no active {kind} rule")
+    kinds = [rule["type"] for rule in ruleset["rules"]]
+    if opt_out:
+        # A private repository on GitHub Free answers the rules read itself with a 403, so the
+        # opt-out never asks: main's rules are named as unchecked, never failed.
+        notes += [f"RULE  main's {kind} rule is not checked (rulesets need a public repository or a paid plan)"
+                  for kind in kinds]
+    else:
+        try:
+            active = host.rules_on_main()
+        except HostError as error:
+            raise HostError(f"{error}\n  {FREE_PRIVATE}" if seen["private"] else str(error)) from None
+        findings += [f"RULE  main has no active {kind} rule" for kind in kinds if kind not in active]
     if opt_out and seen["private"] is not True:
         findings.append("RULE  HOST_RULESET=unavailable on a repository that is not private, which can hold a ruleset")
     for rest, (graphql, wanted) in MERGE.items():
@@ -260,6 +269,9 @@ class FakeGitHub:
         return {"default": self.default, "private": self.private, **self.merge}
 
     def rules_on_main(self) -> set:
+        if self.private and not self.paid:
+            raise HostError("gh api repos/acme/widget/rules/branches/main: Upgrade to GitHub Pro or make this "
+                            "repository public to enable this feature. (HTTP 403)")
         return set(self.rules) if self.default == "main" else set()
 
     def branch_exists(self, branch: str) -> bool:
@@ -329,6 +341,15 @@ def selftest() -> int:
     expect("the opt-out on a private repository", outcome(FakeGitHub(private=True), opt_out=True), 0,
            "reported only", "unprotected")
     expect("the opt-out on a public repository", outcome(FakeGitHub(), opt_out=True), 1, "not private")
+    # GitHub Free answers the rules read of a private repository with a 403 (2026-10-18): under the
+    # opt-out it is never read, so the morning check passes on the merge settings alone.
+    expect("the opt-out on a private repository on GitHub Free", outcome(FakeGitHub(private=True, paid=False),
+           opt_out=True), 0, "is not checked", "unprotected")
+    expect("the opt-out on GitHub Free with a merge setting off",
+           outcome(FakeGitHub(private=True, paid=False, merge={**good, "allow_squash_merge": True}), opt_out=True),
+           1, "MERGE  allow_squash_merge")
+    expect("no opt-out on a private repository on GitHub Free", outcome(FakeGitHub(private=True, paid=False)), 2,
+           "Upgrade to GitHub Pro", "HOST_RULESET: unavailable")
 
     # --apply sets what is missing, writes only through the host, and ends on a passing check.
     fresh = FakeGitHub("master", ("master",), merge={**good, "allow_squash_merge": True, "delete_branch_on_merge": False})

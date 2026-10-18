@@ -9,7 +9,9 @@
 # request's base branch or, on a push, github.event.before..HEAD (ci.yml
 # exports it as GITHUB_EVENT_BEFORE; the zero SHA of a new branch and an
 # unresolvable SHA fall back to HEAD~1), the same resolution as the commit
-# gates. Without it a push to main has HEAD == origin/main and the run would
+# gates. A repository's first push has neither a before nor a HEAD~1: every
+# file in scope is new, so all of them are mutated, against the empty tree
+# (2026-10-18; it exited 1 on "base ref 'HEAD~1' does not exist"). Without it a push to main has HEAD == origin/main and the run would
 # test nothing. Elsewhere the default is origin/main. Skip the ref refresh
 # with MUTATE_NO_FETCH=1 (offline, or when BASE is deliberately stale):
 #
@@ -23,6 +25,7 @@
 set -euo pipefail
 
 zero_sha=0000000000000000000000000000000000000000
+first_push=""
 if [ -n "${BASE:-}" ]; then
   :
 elif [ -n "${GITHUB_BASE_REF:-}" ]; then
@@ -31,8 +34,11 @@ elif [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
   before="${GITHUB_EVENT_BEFORE:-}"
   if [ -n "$before" ] && [ "$before" != "$zero_sha" ] && git rev-parse --quiet --verify "${before}^{commit}" >/dev/null 2>&1; then
     BASE="$before"
-  else
+  elif git rev-parse --quiet --verify "HEAD~1^{commit}" >/dev/null 2>&1; then
     BASE=HEAD~1
+  else
+    BASE=$(git hash-object -t tree /dev/null)
+    first_push=1
   fi
 else
   BASE=origin/main
@@ -49,20 +55,23 @@ fi
 # An unknown BASE makes every diff below fail, and the `|| true` on the
 # pipeline turns that into "no files changed" plus exit 0: a green run that
 # mutated nothing. Fail loudly instead.
-if ! git rev-parse --verify --quiet "$BASE^{commit}" >/dev/null; then
+if [ -n "$first_push" ]; then
+  echo "mutate:changed: the repository's first push (no before, no HEAD~1): every file in scope is new"
+elif ! git rev-parse --verify --quiet "$BASE^{commit}" >/dev/null; then
   echo "mutate:changed: base ref '$BASE' does not exist (fetch it, or set BASE=)" >&2
   exit 1
+else
+  echo "mutate:changed: base ${BASE} $(git rev-parse --short "$BASE")" \
+       "($(git log -1 --format=%cr "$BASE")), HEAD +$(git rev-list --count "$BASE"..HEAD)"
 fi
-
-echo "mutate:changed: base ${BASE} $(git rev-parse --short "$BASE")" \
-     "($(git log -1 --format=%cr "$BASE")), HEAD +$(git rev-list --count "$BASE"..HEAD)"
 
 # Files that differ from BASE, plus uncommitted and staged edits, plus
 # untracked files, intersected with the mutation scope. Untracked matters: a
 # brand-new source file appears in NO diff, so without it a new domain or
 # use-case file is never mutated and the run still exits 0.
 files=$( {
-  git diff --name-only --diff-filter=ACMR "$BASE"...HEAD
+  if [ -n "$first_push" ]; then git diff --name-only --diff-filter=ACMR "$BASE" HEAD
+  else git diff --name-only --diff-filter=ACMR "$BASE"...HEAD; fi
   git diff --name-only --diff-filter=ACMR HEAD
   git diff --cached --name-only --diff-filter=ACMR
   git ls-files --others --exclude-standard
