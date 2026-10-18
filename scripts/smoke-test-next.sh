@@ -132,6 +132,13 @@ git init -q && git config user.name 'Ada Lovelace' && git config user.email 'ada
 printf 'Decided by Ada Lovelace\n' > decision.md && git add decision.md
 expect_err "identity guard blocks the committer's name in a tracked file (rule 26)" bash scripts/check-identity.sh
 git reset -q && rm decision.md
+# Public blocks, private warns (2026-10-18): the same hit in a repository that declares
+# itself private is a warning that still names the rule.
+printf 'Decided by Ada Lovelace\n' > decision.md && git add decision.md
+mkdir -p .github && printf 'private\n' > .github/visibility
+if bash scripts/check-identity.sh >"$LOG" 2>&1 && grep -q 'warning: .*hard rule 26' "$LOG"; then pass "identity guard warns, not blocks, in a private repository (rule 26)"
+else cat "$LOG"; fail "identity guard did not warn with the rule in a private repository (rule 26)"; fi
+git reset -q && rm decision.md .github/visibility && { rmdir .github 2>/dev/null || true; }
 printf 'maintained by adalovelace\n' > decision.md && git add decision.md
 expect_ok "identity guard passes a handle (rule 26)" bash scripts/check-identity.sh
 
@@ -191,6 +198,11 @@ cp "$REPO_ROOT/skills/atelier/assets/gitattributes" .gitattributes
 expect_ok "the shipped .gitattributes keeps a checkout LF under core.autocrlf=true (CRLF without it)" \
   bash "$REPO_ROOT/scripts/smoke-eol-checkout.sh" .gitattributes
 cp "$REPO_ROOT/skills/atelier/assets/ci-next.yml" .github/workflows/ci.yml
+identity_step_gets_visibility() { # $1 workflow: rule 26 warns or blocks on the host's own answer
+  awk '/- name: identity in file contents/{f=1; next} f && /- name:/{exit} f' "$1" \
+    | grep -qF 'REPO_VISIBILITY: ${{ github.event.repository.private &&'
+}
+expect_ok "ci-next.yml hands the identity step the host's visibility (rule 26)" identity_step_gets_visibility .github/workflows/ci.yml
 expect_ok "ci-next.yml re-checks the commit messages with commitlint over the range" grep -q "commitlint --from" .github/workflows/ci.yml
 expect_ok "ci-next.yml runs the commit-size range gate and gate 2" bash -c 'grep -q "check-commit-range.sh" .github/workflows/ci.yml && grep -q "check-package-json.sh" .github/workflows/ci.yml'
 expect_ok "ci-next.yml installs on a frozen lockfile and runs test, lint, typecheck, build for every workspace" bash -c 'grep -q "bun install --frozen-lockfile" .github/workflows/ci.yml && grep -q "filter .\*. test" .github/workflows/ci.yml && grep -q "filter .\*. build" .github/workflows/ci.yml'

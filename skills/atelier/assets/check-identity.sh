@@ -19,8 +19,18 @@
 # A lone first name stays a review duty: a one-word match would flag "will"
 # and "grace" in prose.
 #
-# This is a tripwire, not a proof. A hit is a hard stop; the fix is a neutral
-# handle, never an inline suppression (rule 15).
+# This is a tripwire, not a proof. In a public repository a hit is a hard stop; the
+# fix is a neutral handle, never an inline suppression (rule 15).
+#
+# Public blocks, private warns (2026-10-18). A name in a public repository's files is
+# public the moment it is pushed; in a private one it is a debt to clear before the
+# repository goes public. So a hit exits 1 in a public repository and in a private
+# one prints the same hits as a warning and exits 0. The visibility is CI's
+# REPO_VISIBILITY when set (the host's own answer, `private` or `public`, which every
+# shipped CI workflow passes from github.event.repository.private), else the committed
+# declaration .github/visibility, one line reading `private`. Neither, or any other
+# word, is public. A file saying private on a public host exits 1 with or without a
+# hit, so a repository made public cannot keep warning.
 #
 #   bash scripts/check-identity.sh          # staged added lines (the hook)
 #   bash scripts/check-identity.sh --all    # every tracked text file (CI, adopt audit)
@@ -28,6 +38,20 @@
 set -euo pipefail
 
 MODE="${1:-staged}"
+
+declaration="$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.github/visibility"
+declared=""
+if [ -f "$declaration" ]; then
+  declared="$(head -n 1 "$declaration" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
+fi
+host="$(printf '%s' "${REPO_VISIBILITY:-}" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
+if [ -n "$host" ] && [ "$host" != private ] && [ "$declared" = private ]; then
+  echo "check-identity: .github/visibility says private, but the host says this repository is $host (hard rule 26)" >&2
+  echo "  fix: delete .github/visibility; a public repository blocks every name (references/workflow.md, Commit identity)" >&2
+  exit 1
+fi
+visibility="${host:-$declared}"
+[ "$visibility" = private ] || visibility=public
 
 # The identity set: one string per line, trimmed, at least four characters.
 # Git names count only with a space in them (a one-word name is a handle);
@@ -78,6 +102,15 @@ if [ ! -s "$tmp" ]; then
 fi
 
 hits="$(lines | grep -F -i -w -f "$tmp" || true)"
+if [ -n "$hits" ] && [ "$visibility" = private ]; then
+  echo "check-identity: warning: a person, employer, or client is named in file contents (hard rule 26 blocks this in a public repository; this one is private):" >&2
+  printf '%s\n' "$hits" | sed 's/^/  /' >&2
+  echo "  before the repository goes public: a neutral handle for each, then scrub history (references/workflow.md, Commit identity)" >&2
+  if [ "${GITHUB_ACTIONS:-}" = true ]; then
+    echo "::warning title=rule 26::a person, employer, or client is named in file contents; this blocks once the repository is public"
+  fi
+  exit 0
+fi
 if [ -n "$hits" ]; then
   echo "check-identity: a person, employer, or client is named in file contents (hard rule 26):" >&2
   printf '%s\n' "$hits" | sed 's/^/  /' >&2
