@@ -25,15 +25,19 @@ split. No skill description changed, so the trigger eval is not due.
 
 ## Steps and definition of done
 
-1. [ ] Tier 2. DoD: the preflight answers; 42 sessions finish (capped ones named); `grade.py` on both
+1. [x] Tier 2. DoD: the preflight answers; 42 sessions finish (capped ones named); `grade.py` on both
    arms and `--frozen-baseline` on the skill arm; every miss read by hand, with extra samples of a miss
    as 2.6.0 did for h5, so variance is told from a regression.
-2. [ ] Record it: a "Tier 2 for the 2.7.0 release" section in baseline.md, and the README rows that
+2. [x] Record it: a "Tier 2 for the 2.7.0 release" section in baseline.md, and the README rows that
    read it. DoD: fast gates green.
-3. [ ] The release commit. DoD: fast gates green, no em dash.
+3. [x] The release commit. DoD: fast gates green, no em dash.
 4. [ ] Land on the owner's yes (given 2026-10-18): a PR, CI green on Linux and Windows, rebase merge,
    an annotated `v2.7.0` on main pushed, then this plan closed.
 
 ## Status
 
-Started 2026-10-18. Next: step 1, the preflight.
+Steps 1-3 done 2026-10-18. Tier 2 ran 09:07 to 10:34 UTC: skill 61/61 (24/24 on the discipline tier),
+unaided 35/61 (10/24) against the frozen 36.2/61 and 8.8/24, no session capped, no skill-arm miss, turn
+medians 37 and 16. The runs went to the owner as a tarball for a six-pass re-freeze. baseline.md, the
+README rows and release line, and the changelog's 2.7.0 heading are written; fast gates green. Next:
+step 4, the release PR, then the annotated `v2.7.0` on the rebased `docs(release)` commit on main.
