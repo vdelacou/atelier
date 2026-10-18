@@ -24,6 +24,14 @@ whole, not any single skill.
   so expect the first coverage run there to list the untested files it was hiding. A file under
   `src/` in a directory with no tier now fails the gate: give the directory a tier in
   `COVERAGE_RULES`, or add a genuine non-code entry to `SKIPPED`.
+- Bun and Next.js: replace the `typescript` devDependency with two aliases,
+  `"typescript": "npm:@typescript/typescript6@^6.0.2"` and
+  `"@typescript/native": "npm:typescript@^7.0.2"`
+  (`bun add -d 'typescript@npm:@typescript/typescript6@^6.0.2' '@typescript/native@npm:typescript@^7.0.2'`),
+  on Bun 1.4 or later: Bun 1.3 resolves the 6.0 wrapper's own `@typescript/old` dependency to the
+  wrapper itself, and the `bun.lock` it writes stays broken under 1.4 until its `@typescript/old`
+  line is deleted. Next.js: bump `next` and `eslint-config-next` to `16.4.2` and set
+  `"types": ["bun"]` in each package's `tsconfig.json`.
 
 ### Added
 - A reply gate. `assets/check-reply.py --hook` is a Claude Code Stop hook, wired by the new
@@ -92,6 +100,17 @@ whole, not any single skill.
   part, and the Bun smoke test runs both and plants a `src/` file in no tier and a misspelt scan
   directory.
 
+### Changed
+- TypeScript 7 runs the type gate while ESLint keeps every rule. TypeScript 7.0 has no JavaScript
+  API, so typescript-eslint 8.71.2 refuses it and eslint-plugin-sonarjs 4.2.2 crashes in
+  `ts-api-utils`. Both templates install `typescript` as the 6.0 API (`@typescript/typescript6`),
+  which the lint plugins load, and `@typescript/native` as TypeScript 7, whose `tsc` the
+  `typecheck` script, the hooks and CI run. `next build` and the typed lint rules read types
+  through 6.0 until typescript-eslint and sonarjs load TypeScript 7.1; the weekly canary says when
+  the aliases can go. The aliases need Bun 1.4, so both variants now ask for it.
+- Next.js: the template moves to `next` and `eslint-config-next` 16.4.2 and sets the tsconfig
+  `types` to `["bun"]`, which TypeScript 6 and 7 need to find `bun:test`.
+
 ### Harness
 - The three smoke tests run on `windows-latest` beside Linux, in Git Bash, so each variant's gates
   prove themselves where Bun, git and the JDK print Windows paths.
@@ -106,6 +125,9 @@ whole, not any single skill.
   every variant's checklist copies the hook's script. The same mapping covers `branches.yml`.
 - This repository runs its own reply gate: `.claude/settings.json` points the Stop hook at the
   shipped asset, so replies in a session here are held to the rules it ships.
+- The Bun smoke test installs the two TypeScript aliases, the Next.js one writes them with Next.js
+  16.4.2, and the Oxlint probe installs the 6.0 alias. The `unpinned-typescript` canary installs
+  plain TypeScript 7 as `typescript`, so it stays red until the aliases can go.
 
 ## [2.6.1] - 2026-09-28
 

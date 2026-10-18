@@ -97,7 +97,7 @@ tree. What binds work HERE is the authoring and process discipline below.
   the judge and the eval preflight; review with distill and the reply probe), matrix drift with the citation,
   workflow-asset, staleness and host-check selftests, then a read of this repository's own host
   through the job's read-only token); `canary.yml` weekly-probes
-  three deliberate toolchain concessions (whether the typescript pin can lift, whether the three
+  three deliberate toolchain concessions (whether the TypeScript aliases can go, whether the three
   disabled sonarjs rules can go back on, and whether Oxlint can replace ESLint with every function
   kept, `scripts/oxlint-parity-probe.sh`).
 
