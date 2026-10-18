@@ -1,42 +1,54 @@
-# Plan: a one-turn preflight before every eval pass (2026-10-15)
+# Plan: TypeScript 7 beside the 6.0 API, and Next.js 16.4.2 (2026-10-18)
 
-The previous plan (rule 38's host settings) closed with PRs #6 and #7 merged; what it left waits on
-the owner: `check-host.py --apply` here and in panda-social-cli, and deleting the remote
-`main-f7v4vj`. The distill pass (PR #8) proposed one promote: "both arms dropping at once is the
-environment" recurred four times (an expired OAuth session that made every trigger probe read 0.0,
-an overnight ENOTFOUND outage, a revoked CLI token, 24 of 42 sessions refused with a 403 after
-midnight), and each spent a pass before anyone read it. The owner asked for the run.sh probe.
+The previous plan (the eval preflight) closed with PR #9 merged; what the rule 38 plan left still waits
+on the owner: `check-host.py --apply` here and in panda-social-cli, and the delete of the remote
+`main-f7v4vj`. The owner's change request of 2026-10-18 (an uploaded document, tested on a copy of main
+at 6cc240e) asks for TypeScript 7 as the `tsc` binary while ESLint keeps every rule.
 
 ## The design
 
-- `scripts/eval-preflight.sh [model]` runs one `claude -p` turn from a scratch folder outside the
-  repo, with the runners' isolation flags (`--setting-sources project,local`, the user's settings
-  file), the pass's model, `--max-turns 1` and a wall-clock cap (`PREFLIGHT_TIMEOUT_S`, default
-  120), asking for the word `ready`. Exit 0 when the reply holds it; exit 1 with the CLI's own text
-  on a refusal, a transport error, a non-zero exit, another answer or a hang past the cap.
-- Each of the four runners (conformance, review, distill, trigger) calls it with its model right
-  before its first session, so a pass that selects nothing still costs nothing.
-- `--selftest` puts a fake `claude` first on PATH: an answer passes; a 403, a transport error, a
-  non-zero exit, another answer and a hang past a 2 s cap each fail; the fake checks the flags it
-  received and that it ran outside the repo. CI runs it in the conformance grader job.
+- TypeScript 7.0 has no JavaScript API: typescript-eslint 8.71.2 refuses it (peer range
+  `>=4.8.4 <6.1.0`) and eslint-plugin-sonarjs 4.2.2 crashes in `ts-api-utils`. So both stacks install
+  two aliases: `typescript` is `npm:@typescript/typescript6@^6.0.2` (the 6.0 API the lint plugins
+  `require`, binary `tsc6`), and `@typescript/native` is `npm:typescript@^7.0.2` (binary `tsc`, which
+  the `typecheck` script, the hooks and CI run). `check-package-json.sh` already permits an `npm:`
+  alias with a caret range.
+- Next.js: the template moves to `next` and `eslint-config-next` 16.4.2, and the tsconfig sets
+  `"types": ["bun"]`, which TypeScript 6 and 7 need to find `bun:test` (TS2307 otherwise, in `tsc` and
+  in `next build`). `next build` type-checks with `tsc6`.
+- The weekly `unpinned-typescript` canary keeps `SMOKE_TS_SPEC=typescript`, which now installs
+  TypeScript 7 as `typescript`: it stays red until typescript-eslint and sonarjs load TypeScript 7.1,
+  and green then means the aliases can go.
 
 ## Steps and definition of done
 
-1. [x] The script and its selftest. DoD: selftest green; mutants red (no exit check, no answer
-   check, no cap, no isolation flags). Done: green in 2.2 s, and red under six mutants (those four,
-   the model dropped, the probe run where it was called).
-2. [x] Wired into the four runners. DoD: each calls it before its first session; `bash -n` green.
-3. [x] One real probe here. DoD: exit 0 on the signed-in CLI, exit 1 on a model that does not exist.
-   Done (Claude Code 2.1.300): answered in 6 s; `claude-no-such-model` stopped it in 1.7 s with the
-   CLI's own "There's an issue with the selected model" text.
-4. [x] CI and docs: the selftest in ci.yml, CLAUDE.md's verify list, the changelog. DoD: fast gates
-   green, no em dash added.
-5. [x] Land on the owner's yes after PR #8 merges: commits, push, a pull request, CI green, rebase
-   merge on the owner's go.
+1. [x] Bun stack: `bun-typescript.md` (the TypeScript bullet, the template, the load-bearing clause),
+   `smoke-test.sh` (install line and comment), `oxlint-parity-probe.sh` (spec and comment),
+   `canary.yml` (comment 1 and the last step). DoD: `bash scripts/smoke-test.sh` passes every check
+   with `.bin/tsc` reporting TypeScript 7. Done: 154 of 154 under Bun 1.4.2. Under the container's
+   Bun 1.3.14 it went red (32 checks): 1.3.14 resolves `@typescript/typescript6`'s own
+   `@typescript/old` dependency to the wrapper, so `require('typescript')` is `{}`; 1.4.0 to 1.4.2
+   resolve it right, and a 1.3-written `bun.lock` stays broken until its `@typescript/old` line goes.
+   The Runtime line now asks for Bun 1.4.
+2. [x] Next.js stack: `nextjs-monorepo.md` (template versions and aliases, tsconfig `types`, the two
+   notes) and `smoke-test-next.sh` (the package.json it writes). DoD: `bash scripts/smoke-test-next.sh`
+   passes every check. Done: 55 of 55 under Bun 1.4.2.
+3. [x] The text that names the old pin: `CLAUDE.md`, `docs/upstream/sonarjs-ts7.md` (status note),
+   a `.claude/LESSONS.md` entry and a CHANGELOG entry with an upgrade line. DoD: the fast gates green
+   (frontmatter, em dash, citations re-anchored, matrix drift, workflow assets), no em dash added.
+   Done: all green; nine citations moved by one or two lines and were re-anchored.
+4. [x] The request's untested items that are cheap here: the Oxlint parity probe with the new spec,
+   and the canary's run (`SMOKE_TS_SPEC=typescript`). DoD: the probe reads both gaps; the canary run
+   goes red at typescript-eslint's refusal, the signal the job relies on. Done: the probe reads both
+   gaps open on Oxlint 1.88.0; the canary run goes red at lint (32 checks), where sonarjs crashes in
+   `ts-api-utils` before typescript-eslint's own refusal is reached.
+5. [ ] Land on the owner's yes (given 2026-10-18: commit, push, PR, merge on green): four commits under
+   gate 1, push, PR #12, CI green on Linux and Windows, rebase merge. Tier 1 skipped by the owner: the
+   selector picked 4 tasks only through the Bun reference's rule-20 row and two version numbers read as
+   canon ids (5.9, 7.1).
 
 ## Status
 
-Steps 1-5 done: PR #9 merged by rebase into main on 2026-10-15 (7a8d176), all 11 checks green on
-Linux and Windows, the conformance grader job's preflight selftest with them. What the rule 38 plan
-left still waits on the owner: `check-host.py --apply` here and in panda-social-cli, and the delete
-of the remote `main-f7v4vj`.
+Steps 1-4 done 2026-10-18. Next: step 5. After it, the owner's second request: rule 26 blocks only in
+a public repository and warns in a private one, declared by `.github/visibility` and checked in CI
+against the host's own answer.
