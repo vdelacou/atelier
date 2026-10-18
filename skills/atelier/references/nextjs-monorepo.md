@@ -93,7 +93,7 @@ Activate hooks after install: `bun run prepare`.
     "lint": "eslint --max-warnings=0"
   },
   "dependencies": {
-    "next": "16.3.6",
+    "next": "16.4.2",
     "next-mdx-remote": "^6.0.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -107,9 +107,10 @@ Activate hooks after install: `bun run prepare`.
     "@types/node": "^20.19.27",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "baseline-browser-mapping": "^2.9.11",
     "eslint": "^9.39.2",
-    "eslint-config-next": "16.3.6",
+    "eslint-config-next": "16.4.2",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.37.5",
@@ -120,7 +121,7 @@ Activate hooks after install: `bun run prepare`.
     "globals": "^17.0.0",
     "rimraf": "^6.1.2",
     "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.3",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-eslint": "^8.51.0"
   },
   "trustedDependencies": ["sharp", "unrs-resolver"],
@@ -128,7 +129,7 @@ Activate hooks after install: `bun run prepare`.
 }
 ```
 
-No `format` or `lint:fix` script: save-in-editor triggers ESLint autofix. The `test` and `typecheck` scripts are mandatory: `test` is the TDD gate (see Testing below) and `typecheck` (`tsc --noEmit`) is the standalone type gate the workflow loop calls, `next build` typechecks too, but you want the fast check without a full build. Notes on the skeleton: `@types/bun` ships the `bun:test` module types, without it, `import { describe, it, expect } from 'bun:test'` in the mandated test files does not type-resolve (the same caveat the Bun-script variant documents); leave the tsconfig `types` key **unset** so automatic `@types/*` inclusion still picks up `@types/react` etc. (an explicit `["bun"]` would suppress them), and restart the VS Code TS server after adding it. `@types/winston` must NOT be added (winston 3 ships its own types; the v2 stub conflicts), and `trustedDependencies` is Bun's lifecycle-script allowlist, there is no `ignoreScripts` package.json field.
+No `format` or `lint:fix` script: save-in-editor triggers ESLint autofix. The `test` and `typecheck` scripts are mandatory: `test` is the TDD gate (see Testing below) and `typecheck` (`tsc --noEmit`) is the standalone type gate the workflow loop calls, `next build` typechecks too, but you want the fast check without a full build. Notes on the skeleton: `@types/bun` ships the `bun:test` module types, without it, `import { describe, it, expect } from 'bun:test'` in the mandated test files does not type-resolve (the same caveat the Bun-script variant documents); set the tsconfig `types` key to `["bun"]`: from TypeScript 6.0, `tsc` does not load `@types/bun` without it (TS2307 on `bun:test`, in `tsc` and in `next build`). `@types/react` and `@types/react-dom` still resolve through the `react` imports; add `"mdx"` when the app imports `.mdx` files. Restart the VS Code TS server after adding `@types/bun`. `next build` type-checks with `tsc6` (TypeScript 6.0), because Next.js runs the binary of the `typescript` package; the `typecheck` script runs TypeScript 7, and CI runs both. The two aliases need Bun 1.4 or newer (the Bun-script variant's TypeScript note says why). `@types/winston` must NOT be added (winston 3 ships its own types; the v2 stub conflicts), and `trustedDependencies` is Bun's lifecycle-script allowlist, there is no `ignoreScripts` package.json field.
 
 ## `tsconfig.json`
 
@@ -147,6 +148,7 @@ No `format` or `lint:fix` script: save-in-editor triggers ESLint autofix. The `t
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
     "noEmit": true,
+    "types": ["bun"],
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",

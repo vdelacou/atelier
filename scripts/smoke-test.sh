@@ -236,15 +236,18 @@ describe('createFetchGreeting', () => {
 EOF
 
 echo "== install current toolchain (unpinned: new majors are the point) =="
-# typescript is the one deliberate exception to unpinned: the canonical skeleton
-# pins "typescript": "^5.0.0", and eslint-plugin-sonarjs (<= 4.1.0) crashes at
-# rule load under TypeScript 7 (reads ts.SyntaxKind at module scope; TS 7's
-# module shape breaks the CJS default-export interop). Caught by this test on
-# 2026-07-12. Lift the pin when sonarjs supports TS 7. The weekly canary
-# workflow overrides SMOKE_TS_SPEC=typescript to probe whether it can be lifted.
+# TypeScript is the one deliberate exception to unpinned: the canonical skeleton
+# installs it as two aliases. `typescript` is @typescript/typescript6, the 6.0 API
+# that typescript-eslint and eslint-plugin-sonarjs load; `@typescript/native` is
+# TypeScript 7, whose `tsc` the typecheck gate runs. TypeScript 7.0 has no
+# JavaScript API: typescript-eslint 8.71.2 refuses it and sonarjs 4.2.2 crashes in
+# ts-api-utils (found 2026-10-18; sonarjs <= 4.1.0 already crashed at rule load,
+# caught by this test 2026-07-12). The weekly canary sets SMOKE_TS_SPEC=typescript,
+# plain TypeScript 7, to probe whether the aliases can go.
 expect_ok "bun add -d toolchain" bun add -d eslint @eslint/js globals typescript-eslint \
   eslint-plugin-security eslint-plugin-sonarjs eslint-plugin-unicorn eslint-plugin-prettier \
-  prettier "${SMOKE_TS_SPEC:-typescript@^5}" @types/bun @stryker-mutator/core
+  prettier "${SMOKE_TS_SPEC:-typescript@npm:@typescript/typescript6@^6.0.2}" \
+  "@typescript/native@npm:typescript@^7.0.2" @types/bun @stryker-mutator/core
 
 # The fixture-authored files above are test scaffolding, not shipped assets,
 # normalise THEIR formatting only, so a formatting regression in a shipped asset
