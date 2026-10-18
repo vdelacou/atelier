@@ -6,6 +6,16 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Fixed
+- `check-host.py` failed every morning on a private repository on GitHub Free under its own opt-out:
+  it still read `main`'s branch rules, and GitHub answers that read with a 403 there. Under
+  `HOST_RULESET: unavailable` it no longer reads them, names them as unchecked, and holds the
+  default branch and the merge settings alone; without the opt-out the 403 now carries the Free-plan
+  hint. The selftest plants both, and the old read goes red.
+- `mutate-changed.sh` exited 1 on a repository's first push: the zero `before` fell back to
+  `HEAD~1`, which does not exist yet. With neither, every file in scope is new and all are mutated,
+  against the empty tree. The Bun smoke test plants a one-commit push.
+
 ## [2.7.0] - 2026-10-18
 
 The trunk and reply release. Hard rule 38 makes `main` the trunk: a branch starts from a fetched
