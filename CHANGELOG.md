@@ -32,6 +32,10 @@ whole, not any single skill.
   wrapper itself, and the `bun.lock` it writes stays broken under 1.4 until its `@typescript/old`
   line is deleted. Next.js: bump `next` and `eslint-config-next` to `16.4.2` and set
   `"types": ["bun"]` in each package's `tsconfig.json`.
+- Rule 26: re-copy `check-identity.sh` and your variant's CI workflow, whose identity step now
+  passes the host's visibility (`REPO_VISIBILITY`). A private repository commits
+  `.github/visibility` reading `private`, and a name in file contents then warns instead of
+  blocking; a public repository changes nothing.
 
 ### Added
 - A reply gate. `assets/check-reply.py --hook` is a Claude Code Stop hook, wired by the new
@@ -110,6 +114,13 @@ whole, not any single skill.
   the aliases can go. The aliases need Bun 1.4, so both variants now ask for it.
 - Next.js: the template moves to `next` and `eslint-config-next` 16.4.2 and sets the tsconfig
   `types` to `["bun"]`, which TypeScript 6 and 7 need to find `bun:test`.
+- Rule 26 blocks only in a public repository. A name in a private repository's files is a debt to
+  clear before it goes public, not a leak, so there `check-identity.sh` lists each hit as a warning
+  that names the rule (a `::warning::` annotation under GitHub Actions) and exits 0. A private
+  repository declares itself in `.github/visibility`; CI passes the host's own answer from
+  `github.event.repository.private`, which wins, and fails a file saying private on a public host
+  with or without a hit. No file, or any other word in it, is public, so existing repositories keep
+  blocking. Going public means deleting the file, passing `--all` and scrubbing history.
 
 ### Harness
 - The three smoke tests run on `windows-latest` beside Linux, in Git Bash, so each variant's gates
@@ -128,6 +139,10 @@ whole, not any single skill.
 - The Bun smoke test installs the two TypeScript aliases, the Next.js one writes them with Next.js
   16.4.2, and the Oxlint probe installs the 6.0 alias. The `unpinned-typescript` canary installs
   plain TypeScript 7 as `typescript`, so it stays red until the aliases can go.
+- The Bun smoke test plants every visibility case of rule 26: a private file warns with the rule's
+  tag, a public host outranks the file, any other word blocks, a private host warns, and a stale
+  file is red with no name planted. The Next.js and Java smoke tests plant the private warning, and
+  all three check that their CI workflow hands the identity step the host's answer.
 
 ## [2.6.1] - 2026-09-28
 
