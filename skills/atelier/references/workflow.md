@@ -319,6 +319,8 @@ File contents are the opposite. No tracked file ever names a person, an employer
 
 **The gate.** `assets/check-identity.sh` is a tripwire in the shape of the discipline guards below, and a core gate: every shipped hook runs it on the staged added lines and every shipped CI workflow on the whole tracked tree (`--all`). It looks for the committer's multi-word git name in both orders and the email, under `--all` for every author and committer in the history, and for every entry of `IDENTITY_DENYLIST` (employer and client names; an environment variable, never a tracked file, since a tracked denylist would itself name what the rule forbids). A one-word git name is a handle and is skipped, as is a GitHub noreply address; CODEOWNERS and `.mailmap` are exempt; a lone first name stays a review duty. The fix for a hit is a neutral handle, never a suppression.
 
+**Public blocks, private warns.** A name in a public repository's files is public the moment it is pushed; in a private one it is a debt, paid before the repository ever goes public. So the gate blocks a hit in a public repository and only warns in a private one, and the warning still lists each hit and names the rule (under GitHub Actions also as a `::warning::` annotation). A private repository declares itself: `.github/visibility`, committed, one line reading `private`. The hook reads that file; CI passes the host's own answer as `REPO_VISIBILITY` (from `github.event.repository.private`, in the identity step of every shipped CI workflow), and that answer wins: a file saying private on a public host fails CI with or without a hit, so a repository made public cannot keep warning. No file, or any other word in it, counts as public. Before a private repository goes public, delete the file, make `check-identity.sh --all` pass, and scrub from history the names the warnings let in (below).
+
 Secrets are the other real pre-publish concern: run `gitleaks git` (the history-wide mode, not the pre-commit `git --staged`) before the first push to a public host. Secrets in history are always findings; metadata identities never are.
 
 **Scrubbing pushed history is a rewrite, gated and user-initiated.** A one-time, destructive operation; never run it unprompted (rule 25). Use `git filter-repo` (install: `brew install git-filter-repo`): `--replace-text` removes a mention from file contents across history, and `--mailmap` remaps commit metadata when the user wants that changed too:
@@ -349,7 +351,7 @@ This is the **Bun-script variant's** mechanism. The Next.js monorepo uses `simpl
 | 1 | `scripts/check-commit-size.sh` | <=10 files AND <=300 lines | <1s |
 | 2 | `scripts/check-package-json.sh` | no `"latest"` / `"*"` / bare dist-tag (rule 19); no foreign lockfile, no `scripts` entry calling `node`, `npm`, `npx`, `pnpm`, `yarn` or `vite` directly (rule 5) | <1s |
 | 3 | `gitleaks git --staged --pre-commit` | secret scan on the staged diff, inline allow comments ignored | ~50ms |
-| 4 | `scripts/check-identity.sh` | no person, employer or client named in the staged lines (rule 26) | <1s |
+| 4 | `scripts/check-identity.sh` | no person, employer or client named in the staged lines (rule 26; a warning in a private repository) | <1s |
 | 5 | `scripts/check-disciplines.sh` | the core discipline tripwires on the staged lines: personal data channels, IO deadlines, data lifecycle (rules 27, 29, 30; Discipline tripwires below) | <1s |
 | 6 | `bun run lint:staged` | ESLint on the staged TS files only | ~1-2s |
 | 7 | `bun run typecheck` | `tsc --noEmit` clean | seconds |
@@ -499,7 +501,7 @@ Five shipped guards move the mechanical slices of the production disciplines int
 
 | Guard | Rule | Blocks |
 |:---|:--:|:---|
-| `assets/check-identity.sh` | 26 | a person, employer, or client named in file contents: the committer's multi-word name (both orders) or email, the history's authors under `--all`, `IDENTITY_DENYLIST` entries; handles, noreply addresses, CODEOWNERS and `.mailmap` pass. A core gate, run by every shipped hook and CI workflow |
+| `assets/check-identity.sh` | 26 | a person, employer, or client named in file contents: the committer's multi-word name (both orders) or email, the history's authors under `--all`, `IDENTITY_DENYLIST` entries; handles, noreply addresses, CODEOWNERS and `.mailmap` pass. A core gate, run by every shipped hook and CI workflow; it blocks in a public repository and warns in a private one (`.github/visibility`, which CI checks against `REPO_VISIBILITY`) |
 | `assets/check-pii-channels.sh` (core, via `check-disciplines.sh`) | 27 | a natural identifier (thirteen names, any casing or prefix) in a query string (literal or via `new URLSearchParams`), a logger message interpolation (the call joined with up to 3 following lines), a Java `@QueryParam` |
 | `assets/check-io-deadlines.sh` (core, via `check-disciplines.sh`) | 29 | an infra `fetch` / `globalThis.fetch` call with no `AbortSignal.timeout(` / `signal:` within the 8 lines after it, comments stripped (Java `HttpClient` with no `.timeout(` / `connectTimeout` in the file) |
 | `assets/check-data-lifecycle.sh` (core, via `check-disciplines.sh`) | 30 | a hard delete in app code (erasure/retention/prune/sweep paths exempt, matched on the path only); DROP COLUMN / DROP TABLE / RENAME / TRUNCATE / ALTER COLUMN TYPE outside a `*contract*` migration |

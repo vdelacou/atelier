@@ -682,7 +682,7 @@ cp <skill>/assets/branches.yml          .github/workflows/branches.yml   # rule 
 cp <skill>/assets/check-package-json.sh  scripts/check-package-json.sh
 cp <skill>/assets/check-bundle-size.sh   scripts/check-bundle-size.sh
 cp <skill>/assets/check-docs.sh          scripts/check-docs.sh
-cp <skill>/assets/check-identity.sh      scripts/check-identity.sh
+cp <skill>/assets/check-identity.sh      scripts/check-identity.sh   # rule 26; a private repository also commits .github/visibility reading private, and the gate then warns
 cp <skill>/assets/check-disciplines.sh   scripts/check-disciplines.sh
 cp <skill>/assets/check-pii-channels.sh  scripts/check-pii-channels.sh
 cp <skill>/assets/check-io-deadlines.sh  scripts/check-io-deadlines.sh
