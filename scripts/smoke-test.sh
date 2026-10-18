@@ -1164,6 +1164,20 @@ expect_ok "mutate:changed on a push resolves github.event.before..HEAD and score
   bash -c 'env -u BASE -u GITHUB_BASE_REF GITHUB_EVENT_NAME=push GITHUB_EVENT_BEFORE="$(git rev-parse HEAD~1)" bash scripts/mutate-changed.sh > mutate-push.out 2>&1'
 expect_ok "mutate:changed on a push prints the pushed range and one file in scope" \
   bash -c 'grep -q "HEAD +1" mutate-push.out && grep -q "testing 1 file(s)" mutate-push.out'
+# A repository's first push (2026-10-18): the zero before and no HEAD~1 made the script exit 1 on
+# "base ref 'HEAD~1' does not exist". A one-commit throwaway repo, with a stub bunx so no Stryker
+# runs, proves every new file in scope is handed to Stryker instead.
+first=$(mktemp -d) && mkdir -p "$first/repo/src/domain" "$first/bin"
+printf 'export const x = 1;\n' > "$first/repo/src/domain/x.ts"
+printf '#!/usr/bin/env bash\necho "stryker args: $*"\n' > "$first/bin/bunx" && chmod +x "$first/bin/bunx"
+git -C "$first/repo" init -q && git -C "$first/repo" add -A
+git -C "$first/repo" -c user.name=atelier -c user.email=atelier@example.invalid -c core.hooksPath=/dev/null commit -q -m 'feat: first'
+if (cd "$first/repo" && env -u BASE -u GITHUB_BASE_REF PATH="$first/bin:$PATH" GITHUB_EVENT_NAME=push \
+      GITHUB_EVENT_BEFORE=0000000000000000000000000000000000000000 MUTATE_NO_FETCH=1 \
+      bash "$FX/scripts/mutate-changed.sh") >"$LOG" 2>&1 && grep -q 'stryker args: .*--mutate src/domain/x.ts' "$LOG"; then
+  pass "mutate:changed on a repository's first push mutates every new file in scope"
+else cat "$LOG"; fail "mutate:changed on a repository's first push"; fi
+rm -rf "$first"
 
 echo
 if [ "$FAILURES" -gt 0 ]; then
