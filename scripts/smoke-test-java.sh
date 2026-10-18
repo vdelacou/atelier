@@ -366,6 +366,11 @@ expect_ok "ci-java.yml mutates the changed classes only, never the full sweep" \
   bash -c 'grep -q "pit-changed.sh" "$1" && ! grep -q "pitest-maven:mutationCoverage" "$1"' _ "$SKILL/assets/ci-java.yml"
 # JUnit logs its random-order seed below INFO, so no run printed one until the workflow
 # picked, printed and passed it (2026-09-27); the seeds above prove the flag replays.
+identity_step_gets_visibility() { # $1 workflow: rule 26 warns or blocks on the host's own answer
+  awk '/- name: identity in file contents/{f=1; next} f && /- name:/{exit} f' "$1" \
+    | grep -qF 'REPO_VISIBILITY: ${{ github.event.repository.private &&'
+}
+expect_ok "ci-java.yml hands the identity step the host's visibility (rule 26)" identity_step_gets_visibility "$SKILL/assets/ci-java.yml"
 expect_ok "ci-java.yml prints the JUnit seed and passes it to verify (rule 36)" \
   bash -c 'grep -q "junit random-order seed" "$1" && grep -q "verify -Djunit.jupiter.execution.order.random.seed=" "$1"' _ "$SKILL/assets/ci-java.yml"
 expect_ok "mutation-java.yml is the scheduled full sweep" \
@@ -501,6 +506,13 @@ if bash .githooks/pre-commit >"$LOG" 2>&1; then cat "$LOG"; fail "the Java hook 
 elif grep -q 'hard rule 26' "$LOG"; then pass "the Java hook stops on the identity gate (rule 26)"
 else cat "$LOG"; fail "the Java hook failed, but not on the identity gate"; fi
 git reset -q -- src/main/java/com/example/app/domain/Credit.java && rm src/main/java/com/example/app/domain/Credit.java
+# Public blocks, private warns (2026-10-18): the same hit in a repository that declares
+# itself private is a warning that still names the rule.
+printf 'Reviewed by Ada Lovelace\n' > decision.md && git add decision.md
+mkdir -p .github && printf 'private\n' > .github/visibility
+if bash scripts/check-identity.sh >"$LOG" 2>&1 && grep -q 'warning: .*hard rule 26' "$LOG"; then pass "identity guard warns, not blocks, in a private repository (rule 26)"
+else cat "$LOG"; fail "identity guard did not warn with the rule in a private repository (rule 26)"; fi
+git reset -q -- decision.md && rm decision.md .github/visibility && { rmdir .github 2>/dev/null || true; }
 git config user.name 'atelier-smoke'
 expect_ok "identity guard passes the scaffold under a one-word git name with --all (rule 26)" bash scripts/check-identity.sh --all
 

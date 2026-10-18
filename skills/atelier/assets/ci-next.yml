@@ -61,6 +61,9 @@ jobs:
       - name: secret scan (full history)
         run: gitleaks git --ignore-gitleaks-allow --redact --no-banner
       - name: identity in file contents (rule 26, the whole tree)
+        env:
+          # the host's own answer: rule 26 blocks in a public repository, warns in a private one
+          REPO_VISIBILITY: ${{ github.event.repository.private && 'private' || 'public' }}
         run: bash scripts/check-identity.sh --all
       - name: discipline tripwires (rules 27, 29, 30, the whole tree)
         run: bash scripts/check-disciplines.sh --all

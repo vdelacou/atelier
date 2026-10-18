@@ -788,6 +788,30 @@ git reset -q && rm decision.md
 printf '* @adalovelace Ada Lovelace\n' > .github/CODEOWNERS && git add .github/CODEOWNERS
 expect_ok "identity guard exempts CODEOWNERS (rule 26)" bash scripts/check-identity.sh
 git reset -q && rm .github/CODEOWNERS
+# Public blocks, private warns (2026-10-18): a committed .github/visibility reading private
+# turns the same hit into a warning that still names the rule; CI's REPO_VISIBILITY
+# outranks the file; any other word in the file is public; and a file saying private on a
+# public host is red with no name planted at all.
+printf '# Decided by Ada Lovelace\n' > decision.md && git add decision.md
+printf 'private\n' > .github/visibility
+if bash scripts/check-identity.sh >"$LOG" 2>&1 && grep -q 'warning: .*hard rule 26' "$LOG"; then pass "identity guard warns, not blocks, in a private repository (rule 26)"
+else cat "$LOG"; fail "identity guard did not warn with the rule in a private repository (rule 26)"; fi
+if REPO_VISIBILITY=public bash scripts/check-identity.sh >"$LOG" 2>&1; then cat "$LOG"; fail "identity guard let a file saying private outrank a public host (rule 26)"
+elif grep -q '.github/visibility says private' "$LOG"; then pass "identity guard takes the host's public answer over the file (rule 26)"
+else cat "$LOG"; fail "identity guard failed on a public host, but not on the stale file (rule 26)"; fi
+printf 'internal\n' > .github/visibility
+if bash scripts/check-identity.sh >"$LOG" 2>&1; then cat "$LOG"; fail "identity guard warned on a file that does not say private (rule 26)"
+elif grep -q 'hard rule 26' "$LOG"; then pass "identity guard treats any other word in the file as public (rule 26)"
+else cat "$LOG"; fail "identity guard failed, but not on rule 26"; fi
+rm .github/visibility
+if REPO_VISIBILITY=private bash scripts/check-identity.sh >"$LOG" 2>&1 && grep -q 'warning: .*hard rule 26' "$LOG"; then pass "identity guard warns when the host says private (rule 26)"
+else cat "$LOG"; fail "identity guard did not warn on a private host (rule 26)"; fi
+git reset -q && rm decision.md
+printf 'private\n' > .github/visibility
+if REPO_VISIBILITY=public bash scripts/check-identity.sh --all >"$LOG" 2>&1; then cat "$LOG"; fail "identity guard passed a stale private file on a public host (rule 26)"
+elif grep -q '.github/visibility says private' "$LOG"; then pass "identity guard fails a stale private file on a public host with no name planted (rule 26)"
+else cat "$LOG"; fail "identity guard failed, but not on the stale file (rule 26)"; fi
+rm .github/visibility
 git config user.name 'atelier' && git config user.email 'atelier@example.invalid'
 printf 'name: atelier-smoke-fixture\n' > handle.md && git add handle.md
 expect_ok "identity guard treats a one-word git name as a handle (rule 26)" bash scripts/check-identity.sh
@@ -998,6 +1022,11 @@ echo "== CI-only gates run directly (the full suite, coverage, and mutation are 
 expect_ok "mutation gate (Stryker on the staged domain files)" bun run mutate:staged
 expect_ok "ci.yml asset is present" test -f .github/workflows/ci.yml
 expect_ok "ci.yml wires the package.json gate" grep -q "check-package-json.sh" .github/workflows/ci.yml
+identity_step_gets_visibility() { # $1 workflow: rule 26 warns or blocks on the host's own answer
+  awk '/- name: identity in file contents/{f=1; next} f && /- name:/{exit} f' "$1" \
+    | grep -qF 'REPO_VISIBILITY: ${{ github.event.repository.private &&'
+}
+expect_ok "ci.yml hands the identity step the host's visibility (rule 26)" identity_step_gets_visibility .github/workflows/ci.yml
 expect_ok "ci.yml runs the README Verify block (canon 12.1; nothing ran it until 2026-09-27)" grep -q "bash scripts/check-docs.sh" .github/workflows/ci.yml
 expect_ok "ci.yml runs the full suite in random order, coverage, and mutation" bash -c 'grep -q "bun test --randomize" .github/workflows/ci.yml && grep -q "bun run coverage" .github/workflows/ci.yml && grep -q "mutate" .github/workflows/ci.yml'
 # The cadence (2026-09-03): the merge gate mutates the changed files only, on
