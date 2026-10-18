@@ -2,6 +2,12 @@
 
 Journal of mistakes, decisions, and gotchas for this repo, newest first. Append-only between compaction passes: supersede a decision with a newer `[decision]`; only an approved compaction pass rewrites or retires entries, into `.claude/lessons.archive.md`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [decision] 2026-10-18 | rule 26 blocks only in a public repository; a private one warns
+
+The owner's call: a name in a private repository's files is a debt to clear before going public, not a leak, so `check-identity.sh` warns there and blocks only in a public repository. A hook cannot ask the host, so a private repository declares itself in a committed `.github/visibility` reading `private`; CI passes `github.event.repository.private` as `REPO_VISIBILITY`, which wins, and a file saying private on a public host fails CI even with no hit. No file, or another word, counts as public, so every existing repository keeps blocking.
+
+Rule for next time: a gate relaxed by a declaration needs CI to check the declaration against the host, or the declaration outlives the fact.
+
 ## [gotcha] 2026-10-18 | Bun 1.3 resolves the TypeScript 6.0 wrapper's own alias to the wrapper, and the lockfile keeps it
 
 `@typescript/typescript6` 6.0.2 is a wrapper whose `lib/typescript.js` re-exports its dependency `@typescript/old` (`npm:typescript@^6`). Bun 1.3.14, clean cache or not, resolves that dependency to the wrapper itself, so `require('typescript')` returns an empty object and ESLint crashes in `typescript-eslint/dist/index.js` (reading `split` of the missing `version`): both smoke tests went red, 32 and 25 checks. Bun 1.4.0 to 1.4.2 resolve it to `typescript` 6.0.3, but under 1.4.2 a `bun.lock` that 1.3.14 wrote stays broken through `--frozen-lockfile`, a plain install, a re-add and `bun update`; deleting its `@typescript/old` line, or the whole file, and installing again fixes it.
