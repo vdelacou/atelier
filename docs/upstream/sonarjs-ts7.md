@@ -1,5 +1,7 @@
 > Status: FILED 2026-07-12 to the Sonar Community forum (https://community.sonarsource.com/, Report a Bug); SonarJS has GitHub issues disabled. This file is the record of the posted text.
 
+> Update 2026-10-18: still open, and wider. eslint-plugin-sonarjs 4.2.2 still crashes under TypeScript 7, now in `ts-api-utils` (`Cannot read properties of undefined (reading 'Intrinsic')`), and typescript-eslint 8.71.2 refuses TypeScript 7.0 too (peer range `>=4.8.4 <6.1.0`): TypeScript 7.0 ships no JavaScript API. atelier installs the 6.0 API (`@typescript/typescript6`) beside TypeScript 7 until both load TypeScript 7.1.
+
 # Draft issue: eslint-plugin-sonarjs (SonarSource/SonarJS or eslint-plugin-sonarjs repo)
 
 Title: ESLint crashes at startup under TypeScript 7 (SyntaxKind read at rule-module load)
