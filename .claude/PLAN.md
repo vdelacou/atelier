@@ -1,51 +1,39 @@
-# Plan: rule 26 blocks in a public repository and warns in a private one (2026-10-18)
+# Plan: release 2.7.0 (2026-10-18)
 
-The previous plan (TypeScript 7 beside the 6.0 API) closed with PR #12 rebase-merged on 2026-10-18
-(main d10e519), all 11 checks green on Linux and Windows. The owner then asked that rule 26 (no
-person, employer or client named in file contents) block only in a public repository and only warn
-in a private one, and chose the mechanism: a committed declaration the hook reads, which CI checks
-against the host.
+The previous plan (rule 26's public-blocks, private-warns split) closed with PR #13 rebase-merged on
+2026-10-18 (main 3d2c4e3), all 11 checks green on Linux and Windows. The owner asked to tag a new
+version and chose: 2.7.0, tier 2 before the tag, and the usual landing (a release PR, merge on green,
+an annotated tag on main).
+
+Since v2.6.1: 66 commits, hard rule 38 (the branch lifecycle), the reply gate, the eval preflight, the
+Windows coverage fix, TypeScript 7 beside the 6.0 API with Next.js 16.4.2, and rule 26's visibility
+split. No skill description changed, so the trigger eval is not due.
 
 ## The design
 
-- `check-identity.sh` decides by visibility: CI's `REPO_VISIBILITY` (the host's own answer, `private`
-  or `public`, from `github.event.repository.private`) when set, else `.github/visibility` (one
-  committed line reading `private`); neither, or any other word, is public. Public: a hit exits 1, as
-  today. Private: a hit prints a warning naming each hit and rule 26 (a `::warning::` annotation under
-  GitHub Actions) and exits 0. A file saying private while the host says public exits 1 with or
-  without a hit, so a repository made public cannot keep warning.
-- Every shipped CI workflow's identity step passes `REPO_VISIBILITY`, and so does this repository's
-  own CI. Both of their triggers (push and pull_request) carry `github.event.repository`.
-- Doctrine: rule 26's line in SKILL.md and its enforcement row, workflow.md's Commit identity (a
-  "public blocks, private warns" paragraph with the going-public steps) and its two gate tables, the
-  three variant references, atelier-greenfield (declare a private repository at bootstrap) and
-  atelier-review-me (adopt mode declares it; the judgment's severity). atelier-grill-me and
-  atelier-distill do not mention rule 26.
+- Tier 2 per the contract (baseline.md, Tiers): the full matrix, both arms, 21 tasks, `claude-opus-5`
+  (the frozen fixture's model), 120 turns and 40 minutes per session, three jobs as in 2.6.0, with Bun
+  1.4.2 first on PATH so the TypeScript aliases install. Run detached, since a background tool call
+  ends at two hours and a worker restart can drop it; the runner has no resume, so a lost session is
+  rerun by its task id and arm into the same runs dir.
+- The re-freeze is not possible here: freeze-baseline.py sums passes by re-grading their runs dirs,
+  and the five earlier passes' dirs are not in this container (the workspace is gitignored). The
+  fixture stays at five passes; this pass's unaided arm is reported beside it.
+- The release commit, `docs(release): 2.7.0 changelog, upgrade notes and README`: `[Unreleased]`
+  becomes `[2.7.0] - <date>` with a summary, a new empty `[Unreleased]` above it, the README's current
+  release line, and the README rows that read tier 2.
 
 ## Steps and definition of done
 
-1. [x] The gate: `check-identity.sh` and the four CI workflows. DoD: by hand in a scratch repo, public
-   blocks, private warns with the rule named, the host's answer wins, and a stale declaration is red
-   with no hit.
-2. [x] The proofs: the Bun smoke test plants each case (private warns with the rule's tag, a public
-   host outranks the file, another word in the file blocks, a private host warns, a stale declaration
-   is red with no hit) and checks that ci.yml hands the identity step the host's answer; the Next and
-   Java smoke tests plant the private warning and check their CI workflow the same way. DoD: the three
-   smoke tests green under Bun 1.4.2.
-3. [x] The doctrine and its cascade (SKILL.md rule 26 and its row, workflow.md, the variant references,
-   greenfield, review-me), keeping the pinned openings of `SKILL.md:62` and `check-identity.sh:3`.
-   DoD: fast gates green, citations re-anchored where lines moved, no lock snippet changed.
-4. [x] CHANGELOG (an upgrade line and a Changed entry) and a LESSONS `[decision]` entry. DoD: no em
-   dash, the fast gates green.
-5. [ ] Land after PR #12 merges, on the owner's yes: commits under gate 1, a pull request, CI green on
-   Linux and Windows, rebase merge. Tier 1 per the selector, the owner's call.
+1. [ ] Tier 2. DoD: the preflight answers; 42 sessions finish (capped ones named); `grade.py` on both
+   arms and `--frozen-baseline` on the skill arm; every miss read by hand, with extra samples of a miss
+   as 2.6.0 did for h5, so variance is told from a regression.
+2. [ ] Record it: a "Tier 2 for the 2.7.0 release" section in baseline.md, and the README rows that
+   read it. DoD: fast gates green.
+3. [ ] The release commit. DoD: fast gates green, no em dash.
+4. [ ] Land on the owner's yes (given 2026-10-18): a PR, CI green on Linux and Windows, rebase merge,
+   an annotated `v2.7.0` on main pushed, then this plan closed.
 
 ## Status
 
-Steps 1-4 done 2026-10-18. Step 1: by hand, 14 cases right (public blocks, private warns naming the
-rule, the host's answer wins, a stale file is red with no hit, CRLF and capitals read, a subfolder
-finds the file, the Actions annotation). Step 2: under Bun 1.4.2 the Bun smoke test passed 160 of 160,
-Next.js 57 of 57 and Java 87 of 87, and five broken copies of the gate each turned one or two of the
-planted cases red. Steps 3-4: fast gates green, ten citations moved by two lines, no lock snippet
-changed; the tier-1 selector picks 0 of 21 tasks. Step 5: the owner said yes on 2026-10-18 (commit,
-push, PR, merge on green); five commits, PR #13.
+Started 2026-10-18. Next: step 1, the preflight.
