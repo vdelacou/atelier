@@ -6,13 +6,13 @@ Identifiable by `"module": "src/main.ts"` in `package.json` and the Clean Archit
 
 ## Runtime
 
-- **Runtime**: Bun (`bun init`, Bun v1.3 or newer: `bun test --randomize` prints its seed and `--seed` replays it from 1.3, which rule 36 relies on).
+- **Runtime**: Bun (`bun init`, Bun v1.4 or newer: the TypeScript aliases below need 1.4, and `bun test --randomize` prints its seed and `--seed` replays it from 1.3, which rule 36 relies on).
 - **Package manager**: Bun. `bun.lock` is committed.
 - **Module system**: ESM. `"type": "module"` and `moduleDetection: "force"`.
 - **Entry point**: `src/main.ts` (`"module": "src/main.ts"` in package.json).
 - **Install**: `bun install`.
 - **Run**: `bun run src/main.ts`.
-- **TypeScript**: a devDependency held at `^5` (eslint-plugin-sonarjs crashes under TypeScript 7; the weekly canary re-probes it). A `peerDependencies` entry would not hold it: Bun installs TypeScript 6 over it with only a warning.
+- **TypeScript**: two devDependency aliases. `typescript` is `@typescript/typescript6`, the 6.0 API that typescript-eslint and eslint-plugin-sonarjs load. `@typescript/native` is TypeScript 7 and gives the `tsc` binary. TypeScript 7.0 has no JavaScript API, so ESLint cannot load it; the weekly canary re-probes it. The aliases need Bun 1.4: Bun 1.3.14 resolves the wrapper's own `@typescript/old` dependency (`npm:typescript@^6`) to the wrapper itself, so `require('typescript')` returns an empty object and ESLint crashes, and a `bun.lock` that Bun 1.3 wrote keeps that entry under Bun 1.4 until its `@typescript/old` line is deleted.
 
 Never call `node`, `ts-node`, `vite`, `npm`, `pnpm`, or `yarn`. TypeScript's compiler runs as the type checker only (`tsc --noEmit`, the `typecheck` script), never to build or run.
 
@@ -43,6 +43,7 @@ Minimal skeleton:
     "@eslint/js": "^10.0.1",
     "@stryker-mutator/core": "^10.0.0",
     "@types/bun": "^1.4.2",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "eslint": "^10.11.0",
     "eslint-plugin-prettier": "^5.5.6",
     "eslint-plugin-security": "^4.1.0",
@@ -50,13 +51,13 @@ Minimal skeleton:
     "eslint-plugin-unicorn": "^76.0.0",
     "globals": "^17.12.0",
     "prettier": "^3.9.9",
-    "typescript": "^5.9.3",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-eslint": "^8.70.1"
   }
 }
 ```
 
-The version ranges above are sample pins as of writing, with one that is load-bearing: keep `typescript` on `^5` until eslint-plugin-sonarjs supports TypeScript 7 (sonarjs <= 4.1.0 reads `ts.SyntaxKind` at rule-module load and crashes under TS 7's module shape; found by the repo smoke test 2026-07-12). **Never use `"latest"` or `"*"`** (atelier hard rule 19, enforced by `scripts/check-package-json.sh` in pre-commit gate 2). To get the actual current latest of every dep on a fresh repo, run `bun install` first (resolving the ranges above), then `bun update` (which rewrites the `^X.Y.Z` ranges to the latest matching version) and commit the lockfile change. After that, every new package goes in via `bun add <pkg>` (runtime) or `bun add -d <pkg>` (dev): Bun pins it to `^X.Y.Z` automatically. Hand-editing `package.json` to add a dep is a smell.
+The version ranges above are sample pins as of writing, with one that is load-bearing: the two TypeScript aliases. Keep them until typescript-eslint and eslint-plugin-sonarjs support TypeScript 7.1 (TypeScript 7.0 has no JavaScript API: typescript-eslint 8.71.2 refuses it and sonarjs 4.2.2 crashes in ts-api-utils; found 2026-10-18). Never run `bun add typescript@latest`: it replaces the alias. **Never use `"latest"` or `"*"`** (atelier hard rule 19, enforced by `scripts/check-package-json.sh` in pre-commit gate 2). To get the actual current latest of every dep on a fresh repo, run `bun install` first (resolving the ranges above), then `bun update` (which rewrites the `^X.Y.Z` ranges to the latest matching version) and commit the lockfile change. After that, every new package goes in via `bun add <pkg>` (runtime) or `bun add -d <pkg>` (dev): Bun pins it to `^X.Y.Z` automatically. Hand-editing `package.json` to add a dep is a smell.
 
 Common runtime deps in this class of repo (install on demand with `bun add <name>`):
 `@google/genai`, `canvas`, `chardet`, `csv-writer`, `firebase-admin`, `iconv-lite`, `jsonwebtoken` (+ `@types/jsonwebtoken`), `papaparse`, `pdf-extract-image`, `pdf-to-png-converter`, `pdfjs-dist`, `winston`, `xlsx`.

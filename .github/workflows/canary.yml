@@ -3,11 +3,14 @@ name: toolchain-canary
 # Three weekly probes of deliberate toolchain concessions. None blocks
 # anything; check the Actions page (or the badge) when curious.
 #
-# 1. The Bun smoke test pins typescript@^5 because eslint-plugin-sonarjs crashes
-#    under TypeScript 7 (see .claude/LESSONS.md, 2026-07-12; the upstream report is
-#    docs/upstream/sonarjs-ts7.md). unpinned-typescript
-#    runs the same smoke test UNPINNED, so the week sonarjs ships TS 7 support
-#    the job turns green and the pin can be lifted.
+# 1. The Bun smoke test installs TypeScript as two aliases: `typescript` is the
+#    6.0 API (@typescript/typescript6) that typescript-eslint and eslint-plugin-sonarjs
+#    load, and `@typescript/native` is TypeScript 7, which runs tsc. TypeScript 7.0
+#    has no JavaScript API, so neither plugin loads it (see .claude/LESSONS.md,
+#    2026-10-18; the upstream report is docs/upstream/sonarjs-ts7.md).
+#    unpinned-typescript runs the same smoke test with plain TypeScript 7 as
+#    `typescript`, so the week both plugins load it the job turns green and the
+#    TypeScript aliases can go.
 # 2. The canonical eslint config turns off three sonarjs rules that flag
 #    conforming code: no-useless-intersection and null-dereference (see
 #    LESSONS.md, 2026-08-29) and function-return-type, which reports every
@@ -38,8 +41,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - name: smoke test with typescript unpinned
         run: SMOKE_TS_SPEC=typescript bash scripts/smoke-test.sh
-      - name: green means the pin can be lifted
-        run: echo "typescript unpinned passes; lift the ^5 pin in scripts/smoke-test.sh and bun-typescript.md, and update the LESSONS entry"
+      - name: green means the TypeScript aliases can go
+        run: echo "typescript unpinned passes; remove the TypeScript aliases from both templates, both smoke tests and the Oxlint probe, and update the LESSONS entry"
 
   sonarjs-rule-probe:
     runs-on: ubuntu-latest

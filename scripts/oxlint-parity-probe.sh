@@ -44,10 +44,11 @@ finish() { # $1 exit status
 }
 broken() { say "BROKEN: $1"; if [ -f last.log ]; then sed 's/^/    /' last.log; fi; finish 1; }
 
-# Unpinned on purpose: the newest Oxlint is the point. typescript stays on the canonical ^5 pin
-# (eslint-plugin-sonarjs crashes under TypeScript 7; the unpinned-typescript job watches that).
+# Unpinned on purpose: the newest Oxlint is the point. typescript stays on the canonical alias of
+# the 6.0 API (TypeScript 7.0 has no JavaScript API for eslint-plugin-sonarjs to load; the
+# unpinned-typescript job watches that).
 echo '{ "name": "oxlint-parity-probe", "private": true, "type": "module" }' > package.json
-bun add -d oxlint oxlint-tsgolint eslint-plugin-sonarjs 'typescript@^5' > last.log 2>&1 || broken "install"
+bun add -d oxlint oxlint-tsgolint eslint-plugin-sonarjs 'typescript@npm:@typescript/typescript6@^6.0.2' > last.log 2>&1 || broken "install"
 version() { node -p "require('./node_modules/$1/package.json').version"; }
 VERSIONS="oxlint $(version oxlint), oxlint-tsgolint $(version oxlint-tsgolint), eslint-plugin-sonarjs $(version eslint-plugin-sonarjs)"
 echo "== Oxlint parity probe ($VERSIONS) =="
