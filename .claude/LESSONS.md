@@ -2,6 +2,18 @@
 
 Journal of mistakes, decisions, and gotchas for this repo, newest first. Append-only between compaction passes: supersede a decision with a newer `[decision]`; only an approved compaction pass rewrites or retires entries, into `.claude/lessons.archive.md`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [gotcha] 2026-10-18 | Bun 1.3 resolves the TypeScript 6.0 wrapper's own alias to the wrapper, and the lockfile keeps it
+
+`@typescript/typescript6` 6.0.2 is a wrapper whose `lib/typescript.js` re-exports its dependency `@typescript/old` (`npm:typescript@^6`). Bun 1.3.14, clean cache or not, resolves that dependency to the wrapper itself, so `require('typescript')` returns an empty object and ESLint crashes in `typescript-eslint/dist/index.js` (reading `split` of the missing `version`): both smoke tests went red, 32 and 25 checks. Bun 1.4.0 to 1.4.2 resolve it to `typescript` 6.0.3, but under 1.4.2 a `bun.lock` that 1.3.14 wrote stays broken through `--frozen-lockfile`, a plain install, a re-add and `bun update`; deleting its `@typescript/old` line, or the whole file, and installing again fixes it.
+
+Rule for next time: when a toolchain change passes on the owner's tools and fails here, compare tool versions before reading the code, and check whether the lockfile carries the fault forward.
+
+## [decision] 2026-10-18 | TypeScript 7 runs tsc beside the 6.0 API until the lint plugins load 7.1
+
+TypeScript 7.0 ships no JavaScript API: typescript-eslint 8.71.2 refuses it (peer range `<6.1.0`) and eslint-plugin-sonarjs 4.2.2 crashes in `ts-api-utils`, and neither Oxlint (no `noInlineConfig`, untyped JS plugins) nor Biome (107 of the 646 rules) keeps the standard's rules. So both stacks install `typescript` as `npm:@typescript/typescript6@^6.0.2`, the 6.0 API the plugins `require`, and `@typescript/native` as `npm:typescript@^7.0.2`, whose `tsc` the `typecheck` gate runs; `next build` and the typed lint rules still read 6.0 types. From TypeScript 6 on, the Next tsconfig needs `"types": ["bun"]`, or `bun:test` fails TS2307 in `tsc` and in `next build`.
+
+Rule for next time: never `bun add typescript@latest`, which replaces the alias, and drop the aliases the week the `unpinned-typescript` canary turns green.
+
 ## [gotcha] 2026-10-15 | a cloud worker restart can end a turn right after a tool call, so a check-in states its report before calling tools
 
 Twice (the 20:00 check-in of 2026-10-11 and the 00:00 one of 2026-10-12) the session's worker restarted right after a check-in turn's tool call, a `send_later` re-arm, the resumed turn read as complete, and the owner never got the report or the merge question: PR #5 sat green and mergeable for nearly nine hours before the owner was asked. The personal journal cannot hold this, since a cloud container's gitignored files go with it. In a check-in or event turn, write the report and the question as text before any tool call, ask in plain text rather than through a question card a restart can drop, and after a restart check whether the last report reached the owner before calling the turn complete.
