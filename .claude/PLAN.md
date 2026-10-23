@@ -29,15 +29,16 @@ each landed on green.
    the changelog. DoD: Bun smoke test green under Bun 1.4.2, fast gates green, PR CI green, merged.
 2. [x] PR 2: mutate-changed.sh, SKILL.md inner loop and matrix, workflow.md, companion sweep, smoke
    case for the `@{push}` default, changelog, tier 1. DoD: smoke green, tier 1 graded, merged.
-3. [ ] PR 3: land-on-green.sh, the land job in ci.yml, ci-next.yml, ci-java.yml, the workflow-asset
+3. [x] PR 3: land-on-green.sh, the land job in ci.yml, ci-next.yml, ci-java.yml, the workflow-asset
    check with a selftest case, smoke cases with a stub `gh` (base moved: no merge; base current: the
    pinned rebase merge), workflow.md branch lifecycle, changelog. DoD: smokes and selftests green,
    merged.
 
 ## Status
 
-PR 1 merged as #16 on 2026-10-23 (main 1bc1460), all 11 checks green. PR 2 is pushed: Bun smoke 164
-and Java smoke 89 green locally; tier 1 selects 0 of 21 tasks (the touched rules, 5, 19, 23-26, 35 and
-38 through workflow.md, carry no task), so no session ran. Found on the way, not in scope: Stryker's
-break is the whole run's score, and under --mutate the incremental report keeps other files' old
-results in it, so "every file at 90" is not enforced. Next: land PR 2, then PR 3.
+PR 1 merged as #16 (main 1bc1460) and PR 2 as #17 (main 42de91d), each with all 11 checks green. PR 3
+is pushed: Bun smoke 165, Next 58 and Java 90 green locally, the land selftest in each; the
+workflow-asset selftest proves a land job that misses a job or runs on a failure is red; tier 1
+selects 0 of 21 tasks. Found on the way, not in scope: Stryker's break is the whole run's score, and
+under --mutate the incremental report keeps other files' old results in it, so "every file at 90" is
+not enforced. Next: land PR 3; the land job ships to consumers, not to this repository's own CI.
