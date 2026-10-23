@@ -117,6 +117,33 @@ lint_workflow() {
       fi
     fi
   done
+  # 4. a job that lands a pull request (scripts/land-on-green.sh) must need every other job of the
+  #    workflow and must not run on a failure: `needs:` is the only thing between a red job and a
+  #    merge, and a job added later without joining it would land beside a red one (2026-10-23).
+  if [ "$parsed" -eq 0 ] && grep -q 'scripts/land-on-green.sh' "$wf"; then
+    local land_out
+    land_out=$(python3 - "$wf" <<'PY' 2>&1
+import sys, yaml
+jobs = (yaml.safe_load(open(sys.argv[1])) or {}).get("jobs") or {}
+for name, job in jobs.items():
+    if "scripts/land-on-green.sh" not in str(job.get("steps") or ""):
+        continue
+    needs = job.get("needs") or []
+    needs = [needs] if isinstance(needs, str) else needs
+    missing = sorted(set(jobs) - {name} - set(needs))
+    if missing:
+        print(f"job {name} lands without waiting for: {', '.join(missing)}")
+    cond = str(job.get("if") or "")
+    for fn in ("always()", "failure()", "cancelled()"):
+        if fn in cond:
+            print(f"job {name} runs on {fn}, so it can land after a red job")
+PY
+    ) || land_out="the land check could not run: $land_out"
+    if [ -n "$land_out" ]; then
+      while IFS= read -r line; do echo "FAIL $wf: $line" >&2; done <<<"$land_out"
+      fails=1
+    fi
+  fi
   return $fails
 }
 
@@ -127,7 +154,7 @@ selftest() {
   touch "$tmp/assets/present.sh" "$tmp/assets/present.json"
   # One reference that copies every script the fixtures call, so a case is red for
   # its own reason and never for a missing copy line; each case asserts the reason.
-  printf 'copy assets/present.sh and assets/missing.sh into scripts/\n' > "$tmp/ref.md"
+  printf 'copy assets/present.sh, assets/missing.sh and assets/land-on-green.sh into scripts/\n' > "$tmp/ref.md"
   red() { # $1 what, $2 the FAIL text the gate must print, $3 the workflow; env from the caller
     local out rc=0
     out=$(lint_workflow "$3" "$tmp/assets" 2>&1) || rc=$?
@@ -176,12 +203,21 @@ selftest() {
   BOOTSTRAP_REF_NEXT="$tmp/ref.md" BOOTSTRAP_REF_JAVA="$tmp/ref.md" lint_workflow "$tmp/v3e/claude-settings.json" "$tmp/assets" \
     || { echo "selftest FAIL: claude-settings.json was rejected with every reference copying its script" >&2; exit 1; }
 
+  # violation 5: a land job that does not need every other job, and one that runs on a failure
+  touch "$tmp/assets/land-on-green.sh"
+  red "a land job beside an unawaited job" "lands without waiting for: audit" \
+    "$(fixture v5 'jobs:\n  gates:\n    steps:\n      - run: bash scripts/present.sh\n  audit:\n    steps:\n      - run: bash scripts/present.sh\n  land:\n    needs: [gates]\n    steps:\n      - run: bash scripts/land-on-green.sh\n')"
+  red "a land job that runs on a failure" "can land after a red job" \
+    "$(fixture v5b 'jobs:\n  gates:\n    steps:\n      - run: bash scripts/present.sh\n  land:\n    needs: gates\n    if: always()\n    steps:\n      - run: bash scripts/land-on-green.sh\n')"
+  wf=$(fixture ok5 'jobs:\n  gates:\n    steps:\n      - run: bash scripts/present.sh\n  land:\n    needs: [gates]\n    if: github.event_name == '"'"'pull_request'"'"'\n    steps:\n      - run: bash scripts/land-on-green.sh\n')
+  lint_workflow "$wf" "$tmp/assets" || { echo "selftest FAIL: a land job that needs every other job was rejected" >&2; exit 1; }
+
   # the compliant fixture passes: a verified download, an installed binary, a copied script
   wf=$(fixture ok 'steps:\n  - run: |\n      curl -sSfL -o g.tar.gz https://github.com/gitleaks/gitleaks/releases/download/vX/g.tar.gz\n      echo "0000  g.tar.gz" | sha256sum -c -\n      tar -xzf g.tar.gz gitleaks\n  - run: gitleaks git --redact\n  - run: bash scripts/present.sh\n')
   if ! lint_workflow "$wf" "$tmp/assets"; then
     echo "selftest FAIL: compliant fixture was rejected" >&2; exit 1
   fi
-  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, an unverified release download, an uncopied bootstrap script, an uncopied data file, a missing bootstrap reference, an unmapped workflow, a variant that ships audit.yml without its script and a variant that ships the Claude settings without the hook's script, each for its own reason; a compliant workflow and compliant settings pass"
+  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, an unverified release download, an uncopied bootstrap script, an uncopied data file, a missing bootstrap reference, an unmapped workflow, a variant that ships audit.yml without its script and a variant that ships the Claude settings without the hook's script, a land job that does not need every other job and one that runs on a failure, each for its own reason; a land job that needs every other job, a compliant workflow and compliant settings pass"
 }
 
 if [ "${1:-}" = "--selftest" ]; then

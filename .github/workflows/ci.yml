@@ -210,6 +210,7 @@ jobs:
       # token, as a consumer's daily branches.yml does: findings (exit 1) are this repository's
       # drift and pass here; a setting GitHub stops showing such a token is exit 2 and fails.
       - run: python3 skills/atelier/assets/check-host.py --selftest
+      - run: bash skills/atelier/assets/land-on-green.sh --selftest
       - name: check-host.py reads this repository's host with a read-only token
         env:
           GH_TOKEN: ${{ github.token }}
