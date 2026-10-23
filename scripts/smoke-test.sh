@@ -72,7 +72,7 @@ git config gc.auto 0   # no detached gc racing the cleanup
 # --- the bootstrap checklist asset copy, verbatim ---
 cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-package-json.sh" \
    "$SKILL/assets/check-coverage.ts" "$SKILL/assets/regenerate-coverage-preload.ts" \
-   "$SKILL/assets/mutate-staged.sh" "$SKILL/assets/mutate-changed.sh" \
+   "$SKILL/assets/mutate-staged.sh" "$SKILL/assets/mutate-changed.sh" "$SKILL/assets/check-mutation-score.ts" \
    "$SKILL/assets/lint-staged.sh" "$SKILL/assets/check-docs.sh" scripts/
 cp "$SKILL/assets/fetch-mock.ts" "$SKILL/assets/capture-rejection.ts" src/test-helpers/
 cp "$SKILL/assets/format-error.ts" "$SKILL/assets/format-error.test.ts" src/domain/utilities/
@@ -110,7 +110,7 @@ cat > package.json <<'EOF'
     "coverage": "bun run scripts/check-coverage.ts",
     "coverage:preload": "bun run scripts/regenerate-coverage-preload.ts",
     "coverage:preload:check": "bun run scripts/regenerate-coverage-preload.ts --check",
-    "mutate": "stryker run",
+    "mutate": "stryker run && bun run scripts/check-mutation-score.ts",
     "mutate:staged": "bash scripts/mutate-staged.sh",
     "mutate:changed": "bash scripts/mutate-changed.sh"
   }
@@ -1174,6 +1174,7 @@ expect_ok "mutate:changed on a push prints the pushed range and one file in scop
 first=$(mktemp -d) && mkdir -p "$first/repo/src/domain" "$first/bin"
 printf 'export const x = 1;\n' > "$first/repo/src/domain/x.ts"
 printf '#!/usr/bin/env bash\necho "stryker args: $*"\n' > "$first/bin/bunx" && chmod +x "$first/bin/bunx"
+printf '#!/usr/bin/env bash\necho "bun args: $*"\n' > "$first/bin/bun" && chmod +x "$first/bin/bun"
 git -C "$first/repo" init -q && git -C "$first/repo" add -A
 git -C "$first/repo" -c user.name=atelier -c user.email=atelier@example.invalid -c core.hooksPath=/dev/null commit -q -m 'feat: first'
 if (cd "$first/repo" && env -u BASE -u GITHUB_BASE_REF PATH="$first/bin:$PATH" GITHUB_EVENT_NAME=push \
@@ -1202,6 +1203,13 @@ EOF
 if bunx stryker run --force --mutate src/domain/fare.ts --incrementalFile reports/fare-incremental.json >"$LOG" 2>&1; then cat "$LOG"; fail "Stryker passed a weak test under the bailing runner"
 elif grep -q 'under breaking threshold 90' "$LOG"; then pass "Stryker still breaks on a weak test under the bailing, core-only runner"
 else cat "$LOG"; fail "Stryker failed on the weak test, but not on the threshold"; fi
+# The per-file gate (2026-10-23): mutate:changed over the fixture's untracked domain files totals
+# 90.00, so Stryker's break passes, and the weak file alone must still fail the run by name.
+if BASE=HEAD bash scripts/mutate-changed.sh >"$LOG" 2>&1; then cat "$LOG"; fail "mutate:changed passed a weak file the run's total hid"
+elif grep -q 'src/domain/fare.ts  score=55.56  required=90' "$LOG"; then pass "mutate:changed fails a weak file by name though the run's total meets the break"
+else cat "$LOG"; fail "mutate:changed failed, but not on the weak file's own score"; fi
+expect_ok "check-mutation-score.ts selftest (a weak file beside a strong one, a missing file, a stale one, no break)" \
+  bun run scripts/check-mutation-score.ts --selftest
 rm -f src/domain/fare.ts src/domain/fare.test.ts reports/fare-incremental.json
 # Locally the base is the branch's push ref (2026-10-23): the files changed since the last push,
 # not every file the branch touched since origin/main. A throwaway repo with a bare origin and a
@@ -1209,6 +1217,7 @@ rm -f src/domain/fare.ts src/domain/fare.test.ts reports/fare-incremental.json
 # falls back to origin/main. The Actions variables are unset, since CI runs this smoke test.
 lp=$(mktemp -d) && mkdir -p "$lp/bin" && git init -q --bare "$lp/origin.git"
 printf '#!/usr/bin/env bash\necho "stryker args: $*"\n' > "$lp/bin/bunx" && chmod +x "$lp/bin/bunx"
+printf '#!/usr/bin/env bash\necho "bun args: $*"\n' > "$lp/bin/bun" && chmod +x "$lp/bin/bun"
 lp_commit() { mkdir -p "$lp/repo/src/domain" && printf 'export const %s = 1;\n' "$1" > "$lp/repo/src/domain/$1.ts" \
   && git -C "$lp/repo" add -A && git -C "$lp/repo" -c user.name=atelier -c user.email=atelier@example.invalid -c core.hooksPath=/dev/null commit -q -m "feat: $1"; }
 lp_mutate() { (cd "$lp/repo" && env -u BASE -u GITHUB_BASE_REF -u GITHUB_EVENT_NAME -u GITHUB_EVENT_BEFORE \
@@ -1216,7 +1225,8 @@ lp_mutate() { (cd "$lp/repo" && env -u BASE -u GITHUB_BASE_REF -u GITHUB_EVENT_N
 git init -q -b main "$lp/repo" && git -C "$lp/repo" remote add origin "$lp/origin.git"
 lp_commit a && git -C "$lp/repo" push -q origin main 2>/dev/null
 git -C "$lp/repo" switch -q -c feature && lp_commit b && git -C "$lp/repo" push -q -u origin feature 2>/dev/null && lp_commit c
-if lp_mutate >"$LOG" 2>&1 && grep -q 'base origin/feature' "$LOG" && grep -q 'stryker args: .*--mutate src/domain/c.ts$' "$LOG"; then
+if lp_mutate >"$LOG" 2>&1 && grep -q 'base origin/feature' "$LOG" && grep -q 'stryker args: .*--mutate src/domain/c.ts$' "$LOG" \
+   && grep -q 'bun args: run scripts/check-mutation-score.ts src/domain/c.ts$' "$LOG"; then
   pass "mutate:changed locally mutates only what changed since the last push"
 else cat "$LOG"; fail "mutate:changed locally, since the last push"; fi
 git -C "$lp/repo" switch -q -c never-pushed
