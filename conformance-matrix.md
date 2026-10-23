@@ -228,12 +228,12 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 | 4.1 | Test in layers | COVERED | testing.md:107-121 | doctrine | Unit, integration, e2e, performance layers each named |
 | 4.2 | Keep unit tests in milliseconds | COVERED | testing.md:410; testing.md:140 | doctrine | In-memory fakes, no real IO in unit tests; literal ms target not stated |
 | 4.3 | Have a testing philosophy | COVERED | testing.md:184-186; SKILL.md:84 | rule | Every fixed bug becomes a permanent reproducing test |
-| 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:38-42; assets/stryker.conf.json:20 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3); CI mutates the changed files per run, the full sweep is the daily assets/mutation.yml (2026-09-03) |
+| 4.4 | Treat mutation testing as the real coverage KPI | COVERED | assets/check-coverage.ts:38-42; assets/stryker.conf.json:21 | gate | 100/100/80 tiers, Stryker break 90; matches canon numbers (Watchlist 3); CI mutates the changed files per run, the full sweep is the daily assets/mutation.yml (2026-09-03) |
 | 4.5 | Test behavior, not internals | STRICTER | SKILL.md:49; testing.md:290; java-quarkus.md:224; check-pom.sh:62 | gate | Mock ban is absolute and gated in every variant (ESLint in TypeScript; the enforcer's `bannedDependencies` plus `check-pom.sh` in Java since 2026-09-08), exceeding canon advisory prefer-fakes |
 | 4.6 | Gate every merge | COVERED | assets/ci.yml; assets/ci-java.yml; assets/ci-next.yml; governance.md:106 | gate | Resolved Phase 2: assets/ci.yml runs the full suite, coverage, and mutation on the changed files on a frozen lockfile as the required merge check; the full mutation sweep is scheduled (assets/mutation.yml) |
 | 4.7 | Hold generated code to the same bar | COVERED | workflow.md:553 | rule | Generated code runs the identical gates and review; no --no-verify on provenance |
 | 4.8 | Gate non-determinism behind evals | COVERED | ai.md:40-85; SKILL.md:71 | gate | Labeled eval set gates prompt, pin, and schema changes in CI below a threshold |
-| 4.9 | Run the tests in random order | COVERED | SKILL.md:78; testing.md:675; bun-typescript.md:35; assets/ci.yml:59; assets/stryker.conf.json:8; java-quarkus.md:484 | gate | Added 2026-09-06 with hard rule 36: `bun test --randomize` is the test script, the CI step and Stryker's runner; JUnit random method and class order in Java; the seed prints on red and replays |
+| 4.9 | Run the tests in random order | COVERED | SKILL.md:78; testing.md:675; bun-typescript.md:35; assets/ci.yml:59; assets/stryker.conf.json:9; java-quarkus.md:484 | gate | Added 2026-09-06 with hard rule 36: `bun test --randomize` is the test script, the CI step and Stryker's runner; JUnit random method and class order in Java; the seed prints on red and replays |
 
 ### Pillar 5: Secure by default
 

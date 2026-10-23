@@ -1178,6 +1178,27 @@ if (cd "$first/repo" && env -u BASE -u GITHUB_BASE_REF PATH="$first/bin:$PATH" G
   pass "mutate:changed on a repository's first push mutates every new file in scope"
 else cat "$LOG"; fail "mutate:changed on a repository's first push"; fi
 rm -rf "$first"
+# The runner bails on the first failing test and runs only the core's tests (2026-10-23). Neither may
+# turn a survivor into a kill: a weak test leaves the boundary mutants alive, and the run must still
+# break on the threshold. Keyed on Stryker's own break line, not the bare exit status. Stryker's
+# break is the whole run's score, and the fixture's other untracked domain files would lift it to
+# 90, so the run mutates this file alone, with an incremental file of its own: under --mutate,
+# Stryker keeps the earlier runs' results for every other file in the report and in the score.
+cat > src/domain/fare.ts <<'EOF'
+export const fare = (age: number): number => (age >= 65 ? 2 : age >= 12 ? 4 : 1);
+EOF
+cat > src/domain/fare.test.ts <<'EOF'
+import { expect, test } from 'bun:test';
+import { fare } from './fare.ts';
+
+test('an adult pays the full fare', () => {
+  expect(fare(30)).toBe(4);
+});
+EOF
+if bunx stryker run --force --mutate src/domain/fare.ts --incrementalFile reports/fare-incremental.json >"$LOG" 2>&1; then cat "$LOG"; fail "Stryker passed a weak test under the bailing runner"
+elif grep -q 'under breaking threshold 90' "$LOG"; then pass "Stryker still breaks on a weak test under the bailing, core-only runner"
+else cat "$LOG"; fail "Stryker failed on the weak test, but not on the threshold"; fi
+rm -f src/domain/fare.ts src/domain/fare.test.ts reports/fare-incremental.json
 
 echo
 if [ "$FAILURES" -gt 0 ]; then

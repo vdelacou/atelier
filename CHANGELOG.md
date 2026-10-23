@@ -6,6 +6,13 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Changed
+- Stryker's command runner ran the whole suite to the end for every mutant. It now runs
+  `bun test --randomize --bail src/domain src/use-cases`: one failure is a kill, and mutants live only
+  in the core, so no verdict changes. The fixed `concurrency: 4` is gone and Stryker's default (every
+  core above 4 less one) applies. A scratch core of 34 mutants went from 26 s to 1 s with the same
+  kills; the Bun smoke test plants a weak test and proves the gate still fails.
+
 ### Fixed
 - `check-host.py` failed every morning on a private repository on GitHub Free under its own opt-out:
   it still read `main`'s branch rules, and GitHub answers that read with a 403 there. Under
