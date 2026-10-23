@@ -7,6 +7,14 @@ whole, not any single skill.
 ## [Unreleased]
 
 ### Added
+- Every file holds the mutation threshold, not the run's total. Stryker's `break` and PIT's
+  `mutationThreshold` judge the whole run, and under `--mutate` Stryker's incremental report keeps
+  other files' old results in that score: a file at 55.56 passed in a run that totalled 90.00.
+  `check-mutation-score.ts` (Bun, from Stryker's JSON report, which `stryker.conf.json` now writes)
+  and `check-pit-score.py` (Java, from PIT's XML report, which the pom now asks for) hold each file
+  or class to the same threshold, at the end of `mutate:changed`, `mutate:staged`, `bun run mutate`,
+  `pit-changed.sh` and `mutation-java.yml`. Both smoke tests plant a weak file beside strong ones
+  whose total passes.
 - A pull request lands itself on green. Each variant's CI workflow ships a `land` job that runs after
   every other job passed and calls `land-on-green.sh`: it waits for the checks of other workflows,
   refuses when `main` moved since CI ran (a `GITHUB_TOKEN` merge starts no push run, so the landed
