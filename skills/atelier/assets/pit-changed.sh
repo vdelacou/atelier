@@ -9,7 +9,9 @@
 # The base ref: BASE= wins; under GitHub Actions the range is the pull
 # request's base branch or, on a push, github.event.before..HEAD (ci-java.yml
 # exports it as GITHUB_EVENT_BEFORE; the zero SHA of a new branch and an
-# unresolvable SHA fall back to HEAD~1). Elsewhere the default is origin/main.
+# unresolvable SHA fall back to HEAD~1). Locally the default is the branch's
+# push ref (`@{push}`, the classes changed since your last push; CI's run over
+# the pull request is the gate), else origin/main for a branch never pushed.
 # Skip the ref refresh with MUTATE_NO_FETCH=1.
 #
 # The canonical pom reads `<targetClasses>${pitest.targetClasses}</targetClasses>`
@@ -32,6 +34,9 @@ elif [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
   else
     BASE=HEAD~1
   fi
+elif push_ref=$(git rev-parse --abbrev-ref --symbolic-full-name '@{push}' 2>/dev/null) \
+     && git rev-parse --quiet --verify "${push_ref}^{commit}" >/dev/null 2>&1; then
+  BASE="$push_ref"
 else
   BASE=origin/main
 fi

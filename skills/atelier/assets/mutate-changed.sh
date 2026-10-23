@@ -12,8 +12,14 @@
 # gates. A repository's first push has neither a before nor a HEAD~1: every
 # file in scope is new, so all of them are mutated, against the empty tree
 # (2026-10-18; it exited 1 on "base ref 'HEAD~1' does not exist"). Without it a push to main has HEAD == origin/main and the run would
-# test nothing. Elsewhere the default is origin/main. Skip the ref refresh
-# with MUTATE_NO_FETCH=1 (offline, or when BASE is deliberately stale):
+# test nothing.
+#
+# Locally the default is the branch's push ref (`@{push}`): the files changed since
+# your last push. CI's run over the whole pull request is the gate, so the local
+# run is a quick, optional check of the work CI has not seen yet (2026-10-23; it
+# compared against origin/main and re-mutated every file the branch had touched,
+# on every push). A branch never pushed falls back to origin/main. Skip the ref
+# refresh with MUTATE_NO_FETCH=1 (offline, or when BASE is deliberately stale):
 #
 #   BASE=HEAD~3 bun run mutate:changed
 #
@@ -40,6 +46,9 @@ elif [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
     BASE=$(git hash-object -t tree /dev/null)
     first_push=1
   fi
+elif push_ref=$(git rev-parse --abbrev-ref --symbolic-full-name '@{push}' 2>/dev/null) \
+     && git rev-parse --quiet --verify "${push_ref}^{commit}" >/dev/null 2>&1; then
+  BASE="$push_ref"
 else
   BASE=origin/main
 fi
