@@ -4,8 +4,9 @@
   "_packageManager_comment": "Stryker doesn't fully understand Bun yet; tell it npm so it doesn't probe for yarn/pnpm lockfiles.",
   "packageManager": "npm",
   "testRunner": "command",
+  "_commandRunner_comment": "The command runs once per mutant, so its cost is the whole run's. --bail stops at the first failing test, which is all a kill needs, and only the core's tests run because mutants live only there. A core with no test fails the dry run instead of passing.",
   "commandRunner": {
-    "command": "bun test --randomize"
+    "command": "bun test --randomize --bail src/domain src/use-cases"
   },
   "_mutate_comment": "Core only: src/domain + src/use-cases. Test files have no logic to mutate; ports/ files are type-only (zero mutable code).",
   "mutate": [
@@ -21,7 +22,7 @@
   },
   "incremental": true,
   "incrementalFile": "reports/stryker-incremental.json",
-  "concurrency": 4,
+  "_concurrency_comment": "No concurrency key: Stryker's default is every core above 4 less one, else all of them (4 on a 4-core CI runner).",
   "timeoutMS": 30000,
   "reporters": ["clear-text", "progress", "html"],
   "htmlReporter": {
