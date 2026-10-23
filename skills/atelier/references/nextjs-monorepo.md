@@ -675,6 +675,7 @@ cp <skill>/assets/ci-next.yml            .github/workflows/ci.yml
 cp <skill>/assets/audit.yml              .github/workflows/audit.yml
 cp <skill>/assets/check-skill-pin.sh     scripts/check-skill-pin.sh
 cp <skill>/assets/check-commit-range.sh  scripts/check-commit-range.sh
+cp <skill>/assets/land-on-green.sh      scripts/land-on-green.sh     # the CI land job: a green pull request lands itself (workflow.md, Landing on green)
 cp <skill>/assets/check-branches.sh     scripts/check-branches.sh
 cp <skill>/assets/check-host.py          scripts/check-host.py
 cp <skill>/assets/host-ruleset.json      scripts/host-ruleset.json
