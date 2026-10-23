@@ -87,7 +87,7 @@ git config user.email "atelier-smoke@users.noreply.github.com"
 # --- shipped assets, per references/java-quarkus.md (Gates and hooks) ---
 cp "$SKILL/assets/pre-commit-java" .githooks/pre-commit
 cp "$SKILL/assets/commit-msg" .githooks/commit-msg
-cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/assets/check-commit-messages.sh" "$SKILL/assets/check-commit-range.sh" "$SKILL/assets/pit-changed.sh" scripts/
+cp "$SKILL/assets/check-commit-size.sh" "$SKILL/assets/check-pom.sh" "$SKILL/assets/check-commit-messages.sh" "$SKILL/assets/check-commit-range.sh" "$SKILL/assets/pit-changed.sh" "$SKILL/assets/check-pit-score.py" scripts/
 cp "$SKILL/assets/check-pii-channels.sh" "$SKILL/assets/check-io-deadlines.sh" \
    "$SKILL/assets/check-data-lifecycle.sh" "$SKILL/assets/check-isolation-tests.sh" scripts/
 cp "$SKILL/assets/check-no-suppressions.sh" "$SKILL/assets/check-identity.sh" "$SKILL/assets/check-disciplines.sh" scripts/
@@ -370,6 +370,7 @@ expect_ok "ci-java.yml mutates the changed classes only, never the full sweep" \
 lp=$(mktemp -d) && git init -q --bare "$lp/origin.git" && git init -q -b main "$lp/repo"
 git -C "$lp/repo" remote add origin "$lp/origin.git"
 printf '#!/usr/bin/env bash\necho "mvnw args: $*"\n' > "$lp/repo/mvnw" && chmod +x "$lp/repo/mvnw"
+mkdir -p "$lp/repo/scripts" && printf 'print("pit-score stub")\n' > "$lp/repo/scripts/check-pit-score.py"
 lp_commit() { mkdir -p "$lp/repo/src/main/java/com/example/domain" \
   && printf 'package com.example.domain;\npublic record %s() {}\n' "$1" > "$lp/repo/src/main/java/com/example/domain/$1.java" \
   && git -C "$lp/repo" add -A && git -C "$lp/repo" -c user.name=atelier -c user.email=atelier@example.invalid -c core.hooksPath=/dev/null commit -q -m "feat: $1"; }
@@ -939,6 +940,57 @@ EOF
 expect_ok "pit-changed.sh mutates a changed class's nested classes too (red on the threshold)" \
   bash -c 'BASE=HEAD bash scripts/pit-changed.sh > pit-nested.out 2>&1; st=$?; grep -q "Pricing\$\*" pit-nested.out && grep -q "below threshold" pit-nested.out && [ "$st" -ne 0 ]'
 rm -f src/main/java/com/example/app/domain/Pricing.java src/test/java/com/example/app/domain/PricingTest.java pit-nested.out
+
+# The per-class gate (2026-10-23): PIT's mutationThreshold judges the whole run, so a weak class
+# passed beside a strong one. Adders (60 mutants, all killed) lifts the run over 90 while Fees
+# keeps its boundary and negation mutants alive; PIT must pass and the per-class gate fail Fees.
+{
+  printf 'package com.example.app.domain;\n\npublic final class Adders {\n  private Adders() {}\n'
+  for k in $(seq 1 30); do printf '\n  public static int add%s(int x) {\n    return x + %s;\n  }\n' "$k" "$k"; done
+  printf '}\n'
+} > src/main/java/com/example/app/domain/Adders.java
+{
+  printf 'package com.example.app.domain;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nimport org.junit.jupiter.api.Test;\n\nclass AddersTest {\n  @Test\n  void addsItsConstant() {\n'
+  for k in $(seq 1 30); do printf '    assertEquals(%s, Adders.add%s(1));\n' "$((k + 1))" "$k"; done
+  printf '  }\n}\n'
+} > src/test/java/com/example/app/domain/AddersTest.java
+cat > src/main/java/com/example/app/domain/Fees.java <<'EOF'
+package com.example.app.domain;
+
+public final class Fees {
+  private Fees() {}
+
+  public static int fee(int cents) {
+    if (cents > 1000) {
+      return cents - 100;
+    }
+    return cents;
+  }
+}
+EOF
+cat > src/test/java/com/example/app/domain/FeesTest.java <<'EOF'
+package com.example.app.domain;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
+
+class FeesTest {
+  @Test
+  void feesArePositive() {
+    assertTrue(Fees.fee(2000) > 0);
+  }
+}
+EOF
+st=0; BASE=HEAD bash scripts/pit-changed.sh > pit-perclass.out 2>&1 || st=$?
+if [ "$st" -eq 0 ]; then cat pit-perclass.out; fail "pit-changed.sh passed a weak class the run's total hid"
+elif grep -q 'com.example.app.domain.Fees  score=' pit-perclass.out && ! grep -q 'below threshold' pit-perclass.out; then
+  pass "pit-changed.sh fails a weak class by name though PIT's run total meets the threshold"
+else cat pit-perclass.out; fail "pit-changed.sh failed, but not on the weak class alone with PIT's total passing"; fi
+expect_ok "check-pit-score.py selftest (a weak class beside a strong one, a nested class, an empty report, no threshold)" \
+  python3 scripts/check-pit-score.py --selftest
+rm -f src/main/java/com/example/app/domain/Adders.java src/test/java/com/example/app/domain/AddersTest.java
+rm -f src/main/java/com/example/app/domain/Fees.java src/test/java/com/example/app/domain/FeesTest.java pit-perclass.out
 
 # A module's sources need PIT in that module: the root run passed them as "nothing
 # changed" until 2026-09-27; it now refuses loudly.

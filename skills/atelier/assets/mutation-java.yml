@@ -24,3 +24,5 @@ jobs:
           cache: maven
       - name: mutation (PIT, the full sweep, >= 90 on domain and usecases)
         run: ./mvnw -q test-compile org.pitest:pitest-maven:mutationCoverage
+      - name: every class at the threshold (PIT's own judges the whole run)
+        run: python3 scripts/check-pit-score.py

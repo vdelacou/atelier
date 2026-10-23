@@ -91,3 +91,7 @@ count=$(echo "$files" | wc -l | tr -d ' ')
 echo "pit-changed: targeting ${count} class(es): ${classes}"
 
 ./mvnw -q test-compile org.pitest:pitest-maven:mutationCoverage -Dpitest.targetClasses="${classes}"
+
+# PIT's mutationThreshold judges the whole run's score, so a weak class passes beside strong ones
+# (2026-10-23). The per-class gate holds each targeted class to the same threshold.
+python3 scripts/check-pit-score.py
