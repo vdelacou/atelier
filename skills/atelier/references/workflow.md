@@ -287,6 +287,19 @@ python3 scripts/check-host.py --apply   # the owner, once, with gh signed in as 
 
 Two cases bend the host check. A private repository on GitHub Free cannot hold a ruleset, since rulesets need a public repository or a paid plan: its owner sets `HOST_RULESET: unavailable` in `branches.yml`, and the check names `main`'s rules as unchecked without reading them (GitHub answers that read with a 403 on Free too) and holds the default branch and the merge settings alone; on a repository that is not private the opt-out itself fails. What the plan withholds, nothing on the host enforces: a force push or deletion of `main`, a merge while CI is red (required status checks need branch protection), a push made with `--no-verify`, which CI reports only after it lands. Pro or Team, then `check-host.py --apply` again, gives the protection back. And a history rewrite that must force-push `main` (rule 26's scrub, Commit identity below) sets the ruleset's enforcement to disabled for that push and back to active after it; the morning check fails in between.
 
+### Landing on green
+
+A pull request lands itself. Each variant's CI workflow ships a `land` job that runs after every other job of the workflow passed (`needs:`; `check-workflow-assets.sh` fails a `land` job that misses one, or that runs on `always()` or `failure()`), and calls `assets/land-on-green.sh`. Nobody presses merge, so nothing lands red, which also closes the gap a private repository on GitHub Free leaves open, where the host cannot require a check. The script:
+
+1. reads the merge commit CI checked out (`GITHUB_SHA`): its first parent is the base CI tested, its second the head;
+2. waits up to `LAND_WAIT_MIN` minutes (default 20) for every other check on the head, a dependency audit in its own workflow or a review bot included, since `needs:` sees only the jobs of its own workflow, then refuses unless each passed, was skipped or is neutral;
+3. refuses when `main` moved since CI ran. A merge made with `GITHUB_TOKEN` starts no push run on `main`, so landing onto a newer base would put a tree on `main` that no run tested. Rebase onto the new `main` and push; CI runs again and lands it;
+4. rebase-merges the pull request pinned to the tested head (`gh pr merge --rebase --delete-branch --match-head-commit`), which deletes the branch on the remote as step 4 above asks.
+
+A refusal is a red `land` check that names its reason. Three things skip the job: a draft pull request (marking it ready runs CI again, since the workflows listen for `ready_for_review`), one from a fork (its author has no write access, and its code would run with a write token), and the repository variable `LAND_ON_GREEN` set to `off`, for a team that wants a human review before each merge. Adoption (atelier-review-me's adopt mode) keeps the job out of the copied workflow until its gates block, since a gate held back would let it land code that fails the standard. The job runs the pull request's own copy of the script with a write token, which every same-repository author can already push; a fork never reaches it.
+
+Rule 25 is unchanged: an agent still asks before it commits or pushes. Pushing a branch and opening its pull request is now the last human decision before `main`.
+
 ## Confirmation gates (rules 24 and 25)
 
 Two behavioural gates, not lint-enforced; the discipline is the enforcement, exactly as for rule 11.
