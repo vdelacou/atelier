@@ -1,43 +1,39 @@
-# Plan: release 2.7.0 (2026-10-18)
+# Plan: faster mutation, a lighter local loop, and landing on green (2026-10-23)
 
-The previous plan (rule 26's public-blocks, private-warns split) closed with PR #13 rebase-merged on
-2026-10-18 (main 3d2c4e3), all 11 checks green on Linux and Windows. The owner asked to tag a new
-version and chose: 2.7.0, tier 2 before the tag, and the usual landing (a release PR, merge on green,
-an annotated tag on main).
-
-Since v2.6.1: 66 commits, hard rule 38 (the branch lifecycle), the reply gate, the eval preflight, the
-Windows coverage fix, TypeScript 7 beside the 6.0 API with Next.js 16.4.2, and rule 26's visibility
-split. No skill description changed, so the trigger eval is not due.
+The previous plan (release 2.7.0) closed: PR #14 merged, the owner pushed `v2.7.0`, and PR #15 (the
+GitHub Free fixes) merged on 2026-10-18 (main 5cc61d8). The owner said mutation testing is too slow in
+the development loop and that they do not want to review any PR by hand, then asked for three PRs,
+each landed on green.
 
 ## The design
 
-- Tier 2 per the contract (baseline.md, Tiers): the full matrix, both arms, 21 tasks, `claude-opus-5`
-  (the frozen fixture's model), 120 turns and 40 minutes per session, three jobs as in 2.6.0, with Bun
-  1.4.2 first on PATH so the TypeScript aliases install. Run detached, since a background tool call
-  ends at two hours and a worker restart can drop it; the runner has no resume, so a lost session is
-  rerun by its task id and arm into the same runs dir.
-- The re-freeze is not possible here: freeze-baseline.py sums passes by re-grading their runs dirs,
-  and the five earlier passes' dirs are not in this container (the workspace is gitignored). The
-  fixture stays at five passes; this pass's unaided arm is reported beside it.
-- The release commit, `docs(release): 2.7.0 changelog, upgrade notes and README`: `[Unreleased]`
-  becomes `[2.7.0] - <date>` with a summary, a new empty `[Unreleased]` above it, the README's current
-  release line, and the README rows that read tier 2.
+- PR 1, the runner. The command runner runs the whole suite per mutant, to the end. The command
+  becomes `bun test --randomize --bail src/domain src/use-cases`: a mutant is killed by any failure,
+  so `--bail` keeps every verdict, and only the core's tests run because mutants live only there.
+  `concurrency` goes, so Stryker's default applies (n-1 cores above 4, else n: 4 on a 4-core CI
+  runner, as before). Scratch benchmark (34 mutants, a 3 s suite): 26 s to 1 s, the same 34 killed; a
+  weakened test scores 58.82 and exits 1 under both; no core test at all fails the dry run.
+- PR 2, the local scope. Outside Actions, `mutate-changed.sh` defaults to the branch's push ref
+  (`@{push}`, files changed since the last push) and falls back to `origin/main`; CI keeps the pull
+  request's whole range and the daily sweep. The inner loop makes the local run optional. SKILL.md
+  changes, so the companions are swept and tier 1 runs.
+- PR 3, landing on green. `assets/land-on-green.sh` merges a pull request by rebase, deleting its
+  branch, pinned to the tested head, and refuses when the base moved since CI ran (a `GITHUB_TOKEN`
+  merge starts no push run on main, so an untested tree would land). A `land` job in each variant's CI
+  workflow needs every other job, skips drafts and forks, opt-out `LAND_ON_GREEN=off`.
+  `check-workflow-assets.sh` fails a `land` job that does not need every other job.
 
 ## Steps and definition of done
 
-1. [x] Tier 2. DoD: the preflight answers; 42 sessions finish (capped ones named); `grade.py` on both
-   arms and `--frozen-baseline` on the skill arm; every miss read by hand, with extra samples of a miss
-   as 2.6.0 did for h5, so variance is told from a regression.
-2. [x] Record it: a "Tier 2 for the 2.7.0 release" section in baseline.md, and the README rows that
-   read it. DoD: fast gates green.
-3. [x] The release commit. DoD: fast gates green, no em dash.
-4. [ ] Land on the owner's yes (given 2026-10-18): a PR, CI green on Linux and Windows, rebase merge,
-   an annotated `v2.7.0` on main pushed, then this plan closed.
+1. [ ] PR 1: stryker.conf.json, workflow.md, a smoke case where a weak test fails `mutate:changed`,
+   the changelog. DoD: Bun smoke test green under Bun 1.4.2, fast gates green, PR CI green, merged.
+2. [ ] PR 2: mutate-changed.sh, SKILL.md inner loop and matrix, workflow.md, companion sweep, smoke
+   case for the `@{push}` default, changelog, tier 1. DoD: smoke green, tier 1 graded, merged.
+3. [ ] PR 3: land-on-green.sh, the land job in ci.yml, ci-next.yml, ci-java.yml, the workflow-asset
+   check with a selftest case, smoke cases with a stub `gh` (base moved: no merge; base current: the
+   pinned rebase merge), workflow.md branch lifecycle, changelog. DoD: smokes and selftests green,
+   merged.
 
 ## Status
 
-Steps 1-3 done 2026-10-18. Tier 2 ran 09:07 to 10:34 UTC: skill 61/61 (24/24 on the discipline tier),
-unaided 35/61 (10/24) against the frozen 36.2/61 and 8.8/24, no session capped, no skill-arm miss, turn
-medians 37 and 16. The runs went to the owner as a tarball for a six-pass re-freeze. baseline.md, the
-README rows and release line, and the changelog's 2.7.0 heading are written; fast gates green. Next:
-step 4, the release PR, then the annotated `v2.7.0` on the rebased `docs(release)` commit on main.
+Benchmark done. Next: PR 1.
