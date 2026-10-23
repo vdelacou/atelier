@@ -503,6 +503,7 @@ Same git hooks as the Bun variant, shell only, wired with `git config core.hooks
 - `assets/check-identity.sh`: the rule 26 tripwire, hook gate 5 on the staged lines and `--all` in CI: a multi-word git name in both orders and the email, every author and committer in the history under `--all`, `IDENTITY_DENYLIST` for employers and clients; one-word names and noreply addresses are handles, CODEOWNERS and `.mailmap` exempt. A private repository commits `.github/visibility` reading `private`, and the gate then warns instead of blocking.
 - `assets/java/pmd-ruleset.xml`: the rule 35 ruleset and the rule 15 `NoSuppressWarnings` XPath rule (`CyclomaticComplexity`, `methodReportLevel` 11, so complexity 11 and above fails and 10 passes, the same boundary as the TypeScript `complexity: ['error', 10]`), copied to the repository root where the canonical pom's `maven-pmd-plugin` reads it in `verify`. `smoke-test-java.sh` plants a complexity-11 method and sees `pmd:check` red, and a complexity-10 one green. Since 2026-09-19 it carries rule 4 too: PMD's `SystemPrintln` and the `NoPrintStackTrace` XPath rule (PMD's own `AvoidPrintStackTrace` is silent on 7.17).
 - `assets/check-reply.py` and `assets/claude-settings.json`: the reply gate, a Claude Code Stop hook rather than a git hook or a CI step, that has the agent restate a reply breaking the Interaction section's mechanical rules (`references/workflow.md`, Reply gate); it needs python3.
+- `assets/land-on-green.sh`: the `land` job of `ci-java.yml`, which rebase-merges a green pull request pinned to the tested head and refuses when `main` moved since CI ran (`references/workflow.md`, Landing on green).
 - `assets/check-branches.sh`, `assets/check-host.py`, `assets/host-ruleset.json` and `assets/branches.yml`: the daily watchdog of hard rule 38, a branch whose work already landed or one more than a day off `main`, and a host whose default branch is not `main`, whose `main` is unprotected, or whose merges are not rebase-only with head-branch deletion; after the first push the owner runs `python3 scripts/check-host.py --apply` once, with an admin token (`references/workflow.md`, Branch lifecycle).
 
 ```bash
@@ -518,6 +519,7 @@ cp <skill>/assets/check-identity.sh       scripts/check-identity.sh
 cp <skill>/assets/check-disciplines.sh    scripts/check-disciplines.sh
 cp <skill>/assets/check-commit-messages.sh scripts/check-commit-messages.sh
 cp <skill>/assets/check-commit-range.sh    scripts/check-commit-range.sh
+cp <skill>/assets/land-on-green.sh        scripts/land-on-green.sh
 cp <skill>/assets/check-branches.sh       scripts/check-branches.sh
 cp <skill>/assets/check-host.py           scripts/check-host.py
 cp <skill>/assets/host-ruleset.json       scripts/host-ruleset.json
