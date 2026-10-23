@@ -6,6 +6,15 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Added
+- A pull request lands itself on green. Each variant's CI workflow ships a `land` job that runs after
+  every other job passed and calls `land-on-green.sh`: it waits for the checks of other workflows,
+  refuses when `main` moved since CI ran (a `GITHUB_TOKEN` merge starts no push run, so the landed
+  tree would be untested), and rebase-merges pinned to the tested head, deleting the branch. Drafts,
+  forks and `LAND_ON_GREEN=off` skip it; adoption adds it last. `check-workflow-assets.sh` fails a
+  `land` job that does not need every other job or runs on a failure, and the script's selftest
+  plants every refusal.
+
 ### Changed
 - Stryker's command runner ran the whole suite to the end for every mutant. It now runs
   `bun test --randomize --bail src/domain src/use-cases`: one failure is a kill, and mutants live only
