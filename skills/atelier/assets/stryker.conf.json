@@ -24,7 +24,11 @@
   "incrementalFile": "reports/stryker-incremental.json",
   "_concurrency_comment": "No concurrency key: Stryker's default is every core above 4 less one, else all of them (4 on a 4-core CI runner).",
   "timeoutMS": 30000,
-  "reporters": ["clear-text", "progress", "html"],
+  "_reporters_comment": "json feeds scripts/check-mutation-score.ts, which holds every file to thresholds.break: Stryker's own break judges the whole run's score.",
+  "reporters": ["clear-text", "progress", "html", "json"],
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
   "htmlReporter": {
     "fileName": "reports/mutation/index.html"
   },

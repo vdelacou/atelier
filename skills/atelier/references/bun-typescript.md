@@ -35,7 +35,7 @@ Minimal skeleton:
     "test": "bun test --randomize",
     "typecheck": "tsc --noEmit",
     "coverage": "bun run scripts/check-coverage.ts",
-    "mutate": "stryker run",
+    "mutate": "stryker run && bun run scripts/check-mutation-score.ts",
     "mutate:changed": "bash scripts/mutate-changed.sh",
     "mutate:staged": "bash scripts/mutate-staged.sh"
   },
@@ -617,6 +617,7 @@ Why: keeping file IO on `Bun.file` is faster, has zero import ceremony, fits the
     - `cp <skill-path>/assets/stryker.conf.json stryker.conf.json`
     - `cp <skill-path>/assets/mutate-staged.sh scripts/mutate-staged.sh`
     - `cp <skill-path>/assets/mutate-changed.sh scripts/mutate-changed.sh`
+    - `cp <skill-path>/assets/check-mutation-score.ts scripts/check-mutation-score.ts` (holds every file to the break threshold; Stryker's own break judges the whole run)
     - `chmod +x scripts/*.sh`
     - Add to `.gitignore`: `.stryker-tmp/` and `reports/` (Stryker scratch + output dirs).
 14. Install the git hooks (fast-gate pre-commit + commit-msg) and the CI workflow:

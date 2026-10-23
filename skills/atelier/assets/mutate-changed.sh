@@ -109,3 +109,10 @@ mutate_arg=$(echo "$files" | paste -sd, -)
 # unlike `rm -f reports/stryker-incremental.json` it does not hardcode a path
 # that `stryker.conf.json` owns via `incrementalFile`.
 bunx stryker run --force --mutate "$mutate_arg"
+
+# Stryker's break judges the whole run's score, and under --mutate its report keeps earlier results
+# for other files in that score: a file at 55.56 passed in a run that totalled 90.00 (2026-10-23).
+# The per-file gate holds each file this run mutated to the same break.
+set --
+while IFS= read -r f; do set -- "$@" "$f"; done <<<"$files"
+bun run scripts/check-mutation-score.ts "$@"
