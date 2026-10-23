@@ -364,6 +364,26 @@ expect_ok "pit-changed.sh exits 0 with a message when nothing in scope changed" 
   bash -c 'BASE=HEAD bash scripts/pit-changed.sh | grep -q "no classes in mutation scope changed"'
 expect_ok "ci-java.yml mutates the changed classes only, never the full sweep" \
   bash -c 'grep -q "pit-changed.sh" "$1" && ! grep -q "pitest-maven:mutationCoverage" "$1"' _ "$SKILL/assets/ci-java.yml"
+# Locally the base is the branch's push ref (2026-10-23), as in mutate-changed.sh: the classes
+# changed since the last push. A throwaway repo with a bare origin and a stub ./mvnw: A is on main,
+# B pushed on the branch, C not yet pushed; a branch never pushed falls back to origin/main.
+lp=$(mktemp -d) && git init -q --bare "$lp/origin.git" && git init -q -b main "$lp/repo"
+git -C "$lp/repo" remote add origin "$lp/origin.git"
+printf '#!/usr/bin/env bash\necho "mvnw args: $*"\n' > "$lp/repo/mvnw" && chmod +x "$lp/repo/mvnw"
+lp_commit() { mkdir -p "$lp/repo/src/main/java/com/example/domain" \
+  && printf 'package com.example.domain;\npublic record %s() {}\n' "$1" > "$lp/repo/src/main/java/com/example/domain/$1.java" \
+  && git -C "$lp/repo" add -A && git -C "$lp/repo" -c user.name=atelier -c user.email=atelier@example.invalid -c core.hooksPath=/dev/null commit -q -m "feat: $1"; }
+lp_pit() { (cd "$lp/repo" && env -u BASE -u GITHUB_BASE_REF -u GITHUB_EVENT_NAME -u GITHUB_EVENT_BEFORE bash "$FX/scripts/pit-changed.sh"); }
+lp_commit A && git -C "$lp/repo" push -q origin main 2>/dev/null
+git -C "$lp/repo" switch -q -c feature && lp_commit B && git -C "$lp/repo" push -q -u origin feature 2>/dev/null && lp_commit C
+if lp_pit >"$LOG" 2>&1 && grep -q 'base origin/feature' "$LOG" && grep -q 'targeting 1 class(es): com.example.domain.C,' "$LOG"; then
+  pass "pit-changed.sh locally targets only what changed since the last push"
+else cat "$LOG"; fail "pit-changed.sh locally, since the last push"; fi
+git -C "$lp/repo" switch -q -c never-pushed
+if lp_pit >"$LOG" 2>&1 && grep -q 'base origin/main' "$LOG" && grep -q 'targeting 2 class(es)' "$LOG"; then
+  pass "pit-changed.sh on a branch never pushed falls back to origin/main"
+else cat "$LOG"; fail "pit-changed.sh on a branch never pushed"; fi
+rm -rf "$lp"
 # JUnit logs its random-order seed below INFO, so no run printed one until the workflow
 # picked, printed and passed it (2026-09-27); the seeds above prove the flag replays.
 identity_step_gets_visibility() { # $1 workflow: rule 26 warns or blocks on the host's own answer

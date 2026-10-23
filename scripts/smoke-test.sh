@@ -1199,6 +1199,27 @@ if bunx stryker run --force --mutate src/domain/fare.ts --incrementalFile report
 elif grep -q 'under breaking threshold 90' "$LOG"; then pass "Stryker still breaks on a weak test under the bailing, core-only runner"
 else cat "$LOG"; fail "Stryker failed on the weak test, but not on the threshold"; fi
 rm -f src/domain/fare.ts src/domain/fare.test.ts reports/fare-incremental.json
+# Locally the base is the branch's push ref (2026-10-23): the files changed since the last push,
+# not every file the branch touched since origin/main. A throwaway repo with a bare origin and a
+# stub bunx: a.ts is on main, b.ts pushed on the branch, c.ts not yet pushed. A branch never pushed
+# falls back to origin/main. The Actions variables are unset, since CI runs this smoke test.
+lp=$(mktemp -d) && mkdir -p "$lp/bin" && git init -q --bare "$lp/origin.git"
+printf '#!/usr/bin/env bash\necho "stryker args: $*"\n' > "$lp/bin/bunx" && chmod +x "$lp/bin/bunx"
+lp_commit() { mkdir -p "$lp/repo/src/domain" && printf 'export const %s = 1;\n' "$1" > "$lp/repo/src/domain/$1.ts" \
+  && git -C "$lp/repo" add -A && git -C "$lp/repo" -c user.name=atelier -c user.email=atelier@example.invalid -c core.hooksPath=/dev/null commit -q -m "feat: $1"; }
+lp_mutate() { (cd "$lp/repo" && env -u BASE -u GITHUB_BASE_REF -u GITHUB_EVENT_NAME -u GITHUB_EVENT_BEFORE \
+  PATH="$lp/bin:$PATH" bash "$FX/scripts/mutate-changed.sh"); }
+git init -q -b main "$lp/repo" && git -C "$lp/repo" remote add origin "$lp/origin.git"
+lp_commit a && git -C "$lp/repo" push -q origin main 2>/dev/null
+git -C "$lp/repo" switch -q -c feature && lp_commit b && git -C "$lp/repo" push -q -u origin feature 2>/dev/null && lp_commit c
+if lp_mutate >"$LOG" 2>&1 && grep -q 'base origin/feature' "$LOG" && grep -q 'stryker args: .*--mutate src/domain/c.ts$' "$LOG"; then
+  pass "mutate:changed locally mutates only what changed since the last push"
+else cat "$LOG"; fail "mutate:changed locally, since the last push"; fi
+git -C "$lp/repo" switch -q -c never-pushed
+if lp_mutate >"$LOG" 2>&1 && grep -q 'base origin/main' "$LOG" && grep -q 'stryker args: .*--mutate src/domain/b.ts,src/domain/c.ts$' "$LOG"; then
+  pass "mutate:changed on a branch never pushed falls back to origin/main"
+else cat "$LOG"; fail "mutate:changed on a branch never pushed"; fi
+rm -rf "$lp"
 
 echo
 if [ "$FAILURES" -gt 0 ]; then

@@ -12,6 +12,11 @@ whole, not any single skill.
   in the core, so no verdict changes. The fixed `concurrency: 4` is gone and Stryker's default (every
   core above 4 less one) applies. A scratch core of 34 mutants went from 26 s to 1 s with the same
   kills; the Bun smoke test plants a weak test and proves the gate still fails.
+- The local mutation run is optional and mutates only what changed since the last push.
+  `mutate-changed.sh` and `pit-changed.sh` default to the branch's `@{push}` outside Actions
+  (`origin/main` for a branch never pushed), so a pre-push run no longer re-mutates every file the
+  branch has touched. CI still mutates the whole pull request as the merge gate, and the daily sweep
+  stays. Both smoke tests plant a pushed and an unpushed commit.
 
 ### Fixed
 - `check-host.py` failed every morning on a private repository on GitHub Free under its own opt-out:
