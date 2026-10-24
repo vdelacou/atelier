@@ -21,7 +21,8 @@ check no longer fails under its own opt-out. The tier-2 pass reads 61/61 with th
 - Bun: re-copy `stryker.conf.json`, `mutate-changed.sh` and `mutate-staged.sh`, copy
   `check-mutation-score.ts` to `scripts/`, and make the `mutate` script
   `stryker run && bun run scripts/check-mutation-score.ts`. A file under 90 that its neighbours hid
-  now fails; strengthen its tests.
+  now fails; strengthen its tests. Copy the new `src/main.ts` block of `eslint.config.js` before
+  moving to eslint-plugin-unicorn 79.
 - Java: re-copy `pit-changed.sh` and `mutation-java.yml`, copy `check-pit-score.py` to `scripts/`, and
   add the `outputFormats` block (XML and HTML) to the pom's PIT configuration.
 - Every variant: re-copy the CI workflow (the `land` job, and `ready_for_review` on the pull request
@@ -59,6 +60,9 @@ check no longer fails under its own opt-out. The tier-2 pass reads 61/61 with th
   stays. Both smoke tests plant a pushed and an unpushed commit.
 
 ### Fixed
+- eslint-plugin-unicorn 79 (2026-10-23) adds `no-top-level-side-effects` to its recommended set, and
+  it flags the `process.exitCode` assignment in `src/main.ts`, the entry point's whole job. The Bun
+  ESLint config turns it off for that file alone; every other module stays under it.
 - `check-host.py` failed every morning on a private repository on GitHub Free under its own opt-out:
   it still read `main`'s branch rules, and GitHub answers that read with a 403 there. Under
   `HOST_RULESET: unavailable` it no longer reads them, names them as unchecked, and holds the
