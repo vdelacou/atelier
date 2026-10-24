@@ -149,7 +149,7 @@ Each eval runs the same tasks with and without the skill on Claude Opus and grad
 
 | Measurement | With atelier | Without |
 |---|---|---|
-| Conformance, 61 assertions over 21 tasks, the 2.7.0 release pass ([scorecard](scripts/conformance-eval/baseline.md)) | 61/61 | 35/61 |
+| Conformance, 61 assertions over 21 tasks, the 2.8.0 release pass ([scorecard](scripts/conformance-eval/baseline.md)) | 61/61 | 38/61 |
 | Conformance, the 7-task production-discipline tier | 24/24 | 10/24 |
 | Review, TypeScript, 12 planted violations over 3 passes ([scorecard](scripts/review-eval/baseline.md)) | 36/36 caught | 21/36 caught |
 | Review, TypeScript, findings that cite the rule | 36/36 | 0/36 |
@@ -198,4 +198,4 @@ The engineering substance comes from Clean Code and Clean Architecture (Robert C
 
 ## Versioning and license
 
-The suite is versioned as a whole in [CHANGELOG.md](./CHANGELOG.md). The current release is 2.7.0, the trunk and reply release: hard rule 38 makes `main` the trunk every branch lands on by rebase, held by a daily watchdog and a host check, and a reply gate holds an agent's replies to the Interaction rules; beside them, TypeScript 7 runs the type gate, Next.js moves to 16.4.2, and rule 26 blocks only in a public repository. [MIT](./LICENSE).
+The suite is versioned as a whole in [CHANGELOG.md](./CHANGELOG.md). The current release is 2.8.0, the mutation and landing release: mutation testing runs faster and holds every file to the threshold on its own, the local run covers only what changed since the last push, and a green pull request lands itself by rebase. [MIT](./LICENSE).

@@ -6,6 +6,29 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-10-24
+
+The mutation and landing release. Mutation testing gets faster and stricter: Stryker's runner stops at
+the first failing test and runs only the core's tests, the local run covers only what changed since
+the last push, and every file or class must now meet the threshold on its own, where the run's total
+used to hide a weak one. A pull request lands itself: each variant's CI ships a `land` job that
+rebase-merges a green pull request and refuses when `main` moved since CI ran. On GitHub Free, the host
+check no longer fails under its own opt-out. The tier-2 pass reads 61/61 with the skill and 38/61 without
+(`scripts/conformance-eval/baseline.md`).
+
+### Upgrading from 2.7.1
+
+- Bun: re-copy `stryker.conf.json`, `mutate-changed.sh` and `mutate-staged.sh`, copy
+  `check-mutation-score.ts` to `scripts/`, and make the `mutate` script
+  `stryker run && bun run scripts/check-mutation-score.ts`. A file under 90 that its neighbours hid
+  now fails; strengthen its tests.
+- Java: re-copy `pit-changed.sh` and `mutation-java.yml`, copy `check-pit-score.py` to `scripts/`, and
+  add the `outputFormats` block (XML and HTML) to the pom's PIT configuration.
+- Every variant: re-copy the CI workflow (the `land` job, and `ready_for_review` on the pull request
+  trigger) and copy `land-on-green.sh` to `scripts/`. Set the repository variable `LAND_ON_GREEN` to
+  `off` to keep merging by hand; a repository mid-adoption leaves the job out until its gates block.
+- Re-copy `check-host.py`: under `HOST_RULESET: unavailable` it no longer reads `main`'s rules.
+
 ### Added
 - Every file holds the mutation threshold, not the run's total. Stryker's `break` and PIT's
   `mutationThreshold` judge the whole run, and under `--mutate` Stryker's incremental report keeps
@@ -44,6 +67,11 @@ whole, not any single skill.
 - `mutate-changed.sh` exited 1 on a repository's first push: the zero `before` fell back to
   `HEAD~1`, which does not exist yet. With neither, every file in scope is new and all are mutated,
   against the empty tree. The Bun smoke test plants a one-commit push.
+
+## [2.7.1] - 2026-10-24
+
+The same tree as 2.7.0. The `v2.7.0` tag was created but never pushed, so `v2.7.1` is the tag GitHub
+carries for that release.
 
 ## [2.7.0] - 2026-10-18
 
