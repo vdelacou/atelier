@@ -706,3 +706,25 @@ The fixture is not re-frozen with this pass. `freeze-baseline.py` sums passes by
 dirs, and the five earlier passes' dirs were not in this container (the workspace is gitignored), so
 it stays at five passes, 181/305. This pass's runs went to the owner as a tarball, so a re-freeze over
 six passes can run where the other five live.
+
+## Tier 2 for the 2.8.0 release (2026-10-24)
+
+The full matrix, both arms, 21 tasks, `claude-opus-5`, 120 turns and 40 minutes, three jobs, 14:31 to
+16:30 UTC, with Bun 1.4.2 first on PATH as for 2.7.0. Since the 2.7.0 pass: the GitHub Free host check
+and the first-push mutation range (#15), the bailing, core-only Stryker runner (#16), the local mutation
+run since the last push (#17), landing on green (#18), and the per-file and per-class mutation gates
+(#19).
+
+| Arm | Score | Production-discipline tier (h1 to h7) |
+|---|---|---|
+| skill | 61/61 | 24/24 |
+| unaided | 38/61 | 10/24 |
+
+No session capped. The skill arm missed nothing, so no extra samples ran. The unaided arm reads 38/61
+against the frozen fixture's expected 36.2/61, and 10/24 against 8.8/24 on the discipline tier.
+
+The turn census: skill median 50 and at most 109 (h7), unaided median 16 and at most 49 (e7). The skill
+arm's median rose from 37 in the 2.7.0 pass; no session reached the 120-turn cap.
+
+The fixture is not re-frozen with this pass, for the reason the 2.7.0 section gives; its runs stay in
+this container's gitignored workspace.
