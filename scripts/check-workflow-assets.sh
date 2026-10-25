@@ -74,7 +74,7 @@ lint_workflow() {
     audit.yml) refs=("$bun_ref" "$next_ref") ;;
     ci-java.yml|audit-java.yml|mutation-java.yml) refs=("$java_ref") ;;
     ci-next.yml) refs=("$next_ref") ;;
-    claude-settings.json|branches.yml) refs=("$bun_ref" "$next_ref" "$java_ref") ;;
+    claude-settings.json|branches.yml|land.yml) refs=("$bun_ref" "$next_ref" "$java_ref") ;;
     *)
       echo "FAIL $wf: no bootstrap reference is mapped for this workflow (add it to check 3's case list)" >&2
       fails=1
@@ -117,26 +117,34 @@ lint_workflow() {
       fi
     fi
   done
-  # 4. a job that lands a pull request (scripts/land-on-green.sh) must need every other job of the
-  #    workflow and must not run on a failure: `needs:` is the only thing between a red job and a
-  #    merge, and a job added later without joining it would land beside a red one (2026-10-23).
-  if [ "$parsed" -eq 0 ] && grep -q 'scripts/land-on-green.sh' "$wf"; then
+  # 4. a workflow that lands a pull request (scripts/land-on-green.sh) runs it with a write token, so
+  #    it must hold that token away from pull-request code and from a red run: triggered by
+  #    workflow_run alone (which runs the default branch's file and checkout), no checkout of another
+  #    ref, CI's success in the job's condition, and never always(), failure() or cancelled(). The
+  #    2.8.0 land job ran inside ci.yml on pull_request and ran the pull request's own copy of the
+  #    script with that token (Socket, 2026-10-25).
+  if [ "$parsed" -eq 0 ] && grep -q 'land-on-green.sh' "$wf"; then
     local land_out
     land_out=$(python3 - "$wf" <<'PY' 2>&1
 import sys, yaml
-jobs = (yaml.safe_load(open(sys.argv[1])) or {}).get("jobs") or {}
-for name, job in jobs.items():
-    if "scripts/land-on-green.sh" not in str(job.get("steps") or ""):
+doc = yaml.safe_load(open(sys.argv[1])) or {}
+on = doc.get("on", doc.get(True)) or {}
+events = sorted(on) if isinstance(on, dict) else sorted([on] if isinstance(on, str) else on)
+if events != ["workflow_run"]:
+    print(f"runs land-on-green.sh on {', '.join(events)}; only workflow_run keeps the write token away from pull-request code")
+for name, job in (doc.get("jobs") or {}).items():
+    steps = job.get("steps") or []
+    if "land-on-green.sh" not in str(steps):
         continue
-    needs = job.get("needs") or []
-    needs = [needs] if isinstance(needs, str) else needs
-    missing = sorted(set(jobs) - {name} - set(needs))
-    if missing:
-        print(f"job {name} lands without waiting for: {', '.join(missing)}")
+    for step in steps:
+        if "actions/checkout" in str(step.get("uses", "")) and "ref" in (step.get("with") or {}):
+            print(f"job {name} checks out another ref, so the write token can meet the pull request's code")
     cond = str(job.get("if") or "")
+    if "workflow_run.conclusion == 'success'" not in cond:
+        print(f"job {name} does not require the ci run's success in its condition, so it can land after a red run")
     for fn in ("always()", "failure()", "cancelled()"):
         if fn in cond:
-            print(f"job {name} runs on {fn}, so it can land after a red job")
+            print(f"job {name} runs on {fn}, so it can land after a red run")
 PY
     ) || land_out="the land check could not run: $land_out"
     if [ -n "$land_out" ]; then
@@ -203,21 +211,26 @@ selftest() {
   BOOTSTRAP_REF_NEXT="$tmp/ref.md" BOOTSTRAP_REF_JAVA="$tmp/ref.md" lint_workflow "$tmp/v3e/claude-settings.json" "$tmp/assets" \
     || { echo "selftest FAIL: claude-settings.json was rejected with every reference copying its script" >&2; exit 1; }
 
-  # violation 5: a land job that does not need every other job, and one that runs on a failure
+  # violation 5: the land script on pull_request (2.8.0's shape), a checkout of the pull request's
+  # ref, and a land job that does not require CI's success or runs on a failure
   touch "$tmp/assets/land-on-green.sh"
-  red "a land job beside an unawaited job" "lands without waiting for: audit" \
-    "$(fixture v5 'jobs:\n  gates:\n    steps:\n      - run: bash scripts/present.sh\n  audit:\n    steps:\n      - run: bash scripts/present.sh\n  land:\n    needs: [gates]\n    steps:\n      - run: bash scripts/land-on-green.sh\n')"
-  red "a land job that runs on a failure" "can land after a red job" \
-    "$(fixture v5b 'jobs:\n  gates:\n    steps:\n      - run: bash scripts/present.sh\n  land:\n    needs: gates\n    if: always()\n    steps:\n      - run: bash scripts/land-on-green.sh\n')"
-  wf=$(fixture ok5 'jobs:\n  gates:\n    steps:\n      - run: bash scripts/present.sh\n  land:\n    needs: [gates]\n    if: github.event_name == '"'"'pull_request'"'"'\n    steps:\n      - run: bash scripts/land-on-green.sh\n')
-  lint_workflow "$wf" "$tmp/assets" || { echo "selftest FAIL: a land job that needs every other job was rejected" >&2; exit 1; }
+  mkdir -p "$tmp/v5" "$tmp/v5b" "$tmp/v5c" "$tmp/ok5"
+  printf 'on:\n  pull_request:\njobs:\n  gates:\n    steps:\n      - run: bash scripts/present.sh\n  land:\n    needs: [gates]\n    steps:\n      - uses: actions/checkout@v7\n      - run: bash scripts/land-on-green.sh\n' > "$tmp/v5/land.yml"
+  red "the land script on pull_request" "only workflow_run keeps the write token away" "$tmp/v5/land.yml"
+  printf "on:\n  workflow_run:\n    workflows: [ci]\njobs:\n  land:\n    if: github.event.workflow_run.conclusion == 'success'\n    steps:\n      - uses: actions/checkout@v7\n        with:\n          ref: \${{ github.event.workflow_run.head_sha }}\n      - run: bash scripts/land-on-green.sh\n" > "$tmp/v5b/land.yml"
+  red "a land job checking out the pull request" "checks out another ref" "$tmp/v5b/land.yml"
+  printf 'on:\n  workflow_run:\n    workflows: [ci]\njobs:\n  land:\n    if: always()\n    steps:\n      - run: bash scripts/land-on-green.sh\n' > "$tmp/v5c/land.yml"
+  red "a land job that does not require CI's success" "can land after a red run" "$tmp/v5c/land.yml"
+  printf "on:\n  workflow_run:\n    workflows: [ci]\njobs:\n  land:\n    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'\n    steps:\n      - uses: actions/checkout@v7\n      - run: bash scripts/land-on-green.sh\n" > "$tmp/ok5/land.yml"
+  BOOTSTRAP_REF_NEXT="$tmp/ref.md" BOOTSTRAP_REF_JAVA="$tmp/ref.md" lint_workflow "$tmp/ok5/land.yml" "$tmp/assets" \
+    || { echo "selftest FAIL: a workflow_run land job from the default branch was rejected" >&2; exit 1; }
 
   # the compliant fixture passes: a verified download, an installed binary, a copied script
   wf=$(fixture ok 'steps:\n  - run: |\n      curl -sSfL -o g.tar.gz https://github.com/gitleaks/gitleaks/releases/download/vX/g.tar.gz\n      echo "0000  g.tar.gz" | sha256sum -c -\n      tar -xzf g.tar.gz gitleaks\n  - run: gitleaks git --redact\n  - run: bash scripts/present.sh\n')
   if ! lint_workflow "$wf" "$tmp/assets"; then
     echo "selftest FAIL: compliant fixture was rejected" >&2; exit 1
   fi
-  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, an unverified release download, an uncopied bootstrap script, an uncopied data file, a missing bootstrap reference, an unmapped workflow, a variant that ships audit.yml without its script and a variant that ships the Claude settings without the hook's script, a land job that does not need every other job and one that runs on a failure, each for its own reason; a land job that needs every other job, a compliant workflow and compliant settings pass"
+  echo "selftest OK: gate rejects a workflow that is not YAML, a missing shipped script, an uninstalled binary, an unverified release download, an uncopied bootstrap script, an uncopied data file, a missing bootstrap reference, an unmapped workflow, a variant that ships audit.yml without its script and a variant that ships the Claude settings without the hook's script, the land script on pull_request, a land job that checks out the pull request or does not require CI's success, each for its own reason; a workflow_run land job from the default branch, a compliant workflow and compliant settings pass"
 }
 
 if [ "${1:-}" = "--selftest" ]; then
