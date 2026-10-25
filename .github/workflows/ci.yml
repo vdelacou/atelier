@@ -4,10 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
-    # ready_for_review: a draft marked ready runs CI again, so the land job sees it
+    # ready_for_review: a draft marked ready runs CI again, so land.yml sees it pass
     types: [opened, synchronize, reopened, ready_for_review]
 
-# read-only token: only the land job, below, writes to the repository, and only by merging
+# read-only token: no job here writes to the repository (land.yml merges, from main)
 permissions:
   contents: read
 
@@ -223,25 +223,3 @@ jobs:
       # modes reject a stale copy, and the degrade paths (unset or unreachable
       # upstream) pass with a note instead of blocking.
       - run: bash skills/atelier/assets/check-skill-pin.sh --selftest
-  land:
-    # This repository lands its own pull requests the way the shipped workflows do (rule 38;
-    # skills/atelier/references/workflow.md, Landing on green): once every job above passed, rebase
-    # merge pinned to the tested head, refusing when main moved since CI ran. A draft, a fork and the
-    # repository variable LAND_ON_GREEN=off skip it.
-    needs: [validate-frontmatter, no-em-dash, asset-smoke-test, next-smoke-test, java-smoke-test, conformance-grader-selftest, review-grader-selftest, matrix-drift]
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository && vars.LAND_ON_GREEN != 'off'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      checks: read
-    steps:
-      - uses: actions/checkout@v7
-      - name: land on green (rebase merge, pinned to the tested head)
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
-          LAND_JOB: land
-        run: bash skills/atelier/assets/land-on-green.sh
