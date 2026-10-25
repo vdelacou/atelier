@@ -1,0 +1,34 @@
+# .github/workflows/land.yml - a green pull request lands itself (rule 38; references/workflow.md,
+# Landing on green)
+#
+# After the ci workflow completes with success on a pull request, rebase-merge it pinned to the
+# head CI tested and delete its branch, so nobody presses merge and nothing lands red. A
+# workflow_run job always runs this file and the checkout from the default branch, never from the
+# pull request: the write token below never meets code a pull request can change. A draft, a fork,
+# and the repository variable LAND_ON_GREEN=off skip it.
+#
+# Actions are pinned to major tags for readability; pin to a commit SHA for supply-chain safety in
+# a real repo (canon 5.4).
+name: land
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+permissions:
+  contents: read
+jobs:
+  land:
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository && vars.LAND_ON_GREEN != 'off'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+    steps:
+      - uses: actions/checkout@v7 # the default branch: the script is main's, never the pull request's
+      - name: land on green (rebase merge, pinned to the tested head)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          LAND_JOB: land
+        run: bash scripts/land-on-green.sh

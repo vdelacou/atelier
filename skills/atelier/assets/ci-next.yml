@@ -19,7 +19,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-    # ready_for_review: a draft marked ready runs CI again, so the land job sees it
+    # ready_for_review: a draft marked ready runs CI again, so land.yml sees it pass
     types: [opened, synchronize, reopened, ready_for_review]
 permissions:
   contents: read
@@ -85,26 +85,3 @@ jobs:
             [ -d "$out" ] || continue
             bash scripts/check-bundle-size.sh "$out"
           done
-  land:
-    # Land on green (rule 38; references/workflow.md, Landing on green): once every job above passed
-    # on a pull request, rebase-merge it pinned to the tested head and delete its branch, so nobody
-    # presses merge and nothing lands red. A draft, a fork and the repository variable
-    # LAND_ON_GREEN=off skip it. A merge made with GITHUB_TOKEN starts no push run on main, so the
-    # script refuses when main moved since CI ran, and waits for the checks of other workflows.
-    needs: [gates]
-    if: github.event_name == 'pull_request' && !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository && vars.LAND_ON_GREEN != 'off'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      checks: read
-    steps:
-      - uses: actions/checkout@v7
-      - name: land on green (rebase merge, pinned to the tested head)
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
-          LAND_JOB: land
-        run: bash scripts/land-on-green.sh
