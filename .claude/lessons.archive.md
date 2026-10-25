@@ -4,6 +4,14 @@ Entries a compaction pass retired from `.claude/LESSONS.md`, verbatim, newest fi
 
 ---
 
+## [decision] 2026-10-18 | TypeScript 7 runs tsc beside the 6.0 API until the lint plugins load 7.1
+
+TypeScript 7.0 ships no JavaScript API: typescript-eslint 8.71.2 refuses it (peer range `<6.1.0`) and eslint-plugin-sonarjs 4.2.2 crashes in `ts-api-utils`, and neither Oxlint (no `noInlineConfig`, untyped JS plugins) nor Biome (107 of the 646 rules) keeps the standard's rules. So both stacks install `typescript` as `npm:@typescript/typescript6@^6.0.2`, the 6.0 API the plugins `require`, and `@typescript/native` as `npm:typescript@^7.0.2`, whose `tsc` the `typecheck` gate runs; `next build` and the typed lint rules still read 6.0 types. From TypeScript 6 on, the Next tsconfig needs `"types": ["bun"]`, or `bun:test` fails TS2307 in `tsc` and in `next build`.
+
+Rule for next time: never `bun add typescript@latest`, which replaces the alias, and drop the aliases the week the `unpinned-typescript` canary turns green.
+
+Archived 2026-10-25: graduate, skills/atelier/references/bun-typescript.md:60 (the aliases, never `bun add typescript@latest`, keep them until the plugins load 7.1, which canary.yml probes) and skills/atelier/references/nextjs-monorepo.md:132 (`"types": ["bun"]`).
+
 ## [gotcha] 2026-09-27 | an eval session started inside the repo reads the repo
 
 Run from a folder in this tree, `claude -p` loaded this `CLAUDE.md` and the project memory and listed the installed atelier skills; isolated, the unaided conformance arm fell from 46 to 36 of 61. Eval sessions start outside the repo with `--setting-sources project,local` plus the user's settings file.
@@ -66,6 +74,21 @@ Cleaning the two review-eval files the reviewer had rightly accused took one edi
 Archived 2026-09-26: merged into "grader defects favour the weaker answer; read the answer before the number".
 
 ---
+
+## [gotcha] 2026-09-26 | a headless session cannot write under .claude/, so a journal eval writes into out/
+
+Under `claude -p`, `acceptEdits` and four allow-rule forms all left `.claude/LESSONS.md` unwritable, so the first distill-eval run scored 1/11 on both arms, and bypassing permissions was refused by the auto-mode classifier. Both arms now write what they would change under `.claude/` into `./out/`, which `grade.py` reads as the journal layer.
+
+Archived 2026-10-25: graduate, scripts/distill-eval/run.sh:25 and :58 (both arms write what they would change under .claude/ into ./out/, which grade.py reads).
+
+## [gotcha] 2026-09-26 | when the unpinned toolchain contradicts the standard, turn the rule off and re-probe it; do not pin the world back
+
+Three times the unpinned toolchain broke a conforming tree: TypeScript 7 crashed `eslint-plugin-sonarjs` at rule load (the smoke install pins `typescript@^5`), and sonarjs 4.2 flagged the branded-type doctrine (`no-useless-intersection`, `null-dereference`) and every `ok()`/`err()` return (`function-return-type`), in the type-aware lane only. Each time the answer was one dated pin or one rule off with its reason in the canonical config, plus a weekly canary that re-probes it (`canary.yml`, `SMOKE_SONARJS_PROBE=1`), because sonarjs 4.1.0 does not even load under ESLint 10 and pinning it back would have dragged every other pin with it.
+
+Rule for next time: when a linter contradicts the standard, check that correct code can satisfy the rule at all and that the downgrade path loads; a noisy tool gets narrowed, a tool wrong about mandated doctrine gets turned off and re-probed.
+Merges: 2026-09-05 (function-return-type, decision and gotcha), 2026-08-29 (sonarjs 4.2.0), 2026-07-12 (typescript 7).
+
+Archived 2026-10-25: merge, rewritten as the 2026-10-24 entry of the same title with unicorn 79 as its fourth instance.
 
 ## [gotcha] 2026-09-20 | a 403 after midnight is the environmental tell, and the grader must know every dead-session shape
 
