@@ -571,7 +571,7 @@ expect_ok "branches.yml runs the copied host check on the copied ruleset" \
   grep -q "python3 scripts/check-host.py" .github/workflows/branches.yml
 # The CI land job's script (2026-10-23): its selftest stubs gh and plants each refusal.
 cp "$SKILL/assets/land-on-green.sh" scripts/
-expect_ok "land-on-green.sh selftest (a green head lands; a failed, cancelled or running check, a moved main and a newer head refuse)" \
+expect_ok "land-on-green.sh selftest (a green head lands; no open pull request or a draft skips; a failed, cancelled or running check and a head behind main refuse)" \
   bash scripts/land-on-green.sh --selftest
 expect_ok "branches.yml hands the host check the copied ruleset" grep -q "RULESET: scripts/host-ruleset.json" .github/workflows/branches.yml
 rm scripts/check-branches.sh scripts/check-host.py scripts/host-ruleset.json .github/workflows/branches.yml \
