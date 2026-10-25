@@ -6,6 +6,10 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Changed
+- The Bun template's `eslint-plugin-unicorn` range moves from `^76.0.0` to `^79.0.0`, the version the
+  smoke test installs and the 2.8.0 config already handles.
+
 ## [2.8.0] - 2026-10-24
 
 The mutation and landing release. Mutation testing gets faster and stricter: Stryker's runner stops at
