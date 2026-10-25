@@ -2,6 +2,25 @@
 
 Journal of mistakes, decisions, and gotchas for this repo, newest first. Append-only between compaction passes: supersede a decision with a newer `[decision]`; only an approved compaction pass rewrites or retires entries, into `.claude/lessons.archive.md`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [mistake] 2026-10-24 | a release tag made on a laptop and never pushed; verify the remote, not the local
+
+On 2026-10-18 the owner created `v2.7.0` locally and reported it pushed; nobody checked the remote, and six days later `git ls-remote --tags origin` still ended at `v2.6.1`. The tag had to land as `v2.7.1` on the same commit (2659e70), and that GitHub Release went out with empty notes, because its `awk` extract looked for a `[2.7.1]` heading the changelog did not have. This session cannot push tags (HTTP 403), so a release always ends on the owner's machine.
+
+Rule for next time: a release is done when `git ls-remote origin 'refs/tags/vX.Y.Z^{}'` prints the intended commit and the Release body is non-empty; check both before calling it shipped.
+
+## [gotcha] 2026-10-24 | when the unpinned toolchain contradicts the standard, turn the rule off and re-probe it; do not pin the world back
+
+Four times the unpinned toolchain broke a conforming tree: TypeScript 7 crashed `eslint-plugin-sonarjs` at rule load (the smoke install pins `typescript@^5`), sonarjs 4.2 flagged the branded-type doctrine (`no-useless-intersection`, `null-dereference`) and every `ok()`/`err()` return (`function-return-type`), in the type-aware lane only, and eslint-plugin-unicorn 79.0.0 (2026-10-23) put `no-top-level-side-effects` in its recommended set, which flags the `process.exitCode` assignment in `src/main.ts` and turned the 2.8.0 release PR red on Linux and Windows while the shipped `^76.0.0` range never saw it. Each time the answer was one dated pin or one rule off with its reason in the canonical config, scoped as narrowly as the conflict (unicorn's is off for `src/main.ts` alone), plus a weekly canary that re-probes the sonarjs rules (`canary.yml`, `SMOKE_SONARJS_PROBE=1`), because sonarjs 4.1.0 does not even load under ESLint 10 and pinning it back would have dragged every other pin with it.
+
+Rule for next time: when a linter contradicts the standard, check that correct code can satisfy the rule at all and that the downgrade path loads; a noisy tool gets narrowed, a tool wrong about mandated doctrine gets turned off and re-probed.
+Merges: 2026-09-26 (the three earlier instances), which merged 2026-09-05 (function-return-type, decision and gotcha), 2026-08-29 (sonarjs 4.2.0), 2026-07-12 (typescript 7).
+
+## [gotcha] 2026-10-23 | a threshold over a run's total hides a weak part, and an incremental report keeps old parts in the total
+
+Stryker's `thresholds.break` and PIT's `mutationThreshold` judge the whole run's score, while the doctrine says every file scores 90. Under `--mutate`, Stryker's incremental report also keeps earlier results for every other file in that score, so a file at 55.56 passed in a run that totalled 90.00; it surfaced only because a smoke case planted a weak file beside the fixture's strong ones. `check-mutation-score.ts` and `check-pit-score.py` now hold each file or class to the same threshold, read from the report and the pom.
+
+Rule for next time: when a doctrine names a per-item bar, check that the tool's threshold is per item too, and plant the weak item beside strong ones whose sum passes.
+
 ## [decision] 2026-10-18 | rule 26 blocks only in a public repository; a private one warns
 
 The owner's call: a name in a private repository's files is a debt to clear before going public, not a leak, so `check-identity.sh` warns there and blocks only in a public repository. A hook cannot ask the host, so a private repository declares itself in a committed `.github/visibility` reading `private`; CI passes `github.event.repository.private` as `REPO_VISIBILITY`, which wins, and a file saying private on a public host fails CI even with no hit. No file, or another word, counts as public, so every existing repository keeps blocking.
@@ -13,12 +32,6 @@ Rule for next time: a gate relaxed by a declaration needs CI to check the declar
 `@typescript/typescript6` 6.0.2 is a wrapper whose `lib/typescript.js` re-exports its dependency `@typescript/old` (`npm:typescript@^6`). Bun 1.3.14, clean cache or not, resolves that dependency to the wrapper itself, so `require('typescript')` returns an empty object and ESLint crashes in `typescript-eslint/dist/index.js` (reading `split` of the missing `version`): both smoke tests went red, 32 and 25 checks. Bun 1.4.0 to 1.4.2 resolve it to `typescript` 6.0.3, but under 1.4.2 a `bun.lock` that 1.3.14 wrote stays broken through `--frozen-lockfile`, a plain install, a re-add and `bun update`; deleting its `@typescript/old` line, or the whole file, and installing again fixes it.
 
 Rule for next time: when a toolchain change passes on the owner's tools and fails here, compare tool versions before reading the code, and check whether the lockfile carries the fault forward.
-
-## [decision] 2026-10-18 | TypeScript 7 runs tsc beside the 6.0 API until the lint plugins load 7.1
-
-TypeScript 7.0 ships no JavaScript API: typescript-eslint 8.71.2 refuses it (peer range `<6.1.0`) and eslint-plugin-sonarjs 4.2.2 crashes in `ts-api-utils`, and neither Oxlint (no `noInlineConfig`, untyped JS plugins) nor Biome (107 of the 646 rules) keeps the standard's rules. So both stacks install `typescript` as `npm:@typescript/typescript6@^6.0.2`, the 6.0 API the plugins `require`, and `@typescript/native` as `npm:typescript@^7.0.2`, whose `tsc` the `typecheck` gate runs; `next build` and the typed lint rules still read 6.0 types. From TypeScript 6 on, the Next tsconfig needs `"types": ["bun"]`, or `bun:test` fails TS2307 in `tsc` and in `next build`.
-
-Rule for next time: never `bun add typescript@latest`, which replaces the alias, and drop the aliases the week the `unpinned-typescript` canary turns green.
 
 ## [gotcha] 2026-10-15 | a cloud worker restart can end a turn right after a tool call, so a check-in states its report before calling tools
 
@@ -37,10 +50,6 @@ Rule for next time: send a watchdog's stdio to `/dev/null`, and expand a functio
 Slicing PR #3 (2026-10-09), I copied the final, already re-anchored `conformance-matrix.md` into the scratch worktree while its `citations-lock.json` was still the old one, then ran `check-citations.py --reanchor` there. The script computes each move from the lock (old line to the line that now holds the snippet) and rewrites every citation token still naming an old line, so a token the copy had already moved was moved again wherever its new line was another entry's old one, which left row 15.7 citing 544-548. Rebuilding slices 5 to 7 with one re-anchor from a matching pair fixed it. PR #6 sliced cleanly: each slice that shifted cited lines re-anchored its own untouched pair, and the final pair was copied only at the slice where every cited file was final.
 
 Rule for next time: run `--reanchor` only where the matrix and the lock come from the same state; copy the two together or not at all.
-
-## [gotcha] 2026-09-26 | a headless session cannot write under .claude/, so a journal eval writes into out/
-
-Under `claude -p`, `acceptEdits` and four allow-rule forms all left `.claude/LESSONS.md` unwritable, so the first distill-eval run scored 1/11 on both arms, and bypassing permissions was refused by the auto-mode classifier. Both arms now write what they would change under `.claude/` into `./out/`, which `grade.py` reads as the journal layer.
 
 ## [gotcha] 2026-09-26 | a skill fix made because of an eval must not describe the fixture's case
 
@@ -99,13 +108,6 @@ macOS BSD `awk -v pat='\\.'` delivers `.` to the program, so regexes live as awk
 
 Rule for next time: reproduce a CI-only red by exporting the job's environment locally, and run a shell gate under both bash and zsh before calling it portable.
 Merges: 2026-09-03 (BSD awk -v, pipe to tail, selftest environment).
-
-## [gotcha] 2026-09-26 | when the unpinned toolchain contradicts the standard, turn the rule off and re-probe it; do not pin the world back
-
-Three times the unpinned toolchain broke a conforming tree: TypeScript 7 crashed `eslint-plugin-sonarjs` at rule load (the smoke install pins `typescript@^5`), and sonarjs 4.2 flagged the branded-type doctrine (`no-useless-intersection`, `null-dereference`) and every `ok()`/`err()` return (`function-return-type`), in the type-aware lane only. Each time the answer was one dated pin or one rule off with its reason in the canonical config, plus a weekly canary that re-probes it (`canary.yml`, `SMOKE_SONARJS_PROBE=1`), because sonarjs 4.1.0 does not even load under ESLint 10 and pinning it back would have dragged every other pin with it.
-
-Rule for next time: when a linter contradicts the standard, check that correct code can satisfy the rule at all and that the downgrade path loads; a noisy tool gets narrowed, a tool wrong about mandated doctrine gets turned off and re-probed.
-Merges: 2026-09-05 (function-return-type, decision and gotcha), 2026-08-29 (sonarjs 4.2.0), 2026-07-12 (typescript 7).
 
 ## [decision] 2026-09-19 | the six-pack leaves the repository
 
