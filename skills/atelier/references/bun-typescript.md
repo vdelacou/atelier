@@ -48,7 +48,7 @@ Minimal skeleton:
     "eslint-plugin-prettier": "^5.5.6",
     "eslint-plugin-security": "^4.1.0",
     "eslint-plugin-sonarjs": "^4.2.1",
-    "eslint-plugin-unicorn": "^76.0.0",
+    "eslint-plugin-unicorn": "^79.0.0",
     "globals": "^17.12.0",
     "prettier": "^3.9.9",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
@@ -306,8 +306,9 @@ export default [
   unicornPlugin.configs.recommended,
   {
     // unicorn's recommended set, less what contradicts the standard or prettier: each rule off for
-    // its reason, never inline (hard rule 15). Probed 2026-09-27 against unicorn 61 and 76; a rule
-    // renamed between them is named twice, since 'off' on a rule the installed version lacks is a no-op.
+    // its reason, never inline (hard rule 15). Probed 2026-09-27 against unicorn 61 and 76, and
+    // 2026-10-24 against 79; a rule renamed between them is named twice, since 'off' on a rule the
+    // installed version lacks is a no-op.
     rules: {
       // Formatting is prettier's; these three fight its output (eslint-config-prettier's list).
       'unicorn/empty-brace-spaces': 'off',
