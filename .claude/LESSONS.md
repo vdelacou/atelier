@@ -2,6 +2,12 @@
 
 Journal of mistakes, decisions, and gotchas for this repo, newest first. Append-only between compaction passes: supersede a decision with a newer `[decision]`; only an approved compaction pass rewrites or retires entries, into `.claude/lessons.archive.md`. Format and triggers: `skills/atelier/references/lessons.md`.
 
+## [mistake] 2026-10-25 | a job with a write token ran the pull request's own code
+
+2.8.0's `land` job lived in the CI workflow on `pull_request`, checked out the pull request and ran its copy of `land-on-green.sh` with `contents: write`; the PR description even called that acceptable because a same-repository author can already push. Socket flagged it on both shipped CI files within a day of the release, and it was right: the merge job is the one place a pull request must not reach. The fix moved landing to `land.yml` on `workflow_run`, which runs the default branch's file and checkout, and `check-workflow-assets.sh` now fails the old shape.
+
+Rule for next time: before giving a job a write token, name where every line it executes comes from; on `pull_request` the answer is the pull request, so privileged work moves to `workflow_run` or `push`.
+
 ## [mistake] 2026-10-24 | a release tag made on a laptop and never pushed; verify the remote, not the local
 
 On 2026-10-18 the owner created `v2.7.0` locally and reported it pushed; nobody checked the remote, and six days later `git ls-remote --tags origin` still ended at `v2.6.1`. The tag had to land as `v2.7.1` on the same commit (2659e70), and that GitHub Release went out with empty notes, because its `awk` extract looked for a `[2.7.1]` heading the changelog did not have. This session cannot push tags (HTTP 403), so a release always ends on the owner's machine.
