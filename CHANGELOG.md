@@ -6,6 +6,22 @@ whole, not any single skill.
 
 ## [Unreleased]
 
+### Upgrading from 2.8.0
+
+- Delete the `land` job from your CI workflow, copy `assets/land.yml` to `.github/workflows/land.yml`,
+  and re-copy `land-on-green.sh`. Keep `ready_for_review` on the pull request trigger. `land.yml`
+  lands from the pull request after the one that adds it, since `workflow_run` fires only for a file
+  already on the default branch.
+
+### Security
+- 2.8.0's `land` job ran inside the CI workflow on `pull_request`, checked out the pull request and ran
+  that revision's `land-on-green.sh` with a write token, so a same-repository pull request that edited
+  the script ran its own code with that token (Socket, MEDIUM, on `ci.yml` and `ci-java.yml`). Landing
+  moves to its own `land.yml` on `workflow_run`, which takes the workflow and the checkout from the
+  default branch; the script reads the pull request through the API only, and refuses a head behind
+  its base instead of reading the tested merge commit. `check-workflow-assets.sh` fails the old shape,
+  a checkout of another ref, and a land job without CI's success in its condition.
+
 ### Changed
 - The Bun template's `eslint-plugin-unicorn` range moves from `^76.0.0` to `^79.0.0`, the version the
   smoke test installs and the 2.8.0 config already handles.
