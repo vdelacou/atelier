@@ -13,7 +13,11 @@
  *   bun run scripts/check-mutation-score.ts --selftest      # planted reports, no Stryker
  *
  * A file named on the command line but absent from the report fails by name: a run that mutated
- * nothing must not read as a pass. A file with no valid mutant (types only) passes with a note.
+ * nothing must not read as a pass. A file with no valid mutant passes with a note. Stryker leaves a
+ * file with no mutant at all out of the report (2026-11-03: src/domain/site-file.ts, types only), so
+ * an absent file also passes with a note when its source has no runtime code: once the transpiler
+ * removes the types, only comments and whitespace are left. An absent file that has runtime code,
+ * that does not exist or that does not parse still fails by name.
  *
  * Exit codes:
  *   0  every file in scope scores at or above `break`
@@ -27,7 +31,7 @@ type Report = {
   readonly thresholds?: { readonly break?: number | null };
 };
 
-type FileScore = { readonly path: string; readonly score: number | undefined; readonly missing: boolean };
+type FileScore = { readonly path: string; readonly score: number | undefined; readonly missing: boolean; readonly typesOnly: boolean };
 
 const REPORT_PATH = 'reports/mutation/mutation.json';
 
@@ -48,17 +52,32 @@ const normalise = (path: string): string => {
   return slashed.startsWith('./') ? slashed.slice(2) : slashed;
 };
 
-const scoreFiles = (report: Report, scope: ReadonlyArray<string>): ReadonlyArray<FileScore> => {
+// The transpiler keeps legal comments (/*! ... */). A source that does not exist or does not parse counts as runtime code.
+const transpiler = new Bun.Transpiler({ loader: 'ts' });
+const COMMENTS = /\/\/[^\n]*|\/\*[\s\S]*?\*\//g;
+
+const isTypesOnly = (source: string | undefined): boolean => {
+  if (source === undefined) return false;
+  try {
+    return transpiler.transformSync(source).replaceAll(COMMENTS, '').trim() === '';
+  } catch {
+    return false;
+  }
+};
+
+type Sources = ReadonlyMap<string, string | undefined>;
+
+const scoreFiles = (report: Report, scope: ReadonlyArray<string>, sources: Sources): ReadonlyArray<FileScore> => {
   const files = new Map(Object.entries(report.files).map(([path, file]) => [normalise(path), file]));
   const paths = scope.length > 0 ? scope.map((p) => normalise(p)) : files.keys().toArray();
   return paths.map((path) => {
     const file = files.get(path);
-    return file ? { path, score: scoreOf(file), missing: false } : { path, score: undefined, missing: true };
+    return file ? { path, score: scoreOf(file), missing: false, typesOnly: false } : { path, score: undefined, missing: true, typesOnly: isTypesOnly(sources.get(path)) };
   });
 };
 
 const failureOf = (s: FileScore, threshold: number): string | undefined => {
-  if (s.missing) return `${s.path}  not in the report (the run did not mutate it)`;
+  if (s.missing && !s.typesOnly) return `${s.path}  not in the report (the run did not mutate it)`;
   if (s.score !== undefined && s.score < threshold) return `${s.path}  score=${s.score.toFixed(2)}  required=${threshold}`;
   return undefined;
 };
@@ -66,13 +85,18 @@ const failureOf = (s: FileScore, threshold: number): string | undefined => {
 const failuresOf = (scores: ReadonlyArray<FileScore>, threshold: number): ReadonlyArray<string> =>
   scores.map((s) => failureOf(s, threshold)).filter((f): f is string => f !== undefined);
 
-const judge = (report: Report, scope: ReadonlyArray<string>): { readonly lines: ReadonlyArray<string>; readonly failures: ReadonlyArray<string> } => {
+const noteOf = (s: FileScore): string => {
+  if (s.missing) return 'no runtime code, not in the report';
+  return s.score === undefined ? 'no valid mutant' : s.score.toFixed(2);
+};
+
+const judge = (report: Report, scope: ReadonlyArray<string>, sources: Sources): { readonly lines: ReadonlyArray<string>; readonly failures: ReadonlyArray<string> } => {
   const threshold = report.thresholds?.break;
   if (typeof threshold !== 'number') {
     return { lines: [], failures: ['the report carries no thresholds.break; set it in stryker.conf.json (atelier: 90)'] };
   }
-  const scores = scoreFiles(report, scope);
-  const lines = scores.filter((s) => !s.missing).map((s) => `  ${s.path}  ${s.score === undefined ? 'no valid mutant' : s.score.toFixed(2)}`);
+  const scores = scoreFiles(report, scope, sources);
+  const lines = scores.filter((s) => !s.missing || s.typesOnly).map((s) => `  ${s.path}  ${noteOf(s)}`);
   return { lines, failures: failuresOf(scores, threshold) };
 };
 
@@ -86,13 +110,25 @@ const readReport = async (path: string): Promise<Report | undefined> => {
   }
 };
 
+const readSource = async (path: string): Promise<string | undefined> => {
+  const file = Bun.file(path);
+  return (await file.exists()) ? await file.text() : undefined;
+};
+
+// A scoped file that does not exist maps to undefined.
+const readSources = async (scope: ReadonlyArray<string>): Promise<Sources> => {
+  const paths = scope.map((p) => normalise(p));
+  const texts = await Promise.all(paths.map((path) => readSource(path)));
+  return new Map(paths.map((path, i) => [path, texts[i]]));
+};
+
 const main = async (scope: ReadonlyArray<string>): Promise<number> => {
   const report = await readReport(REPORT_PATH);
   if (!report) {
     console.error(`mutation: no readable ${REPORT_PATH}; the json reporter must be on in stryker.conf.json and the run must have finished.`);
     return 1;
   }
-  const { lines, failures } = judge(report, scope);
+  const { lines, failures } = judge(report, scope, await readSources(scope));
   console.log('mutation: per-file scores');
   for (const line of lines) console.log(line);
   if (failures.length === 0) {
@@ -122,14 +158,25 @@ const SELFTEST_REPORT: Report = {
   },
 };
 
+// The sources of the scoped files that the report lacks: Stryker leaves a file with no mutant out of it.
+const SELFTEST_SOURCES: ReadonlyMap<string, string | undefined> = new Map([
+  ['src/domain/new.ts', '// a value: runtime code\nexport const answer = (): number => 42;\n'],
+  ['src/domain/site-file.ts', "/*! a legal comment */\n// a comment\nimport type { Page } from './page';\nexport type SiteFile = { readonly page: Page };\n"],
+]);
+
 const selftest = (): number => {
-  const scoped = judge(SELFTEST_REPORT, ['src/domain/strong.ts', 'src/domain/weak.ts', 'src/use-cases/types-only.ts', 'src/domain/new.ts']);
-  const whole = judge(SELFTEST_REPORT, []);
-  const unset = judge({ files: SELFTEST_REPORT.files }, []);
+  const scope = ['src/domain/strong.ts', 'src/domain/weak.ts', 'src/use-cases/types-only.ts', 'src/domain/new.ts', 'src/domain/site-file.ts'];
+  const scoped = judge(SELFTEST_REPORT, scope, SELFTEST_SOURCES);
+  const whole = judge(SELFTEST_REPORT, [], new Map());
+  const unset = judge({ files: SELFTEST_REPORT.files }, [], new Map());
   const checks: ReadonlyArray<readonly [boolean, string]> = [
     [
       scoped.failures.join(' | ') === 'src/domain/weak.ts  score=55.56  required=90 | src/domain/new.ts  not in the report (the run did not mutate it)',
-      `a scoped run gave [${scoped.failures.join(' | ')}], not the weak file and the missing one`,
+      `a scoped run gave [${scoped.failures.join(' | ')}], not the weak file and the missing one with runtime code`,
+    ],
+    [
+      scoped.lines.includes('  src/domain/site-file.ts  no runtime code, not in the report'),
+      `a scoped run gave the lines [${scoped.lines.join(' | ')}], with no note for the missing file that holds types only`,
     ],
     [whole.failures.length === 2 && whole.failures.some((f) => f.startsWith('src/domain/stale.ts')), `the whole report gave [${whole.failures.join(' | ')}], not weak and stale`],
     [unset.failures.length === 1 && unset.failures[0]?.includes('thresholds.break') === true, `a report with no break gave [${unset.failures.join(' | ')}]`],
@@ -138,7 +185,7 @@ const selftest = (): number => {
   for (const message of failed) console.error(`mutation: selftest FAIL: ${message}`);
   if (failed.length > 0) return 1;
   console.log(
-    'mutation: selftest OK: a file under break fails beside one at it, a scoped file missing from the report fails, an old file outside the scope is ignored, a Windows key matches, a report with no break fails'
+    'mutation: selftest OK: a file under break fails beside one at it, a scoped file missing from the report fails when it has runtime code and passes with a note when it holds types only, an old file outside the scope is ignored, a Windows key matches, a report with no break fails'
   );
   return 0;
 };
