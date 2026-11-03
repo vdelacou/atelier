@@ -14,6 +14,8 @@ whole, not any single skill.
   already on the default branch.
 - Bun: re-copy `check-mutation-score.ts`. Without it, `mutate:changed` fails each changed file that
   holds only types.
+- Re-copy `check-commit-size.sh` and `check-commit-range.sh`. Without them, a commit that moves more
+  than 10 files unchanged fails the size gate in the hook and in CI.
 
 ### Security
 - 2.8.0's `land` job ran inside the CI workflow on `pull_request`, checked out the pull request and ran
@@ -36,6 +38,13 @@ whole, not any single skill.
   `no runtime code, not in the report`. An absent file with runtime code, a file that does not exist,
   and a source that does not parse still fail by name. The selftest covers the pass and the failure,
   and the Bun smoke test gives a real `mutate:changed` run a file that holds only types.
+- The commit-size gate counted each file of a mass move (found 2026-11-03 in a consumer repository,
+  where a commit that moved 241 files unchanged into a workspace package needed `--no-verify` and then
+  failed in CI). `check-commit-size.sh` and `check-commit-range.sh` now count a file that git detects
+  as a pure rename (`R100` with `-M`) for 0 files and 0 lines. A rename with an edit (`R0xx`) still
+  counts as 1 file with its lines. The selftest of the range gate proves both: a commit that moves 12
+  files unchanged passes, and one that moves 12 files and edits each fails with 12 files. The Bun smoke
+  test proves the hook on a staged mass rename.
 
 ## [2.8.0] - 2026-10-24
 

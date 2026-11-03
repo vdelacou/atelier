@@ -278,7 +278,7 @@ states that breakpoints scale up from the smallest screen; this row is now COVER
 
 | ID | Sub-concept | Verdict | Evidence | Enforcement | Notes |
 |---|---|---|---|---|---|
-| 8.1 | Trunk-based development with small commits | COVERED | workflow.md:256-380; assets/check-commit-size.sh:19 | gate | Trunk, sub-day branches, small commits; size gate 1 plus commit-msg; rule 38 lands a branch by rebase and deletes it: check-commit-range.sh rejects a merge commit, the daily check-branches.sh a landed or day-old branch, and check-host.py a default other than main, an unprotected main or merges that are not rebase-only |
+| 8.1 | Trunk-based development with small commits | COVERED | workflow.md:256-380; assets/check-commit-size.sh:24 | gate | Trunk, sub-day branches, small commits; size gate 1 plus commit-msg; rule 38 lands a branch by rebase and deletes it: check-commit-range.sh rejects a merge commit, the daily check-branches.sh a landed or day-old branch, and check-host.py a default other than main, an unprotected main or merges that are not rebase-only |
 | 8.2 | Automated pipeline, progressive delivery, one-step rollback | COVERED | delivery.md:7-12 | doctrine | Pipeline-only deploy, canary, one-re-run rollback |
 | 8.3 | Infrastructure as code | COVERED | delivery.md:22 | doctrine | Every resource in version-controlled IaC, rebuilt with one command |
 | 8.4 | Vertical slices | COVERED | architecture.md:34-50; workflow.md:263 | doctrine | Feature-cohesive slices, deploy independently or dark behind a flag; archetype src/ is layer-first |

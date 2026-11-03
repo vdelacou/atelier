@@ -1084,6 +1084,20 @@ expect_ok "check-commit-range.sh selftest (the gate proves itself)" \
   bash scripts/check-commit-range.sh --selftest
 expect_ok "check-commit-range.sh passes on small commits" \
   bash scripts/check-commit-range.sh HEAD~1 HEAD
+# A pure rename counts for nothing (2026-11-03): a staged mass move of 12 files passes the hook, and
+# the committed move passes the range gate. A mixed reset to before the two commits undoes both.
+python3 - <<'PYEOF3'
+import pathlib
+for i in range(12):
+    pathlib.Path(f'tomove{i}.txt').write_text(f'x{i}\n' * 40)
+PYEOF3
+git add tomove*.txt && git commit -q --no-verify -m 'chore: twelve files to move'
+mkdir moved && git mv tomove*.txt moved/
+expect_ok "commit-size gate counts a staged pure mass rename for nothing" bash scripts/check-commit-size.sh
+git commit -q --no-verify -m 'refactor: move twelve files unchanged'
+expect_ok "check-commit-range.sh passes a commit that moves 12 files unchanged" \
+  bash scripts/check-commit-range.sh HEAD~1 HEAD
+git reset -q --mixed HEAD~2 && rm -r moved
 python3 - <<'PYEOF2'
 import pathlib
 for i in range(12):
