@@ -21,7 +21,10 @@
 # lands by rebase or fast-forward). The one merge stepped over is GitHub's own:
 # a pull_request checkout sits on a synthetic merge of the PR into its base
 # ("Merge <sha> into <sha>"), and the PR's commits end at its second parent.
-# Keep MAX_FILES / MAX_LINES in lockstep with check-commit-size.sh.
+# Keep MAX_FILES / MAX_LINES and the counting in lockstep with
+# check-commit-size.sh: a file that git detects as a pure rename (R100 with
+# -M) counts for 0 files and 0 lines, a rename with an edit (R0xx) counts as
+# 1 file with its lines, so a mass move passes without a bypass.
 #
 # Adopted from a consumer repo that had written it independently, found by the
 # 2026-08-30 field test. See references/workflow.md
@@ -47,6 +50,16 @@ if [ "${1:-}" = "--selftest" ]; then
   if bash "$gate" HEAD~1 HEAD >/dev/null 2>&1; then
     echo "selftest FAIL: an oversized commit was accepted" >&2; exit 1
   fi
+  # a pure rename counts for nothing: 12 files moved unchanged pass, the same 12 moved and edited fail
+  mkdir moved && i=0; while [ "$i" -lt 12 ]; do git mv "big$i.txt" "moved/big$i.txt"; i=$((i + 1)); done
+  git commit -qm "refactor: move 12 files unchanged"
+  if ! bash "$gate" HEAD~1 HEAD >/dev/null 2>&1; then
+    echo "selftest FAIL: a commit that moves 12 files unchanged was rejected" >&2; exit 1
+  fi
+  mkdir edited && i=0; while [ "$i" -lt 12 ]; do git mv "moved/big$i.txt" "edited/big$i.txt" && echo "y$i" >> "edited/big$i.txt"; i=$((i + 1)); done
+  git add -A && git commit -qm "refactor: move 12 files and edit each"
+  out=$(bash "$gate" HEAD~1 HEAD 2>&1) && { echo "selftest FAIL: a commit that moves 12 files and edits each was accepted" >&2; exit 1; }
+  case "$out" in *"COMMIT TOO BIG"*"12 files"*) ;; *) echo "selftest FAIL: 12 moved and edited files were not counted as 12 files:" >&2; echo "$out" >&2; exit 1 ;; esac
   # rule 38: a merge commit at the tip of the range fails, for its own reason
   git checkout -q -b side HEAD~1 && echo s > s.txt && git add -A && git commit -qm "feat: side"
   git checkout -q - && git merge -q --no-ff side -m "Merge branch 'side'" >/dev/null 2>&1
@@ -65,7 +78,7 @@ if [ "${1:-}" = "--selftest" ]; then
   git checkout -q --detach "$trunk" && git merge -q --no-ff pr2 -m "Merge $(git rev-parse pr2) into $trunk" >/dev/null 2>&1
   out=$(bash "$gate" "$trunk" 2>&1) && { echo "selftest FAIL: a merge inside a pull request was accepted" >&2; exit 1; }
   case "$out" in *"MERGE COMMIT"*"rule 38"*) ;; *) echo "selftest FAIL: a merge inside a pull request was rejected, but not for rule 38:" >&2; echo "$out" >&2; exit 1 ;; esac
-  echo "selftest OK: gate rejects an oversized commit and a merge commit (rule 38), accepts a small one, steps over GitHub's synthetic pull-request merge and still sees a merge inside the pull request"
+  echo "selftest OK: gate rejects an oversized commit and a merge commit (rule 38), accepts a small one and a pure mass rename, counts a renamed-and-edited file, steps over GitHub's synthetic pull-request merge and still sees a merge inside the pull request"
   exit 0
 fi
 
@@ -97,8 +110,9 @@ fi
 
 violations=0
 for sha in $(git rev-list --no-merges "${base}..${head}"); do
-  files=$(git show --pretty="" --name-only --diff-filter=ACMR "$sha" | grep -c '^' || true)
-  lines=$(git show --pretty="" --numstat "$sha" | awk '{ sum += $1 + $2 } END { print sum + 0 }')
+  # a pure rename (R100 with -M) counts for 0 files and 0 lines; a rename with an edit (R0xx) counts as 1 file
+  files=$(git show --pretty="" -M --name-status --diff-filter=ACMR "$sha" | grep -cv '^R100' || true)
+  lines=$(git show --pretty="" -M --numstat "$sha" | awk '{ sum += $1 + $2 } END { print sum + 0 }')
   if [ "${files:-0}" -gt "$MAX_FILES" ] || [ "${lines:-0}" -gt "$MAX_LINES" ]; then
     printf '  ╳ COMMIT TOO BIG  %s  %s files / %s lines  (max %s / %s)\n' \
       "$(git rev-parse --short "$sha")" "$files" "$lines" "$MAX_FILES" "$MAX_LINES" >&2

@@ -387,7 +387,7 @@ The `git config core.hooksPath .githooks` is the one step that is easy to forget
 
 ### Commit size limits (gate 1)
 
-`scripts/check-commit-size.sh` enforces the rule "≤10 files **AND** ≤300 lines (insertions + deletions)", i.e. it blocks any commit that exceeds *either* threshold. The limits are conservative because they force the discipline; loosening them undermines the rule.
+`scripts/check-commit-size.sh` enforces the rule "≤10 files **AND** ≤300 lines (insertions + deletions)", i.e. it blocks any commit that exceeds *either* threshold. The limits are conservative because they force the discipline; loosening them undermines the rule. A file that git detects as a pure rename (`R100` with `-M`) counts for 0 files and 0 lines, so a mass move passes without a bypass. A rename with an edit (`R0xx`) counts as 1 file with its lines. `check-commit-range.sh`, the CI mirror, counts the same way.
 
 Why:
 - Small commits are easier to review, revert, and bisect.
@@ -527,7 +527,7 @@ Since 2026-09-10 four of the five are core gates: the identity guard and, throug
 
 ### Never bypass with `--no-verify`
 
-`git commit --no-verify` skips every gate. It is reserved for genuine big-bang changes (initial scaffolds, mass-rename refactors, generated-file updates), never for a failing check. **Justify every bypass in the commit body.** Do not normalise bypassing.
+`git commit --no-verify` skips every gate. It is reserved for genuine big-bang changes (initial scaffolds, generated-file updates), never for a failing check. A mass rename needs no bypass since 2026-11-03: the size gate counts a pure rename for nothing. **Justify every bypass in the commit body.** Do not normalise bypassing.
 
 If a check is wrong for the codebase, fix it at the project level: raise or lower a rule's severity in `eslint.config.js`, adjust a coverage gate in `scripts/check-coverage.ts`, refactor a flaky test, and commit the fix. Same discipline as the no-inline-ignore rule: refactor or reconfigure, never suppress.
 
@@ -674,7 +674,7 @@ SKILL.md keeps the rule; this is the symptom list to read when reviewing. Any ha
 - `Record<K, V>` when the key set is open. Use `Partial<Record<K, V>>` so the type tells the truth about missing keys.
 - Domain-specific data (brand lists, flow slugs, tier rates, tenant names) hardcoded as string-literal unions or records in framework code. Drive from env or config files; keep the framework generic.
 - A per-file exclusion in `stryker.conf.json` for "the tests are awkward". Skip lists rot. The only structural exclusions are `**/*.test.ts` and `**/ports/**`. If a file produces equivalent or flaky mutants, tighten the test or refactor the production code, never add it to a skip list.
-- A commit exceeding 10 files OR 300 lines (insertions + deletions) without a clear big-bang justification (initial scaffold, mass-rename, generated files). Split into smaller coherent slices. The pre-commit gate enforces this; do not normalise `--no-verify`.
+- A commit exceeding 10 files OR 300 lines (insertions + deletions) without a clear big-bang justification (initial scaffold, generated files; a pure rename does not count). Split into smaller coherent slices. The pre-commit gate enforces this; do not normalise `--no-verify`.
 - A commit message that is not Conventional Commits: no `type:` prefix, an unlisted type (`wip:`, `update:`), a capitalised type, a trailing period, or a >100-char header. The `commit-msg` hook rejects these (hard rule 23); write `type(scope): subject` the first time rather than reaching for `--no-verify`. A repo with the fast-gate `pre-commit` installed but no `commit-msg` hook is half-protected, wire both.
 - A composition root or wiring file declared "untestable" and skipped. The two ergonomic switches make any composition file 100%-testable: parameterise every state-source (path, env var, clock) and inject every output sink (logger, sender). See `references/architecture.md` (Composition root testability).
 - An assignment to `process.env.X = ...` anywhere outside `*.test.ts` (and even there, only inside `beforeAll`/`afterAll` with a saved-and-restored original). `process.env` is shared mutable state: pass values as parameters instead (`references/security.md`; config is read once, in `src/composition/env.ts`).
