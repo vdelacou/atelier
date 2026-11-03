@@ -12,6 +12,8 @@ whole, not any single skill.
   and re-copy `land-on-green.sh`. Keep `ready_for_review` on the pull request trigger. `land.yml`
   lands from the pull request after the one that adds it, since `workflow_run` fires only for a file
   already on the default branch.
+- Bun: re-copy `check-mutation-score.ts`. Without it, `mutate:changed` fails each changed file that
+  holds only types.
 
 ### Security
 - 2.8.0's `land` job ran inside the CI workflow on `pull_request`, checked out the pull request and ran
@@ -25,6 +27,15 @@ whole, not any single skill.
 ### Changed
 - The Bun template's `eslint-plugin-unicorn` range moves from `^76.0.0` to `^79.0.0`, the version the
   smoke test installs and the 2.8.0 config already handles.
+
+### Fixed
+- `mutate:changed` failed each changed file that holds only types (found 2026-11-03 in a consumer CI
+  run). Stryker writes no entry in its report for a file with no mutant, and `check-mutation-score.ts`
+  failed by name each scoped file that the report lacks. Now the gate reads the source of an absent
+  file. When the transpiler output holds only comments and whitespace, the file passes with the note
+  `no runtime code, not in the report`. An absent file with runtime code, a file that does not exist,
+  and a source that does not parse still fail by name. The selftest covers the pass and the failure,
+  and the Bun smoke test gives a real `mutate:changed` run a file that holds only types.
 
 ## [2.8.0] - 2026-10-24
 

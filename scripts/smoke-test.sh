@@ -1205,12 +1205,20 @@ elif grep -q 'under breaking threshold 90' "$LOG"; then pass "Stryker still brea
 else cat "$LOG"; fail "Stryker failed on the weak test, but not on the threshold"; fi
 # The per-file gate (2026-10-23): mutate:changed over the fixture's untracked domain files totals
 # 90.00, so Stryker's break passes, and the weak file alone must still fail the run by name.
+# A changed file that holds only types (2026-11-03) has no mutant, and Stryker writes no entry for it
+# in the report: the same run must give it a note, not a failure by name.
+cat > src/domain/fare-zone.ts <<'EOF'
+export type FareZone = { readonly name: string; readonly fare: number };
+EOF
 if BASE=HEAD bash scripts/mutate-changed.sh >"$LOG" 2>&1; then cat "$LOG"; fail "mutate:changed passed a weak file the run's total hid"
 elif grep -q 'src/domain/fare.ts  score=55.56  required=90' "$LOG"; then pass "mutate:changed fails a weak file by name though the run's total meets the break"
 else cat "$LOG"; fail "mutate:changed failed, but not on the weak file's own score"; fi
-expect_ok "check-mutation-score.ts selftest (a weak file beside a strong one, a missing file, a stale one, no break)" \
+if grep -q 'src/domain/fare-zone.ts  no runtime code, not in the report' "$LOG" && ! grep -q 'src/domain/fare-zone.ts  not in the report' "$LOG"; then
+  pass "mutate:changed gives a changed file that holds only types a note, not a failure"
+else cat "$LOG"; fail "mutate:changed on a changed file that holds only types"; fi
+expect_ok "check-mutation-score.ts selftest (a weak file beside a strong one, a missing file with runtime code, one with types only, a stale one, no break)" \
   bun run scripts/check-mutation-score.ts --selftest
-rm -f src/domain/fare.ts src/domain/fare.test.ts reports/fare-incremental.json
+rm -f src/domain/fare.ts src/domain/fare.test.ts src/domain/fare-zone.ts reports/fare-incremental.json
 # Locally the base is the branch's push ref (2026-10-23): the files changed since the last push,
 # not every file the branch touched since origin/main. A throwaway repo with a bare origin and a
 # stub bunx: a.ts is on main, b.ts pushed on the branch, c.ts not yet pushed. A branch never pushed
